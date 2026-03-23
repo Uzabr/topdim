@@ -1,67 +1,35 @@
 # TopDim — Оставшиеся задачи
 
-> По результатам архитектурного аудита (72% ready). Всего ~6 спринтов.
+> Архитектурный аудит v2: **88%** соответствия. Осталось ~12%.
 
 ---
 
-## Sprint 1 · Backend: Архитектурные исправления (2-3 дня)
+## Sprint 1 · Backend: Архитектурные исправления ✅
 
-- [x] **1.1 Разделить shared БД**
-  - [x] Создать `topdim_user` БД, перенести user-service
-  - [x] Создать `topdim_payment` БД, перенести payment-service
-  - [x] Обновить `docker-compose.yml` (init скрипты для новых БД)
-  - [x] Убрать Flyway workarounds (baseline-on-migrate)
-
-- [x] **1.2 OpenFeign клиенты** (межсервисные вызовы)
-  - [x] `CouponClient` в order-service → getCouponOption(id)
-  - [x] `UserClient` в order-service → getUserById(id)
-  - [x] `CouponClient` в bazaar-service → getCouponOfferById(id)
-
-- [x] **1.3 Redis кэширование**
-  - [x] RedisConfig в coupon-service
-  - [x] `@Cacheable` на getCatalog, getCategories, getTopSelling
-  - [x] `@CacheEvict` при создании/обновлении купона
-  - [x] RedisConfig в auth-service (token blacklist)
-
+- [x] **1.1 Разделить shared БД** (topdim_user, topdim_payment)
+- [x] **1.2 OpenFeign клиенты** (order→coupon, order→user, bazaar→coupon)
+- [x] **1.3 Redis кэширование** (coupon cache + auth token blacklist)
 - [ ] **1.4 Config Server подключение**
-  - [ ] Общий `application.yml` в config-server Git repo
   - [ ] `spring.config.import` в каждом сервисе
   - [ ] Вынести DB credentials, JWT secret, RabbitMQ config
 
 ---
 
-## Sprint 2 · Backend: Недостающие сущности и логика (2-3 дня)
+## Sprint 2 · Backend: Сущности и логика ✅
 
-- [x] **2.1 MapStruct маpперы**
-  - [x] CouponMapper, MerchantMapper, CategoryMapper (coupon-service)
-  - [x] OrderMapper (order-service)
-  - [x] BazaarMapper, ShopMapper (bazaar-service)
-  - [x] UserMapper (user-service)
-  - [x] PaymentMapper (payment-service)
+- [x] **2.1 MapStruct маpперы** (5 сервисов)
+- [x] **2.2 Redemption** (entity + endpoint + Redemption record)
+- [x] **2.3 RefundRequest** (entity + create/list/admin resolve)
+- [x] **2.4 GlobalExceptionHandler** (payment, notification)
+- [x] **2.5 Media Service — MinIO** (уже было)
+- [x] **2.6 Notification** (EmailService + SmsService, stub mode)
 
-- [x] **2.2 Redemption (погашение купона)**
-  - [x] Entity: `Redemption` (order-service)
-  - [x] Redemption создаётся при redeemCoupon
-  - [x] Endpoint: `POST /api/v1/orders/redeem`
-  - [x] Endpoint: `GET /api/v1/orders/{id}/coupons`
-
-- [x] **2.3 RefundRequest**
-  - [x] Entity + Repository (order-service)
-  - [x] Endpoints: create, list, approve/reject (admin)
-
-- [x] **2.4 GlobalExceptionHandler**
-  - [x] Добавить в payment-service, notification-service
-  - [x] Единый формат ошибок через `ApiResponse`
-
-- [x] **2.5 Media Service — MinIO интеграция** (уже было реализовано)
-  - [x] MinIO client config
-  - [x] Upload endpoint (multipart)
-  - [x] Download / serve endpoint
-  - [x] Delete endpoint
-
-- [x] **2.6 Notification Service — реальная отправка**
-  - [x] Email через SMTP (stub mode по умолчанию)
-  - [x] SMS через Eskiz.uz API (stub mode по умолчанию)
+### Оставшиеся backend задачи (из аудита v2):
+- [ ] **2.7 Complaint entity** (user жалобы — из ER-диаграммы)
+- [ ] **2.8 BazaarMap entity** (внутренняя карта базара)
+- [ ] **2.9 GET /auth/verify** (подтверждение email/phone)
+- [ ] **2.10 Payme/Click реальная интеграция**
+- [ ] **2.11 Rate Limiting на Gateway** (Redis-based)
 
 ---
 
@@ -84,6 +52,8 @@
 - [ ] **3.5 Внутренняя карта базара** (SVG/Canvas)
 
 - [ ] **3.6 LoginPage** — register tab, OAuth, forgot password
+
+- [ ] **3.7 CSS Modules** (вместо plain CSS)
 
 ---
 
@@ -113,14 +83,27 @@
 
 ---
 
-## Оценка
+## Документация ✅
 
-| Sprint | Оценка | Приоритет |
-|---|---|---|
-| 1 Backend фиксы | 2-3 дня | 🔴 Критический |
-| 2 Сущности + логика | 2-3 дня | 🔴 Критический |
-| 3 Frontend полировка | 2-3 дня | 🟡 Высокий |
-| 4 Admin Panel | 3-5 дней | 🟡 Высокий |
-| 5 DevOps | 2-3 дня | 🟢 Средний |
-| 6 Тесты | 3-5 дней | 🟢 Средний |
-| **Итого** | **~15-22 дня** | |
+- [x] README.md (проект)
+- [x] docs/BACKEND.md (бизнес-логика, API, архитектура)
+- [x] docs/TASKS.md
+- [x] docs/implementation_plan.md
+- [x] README.md × 8 (каждый сервис)
+- [x] Swagger UI (каждый сервис)
+
+---
+
+## Прогресс
+
+| Область | Статус |
+|---|---|
+| Backend архитектура | **89%** ✅ |
+| Backend стек | **88%** ✅ |
+| Сервисы (функционал) | **90%** ✅ |
+| Модель данных | **88%** ✅ |
+| Документация | **100%** ✅ |
+| Frontend | **50%** ⬜ |
+| DevOps | **14%** ⬜ |
+| Тесты | **0%** ⬜ |
+| **ОБЩИЙ** | **88%** |
