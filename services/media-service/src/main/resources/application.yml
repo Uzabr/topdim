@@ -1,0 +1,23 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: media-service
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+minio:
+  url: http://localhost:9000
+  access-key: topdim
+  secret-key: topdim_secret
+  bucket: topdim-media
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true

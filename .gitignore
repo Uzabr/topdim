@@ -1,0 +1,40 @@
+# Build
+build/
+.gradle/
+out/
+
+# Frontend
+node_modules/
+dist/
+.vite/
+
+# Agent
+.gemini/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Env
+.env
+*.env.local
+
+# Docker volumes
+postgres_data/
+redis_data/
+rabbitmq_data/
+minio_data/

@@ -1,0 +1,84 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      routes:
+        # Auth Service
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/v1/auth/**
+
+        # User Service
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/users/**
+
+        # Coupon Service
+        - id: coupon-service
+          uri: lb://coupon-service
+          predicates:
+            - Path=/api/v1/coupons/**, /api/v1/categories/**, /api/v1/merchants/**, /api/v1/admin/coupons/**, /api/v1/admin/merchants/**
+
+        # Order Service
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/cart/**, /api/v1/orders/**, /api/v1/admin/orders/**
+
+        # Payment Service
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/payments/**
+
+        # Bazaar Service
+        - id: bazaar-service
+          uri: lb://bazaar-service
+          predicates:
+            - Path=/api/v1/bazaars/**, /api/v1/shops/**, /api/v1/admin/bazaars/**, /api/v1/admin/shops/**
+
+        # Notification Service
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**
+
+        # Media Service
+        - id: media-service
+          uri: lb://media-service
+          predicates:
+            - Path=/api/v1/media/**
+
+        # Discovery Server UI
+        - id: discovery-server
+          uri: http://localhost:8761
+          predicates:
+            - Path=/eureka/web
+          filters:
+            - SetPath=/
+
+        # Discovery Server Static Resources
+        - id: discovery-server-static
+          uri: http://localhost:8761
+          predicates:
+            - Path=/eureka/**
+
+jwt:
+  secret: dG9wZGltLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1zaWduaW5nLTI1Ni1iaXQ=
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO

@@ -1,0 +1,20 @@
+rootProject.name = 'topdim'
+
+// Infrastructure
+include 'infrastructure:discovery-server'
+include 'infrastructure:config-server'
+include 'infrastructure:api-gateway'
+
+// Shared modules
+include 'shared:common-dto'
+include 'shared:common-events'
+
+// Microservices
+include 'services:auth-service'
+include 'services:user-service'
+include 'services:coupon-service'
+include 'services:order-service'
+include 'services:payment-service'
+include 'services:bazaar-service'
+include 'services:notification-service'
+include 'services:media-service'
