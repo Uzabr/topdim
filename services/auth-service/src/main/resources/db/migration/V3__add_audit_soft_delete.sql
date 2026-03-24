@@ -1,0 +1,7 @@
+-- Audit fields for auth-service
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+
+CREATE INDEX IF NOT EXISTS idx_users_not_deleted ON users(email) WHERE deleted = FALSE;
