@@ -7,6 +7,10 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * Стандартный формат страничного ответа.
+ * Обёртка для пагинации: content, page, size, totalElements, totalPages.
+ */
 @Data
 @Builder
 @NoArgsConstructor

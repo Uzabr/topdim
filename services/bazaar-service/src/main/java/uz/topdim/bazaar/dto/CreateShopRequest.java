@@ -6,6 +6,10 @@ import lombok.*;
 
 import java.util.List;
 
+/**
+ * DTO запроса на создание магазина.
+ * Поля: name, floor, section, phone, categoryId.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

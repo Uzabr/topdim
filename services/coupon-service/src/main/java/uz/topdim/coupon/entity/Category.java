@@ -3,6 +3,11 @@ package uz.topdim.coupon.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Категория купонов.
+ * Поля: name, slug, iconUrl, sortOrder, active.
+ * Кэшируется в Redis (TTL: 1 час).
+ */
 @Entity
 @Table(name = "categories")
 @Getter

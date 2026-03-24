@@ -9,6 +9,11 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Событие завершения оплаты (RabbitMQ).
+ * Публикуется payment-service → слушает order-service.
+ * Содержит: orderId, userId, transactionId.
+ */
 @Data
 @Builder
 @NoArgsConstructor

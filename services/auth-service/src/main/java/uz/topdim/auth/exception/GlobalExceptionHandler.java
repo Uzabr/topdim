@@ -12,6 +12,11 @@ import uz.topdim.common.dto.ApiResponse;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Глобальный обработчик исключений.
+ * Перехватывает RuntimeException и возвращает структурированный ответ.
+ * Обеспечивает единый формат ошибок для всех endpoints.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

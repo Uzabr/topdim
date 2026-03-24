@@ -7,6 +7,10 @@ import uz.topdim.order.entity.OrderItem;
 
 import java.util.Map;
 
+/**
+ * MapStruct маппер для заказов.
+ * Order → OrderResponse, CartItem → CartItemResponse.
+ */
 @Mapper(componentModel = "spring")
 public interface OrderMapper {
 

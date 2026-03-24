@@ -11,7 +11,12 @@ import java.util.List;
 
 @Entity
 @Table(name = "carts")
-@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor /**
+ * Сущность корзины покупок.
+ * Принадлежит пользователю, содержит CartItem[].
+ * Очищается после успешного checkout.
+ */
+@AllArgsConstructor
 public class Cart {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

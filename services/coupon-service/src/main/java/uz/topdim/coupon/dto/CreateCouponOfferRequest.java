@@ -9,6 +9,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * DTO запроса на создание купонного предложения.
+ * Поля: title, description, merchantId, categoryId, options[].
+ */
 @Data
 public class CreateCouponOfferRequest {
 

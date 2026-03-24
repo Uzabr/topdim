@@ -13,6 +13,10 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import java.time.Duration;
 import java.util.Map;
 
+/**
+ * Конфигурация Redis.
+ * Настраивает RedisTemplate для хранения blacklist токенов.
+ */
 @Configuration
 @EnableCaching
 public class RedisConfig {

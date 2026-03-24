@@ -10,6 +10,11 @@ import java.time.LocalDateTime;
 @Table(name = "favorites", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"user_id", "coupon_offer_id"})
 })
+/**
+ * Сущность избранного.
+ * Связывает userId с couponOfferId.
+ * Уникальная пара: один купон в избранном только один раз.
+ */
 @Getter
 @Setter
 @Builder

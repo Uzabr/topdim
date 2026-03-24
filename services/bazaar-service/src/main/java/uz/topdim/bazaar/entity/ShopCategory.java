@@ -5,7 +5,11 @@ import lombok.*;
 
 @Entity
 @Table(name = "shop_categories")
-@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor /**
+ * Категория магазина.
+ * Поля: name, slug (electronics, clothing, food и т.д.).
+ */
+@AllArgsConstructor
 public class ShopCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

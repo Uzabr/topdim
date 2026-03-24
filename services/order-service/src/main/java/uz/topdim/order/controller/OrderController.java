@@ -13,6 +13,11 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * REST контроллер заказов.
+ * Endpoints: cart, orders, my-coupons, redeem, refund.
+ * Все endpoints требуют JWT (X-User-Id header).
+ */
 @RestController
 @RequiredArgsConstructor
 public class OrderController {

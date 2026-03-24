@@ -4,6 +4,10 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import uz.topdim.user.dto.UserProfileResponse;
 
+/**
+ * MapStruct маппер для user-service.
+ * Маппинг пользовательских DTO.
+ */
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 

@@ -4,6 +4,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
 
+/**
+ * Точка входа Discovery Server (Eureka).
+ * Реестр микросервисов для service discovery.
+ * Порт: 8761
+ */
 @SpringBootApplication
 @EnableEurekaServer
 public class DiscoveryServerApplication {

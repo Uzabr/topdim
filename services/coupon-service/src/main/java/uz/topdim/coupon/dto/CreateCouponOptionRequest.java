@@ -7,6 +7,10 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
+/**
+ * DTO запроса на создание варианта купона.
+ * Поля: name, originalPrice, couponPrice, quantityLimit.
+ */
 @Data
 public class CreateCouponOptionRequest {
 

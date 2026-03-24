@@ -4,6 +4,10 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * DTO ответа профиля.
+ * Поля: id, email, phone, name, createdAt.
+ */
 @Data
 @Builder
 @NoArgsConstructor

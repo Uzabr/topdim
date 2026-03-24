@@ -5,6 +5,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * DTO ответа магазина.
+ * Поля: id, name, floor, section, category, tags.
+ */
 @Data
 @Builder
 @NoArgsConstructor

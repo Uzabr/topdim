@@ -9,6 +9,11 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Событие создания заказа (RabbitMQ).
+ * Публикуется order-service → слушает payment-service.
+ * Содержит: orderId, userId, amount, email, phone.
+ */
 @Data
 @Builder
 @NoArgsConstructor

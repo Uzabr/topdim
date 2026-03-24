@@ -7,6 +7,11 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Сущность платежа.
+ * Связана с заказом (orderId), содержит сумму, провайдер, статус.
+ * Статусы: PENDING → PROCESSING → COMPLETED / FAILED / REFUNDED.
+ */
 @Entity
 @Table(name = "payments")
 @Getter

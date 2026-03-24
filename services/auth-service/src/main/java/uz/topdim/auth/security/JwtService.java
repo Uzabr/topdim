@@ -11,6 +11,11 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.Map;
 
+/**
+ * Сервис работы с JWT токенами.
+ * Генерация access token (15 мин) и refresh token (7 дней).
+ * Валидация и извлечение claims из токена.
+ */
 @Service
 public class JwtService {
 
@@ -23,14 +28,23 @@ public class JwtService {
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
 
+    /**
+     * Генерирует JWT access token.
+     * Claims: userId (sub), email, role, firstName.
+     *
+     * @param user пользователь для токена
+     * @return подписанный JWT строка
+     */
     public String generateAccessToken(User user) {
         return buildToken(user, accessTokenExpiration);
     }
 
+    /** Возвращает TTL access token в миллисекундах. */
     public long getAccessTokenExpiration() {
         return accessTokenExpiration;
     }
 
+    /** Возвращает TTL refresh token в миллисекундах. */
     public long getRefreshTokenExpiration() {
         return refreshTokenExpiration;
     }
@@ -49,6 +63,13 @@ public class JwtService {
                 .compact();
     }
 
+    /**
+     * Извлекает все claims из JWT токена.
+     *
+     * @param token JWT строка
+     * @return Claims объект с данными из токена
+     * @throws JwtException если токен невалиден
+     */
     public Claims extractClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
@@ -57,6 +78,12 @@ public class JwtService {
                 .getPayload();
     }
 
+    /**
+     * Проверяет валидность JWT токена (подпись + срок действия).
+     *
+     * @param token JWT строка
+     * @return true если токен валиден и не истёк
+     */
     public boolean isTokenValid(String token) {
         try {
             Claims claims = extractClaims(token);
@@ -66,6 +93,12 @@ public class JwtService {
         }
     }
 
+    /**
+     * Извлекает userId (subject) из JWT.
+     *
+     * @param token JWT строка
+     * @return userId как строка
+     */
     public String extractUserId(String token) {
         return extractClaims(token).getSubject();
     }

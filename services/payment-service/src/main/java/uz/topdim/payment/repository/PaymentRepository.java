@@ -7,6 +7,10 @@ import uz.topdim.payment.entity.PaymentStatus;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Репозиторий платежей.
+ * Поиск по orderId, статусу.
+ */
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByOrderId(Long orderId);
 

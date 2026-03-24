@@ -5,7 +5,12 @@ import lombok.*;
 
 @Entity
 @Table(name = "bazaar_maps")
-@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor /**
+ * Внутренняя карта базара.
+ * Хранит SVG/изображение планировки базара.
+ * Связана с Bazaar.
+ */
+@AllArgsConstructor
 public class BazaarMap {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

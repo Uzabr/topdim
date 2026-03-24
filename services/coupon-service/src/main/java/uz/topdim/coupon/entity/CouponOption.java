@@ -5,6 +5,11 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
+/**
+ * Вариант купона (размер, тип).
+ * Содержит обычную цену и цену по купону.
+ * Отслеживает лимит и количество проданных.
+ */
 @Entity
 @Table(name = "coupon_options")
 @Getter

@@ -10,6 +10,10 @@ import uz.topdim.auth.repository.UserRepository;
 
 import java.util.List;
 
+/**
+ * Реализация UserDetailsService для Spring Security.
+ * Загружает пользователя из БД по email для аутентификации.
+ */
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {

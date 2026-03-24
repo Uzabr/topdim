@@ -7,6 +7,10 @@ import uz.topdim.common.dto.ApiResponse;
 
 import java.util.Map;
 
+/**
+ * OpenFeign клиент для coupon-service.
+ * Получение информации о купонах и опциях.
+ */
 @FeignClient(name = "coupon-service", path = "/api/v1")
 public interface CouponClient {
 

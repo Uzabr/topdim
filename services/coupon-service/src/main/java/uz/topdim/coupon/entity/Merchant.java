@@ -7,6 +7,11 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
+/**
+ * Партнёр (продавец купонов).
+ * Поля: name, description, logoUrl, address, phone.
+ * Связан с CouponOffer.
+ */
 @Entity
 @Table(name = "merchants")
 @Getter

@@ -18,6 +18,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Сервис управления заказами.
+ * Корзина → Checkout → Заказ → Покупка купонов → Погашение.
+ * Публикует события: OrderCreated, CouponPurchased.
+ */
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -32,6 +37,13 @@ public class OrderService {
 
     // ==================== Cart ====================
 
+    /**
+     * Получает корзину пользователя.
+     * Если корзина не существует — создаёт пустую.
+     *
+     * @param userId ID пользователя из JWT
+     * @return корзина с товарами
+     */
     @Transactional(readOnly = true)
     public Cart getCartByUserId(Long userId) {
         return cartRepository.findByUserId(userId)
@@ -41,6 +53,17 @@ public class OrderService {
                 });
     }
 
+    /**
+     * Добавляет товар в корзину.
+     * Если товар уже есть — увеличивает количество.
+     *
+     * @param userId ID пользователя
+     * @param couponOfferId ID купона
+     * @param couponOptionId ID опции купона
+     * @param quantity количество
+     * @param gift true если подарочный купон
+     * @return обновлённая корзина
+     */
     @Transactional
     public Cart addToCart(Long userId, Long couponOfferId, Long couponOptionId,
                          String couponTitle, String optionTitle, BigDecimal unitPrice,
@@ -62,6 +85,12 @@ public class OrderService {
         return cartRepository.save(cart);
     }
 
+    /**
+     * Удаляет товар из корзины.
+     *
+     * @param userId ID пользователя
+     * @param cartItemId ID элемента корзины
+     */
     @Transactional
     public void removeFromCart(Long userId, Long cartItemId) {
         Cart cart = getCartByUserId(userId);
@@ -69,6 +98,11 @@ public class OrderService {
         cartRepository.save(cart);
     }
 
+    /**
+     * Очищает корзину пользователя (удаляет все товары).
+     *
+     * @param userId ID пользователя
+     */
     @Transactional
     public void clearCart(Long userId) {
         Cart cart = getCartByUserId(userId);
@@ -78,6 +112,17 @@ public class OrderService {
 
     // ==================== Checkout / Order ====================
 
+    /**
+     * Оформление заказа (checkout).
+     * Создаёт Order из корзины, публикует OrderCreatedEvent в RabbitMQ.
+     * После создания корзина очищается.
+     *
+     * @param userId ID пользователя
+     * @param userEmail email для уведомлений
+     * @param userPhone телефон для SMS
+     * @return созданный заказ
+     * @throws IllegalStateException если корзина пуста
+     */
     @Transactional
     public Order createOrder(Long userId, String userEmail, String userPhone) {
         Cart cart = getCartByUserId(userId);
@@ -136,6 +181,14 @@ public class OrderService {
 
     // ==================== After Payment ====================
 
+    /**
+     * Генерирует купленные купоны после оплаты.
+     * Каждый купон получает уникальный код и QR токен.
+     * Публикует CouponPurchasedEvent для notification-service.
+     *
+     * @param orderId ID оплаченного заказа
+     * @return список PurchasedCoupon с кодами
+     */
     @Transactional
     public List<PurchasedCoupon> generatePurchasedCoupons(Long orderId) {
         Order order = orderRepository.findById(orderId)
@@ -185,16 +238,36 @@ public class OrderService {
 
     // ==================== User Orders ====================
 
+    /**
+     * Получает заказы пользователя с пагинацией.
+     *
+     * @param userId ID пользователя
+     * @param page номер страницы
+     * @param size размер страницы
+     * @return страница заказов
+     */
     @Transactional(readOnly = true)
     public Page<Order> getUserOrders(Long userId, int page, int size) {
         return orderRepository.findByUserId(userId, PageRequest.of(page, size, Sort.by("createdAt").descending()));
     }
 
+    /**
+     * Получает все купленные купоны пользователя.
+     *
+     * @param userId ID пользователя
+     * @return список купонов (всех статусов)
+     */
     @Transactional(readOnly = true)
     public List<PurchasedCoupon> getUserCoupons(Long userId) {
         return purchasedCouponRepository.findByUserId(userId);
     }
 
+    /**
+     * Получает все купленные купоны пользователя.
+     *
+     * @param userId ID пользователя
+     * @return список купонов (всех статусов)
+     */
     @Transactional(readOnly = true)
     public List<PurchasedCoupon> getUserCouponsByStatus(Long userId, PurchasedCouponStatus status) {
         return purchasedCouponRepository.findByUserIdAndStatus(userId, status);
@@ -202,6 +275,16 @@ public class OrderService {
 
     // ==================== Redemption ====================
 
+    /**
+     * Погашение купона.
+     * Меняет статус на USED, создаёт запись Redemption.
+     *
+     * @param couponCode уникальный код купона
+     * @param merchantId ID партнёра, погашающего купон
+     * @param staffName имя сотрудника
+     * @return обновлённый PurchasedCoupon
+     * @throws IllegalArgumentException если купон не найден или уже использован
+     */
     @Transactional
     public PurchasedCoupon redeemCoupon(String couponCode, Long merchantId, String staffName) {
         PurchasedCoupon coupon = purchasedCouponRepository.findByCouponCode(couponCode)
@@ -230,6 +313,14 @@ public class OrderService {
 
     // ==================== Refund Requests ====================
 
+    /**
+     * Создаёт запрос на возврат средств.
+     *
+     * @param userId ID пользователя
+     * @param orderId ID заказа для возврата
+     * @param reason причина возврата
+     * @return созданный RefundRequest (статус: PENDING)
+     */
     @Transactional
     public RefundRequest createRefundRequest(Long userId, Long orderId, String reason) {
         Order order = orderRepository.findById(orderId)
@@ -246,11 +337,25 @@ public class OrderService {
                 .build());
     }
 
+    /**
+     * Получает запросы на возврат пользователя.
+     *
+     * @param userId ID пользователя
+     * @return список RefundRequest
+     */
     @Transactional(readOnly = true)
     public List<RefundRequest> getUserRefundRequests(Long userId) {
         return refundRequestRepository.findByUserId(userId);
     }
 
+    /**
+     * Одобряет или отклоняет запрос на возврат (Admin).
+     *
+     * @param requestId ID запроса на возврат
+     * @param approved true = одобрить, false = отклонить
+     * @param adminComment комментарий администратора
+     * @return обновлённый RefundRequest
+     */
     @Transactional
     public RefundRequest resolveRefundRequest(Long requestId, boolean approved, String adminComment) {
         RefundRequest request = refundRequestRepository.findById(requestId)

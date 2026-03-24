@@ -10,6 +10,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Сущность купонного предложения.
+ * Основная бизнес-сущность: title, описание, цены, скидка, статус.
+ * Связана с CouponOption, CouponImage, Category, Merchant.
+ */
 @Entity
 @Table(name = "coupon_offers")
 @Getter

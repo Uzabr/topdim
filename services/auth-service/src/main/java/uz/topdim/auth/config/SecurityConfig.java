@@ -16,6 +16,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import uz.topdim.auth.security.CustomUserDetailsService;
 
+/**
+ * Конфигурация Spring Security для auth-service.
+ * Настраивает AuthenticationManager, PasswordEncoder (BCrypt).
+ * Открытые пути: /api/v1/auth/** (register, login, refresh).
+ */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor

@@ -13,6 +13,11 @@ import uz.topdim.common.dto.ApiResponse;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * REST контроллер медиа файлов.
+ * Endpoints: upload (POST), download (GET), delete (DELETE).
+ * Файлы хранятся в MinIO (S3-compatible).
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/media")
@@ -46,6 +51,13 @@ public class MediaController {
         }
     }
 
+    /**
+     * POST /api/v1/media/upload — Загрузка файла.
+     * Сохраняет файл в MinIO с уникальным именем.
+     *
+     * @param file multipart файл для загрузки
+     * @return fileName и URL для доступа
+     */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Map<String, String>>> upload(@RequestParam("file") MultipartFile file) {
         try {
@@ -68,6 +80,13 @@ public class MediaController {
         }
     }
 
+    /**
+     * GET /api/v1/media/{fileName} — Скачивание файла.
+     * Возвращает файл из MinIO как byte[].
+     *
+     * @param fileName имя файла в хранилище
+     * @return файл с правильным Content-Type
+     */
     @GetMapping("/{fileName}")
     public ResponseEntity<byte[]> getFile(@PathVariable String fileName) {
         try {
@@ -84,6 +103,12 @@ public class MediaController {
         }
     }
 
+    /**
+     * DELETE /api/v1/media/{fileName} — Удаление файла.
+     *
+     * @param fileName имя файла для удаления
+     * @return 200 OK при успешном удалении
+     */
     @DeleteMapping("/{fileName}")
     public ResponseEntity<ApiResponse<Void>> deleteFile(@PathVariable String fileName) {
         try {

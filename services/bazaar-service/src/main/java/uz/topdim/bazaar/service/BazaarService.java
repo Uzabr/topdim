@@ -13,6 +13,10 @@ import uz.topdim.bazaar.repository.BazaarRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Сервис управления базарами.
+ * CRUD операции, получение с координатами для карты Leaflet.
+ */
 @Service
 @RequiredArgsConstructor
 public class BazaarService {
@@ -20,6 +24,12 @@ public class BazaarService {
     private final BazaarRepository bazaarRepository;
     private final BazaarMapRepository bazaarMapRepository;
 
+    /**
+     * Получает все базары, опционально с фильтром по городу.
+     *
+     * @param city фильтр по городу (null = все)
+     * @return список базаров с координатами
+     */
     @Transactional(readOnly = true)
     public List<BazaarResponse> getAllBazaars(String city) {
         List<Bazaar> bazaars = city != null
@@ -28,6 +38,13 @@ public class BazaarService {
         return bazaars.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
+    /**
+     * Получает базар по ID.
+     *
+     * @param id ID базара
+     * @return данные базара
+     * @throws ResourceNotFoundException если не найден
+     */
     @Transactional(readOnly = true)
     public BazaarResponse getBazaarById(Long id) {
         Bazaar bazaar = bazaarRepository.findById(id)
@@ -35,11 +52,23 @@ public class BazaarService {
         return mapToResponse(bazaar);
     }
 
+    /**
+     * Получает внутренние карты базара.
+     *
+     * @param bazaarId ID базара
+     * @return список карт (SVG/изображения)
+     */
     @Transactional(readOnly = true)
     public List<BazaarMap> getBazaarMaps(Long bazaarId) {
         return bazaarMapRepository.findByBazaarId(bazaarId);
     }
 
+    /**
+     * Создаёт новый базар (Admin).
+     *
+     * @param request name, address, lat, lng, description
+     * @return созданный базар
+     */
     @Transactional
     public BazaarResponse createBazaar(CreateBazaarRequest request) {
         BazaarType type;
@@ -66,6 +95,13 @@ public class BazaarService {
         return mapToResponse(bazaarRepository.save(bazaar));
     }
 
+    /**
+     * Обновляет данные базара (Admin).
+     *
+     * @param id ID базара
+     * @param request обновлённые данные
+     * @return обновлённый базар
+     */
     @Transactional
     public BazaarResponse updateBazaar(Long id, CreateBazaarRequest request) {
         Bazaar bazaar = bazaarRepository.findById(id)

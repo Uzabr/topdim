@@ -5,6 +5,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO ответа категории.
+ * Поля: id, name, slug, iconUrl.
+ */
 @Data
 @Builder
 @NoArgsConstructor

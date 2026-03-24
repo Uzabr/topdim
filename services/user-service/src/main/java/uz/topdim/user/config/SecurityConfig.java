@@ -7,6 +7,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * Конфигурация Spring Security для user-service.
+ * Доверяет JWT валидации от API Gateway (X-User-Id header).
+ * Настраивает CORS и правила доступа к endpoints.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {

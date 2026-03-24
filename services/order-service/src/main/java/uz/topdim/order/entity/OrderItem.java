@@ -6,7 +6,12 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "order_items")
-@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor /**
+ * Элемент заказа.
+ * Связан с конкретным купоном и опцией.
+ * Хранит цену на момент покупки.
+ */
+@AllArgsConstructor
 public class OrderItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

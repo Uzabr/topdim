@@ -5,6 +5,10 @@ import org.mapstruct.Mapping;
 import uz.topdim.payment.dto.PaymentResponse;
 import uz.topdim.payment.entity.Payment;
 
+/**
+ * MapStruct маппер для платежей.
+ * Payment → PaymentResponse.
+ */
 @Mapper(componentModel = "spring")
 public interface PaymentMapper {
 

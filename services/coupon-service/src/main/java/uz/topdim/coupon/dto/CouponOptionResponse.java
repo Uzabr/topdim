@@ -7,6 +7,10 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+/**
+ * DTO ответа варианта купона.
+ * Поля: id, name, originalPrice, couponPrice, sold, limit.
+ */
 @Data
 @Builder
 @NoArgsConstructor

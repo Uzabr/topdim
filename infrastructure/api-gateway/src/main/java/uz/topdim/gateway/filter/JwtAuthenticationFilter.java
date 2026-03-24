@@ -18,6 +18,11 @@ import reactor.core.publisher.Mono;
 import javax.crypto.SecretKey;
 import java.util.List;
 
+/**
+ * Фильтр JWT аутентификации в API Gateway.
+ * Извлекает токен из Authorization header, валидирует
+ * и пробрасывает X-User-Id, X-User-Role в downstream сервисы.
+ */
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 

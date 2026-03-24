@@ -6,6 +6,8 @@ plugins {
 dependencies {
     implementation project(':shared:common-dto')
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 
     implementation 'io.minio:minio:8.5.14'

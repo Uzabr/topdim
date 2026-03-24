@@ -11,7 +11,12 @@ import java.util.List;
 
 @Entity
 @Table(name = "orders")
-@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor /**
+ * Сущность заказа.
+ * Создаётся при checkout, содержит OrderItem[] и общую сумму.
+ * Статусы: PENDING → PAID → COMPLETED / CANCELLED / REFUNDED.
+ */
+@AllArgsConstructor
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

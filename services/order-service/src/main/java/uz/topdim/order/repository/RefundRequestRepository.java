@@ -7,6 +7,10 @@ import uz.topdim.order.entity.RefundRequest;
 
 import java.util.List;
 
+/**
+ * Репозиторий запросов на возврат.
+ * Поиск по userId, orderId, статусу.
+ */
 public interface RefundRequestRepository extends JpaRepository<RefundRequest, Long> {
     Page<RefundRequest> findByStatus(RefundRequest.RefundStatus status, Pageable pageable);
     List<RefundRequest> findByUserId(Long userId);

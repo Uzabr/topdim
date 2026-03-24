@@ -28,6 +28,14 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
+    /**
+     * Отправляет email о покупке купона.
+     * В stub mode — только логирует.
+     *
+     * @param to email получателя
+     * @param couponTitle название купона
+     * @param couponCode код купона
+     */
     public void sendCouponPurchasedEmail(String to, String couponTitle, String couponCode) {
         String subject = "TopDim — Ваш купон: " + couponTitle;
         String body = String.format("""
@@ -46,6 +54,12 @@ public class EmailService {
         sendEmail(to, subject, body);
     }
 
+    /**
+     * Отправляет email подтверждения заказа.
+     *
+     * @param to email получателя
+     * @param orderNumber номер заказа
+     */
     public void sendOrderConfirmationEmail(String to, String orderNumber) {
         String subject = "TopDim — Заказ " + orderNumber + " подтверждён";
         String body = String.format("""

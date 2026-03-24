@@ -7,6 +7,10 @@ import uz.topdim.common.dto.ApiResponse;
 
 import java.util.Map;
 
+/**
+ * OpenFeign клиент для user-service.
+ * Получение информации о пользователе.
+ */
 @FeignClient(name = "user-service", path = "/api/v1")
 public interface UserClient {
 

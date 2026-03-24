@@ -5,6 +5,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * DTO запроса на регистрацию.
+ * Поля: email, phone, password, firstName, lastName.
+ */
 @Data
 public class RegisterRequest {
 
