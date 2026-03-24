@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+/**
+ * Событие покупки купона (RabbitMQ).
+ * Публикуется order-service → слушает notification-service.
+ * Содержит: email, phone, couponTitle, couponCode.
+ */
 @Data
 @Builder
 @NoArgsConstructor

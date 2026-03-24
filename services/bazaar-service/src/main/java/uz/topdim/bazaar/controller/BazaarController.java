@@ -14,6 +14,11 @@ import uz.topdim.bazaar.service.ShopService;
 
 import java.util.List;
 
+/**
+ * REST контроллер базаров и магазинов.
+ * Публичные endpoints: список, детали, магазины базара.
+ * Admin endpoints: создание базаров и магазинов.
+ */
 @RestController
 @RequiredArgsConstructor
 public class BazaarController {

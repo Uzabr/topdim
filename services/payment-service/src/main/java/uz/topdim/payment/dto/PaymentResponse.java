@@ -8,6 +8,10 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * DTO ответа платежа.
+ * Поля: id, orderId, amount, status, paymentUrl.
+ */
 @Data
 @Builder
 @NoArgsConstructor

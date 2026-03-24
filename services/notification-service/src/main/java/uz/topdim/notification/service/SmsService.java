@@ -29,6 +29,14 @@ public class SmsService {
         this.apiToken = apiToken;
     }
 
+    /**
+     * Отправляет SMS о покупке купона (Eskiz.uz API).
+     * В stub mode — только логирует.
+     *
+     * @param phone номер телефона
+     * @param couponTitle название купона
+     * @param couponCode код купона
+     */
     public void sendCouponPurchasedSms(String phone, String couponTitle, String couponCode) {
         String message = String.format("TopDim: Купон \"%s\" — код: %s", couponTitle, couponCode);
         sendSms(phone, message);

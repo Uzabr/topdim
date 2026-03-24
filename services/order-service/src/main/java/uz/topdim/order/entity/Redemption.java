@@ -7,7 +7,12 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "redemptions")
-@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor /**
+ * Запись о погашении купона.
+ * Создаётся при сканировании QR кода партнёром.
+ * Хранит merchantId, staffName и время погашения.
+ */
+@AllArgsConstructor
 public class Redemption {
 
     @Id

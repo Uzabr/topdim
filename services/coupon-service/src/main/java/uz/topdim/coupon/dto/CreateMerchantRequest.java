@@ -3,6 +3,10 @@ package uz.topdim.coupon.dto;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+/**
+ * DTO запроса на создание партнёра.
+ * Поля: name, description, logoUrl, address, phone.
+ */
 @Data
 public class CreateMerchantRequest {
     @NotBlank(message = "Название партнёра обязательно")

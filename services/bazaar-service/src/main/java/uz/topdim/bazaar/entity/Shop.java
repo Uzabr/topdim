@@ -11,7 +11,12 @@ import java.util.List;
 
 @Entity
 @Table(name = "shops")
-@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor /**
+ * Сущность магазина.
+ * Поля: name, floor, section, phone, category.
+ * Привязан к базару, содержит теги продуктов.
+ */
+@AllArgsConstructor
 public class Shop {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

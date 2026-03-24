@@ -5,6 +5,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO ответа аутентификации.
+ * Содержит accessToken, refreshToken и данные пользователя.
+ */
 @Data
 @Builder
 @NoArgsConstructor

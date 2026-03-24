@@ -3,6 +3,11 @@ package uz.topdim.coupon.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Изображение купона.
+ * Хранит URL и порядок отображения.
+ * Связана с CouponOffer.
+ */
 @Entity
 @Table(name = "coupon_images")
 @Getter

@@ -4,6 +4,10 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * DTO ответа базара.
+ * Поля: id, name, address, lat, lng, shopCount.
+ */
 @Data
 @Builder
 @NoArgsConstructor

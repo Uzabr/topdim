@@ -5,6 +5,10 @@ import uz.topdim.order.entity.Redemption;
 
 import java.util.Optional;
 
+/**
+ * Репозиторий записей погашения.
+ * CRUD операции для Redemption.
+ */
 public interface RedemptionRepository extends JpaRepository<Redemption, Long> {
     Optional<Redemption> findByRedemptionCode(String code);
     Optional<Redemption> findByPurchasedCouponId(Long purchasedCouponId);

@@ -5,6 +5,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO ответа партнёра.
+ * Поля: id, name, description, logoUrl, address.
+ */
 @Data
 @Builder
 @NoArgsConstructor

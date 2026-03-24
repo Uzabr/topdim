@@ -8,6 +8,10 @@ import uz.topdim.auth.entity.User;
 
 import java.util.Optional;
 
+/**
+ * Репозиторий refresh токенов.
+ * Поиск по значению токена, массовый отзыв по userId.
+ */
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
     Optional<RefreshToken> findByToken(String token);
 

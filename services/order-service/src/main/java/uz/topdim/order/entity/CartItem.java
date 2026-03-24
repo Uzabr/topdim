@@ -6,7 +6,12 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "cart_items")
-@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor /**
+ * Элемент корзины.
+ * Ссылка на купон (couponId, optionId), количество, цена.
+ * Поддерживает подарочные купоны (gift flag).
+ */
+@AllArgsConstructor
 public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

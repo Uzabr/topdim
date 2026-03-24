@@ -12,6 +12,10 @@ import uz.topdim.bazaar.entity.ShopProductTag;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * MapStruct маппер для базаров.
+ * Bazaar → BazaarResponse, Shop → ShopResponse.
+ */
 @Mapper(componentModel = "spring")
 public interface BazaarMapper {
 

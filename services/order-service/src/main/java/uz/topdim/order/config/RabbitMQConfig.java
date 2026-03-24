@@ -6,6 +6,11 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Конфигурация RabbitMQ.
+ * Определяет exchanges, queues и bindings для событий.
+ * Events: order.created, coupon.purchased.
+ */
 @Configuration
 public class RabbitMQConfig {
 

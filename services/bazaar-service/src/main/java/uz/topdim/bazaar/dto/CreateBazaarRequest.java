@@ -3,6 +3,10 @@ package uz.topdim.bazaar.dto;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
+/**
+ * DTO запроса на создание базара.
+ * Поля: name, address, lat, lng, description.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -9,6 +9,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * DTO ответа купонного предложения.
+ * Включает: id, title, prices, discount, status, merchant, images.
+ */
 @Data
 @Builder
 @NoArgsConstructor

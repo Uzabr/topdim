@@ -11,6 +11,10 @@ import uz.topdim.coupon.entity.CouponStatus;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Репозиторий купонных предложений.
+ * Поиск с фильтрами по категории, статусу, поиску.
+ */
 public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> {
 
     Page<CouponOffer> findByStatus(CouponStatus status, Pageable pageable);

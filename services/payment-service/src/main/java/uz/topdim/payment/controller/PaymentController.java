@@ -10,6 +10,10 @@ import uz.topdim.payment.service.PaymentService;
 import java.math.BigDecimal;
 import java.util.Map;
 
+/**
+ * REST контроллер платежей.
+ * Endpoints: статус платежа, webhook от провайдера.
+ */
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor

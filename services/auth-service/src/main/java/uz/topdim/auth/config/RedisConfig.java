@@ -6,6 +6,10 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+/**
+ * Конфигурация Redis.
+ * Настраивает RedisTemplate для хранения blacklist токенов.
+ */
 @Configuration
 public class RedisConfig {
 

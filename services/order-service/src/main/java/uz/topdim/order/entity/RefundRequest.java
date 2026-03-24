@@ -7,7 +7,12 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "refund_requests")
-@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor /**
+ * Запрос на возврат средств.
+ * Создаётся пользователем, обрабатывается админом.
+ * Статусы: PENDING → APPROVED / REJECTED.
+ */
+@AllArgsConstructor
 public class RefundRequest {
 
     @Id

@@ -13,6 +13,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Сервис обработки платежей.
+ * Создаёт Payment по OrderCreatedEvent.
+ * Публикует PaymentCompleted/PaymentFailed.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -21,6 +26,16 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final RabbitTemplate rabbitTemplate;
 
+    /**
+     * Создаёт новый платёж (статус: PENDING).
+     * Вызывается при получении OrderCreatedEvent.
+     *
+     * @param orderId ID заказа
+     * @param userId ID пользователя
+     * @param amount сумма платежа
+     * @param provider платёжный провайдер (PAYME, CLICK, UZUM)
+     * @return созданный платёж
+     */
     @Transactional
     public Payment createPayment(Long orderId, Long userId, BigDecimal amount, String provider) {
         PaymentProvider paymentProvider;
@@ -48,18 +63,43 @@ public class PaymentService {
         return payment;
     }
 
+    /**
+     * Получает платёж по ID.
+     *
+     * @param id ID платежа
+     * @return платёж
+     * @throws RuntimeException если не найден
+     */
     @Transactional(readOnly = true)
     public Payment getPayment(Long id) {
         return paymentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Платёж не найден"));
     }
 
+    /**
+     * Получает платёж по ID.
+     *
+     * @param id ID платежа
+     * @return платёж
+     * @throws RuntimeException если не найден
+     */
     @Transactional(readOnly = true)
     public Payment getPaymentByOrderId(Long orderId) {
         return paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Платёж не найден для заказа " + orderId));
     }
 
+    /**
+     * Обрабатывает callback от платёжной системы.
+     * Обновляет статус на COMPLETED и публикует PaymentCompletedEvent.
+     *
+     * @param orderId ID заказа
+     * @param userId ID пользователя
+     * @param amount сумма
+     * @param provider провайдер
+     * @param transactionId ID транзакции от провайдера
+     * @return обновлённый платёж
+     */
     @Transactional
     public Payment handleCallback(Long orderId, Long userId, BigDecimal amount, String provider, String transactionId) {
         Payment payment = paymentRepository.findByOrderId(orderId)

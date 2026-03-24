@@ -7,6 +7,10 @@ import uz.topdim.bazaar.entity.Shop;
 
 import java.util.List;
 
+/**
+ * Репозиторий магазинов.
+ * Поиск по bazaarId, категории, тегам.
+ */
 public interface ShopRepository extends JpaRepository<Shop, Long> {
     List<Shop> findByBazaarIdAndActiveTrue(Long bazaarId);
     List<Shop> findByBazaarIdAndHasCouponTrueAndActiveTrue(Long bazaarId);

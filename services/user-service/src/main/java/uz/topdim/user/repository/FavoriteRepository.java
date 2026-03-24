@@ -6,6 +6,10 @@ import uz.topdim.user.entity.Favorite;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Репозиторий избранного.
+ * Поиск по userId, проверка дубликатов.
+ */
 public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
     List<Favorite> findByUserIdOrderByCreatedAtDesc(Long userId);
 

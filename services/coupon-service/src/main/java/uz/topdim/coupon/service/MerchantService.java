@@ -16,6 +16,11 @@ import uz.topdim.coupon.repository.MerchantRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Сервис управления партнёрами (merchants).
+ * CRUD операции, получение категорий.
+ * Кэширование списка категорий.
+ */
 @Service
 @RequiredArgsConstructor
 public class MerchantService {
@@ -25,6 +30,11 @@ public class MerchantService {
 
     // ==================== Merchants ====================
 
+    /**
+     * Получает список всех партнёров.
+     *
+     * @return список MerchantResponse
+     */
     @Transactional(readOnly = true)
     public List<MerchantResponse> getAllMerchants() {
         return merchantRepository.findByActiveTrue().stream()
@@ -32,12 +42,25 @@ public class MerchantService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Получает партнёра по ID.
+     *
+     * @param id идентификатор партнёра
+     * @return данные партнёра
+     * @throws ResourceNotFoundException если не найден
+     */
     @Transactional(readOnly = true)
     public MerchantResponse getMerchantById(Long id) {
         return mapMerchant(merchantRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Партнёр не найден")));
     }
 
+    /**
+     * Создаёт нового партнёра (Admin).
+     *
+     * @param request name, description, logoUrl, address, phone
+     * @return созданный партнёр
+     */
     @CacheEvict(value = "catalog", allEntries = true)
     @Transactional
     public MerchantResponse createMerchant(CreateMerchantRequest request) {
@@ -57,6 +80,13 @@ public class MerchantService {
         return mapMerchant(merchantRepository.save(merchant));
     }
 
+    /**
+     * Обновляет данные партнёра (Admin).
+     *
+     * @param id идентификатор партнёра
+     * @param request обновлённые данные
+     * @return обновлённый партнёр
+     */
     @CacheEvict(value = "catalog", allEntries = true)
     @Transactional
     public MerchantResponse updateMerchant(Long id, CreateMerchantRequest request) {
@@ -77,6 +107,12 @@ public class MerchantService {
 
     // ==================== Categories ====================
 
+    /**
+     * Получает все активные категории.
+     * Кэшируется в Redis (TTL: 1 час).
+     *
+     * @return список категорий
+     */
     @Cacheable(value = "categories")
     @Transactional(readOnly = true)
     public List<CategoryResponse> getAllCategories() {

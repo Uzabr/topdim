@@ -9,6 +9,11 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Сущность пользователя.
+ * Хранит email, телефон, хэш пароля и роль.
+ * Связана с RefreshToken для управления сессиями.
+ */
 @Entity
 @Table(name = "users")
 @Getter

@@ -7,6 +7,11 @@ import org.springframework.stereotype.Component;
 import uz.topdim.common.events.PaymentCompletedEvent;
 import uz.topdim.order.service.OrderService;
 
+/**
+ * Слушатель событий оплаты (RabbitMQ).
+ * При PaymentCompleted → генерирует PurchasedCoupon[].
+ * Публикует CouponPurchasedEvent для notification-service.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -14,6 +19,12 @@ public class PaymentEventListener {
 
     private final OrderService orderService;
 
+    /**
+     * Обработчик события PaymentCompleted (RabbitMQ).
+     * При получении — генерирует PurchasedCoupon[] для заказа.
+     *
+     * @param event данные о завершённой оплате (orderId)
+     */
     @RabbitListener(queues = "payment.completed.queue")
     public void handlePaymentCompleted(PaymentCompletedEvent event) {
         log.info("Payment completed for order {}: {}", event.getOrderId(), event.getTransactionId());

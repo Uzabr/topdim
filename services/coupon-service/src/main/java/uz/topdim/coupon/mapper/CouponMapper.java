@@ -7,6 +7,10 @@ import uz.topdim.coupon.dto.MerchantResponse;
 import uz.topdim.coupon.entity.Category;
 import uz.topdim.coupon.entity.Merchant;
 
+/**
+ * MapStruct маппер для купонов.
+ * Category → CategoryResponse, Merchant → MerchantResponse.
+ */
 @Mapper(componentModel = "spring")
 public interface CouponMapper {
 

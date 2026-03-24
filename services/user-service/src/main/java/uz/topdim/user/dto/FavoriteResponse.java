@@ -4,6 +4,10 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * DTO ответа избранного.
+ * Поля: id, couponOfferId, addedAt.
+ */
 @Data
 @Builder
 @NoArgsConstructor

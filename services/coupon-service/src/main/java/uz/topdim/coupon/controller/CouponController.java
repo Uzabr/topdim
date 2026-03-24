@@ -10,6 +10,11 @@ import uz.topdim.coupon.service.CouponOfferService;
 
 import java.util.List;
 
+/**
+ * REST контроллер купонов.
+ * Публичные endpoints: каталог, детали, топ продаж, категории.
+ * Admin endpoints: создание, обновление статуса, удаление.
+ */
 @RestController
 @RequestMapping("/api/v1/coupons")
 @RequiredArgsConstructor

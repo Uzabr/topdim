@@ -18,6 +18,11 @@ import uz.topdim.coupon.repository.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Сервис управления купонами.
+ * CRUD операции, каталог с фильтрами и пагинацией.
+ * Кэширование через Redis (@Cacheable).
+ */
 @Service
 @RequiredArgsConstructor
 public class CouponOfferService {
@@ -29,6 +34,17 @@ public class CouponOfferService {
 
     // ==================== Public API ====================
 
+    /**
+     * Получает каталог купонов с фильтрацией, поиском и пагинацией.
+     * Результат кэшируется в Redis (TTL: 3 мин).
+     *
+     * @param categoryId фильтр по категории (null = все)
+     * @param search поисковый запрос (null = без поиска)
+     * @param sortBy сортировка: popular, new, priceAsc, priceDesc, discount
+     * @param page номер страницы (0-based)
+     * @param size размер страницы
+     * @return страница купонов
+     */
     @Cacheable(value = "catalog", key = "#categoryId + '-' + #search + '-' + #sortBy + '-' + #page + '-' + #size")
     @Transactional(readOnly = true)
     public Page<CouponOfferResponse> getCatalog(Long categoryId, String search, String sortBy, int page, int size) {
@@ -47,6 +63,13 @@ public class CouponOfferService {
         return offers.map(this::mapToResponse);
     }
 
+    /**
+     * Получает детальную информацию о купоне.
+     *
+     * @param id идентификатор купона
+     * @return полная информация с опциями и изображениями
+     * @throws ResourceNotFoundException если купон не найден
+     */
     @Transactional(readOnly = true)
     public CouponOfferResponse getById(Long id) {
         CouponOffer offer = couponOfferRepository.findById(id)
@@ -59,6 +82,13 @@ public class CouponOfferService {
         return mapToResponse(offer);
     }
 
+    /**
+     * Получает топ продаваемых купонов.
+     * Кэшируется в Redis (TTL: 15 мин).
+     *
+     * @param limit максимальное количество результатов
+     * @return список топ купонов
+     */
     @Cacheable(value = "topSelling", key = "#limit")
     @Transactional(readOnly = true)
     public List<CouponOfferResponse> getTopSelling(int limit) {
@@ -74,6 +104,13 @@ public class CouponOfferService {
             @CacheEvict(value = "catalog", allEntries = true),
             @CacheEvict(value = "topSelling", allEntries = true)
     })
+    /**
+     * Создаёт новый купон (Admin).
+     * Сбрасывает Redis кэш каталога.
+     *
+     * @param request данные купона (title, описание, merchantId, опции)
+     * @return созданный купон
+     */
     @Transactional
     public CouponOfferResponse create(CreateCouponOfferRequest request) {
         Merchant merchant = merchantRepository.findById(request.getMerchantId())
@@ -132,6 +169,14 @@ public class CouponOfferService {
             @CacheEvict(value = "topSelling", allEntries = true),
             @CacheEvict(value = "couponDetail", key = "#id")
     })
+    /**
+     * Обновляет статус купона (Admin).
+     * Сбрасывает Redis кэш.
+     *
+     * @param id идентификатор купона
+     * @param status новый статус (ACTIVE, PAUSED, ENDED)
+     * @return обновлённый купон
+     */
     @Transactional
     public CouponOfferResponse updateStatus(Long id, CouponStatus status) {
         CouponOffer offer = couponOfferRepository.findById(id)
@@ -145,6 +190,13 @@ public class CouponOfferService {
             @CacheEvict(value = "topSelling", allEntries = true),
             @CacheEvict(value = "couponDetail", key = "#id")
     })
+    /**
+     * Удаляет купон (Admin).
+     * Сбрасывает Redis кэш.
+     *
+     * @param id идентификатор купона
+     * @throws ResourceNotFoundException если купон не найден
+     */
     @Transactional
     public void delete(Long id) {
         if (!couponOfferRepository.existsById(id)) {

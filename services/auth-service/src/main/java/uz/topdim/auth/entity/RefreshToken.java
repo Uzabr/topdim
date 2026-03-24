@@ -5,6 +5,11 @@ import lombok.*;
 
 import java.time.Instant;
 
+/**
+ * Сущность refresh токена.
+ * Связана с User, имеет срок действия и флаг revoked.
+ * При logout токен отзывается (revoked = true).
+ */
 @Entity
 @Table(name = "refresh_tokens")
 @Getter

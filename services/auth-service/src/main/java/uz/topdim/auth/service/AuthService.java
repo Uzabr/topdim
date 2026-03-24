@@ -18,6 +18,11 @@ import uz.topdim.auth.security.JwtService;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Сервис аутентификации.
+ * Регистрация, логин, обновление токенов и logout.
+ * При logout access token заносится в Redis blacklist.
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -29,6 +34,14 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final TokenBlacklistService tokenBlacklistService;
 
+    /**
+     * Регистрация нового пользователя.
+     * Проверяет уникальность email/phone, хэширует пароль.
+     *
+     * @param request данные регистрации (email, phone, password, name)
+     * @return AuthResponse с access и refresh токенами
+     * @throws AuthException если email или phone уже заняты
+     */
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -56,6 +69,14 @@ public class AuthService {
         return buildAuthResponse(user);
     }
 
+    /**
+     * Аутентификация пользователя.
+     * Проверяет credentials через AuthenticationManager, отзывает старые refresh tokens.
+     *
+     * @param request email и password
+     * @return AuthResponse с новыми токенами
+     * @throws AuthException при неверных credentials
+     */
     @Transactional
     public AuthResponse login(LoginRequest request) {
         authenticationManager.authenticate(
@@ -71,6 +92,14 @@ public class AuthService {
         return buildAuthResponse(user);
     }
 
+    /**
+     * Обновление access token по refresh token.
+     * Валидирует refresh token (не отозван, не истёк), генерирует новую пару.
+     *
+     * @param request содержит refreshToken
+     * @return AuthResponse с новыми токенами
+     * @throws AuthException если токен невалиден, отозван или истёк
+     */
     @Transactional
     public AuthResponse refreshToken(RefreshTokenRequest request) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(request.getRefreshToken())
@@ -91,6 +120,12 @@ public class AuthService {
         return buildAuthResponse(refreshToken.getUser());
     }
 
+    /**
+     * Выход из системы.
+     * Отзывает refresh token (revoked = true в БД).
+     *
+     * @param refreshToken значение refresh токена для отзыва
+     */
     @Transactional
     public void logout(String refreshToken) {
         refreshTokenRepository.findByToken(refreshToken)
@@ -100,6 +135,10 @@ public class AuthService {
                 });
     }
 
+    /**
+     * Формирует ответ аутентификации.
+     * Генерирует access token, создаёт refresh token, собирает UserDto.
+     */
     private AuthResponse buildAuthResponse(User user) {
         String accessToken = jwtService.generateAccessToken(user);
         String refreshTokenStr = createRefreshToken(user);
@@ -121,6 +160,12 @@ public class AuthService {
                 .build();
     }
 
+    /**
+     * Создаёт refresh token (UUID) и сохраняет в БД.
+     *
+     * @param user пользователь для привязки токена
+     * @return строковое значение refresh token
+     */
     private String createRefreshToken(User user) {
         String token = UUID.randomUUID().toString();
         RefreshToken refreshToken = RefreshToken.builder()

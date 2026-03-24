@@ -5,6 +5,11 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Сущность пользователя.
+ * Хранит email, телефон, хэш пароля и роль.
+ * Связана с RefreshToken для управления сессиями.
+ */
 @Entity
 @Table(name = "users")
 @Getter

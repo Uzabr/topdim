@@ -3,6 +3,10 @@ package uz.topdim.user.dto;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
+/**
+ * DTO запроса обновления профиля.
+ * Поля: firstName, lastName, phone, avatarUrl.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

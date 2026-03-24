@@ -11,6 +11,11 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+/**
+ * Конфигурация Spring Security для API Gateway.
+ * Настраивает маршруты, JWT фильтр, CORS и CSRF.
+ * Определяет открытые пути (/api/v1/auth/**).
+ */
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {

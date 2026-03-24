@@ -13,6 +13,10 @@ import uz.topdim.user.repository.UserRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Сервис управления пользователями.
+ * Получение/обновление профиля, управление избранным.
+ */
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -22,6 +26,13 @@ public class UserService {
 
     // ==================== Profile ====================
 
+    /**
+     * Получает профиль пользователя.
+     *
+     * @param userId ID пользователя из JWT
+     * @return данные профиля
+     * @throws UserNotFoundException если не найден
+     */
     @Transactional(readOnly = true)
     public UserProfileResponse getProfile(Long userId) {
         User user = userRepository.findById(userId)
@@ -29,6 +40,13 @@ public class UserService {
         return mapToProfile(user);
     }
 
+    /**
+     * Обновляет профиль пользователя.
+     *
+     * @param userId ID пользователя
+     * @param request firstName, lastName, phone, avatarUrl
+     * @return обновлённый профиль
+     */
     @Transactional
     public UserProfileResponse updateProfile(Long userId, UpdateProfileRequest request) {
         User user = userRepository.findById(userId)
@@ -53,6 +71,12 @@ public class UserService {
 
     // ==================== Favorites ====================
 
+    /**
+     * Получает список избранных купонов пользователя.
+     *
+     * @param userId ID пользователя
+     * @return список FavoriteResponse
+     */
     @Transactional(readOnly = true)
     public List<FavoriteResponse> getFavorites(Long userId) {
         return favoriteRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
@@ -60,6 +84,14 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Добавляет купон в избранное.
+     *
+     * @param userId ID пользователя
+     * @param couponOfferId ID купона
+     * @return созданная запись избранного
+     * @throws IllegalArgumentException если уже в избранном
+     */
     @Transactional
     public FavoriteResponse addFavorite(Long userId, Long couponOfferId) {
         if (favoriteRepository.existsByUserIdAndCouponOfferId(userId, couponOfferId)) {
@@ -74,6 +106,12 @@ public class UserService {
         return mapToFavorite(favorite);
     }
 
+    /**
+     * Удаляет купон из избранного.
+     *
+     * @param userId ID пользователя
+     * @param couponOfferId ID купона
+     */
     @Transactional
     public void removeFavorite(Long userId, Long couponOfferId) {
         favoriteRepository.deleteByUserIdAndCouponOfferId(userId, couponOfferId);

@@ -9,6 +9,11 @@ import uz.topdim.coupon.service.MerchantService;
 
 import java.util.List;
 
+/**
+ * REST контроллер категорий купонов.
+ * Публичные endpoints: список категорий.
+ * Admin endpoints: создание, обновление, удаление категорий.
+ */
 @RestController
 @RequestMapping("/api/v1/categories")
 @RequiredArgsConstructor

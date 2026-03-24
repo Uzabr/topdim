@@ -7,6 +7,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import uz.topdim.common.dto.ApiResponse;
 
+/**
+ * Глобальный обработчик исключений.
+ * Перехватывает RuntimeException и возвращает структурированный ответ.
+ * Обеспечивает единый формат ошибок для всех endpoints.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

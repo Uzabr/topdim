@@ -8,6 +8,10 @@ import uz.topdim.common.events.CouponPurchasedEvent;
 import uz.topdim.notification.service.EmailService;
 import uz.topdim.notification.service.SmsService;
 
+/**
+ * Слушатель события покупки купона (RabbitMQ).
+ * При CouponPurchasedEvent отправляет email и SMS пользователю.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -16,6 +20,12 @@ public class CouponPurchasedListener {
     private final EmailService emailService;
     private final SmsService smsService;
 
+    /**
+     * Обработчик события CouponPurchased (RabbitMQ).
+     * Отправляет email и SMS пользователю о покупке купона.
+     *
+     * @param event данные: email, phone, couponTitle, couponCode
+     */
     @RabbitListener(queues = "coupon.purchased.queue")
     public void handleCouponPurchased(CouponPurchasedEvent event) {
         log.info("Coupon purchased: {} for user {} (code: {})",

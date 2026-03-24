@@ -8,7 +8,12 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "purchased_coupons")
-@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor /**
+ * Купленный купон.
+ * Генерируется после оплаты с уникальным кодом и QR токеном.
+ * Статусы: ACTIVE → USED / EXPIRED / REFUNDED.
+ */
+@AllArgsConstructor
 public class PurchasedCoupon {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

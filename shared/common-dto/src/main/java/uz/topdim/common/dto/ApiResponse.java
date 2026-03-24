@@ -7,6 +7,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * Стандартный формат ответа API.
+ * Обёртка: success (boolean), message, data, timestamp.
+ * Используется всеми контроллерами для единообразия ответов.
+ */
 @Data
 @Builder
 @NoArgsConstructor

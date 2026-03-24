@@ -14,6 +14,11 @@ import uz.topdim.coupon.service.MerchantService;
 
 import java.util.List;
 
+/**
+ * REST контроллер администрирования купонов.
+ * Endpoints: создание, обновление, удаление купонов (Admin only).
+ * Требует роль ADMIN.
+ */
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
