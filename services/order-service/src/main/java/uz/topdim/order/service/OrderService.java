@@ -252,6 +252,38 @@ public class OrderService {
     }
 
     /**
+     * Получает конкретный заказ по ID с проверкой владельца.
+     *
+     * @param orderId ID заказа
+     * @param userId ID пользователя (проверка владельца)
+     * @return заказ
+     * @throws IllegalArgumentException если заказ не найден
+     * @throws IllegalStateException если заказ не принадлежит пользователю
+     */
+    @Transactional(readOnly = true)
+    public Order getOrderById(Long orderId, Long userId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Заказ не найден"));
+        if (!order.getUserId().equals(userId)) {
+            throw new IllegalStateException("Заказ не принадлежит пользователю");
+        }
+        return order;
+    }
+
+    /**
+     * Получает купоны конкретного заказа с проверкой владельца.
+     *
+     * @param orderId ID заказа
+     * @param userId ID пользователя
+     * @return список купленных купонов заказа
+     */
+    @Transactional(readOnly = true)
+    public List<PurchasedCoupon> getOrderCoupons(Long orderId, Long userId) {
+        Order order = getOrderById(orderId, userId);
+        return purchasedCouponRepository.findByOrderId(orderId);
+    }
+
+    /**
      * Получает все купленные купоны пользователя.
      *
      * @param userId ID пользователя

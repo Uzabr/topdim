@@ -204,4 +204,55 @@ class OrderServiceTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("не принадлежит");
     }
+
+    // ==================== Get Order By ID ====================
+
+    @Test
+    @DisplayName("Заказ по ID: найден и принадлежит — возвращает")
+    void getOrderById_found_returnsOrder() {
+        Order order = Order.builder().id(100L).userId(10L).status(OrderStatus.PAID).build();
+        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+
+        Order result = orderService.getOrderById(100L, 10L);
+
+        assertThat(result.getId()).isEqualTo(100L);
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.PAID);
+    }
+
+    @Test
+    @DisplayName("Заказ по ID: не найден → IllegalArgumentException")
+    void getOrderById_notFound_throwsException() {
+        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.getOrderById(999L, 10L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("не найден");
+    }
+
+    @Test
+    @DisplayName("Заказ по ID: чужой → IllegalStateException")
+    void getOrderById_notOwner_throwsException() {
+        Order order = Order.builder().id(100L).userId(20L).build();
+        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.getOrderById(100L, 10L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("не принадлежит");
+    }
+
+    @Test
+    @DisplayName("Купоны заказа: возвращает список по orderId")
+    void getOrderCoupons_returnsList() {
+        Order order = Order.builder().id(100L).userId(10L).build();
+        PurchasedCoupon c1 = PurchasedCoupon.builder().id(1L).couponCode("CP-001").build();
+        PurchasedCoupon c2 = PurchasedCoupon.builder().id(2L).couponCode("CP-002").build();
+
+        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+        when(purchasedCouponRepository.findByOrderId(100L)).thenReturn(List.of(c1, c2));
+
+        List<PurchasedCoupon> result = orderService.getOrderCoupons(100L, 10L);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getCouponCode()).isEqualTo("CP-001");
+    }
 }

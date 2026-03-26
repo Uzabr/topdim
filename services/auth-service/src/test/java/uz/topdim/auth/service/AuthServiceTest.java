@@ -229,4 +229,71 @@ class AuthServiceTest {
         assertThat(token.isRevoked()).isTrue();
         verify(refreshTokenRepository).save(token);
     }
+
+    // ==================== Change Password ====================
+
+    @Test
+    @DisplayName("Смена пароля: успешная — обновляет хэш и отзывает токены")
+    void changePassword_success_updatesAndRevokesTokens() {
+        User user = User.builder()
+                .id(1L).email("user@topdim.uz").password("old_hash")
+                .firstName("Test").role(Role.USER).build();
+
+        ChangePasswordRequest request = new ChangePasswordRequest(
+                "currentPass", "newPass123", "newPass123"
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("currentPass", "old_hash")).thenReturn(true);
+        when(passwordEncoder.encode("newPass123")).thenReturn("new_hash");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        authService.changePassword(1L, request);
+
+        assertThat(user.getPassword()).isEqualTo("new_hash");
+        verify(passwordEncoder).encode("newPass123");
+        verify(refreshTokenRepository).revokeAllByUser(user);
+    }
+
+    @Test
+    @DisplayName("Смена пароля: неверный текущий → AuthException")
+    void changePassword_wrongCurrentPassword_throwsException() {
+        User user = User.builder()
+                .id(1L).email("user@topdim.uz").password("old_hash")
+                .firstName("Test").role(Role.USER).build();
+
+        ChangePasswordRequest request = new ChangePasswordRequest(
+                "wrongPass", "newPass123", "newPass123"
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrongPass", "old_hash")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.changePassword(1L, request))
+                .isInstanceOf(AuthException.class)
+                .hasMessageContaining("Неверный текущий пароль");
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Смена пароля: пароли не совпадают → AuthException")
+    void changePassword_mismatch_throwsException() {
+        User user = User.builder()
+                .id(1L).email("user@topdim.uz").password("old_hash")
+                .firstName("Test").role(Role.USER).build();
+
+        ChangePasswordRequest request = new ChangePasswordRequest(
+                "currentPass", "newPass123", "differentPass"
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("currentPass", "old_hash")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.changePassword(1L, request))
+                .isInstanceOf(AuthException.class)
+                .hasMessageContaining("не совпадают");
+
+        verify(userRepository, never()).save(any());
+    }
 }

@@ -1,22 +1,23 @@
 package uz.topdim.order.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
+import uz.topdim.order.dto.*;
 import uz.topdim.order.entity.*;
 import uz.topdim.order.service.OrderService;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
 /**
  * REST контроллер заказов.
  * Endpoints: cart, orders, my-coupons, redeem, refund.
- * Все endpoints требуют JWT (X-User-Id header).
+ * Все endpoints требуют JWT (X-User-Id header от Gateway).
  */
 @RestController
 @RequiredArgsConstructor
@@ -26,31 +27,34 @@ public class OrderController {
 
     // ==================== Cart ====================
 
+    /** Получить корзину пользователя. */
     @GetMapping("/api/v1/cart")
     public ResponseEntity<ApiResponse<Cart>> getCart(@RequestHeader("X-User-Id") Long userId) {
         return ResponseEntity.ok(ApiResponse.success(orderService.getCartByUserId(userId)));
     }
 
+    /** Добавить товар в корзину. */
     @PostMapping("/api/v1/cart/items")
     public ResponseEntity<ApiResponse<Cart>> addToCart(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestBody Map<String, Object> request
+            @Valid @RequestBody AddToCartRequest request
     ) {
         Cart cart = orderService.addToCart(
                 userId,
-                Long.valueOf(request.get("couponOfferId").toString()),
-                Long.valueOf(request.get("couponOptionId").toString()),
-                (String) request.get("couponTitle"),
-                (String) request.get("optionTitle"),
-                new BigDecimal(request.get("unitPrice").toString()),
-                Integer.parseInt(request.getOrDefault("quantity", "1").toString()),
-                Boolean.parseBoolean(request.getOrDefault("isGift", "false").toString()),
-                (String) request.get("giftRecipientName"),
-                (String) request.get("giftRecipientPhone")
+                request.getCouponOfferId(),
+                request.getCouponOptionId(),
+                request.getCouponTitle(),
+                request.getOptionTitle(),
+                request.getUnitPrice(),
+                request.getQuantity(),
+                request.isGift(),
+                request.getGiftRecipientName(),
+                request.getGiftRecipientPhone()
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Добавлено в корзину", cart));
     }
 
+    /** Удалить товар из корзины. */
     @DeleteMapping("/api/v1/cart/items/{itemId}")
     public ResponseEntity<ApiResponse<Void>> removeFromCart(
             @RequestHeader("X-User-Id") Long userId,
@@ -60,17 +64,26 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success("Удалено из корзины", null));
     }
 
+    /** Очистить корзину полностью. */
+    @DeleteMapping("/api/v1/cart")
+    public ResponseEntity<ApiResponse<Void>> clearCart(@RequestHeader("X-User-Id") Long userId) {
+        orderService.clearCart(userId);
+        return ResponseEntity.ok(ApiResponse.success("Корзина очищена", null));
+    }
+
     // ==================== Orders ====================
 
+    /** Оформить заказ (checkout). */
     @PostMapping("/api/v1/orders")
     public ResponseEntity<ApiResponse<Order>> createOrder(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestBody Map<String, String> request
+            @Valid @RequestBody CreateOrderRequest request
     ) {
-        Order order = orderService.createOrder(userId, request.get("email"), request.get("phone"));
+        Order order = orderService.createOrder(userId, request.getEmail(), request.getPhone());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Заказ создан", order));
     }
 
+    /** Список заказов пользователя (с пагинацией). */
     @GetMapping("/api/v1/orders")
     public ResponseEntity<ApiResponse<Page<Order>>> getUserOrders(
             @RequestHeader("X-User-Id") Long userId,
@@ -80,13 +93,18 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(orderService.getUserOrders(userId, page, size)));
     }
 
+    /** Получить конкретный заказ по ID (с проверкой владельца). */
     @GetMapping("/api/v1/orders/{id}")
-    public ResponseEntity<ApiResponse<Order>> getOrder(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success(orderService.getUserOrders(0L, 0, 1).getContent().getFirst()));
+    public ResponseEntity<ApiResponse<Order>> getOrder(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(orderService.getOrderById(id, userId)));
     }
 
     // ==================== My Coupons ====================
 
+    /** Все купленные купоны пользователя (фильтр по статусу). */
     @GetMapping("/api/v1/orders/my-coupons")
     public ResponseEntity<ApiResponse<List<PurchasedCoupon>>> getMyCoupons(
             @RequestHeader("X-User-Id") Long userId,
@@ -98,35 +116,44 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(coupons));
     }
 
+    /** Купоны конкретного заказа (с проверкой владельца). */
+    @GetMapping("/api/v1/orders/{orderId}/coupons")
+    public ResponseEntity<ApiResponse<List<PurchasedCoupon>>> getOrderCoupons(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long orderId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(orderService.getOrderCoupons(orderId, userId)));
+    }
+
     // ==================== Redemption ====================
 
+    /** Погашение купона (QR / код). */
     @PostMapping("/api/v1/orders/redeem")
-    public ResponseEntity<ApiResponse<PurchasedCoupon>> redeemCoupon(@RequestBody Map<String, String> request) {
+    public ResponseEntity<ApiResponse<PurchasedCoupon>> redeemCoupon(
+            @Valid @RequestBody RedeemCouponRequest request
+    ) {
         PurchasedCoupon coupon = orderService.redeemCoupon(
-                request.get("couponCode"),
-                request.get("merchantId") != null ? Long.valueOf(request.get("merchantId")) : null,
-                request.get("staffName")
+                request.getCouponCode(),
+                request.getMerchantId(),
+                request.getStaffName()
         );
         return ResponseEntity.ok(ApiResponse.success("Купон использован", coupon));
     }
 
-    @GetMapping("/api/v1/orders/{orderId}/coupons")
-    public ResponseEntity<ApiResponse<List<PurchasedCoupon>>> getOrderCoupons(@PathVariable Long orderId) {
-        return ResponseEntity.ok(ApiResponse.success(orderService.getUserCoupons(0L)));
-    }
-
     // ==================== Refund Requests ====================
 
+    /** Создать запрос на возврат. */
     @PostMapping("/api/v1/orders/{orderId}/refund")
     public ResponseEntity<ApiResponse<RefundRequest>> createRefund(
             @RequestHeader("X-User-Id") Long userId,
             @PathVariable Long orderId,
-            @RequestBody Map<String, String> request
+            @Valid @RequestBody RefundRequestDto request
     ) {
-        RefundRequest refund = orderService.createRefundRequest(userId, orderId, request.get("reason"));
+        RefundRequest refund = orderService.createRefundRequest(userId, orderId, request.getReason());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Запрос на возврат создан", refund));
     }
 
+    /** Мои запросы на возврат. */
     @GetMapping("/api/v1/orders/refunds")
     public ResponseEntity<ApiResponse<List<RefundRequest>>> getUserRefunds(
             @RequestHeader("X-User-Id") Long userId
@@ -134,6 +161,9 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(orderService.getUserRefundRequests(userId)));
     }
 
+    // ==================== Admin ====================
+
+    /** Решение по возврату (Admin). */
     @PatchMapping("/api/v1/admin/refunds/{id}")
     public ResponseEntity<ApiResponse<RefundRequest>> resolveRefund(
             @PathVariable Long id,
