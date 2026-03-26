@@ -70,4 +70,21 @@ public class AuthController {
         authService.logout(request.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success("Выход выполнен", null));
     }
+
+    /**
+     * PUT /api/v1/auth/change-password — Смена пароля.
+     * Требует JWT (X-User-Id от Gateway).
+     *
+     * @param userId ID пользователя из JWT header
+     * @param request currentPassword, newPassword, confirmPassword
+     * @return 200 OK
+     */
+    @PutMapping("/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @RequestHeader("X-User-Id") Long userId,
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        authService.changePassword(userId, request);
+        return ResponseEntity.ok(ApiResponse.success("Пароль успешно изменён", null));
+    }
 }

@@ -14,6 +14,7 @@ import java.util.Optional;
 public interface PurchasedCouponRepository extends JpaRepository<PurchasedCoupon, Long> {
     List<PurchasedCoupon> findByUserId(Long userId);
     List<PurchasedCoupon> findByUserIdAndStatus(Long userId, PurchasedCouponStatus status);
+    List<PurchasedCoupon> findByOrderId(Long orderId);
     Optional<PurchasedCoupon> findByCouponCode(String couponCode);
     Optional<PurchasedCoupon> findByQrToken(String qrToken);
 }

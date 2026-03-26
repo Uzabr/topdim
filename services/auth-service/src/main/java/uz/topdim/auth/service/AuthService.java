@@ -121,6 +121,35 @@ public class AuthService {
     }
 
     /**
+     * Смена пароля пользователя.
+     * Проверяет текущий пароль, валидирует совпадение нового с подтверждением.
+     * После смены отзывает все refresh tokens (принудительный re-login).
+     *
+     * @param userId ID пользователя из JWT
+     * @param request текущий пароль, новый пароль, подтверждение
+     * @throws AuthException если текущий пароль неверный или пароли не совпадают
+     */
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthException("Пользователь не найден"));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new AuthException("Неверный текущий пароль");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new AuthException("Новый пароль и подтверждение не совпадают");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Revoke all refresh tokens — force re-login
+        refreshTokenRepository.revokeAllByUser(user);
+    }
+
+    /**
      * Выход из системы.
      * Отзывает refresh token (revoked = true в БД).
      *
