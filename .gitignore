@@ -3,6 +3,9 @@ build/
 .gradle/
 out/
 
+# Secrets (NEVER commit .env to Git!)
+.env
+
 # Frontend
 node_modules/
 dist/
@@ -32,6 +35,7 @@ logs/
 # Env
 .env
 *.env.local
+docker-compose.override.yml
 
 # Docker volumes
 postgres_data/

@@ -1,4 +1,4 @@
-package uz.topdim.order.config;
+package uz.topdim.media.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -10,18 +10,16 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import uz.topdim.order.security.RoleHeaderAuthenticationFilter;
+import uz.topdim.media.security.RoleHeaderAuthenticationFilter;
 
 /**
- * Конфигурация Spring Security для order-service.
- * Строгая проверка ролей через заголовки от API Gateway.
+ * Конфигурация Spring Security для media-service.
  *
  * <p>Правила доступа:
  * <ul>
- *   <li>/api/v1/admin/** — только ADMIN и SUPER_ADMIN</li>
- *   <li>/api/v1/orders/redeem — только PARTNER (погашение купона продавцом)</li>
- *   <li>/api/v1/cart/**, /api/v1/orders/** — авторизованные пользователи</li>
- *   <li>Swagger, Actuator — публичный доступ</li>
+ *   <li>GET /api/v1/media/** — публичный доступ (скачивание файлов)</li>
+ *   <li>POST /api/v1/media/upload — аутентифицированные пользователи</li>
+ *   <li>DELETE /api/v1/media/** — только ADMIN и SUPER_ADMIN</li>
  * </ul>
  */
 @Configuration
@@ -38,17 +36,18 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Служебные endpoints
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
 
-                        // Admin endpoints — только ADMIN и SUPER_ADMIN
-                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        // Скачивание файлов — публичный доступ
+                        .requestMatchers(HttpMethod.GET, "/api/v1/media/**").permitAll()
 
-                        // Погашение купона — только PARTNER (и выше по иерархии)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/redeem").hasRole("PARTNER")
+                        // Загрузка файлов — только аутентифицированные
+                        .requestMatchers(HttpMethod.POST, "/api/v1/media/upload").authenticated()
 
-                        // Все остальные endpoints — требуют аутентификации
+                        // Удаление файлов — только ADMIN
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/media/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(roleHeaderAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

@@ -2,11 +2,14 @@ package uz.topdim.auth.entity;
 
 /**
  * Перечисление ролей пользователя.
- * USER, PARTNER, ADMIN.
+ * Иерархия: GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN.
+ * Каждая следующая роль наследует все права предыдущей.
  */
 public enum Role {
     GUEST,
     USER,
     PARTNER,
-    ADMIN
+    MODERATOR,
+    ADMIN,
+    SUPER_ADMIN
 }

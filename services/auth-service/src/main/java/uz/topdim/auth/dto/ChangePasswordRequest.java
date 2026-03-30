@@ -1,10 +1,10 @@
 package uz.topdim.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import uz.topdim.auth.validation.StrongPassword;
 
 /**
  * DTO запроса смены пароля.
@@ -19,7 +19,7 @@ public class ChangePasswordRequest {
     private String currentPassword;
 
     @NotBlank(message = "Новый пароль обязателен")
-    @Size(min = 6, max = 128, message = "Пароль должен быть от 6 до 128 символов")
+    @StrongPassword
     private String newPassword;
 
     @NotBlank(message = "Подтверждение пароля обязательно")

@@ -1,4 +1,4 @@
-package uz.topdim.order.config;
+package uz.topdim.coupon.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -10,18 +10,16 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import uz.topdim.order.security.RoleHeaderAuthenticationFilter;
+import uz.topdim.coupon.security.RoleHeaderAuthenticationFilter;
 
 /**
- * Конфигурация Spring Security для order-service.
- * Строгая проверка ролей через заголовки от API Gateway.
+ * Конфигурация Spring Security для coupon-service.
  *
  * <p>Правила доступа:
  * <ul>
+ *   <li>GET /api/v1/coupons/**, /api/v1/categories/** — публичный доступ (каталог)</li>
  *   <li>/api/v1/admin/** — только ADMIN и SUPER_ADMIN</li>
- *   <li>/api/v1/orders/redeem — только PARTNER (погашение купона продавцом)</li>
- *   <li>/api/v1/cart/**, /api/v1/orders/** — авторизованные пользователи</li>
- *   <li>Swagger, Actuator — публичный доступ</li>
+ *   <li>Остальное — аутентификация обязательна</li>
  * </ul>
  */
 @Configuration
@@ -38,17 +36,18 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Служебные endpoints
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
+
+                        // Публичный каталог купонов (только чтение)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/coupons/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/merchants/**").permitAll()
 
                         // Admin endpoints — только ADMIN и SUPER_ADMIN
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
-                        // Погашение купона — только PARTNER (и выше по иерархии)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/redeem").hasRole("PARTNER")
-
-                        // Все остальные endpoints — требуют аутентификации
+                        // Всё остальное — аутентификация
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(roleHeaderAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
