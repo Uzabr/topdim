@@ -8,6 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
+import uz.topdim.coupon.dto.CouponOfferResponse;
+import uz.topdim.coupon.dto.CreateCouponOfferRequest;
+import uz.topdim.coupon.service.PartnerCouponService;
 
 /**
  * Контроллер партнёра — управление СВОИМИ купонами.

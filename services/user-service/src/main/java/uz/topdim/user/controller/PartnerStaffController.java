@@ -7,6 +7,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
+import uz.topdim.user.dto.StaffResponse;
+import uz.topdim.user.dto.CreateStaffRequest;
+import uz.topdim.user.service.PartnerStaffService;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/partner/staff")

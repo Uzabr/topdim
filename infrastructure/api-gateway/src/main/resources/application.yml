@@ -37,11 +37,11 @@ spring:
                 key-resolver: "#{@ipKeyResolver}"
                 deny-empty-key: false
 
-        # Auth Service — остальные endpoints (refresh, logout, change-password)
+        # Auth Service — остальные endpoints (refresh, logout, change-password, super admin)
         - id: auth-service
           uri: lb://auth-service
           predicates:
-            - Path=/api/v1/auth/**
+            - Path=/api/v1/auth/**, /api/v1/super/**
 
         # User Service
         - id: user-service
@@ -53,13 +53,13 @@ spring:
         - id: coupon-service
           uri: lb://coupon-service
           predicates:
-            - Path=/api/v1/coupons/**, /api/v1/categories/**, /api/v1/merchants/**, /api/v1/admin/coupons/**, /api/v1/admin/merchants/**, /api/v1/admin/categories/**, /api/v1/partner/coupons/**
+            - Path=/api/v1/coupons/**, /api/v1/categories/**, /api/v1/merchants/**, /api/v1/admin/coupons/**, /api/v1/admin/merchants/**, /api/v1/admin/categories/**, /api/v1/partner/coupons/**, /api/v1/mod/coupons/**, /api/v1/mod/reviews/**, /api/v1/reviews/**, /api/v1/admin/promocodes/**
 
         # Order Service
         - id: order-service
           uri: lb://order-service
           predicates:
-            - Path=/api/v1/cart/**, /api/v1/orders/**, /api/v1/admin/orders/**, /api/v1/partner/stats, /api/v1/partner/redemptions
+            - Path=/api/v1/cart/**, /api/v1/orders/**, /api/v1/admin/orders/**, /api/v1/partner/stats, /api/v1/partner/redemptions, /api/v1/complaints/**, /api/v1/mod/complaints/**
 
         # Payment Service
         - id: payment-service

@@ -19,6 +19,8 @@ public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> 
 
     Page<CouponOffer> findByStatus(CouponStatus status, Pageable pageable);
 
+    Page<CouponOffer> findAllByStatus(CouponStatus status, Pageable pageable);
+
     Page<CouponOffer> findByStatusAndCategoryId(CouponStatus status, Long categoryId, Pageable pageable);
 
     @Query("SELECT c FROM CouponOffer c WHERE c.status = :status AND " +

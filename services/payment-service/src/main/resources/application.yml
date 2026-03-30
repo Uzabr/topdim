@@ -5,7 +5,7 @@ spring:
   application:
     name: payment-service
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/topdim_payment
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/topdim_payment?sslmode=disable
     username: ${DB_USERNAME:topdim}
     password: ${DB_PASSWORD:topdim_secret}
     driver-class-name: org.postgresql.Driver

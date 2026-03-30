@@ -162,7 +162,6 @@ networks:
   backend:
     driver: bridge
     name: topdim-backend
-    internal: true
 
 volumes:
   postgres_data:

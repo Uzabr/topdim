@@ -71,37 +71,4 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("Удалено из избранного", null));
     }
 
-    // ==================== Admin ====================
-
-    /** Список пользователей с пагинацией и фильтрами (Admin). */
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    @GetMapping("/api/v1/admin/users")
-    public ResponseEntity<ApiResponse<Page<AdminUserResponse>>> getAllUsers(
-            @RequestParam(required = false) String role,
-            @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
-    ) {
-        return ResponseEntity.ok(ApiResponse.success(userService.getAllUsers(role, search, page, size)));
-    }
-
-    /** Детали пользователя по ID (Admin). */
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    @GetMapping("/api/v1/admin/users/{id}")
-    public ResponseEntity<ApiResponse<AdminUserResponse>> getUserAdmin(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success(userService.getUserByIdAdmin(id)));
-    }
-
-    /** Блокировка/разблокировка пользователя (Admin). */
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    @PatchMapping("/api/v1/admin/users/{id}/block")
-    public ResponseEntity<ApiResponse<AdminUserResponse>> blockUser(
-            @PathVariable Long id,
-            @RequestBody Map<String, Boolean> request
-    ) {
-        boolean blocked = Boolean.TRUE.equals(request.get("blocked"));
-        AdminUserResponse user = userService.blockUser(id, blocked);
-        String message = blocked ? "Пользователь заблокирован" : "Пользователь разблокирован";
-        return ResponseEntity.ok(ApiResponse.success(message, user));
-    }
 }

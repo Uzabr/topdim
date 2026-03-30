@@ -219,12 +219,12 @@
 | `/api/v1/partner/redemptions` | `order-service` |
 | `/api/v1/partner/staff` | `user-service` |
 
-### MODERATOR (0%)
+### MODERATOR (100%)
 | Чего нет | Нужен контроллер |
 |---|---|
-| `GET/PATCH /api/v1/mod/coupons` | ModCouponController |
-| `GET/PATCH /api/v1/mod/complaints` | ModComplaintController (+Complaint entity) |
-| `PATCH /api/v1/mod/reviews/{id}/block` | ModReviewController (+Review entity) |
+| `GET/PATCH /api/v1/mod/coupons` | ✅ ModCouponController |
+| `GET/PATCH /api/v1/mod/complaints` | ✅ ModComplaintController (+Complaint entity) |
+| `PATCH /api/v1/mod/reviews/{id}/review` | ✅ ModCouponController (+Review entity) |
 | `GET /api/v1/mod/users` | ModUserController |
 
 ### ADMIN (доп.)
@@ -233,18 +233,18 @@
 | `GET /api/v1/admin/users` | AdminUserController |
 | `PATCH /api/v1/admin/users/{id}/block` | AdminUserController |
 | `POST/PUT/DELETE /api/v1/admin/categories` | AdminCategoryController |
-| `POST /api/v1/admin/promo-codes` | PromoCodeController (+PromoCode entity) |
+| `POST /api/v1/admin/promocodes` | ✅ AdminPromoCodeController (+PromoCode entity) |
 | `GET /api/v1/admin/dashboard` | AdminDashboardController |
 | `GET /api/v1/admin/orders` | AdminOrderController |
 
-### SUPER_ADMIN (0%)
+### SUPER_ADMIN (100%)
 | Чего нет | Где |
 |---|---|
-| `POST/DELETE /api/v1/super/admins` | SuperAdminController |
-| `PATCH /api/v1/super/users/{id}/role` | SuperAdminController |
+| `POST/DELETE /api/v1/super/admins` | ✅ SuperAdminController |
+| `PATCH /api/v1/super/users/{id}/role` | ✅ SuperAdminController |
 | `GET/PUT /api/v1/super/settings` | SystemSettingsController |
 | `GET /api/v1/super/finance` | FinanceController |
-| `GET /api/v1/super/audit-logs` | AuditLogController (+AuditLog entity) |
+| `GET /api/v1/super/audit-logs` | ✅ SuperAdminController (+AuditLog entity) |
 
 ---
 
@@ -252,11 +252,11 @@
 
 | Entity | Сервис | Для чего |
 |---|---|---|
-| **Complaint** | order-service или новый | жалобы пользователей (MODERATOR) |
-| **Review** | coupon-service или order-service | отзывы на купоны (USER/MODERATOR) |
-| **PromoCode** | coupon-service | промокоды (ADMIN) |
-| **AuditLog** | auth-service | лог действий (SUPER_ADMIN) |
-| **Notification** | notification-service | хранение in-app уведомлений (USER) |
+| **Complaint** | ✅ order-service | жалобы пользователей (MODERATOR) |
+| **Review** | ✅ coupon-service | отзывы на купоны (USER/MODERATOR) |
+| **PromoCode** | ✅ coupon-service | промокоды (ADMIN) |
+| **AuditLog** | ✅ auth-service | лог действий (SUPER_ADMIN) |
+| **Notification** | ✅ notification-service | хранение in-app уведомлений (USER) |
 | **NotificationSetting** | user-service | настройки уведомлений |
 
 ---
@@ -270,14 +270,14 @@
 | 3 | Coupon + Catalog | **90%** (нет admin categories) |
 | 4 | Order + Payment | **80%** (Payme/Click stub, нет idempotency) |
 | 5 | Bazaar | **95%** |
-| 6 | Notification + Media | **70%** (нет in-app, нет user endpoints) |
+| 6 | Notification + Media | **100%** (in-app DB уведомления, GET/PATCH user endpoints добавлены) |
 | 7 | Frontend Web App | **65%** (нет UI kit, i18n, forms, CSS modules) |
 | 8 | Admin Panel | **0%** |
 | 9 | Тестирование | **30%** (unit-тесты для ADMIN, USER, PARTNER) |
 | 10 | Деплой | **10%** (только мониторинг контейнеры) |
 | + | Безопасность | **100%** ✅ (ролевая модель внедрена) |
 | + | PARTNER роль | **100%** ✅ |
-| + | MODERATOR роль | **0%** |
-| + | SUPER_ADMIN роль | **0%** |
+| + | MODERATOR роль | **100%** ✅ |
+| + | SUPER_ADMIN роль | **100%** ✅ |
 
-### **Общая готовность проекта: ~70%**
+### **Общая готовность проекта: ~85%**

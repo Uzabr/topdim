@@ -144,6 +144,12 @@ start_all() {
   fi
   sleep 2
 
+  # Ждём готовности инфраструктуры (чтобы Flyway/AMQP не падали на старте)
+  wait_for_port 5432 "postgres"
+  wait_for_port 6379 "redis"
+  wait_for_port 5672 "rabbitmq"
+  wait_for_port 9000 "minio"
+
   # 2. Infrastructure
   echo -e "\n${CYAN}[2/3] 🏗️  Инфраструктурные сервисы${NC}"
   for svc in "${INFRA_SERVICES[@]}"; do

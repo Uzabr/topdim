@@ -215,7 +215,7 @@ public class CouponOfferService {
 
     // ==================== Mapping ====================
 
-    private CouponOfferResponse mapToResponse(CouponOffer offer) {
+    public CouponOfferResponse mapToResponse(CouponOffer offer) {
         return CouponOfferResponse.builder()
                 .id(offer.getId())
                 .title(offer.getTitle())

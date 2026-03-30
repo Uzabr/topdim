@@ -6,6 +6,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
+import uz.topdim.order.dto.PartnerStatsResponse;
+import uz.topdim.order.dto.RedemptionResponse;
+import uz.topdim.order.service.PartnerService;
+import java.util.List;
 
 /**
  * Контроллер партнёра — статистика и погашения.
