@@ -25,7 +25,7 @@
 - [x] **2.6 Notification** (EmailService + SmsService, stub mode)
 
 ### Оставшиеся backend задачи (из аудита v2):
-- [ ] **2.7 Complaint entity** (user жалобы — из ER-диаграммы)
+- [x] **2.7 Complaint entity** (user жалобы — из ER-диаграммы)
 - [ ] **2.8 BazaarMap entity** (внутренняя карта базара)
 - [ ] **2.9 GET /auth/verify** (подтверждение email/phone)
 - [ ] **2.10 Payme/Click реальная интеграция**

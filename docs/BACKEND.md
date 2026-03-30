@@ -47,6 +47,10 @@ payment-service ──publish──▶ payment.exchange / payment.completed
 | POST | `/api/v1/auth/login` | ❌ | Вход |
 | POST | `/api/v1/auth/refresh` | ❌ | Обновление токена |
 | POST | `/api/v1/auth/logout` | ✅ | Выход |
+| PUT  | `/api/v1/auth/change-password` | ✅ | Смена пароля |
+| PATCH| `/api/v1/super/users/{id}/role`| ✅ SUPER_ADMIN | Изменение роли пользователя |
+| POST | `/api/v1/super/admins` | ✅ SUPER_ADMIN | Назначение нового админа |
+| GET  | `/api/v1/super/audit-logs` | ✅ SUPER_ADMIN | Просмотр логов действий |
 
 ### Ключевые классы
 - `AuthService` — основная бизнес-логика
@@ -79,9 +83,12 @@ payment-service ──publish──▶ payment.exchange / payment.completed
 | GET | `/api/v1/coupons/top-selling` | ❌ | Топ продаж |
 | GET | `/api/v1/merchants` | ❌ | Список партнёров |
 | POST | `/api/v1/admin/coupons` | ✅ ADMIN | Создать купон |
-| PATCH | `/api/v1/admin/coupons/{id}/status` | ✅ ADMIN | Изменить статус |
-| DELETE | `/api/v1/admin/coupons/{id}` | ✅ ADMIN | Удалить |
+| PATCH| `/api/v1/admin/coupons/{id}/status` | ✅ ADMIN | Изменить статус |
+| DELETE| `/api/v1/admin/coupons/{id}` | ✅ ADMIN | Удалить купон |
 | POST | `/api/v1/admin/merchants` | ✅ ADMIN | Создать партнёра |
+| POST | `/api/v1/reviews` | ✅ USER | Оставить отзыв |
+| PATCH| `/api/v1/mod/reviews/{id}/status` | ✅ MODERATOR | Модерация отзывов |
+| POST | `/api/v1/admin/promocodes` | ✅ ADMIN / PARTNER | Генерация промокодов |
 
 ### Модели
 - `CouponOffer` (title, description, merchant, category, prices, discount, images, status)
@@ -125,6 +132,8 @@ payment-service ──publish──▶ payment.exchange / payment.completed
 | POST | `/api/v1/orders/{id}/refund` | ✅ | Запрос на возврат |
 | GET | `/api/v1/orders/refunds` | ✅ | Мои запросы на возврат |
 | PATCH | `/api/v1/admin/refunds/{id}` | ✅ ADMIN | Одобрить/отклонить возврат |
+| POST | `/api/v1/complaints` | ✅ USER | Подать жалобу на заказ |
+| PATCH | `/api/v1/mod/complaints/{id}/resolve`| ✅ MODERATOR | Резолюция модератора по жалобе |
 
 ### Модели
 - `Cart` → `CartItem[]` (couponId, optionId, quantity, unitPrice, gift)
@@ -195,11 +204,13 @@ PENDING → PROCESSING → COMPLETED
 ### API Endpoints
 | Method | URL | Auth | Описание |
 |---|---|---|---|
-| GET | `/api/v1/users/profile` | ✅ | Мой профиль |
-| PUT | `/api/v1/users/profile` | ✅ | Обновить профиль |
-| GET | `/api/v1/users/favorites` | ✅ | Избранное |
-| POST | `/api/v1/users/favorites` | ✅ | Добавить в избранное |
-| DELETE | `/api/v1/users/favorites/{id}` | ✅ | Удалить из избранного |
+| GET | `/api/v1/users/me` | ✅ | Мой профиль |
+| PUT | `/api/v1/users/me` | ✅ | Обновить профиль |
+| GET | `/api/v1/users/me/favorites` | ✅ | Моё избранное |
+| POST | `/api/v1/users/me/favorites` | ✅ | Добавить в избранное |
+| DELETE | `/api/v1/users/me/favorites/{id}`| ✅ | Удалить из избранного |
+| GET | `/api/v1/admin/users` | ✅ ADMIN | Управление пользователями |
+| POST | `/api/v1/partner/staff`| ✅ PARTNER | Добавление сотрудников (кассиров) |
 
 ---
 

@@ -109,15 +109,15 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 ### Уведомления
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Мои уведомления | `GET /api/v1/notifications` | ❌ |
-| Прочитать уведомление | `PATCH /api/v1/notifications/{id}/read` | ❌ |
+| Мои уведомления | `GET /api/v1/notifications` | ✅ |
+| Прочитать уведомление | `PATCH /api/v1/notifications/{id}/read` | ✅ |
 | Настройки уведомлений | `PUT /api/v1/users/me/notification-settings` | ❌ |
 
 ### Отзывы
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Оставить отзыв | `POST /api/v1/reviews` | ❌ |
-| Мои отзывы | `GET /api/v1/reviews/me` | ❌ |
+| Оставить отзыв | `POST /api/v1/reviews` | ✅ |
+| Мои отзывы | `GET /api/v1/reviews/me` | ✅ |
 
 ---
 
@@ -153,17 +153,17 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 
 ---
 
-## 4. MODERATOR → ❌ Новая роль
+## 4. MODERATOR (модератор)
 
 > Модерирует контент: купоны, отзывы, жалобы.
 
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Купоны на модерации | `GET /api/v1/mod/coupons?status=PENDING` | ❌ |
-| Одобрить/отклонить купон | `PATCH /api/v1/mod/coupons/{id}/review` | ❌ |
-| Список жалоб | `GET /api/v1/mod/complaints` | ❌ |
-| Решение по жалобе | `PATCH /api/v1/mod/complaints/{id}` | ❌ |
-| Блокировка отзыва | `PATCH /api/v1/mod/reviews/{id}/block` | ❌ |
+| Купоны на модерации | `GET /api/v1/mod/coupons?status=PENDING` | ✅ |
+| Одобрить/отклонить купон | `PATCH /api/v1/mod/coupons/{id}/review` | ✅ |
+| Список жалоб | `GET /api/v1/mod/complaints` | ✅ |
+| Решение по жалобе | `PATCH /api/v1/mod/complaints/{id}/resolve` | ✅ |
+| Блокировка отзыва | `PATCH /api/v1/mod/reviews/{id}/status` | ✅ |
 | Просмотр пользователей | `GET /api/v1/mod/users` | ❌ |
 
 ---
@@ -223,25 +223,25 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 | Детали пользователя | `GET /api/v1/admin/users/{id}` | ✅ |
 | Заблокировать пользователя | `PATCH /api/v1/admin/users/{id}/block` | ✅ |
 
-### Нужно создать ❌
+### Дополнительно
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Промокоды | `POST /api/v1/admin/promo-codes` | ❌ |
+| Промокоды | `POST /api/v1/admin/promocodes` | ✅ |
 | Dashboard (аналитика) | `GET /api/v1/admin/dashboard` | ❌ |
 
 ---
 
-## 6. SUPER_ADMIN → ❌ Новая роль
+## 6. SUPER_ADMIN (супер-администратор)
 
 > Управление системой, другими админами, финансы.
 
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Управление админами | `POST/DELETE /api/v1/super/admins` | ❌ |
-| Назначение ролей | `PATCH /api/v1/super/users/{id}/role` | ❌ |
+| Управление админами | `POST/DELETE /api/v1/super/admins` | ✅ |
+| Назначение ролей | `PATCH /api/v1/super/users/{id}/role` | ✅ |
 | Системные настройки | `GET/PUT /api/v1/super/settings` | ❌ |
 | Финансовая отчётность | `GET /api/v1/super/finance` | ❌ |
-| Аудит логи | `GET /api/v1/super/audit-logs` | ❌ |
+| Аудит логи | `GET /api/v1/super/audit-logs` | ✅ |
 
 ---
 
@@ -250,11 +250,11 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 | Роль | ✅ Готово | ❌ Нет | % готовности |
 |------|----------|--------|-------------|
 | **GUEST** | 10 | 0 | **100%** |
-| **USER** | 21 | 8 | **72%** |
+| **USER** | 25 | 4 | **86%** |
 | **PARTNER** | 10 | 0 | **100%** |
-| **MODERATOR** | 0 | 6 | **0%** |
-| **ADMIN** | 25 | 2 | **93%** |
-| **SUPER_ADMIN** | 0 | 5 | **0%** |
+| **MODERATOR** | 5 | 1 | **83%** |
+| **ADMIN** | 26 | 1 | **96%** |
+| **SUPER_ADMIN** | 3 | 2 | **60%** |
 
 ---
 

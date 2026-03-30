@@ -120,7 +120,7 @@
 | Media download | ✅ | `GET /api/v1/media/{fileName}` |
 | Media delete | ✅ | `DELETE /api/v1/media/{fileName}` |
 | In-app уведомления (WebSocket/SSE) | ❌ | **нет** |
-| User notification endpoints | ❌ | GET/PATCH уведомлений — **нет** |
+| User notification endpoints | ✅ | `GET /api/v1/notifications`, `PATCH .../read` |
 
 ---
 
@@ -230,8 +230,8 @@
 ### ADMIN (доп.)
 | Чего нет | Где |
 |---|---|
-| `GET /api/v1/admin/users` | AdminUserController |
-| `PATCH /api/v1/admin/users/{id}/block` | AdminUserController |
+| `GET /api/v1/admin/users` | ✅ AdminUserController |
+| `PATCH /api/v1/admin/users/{id}/block` | ✅ AdminUserController |
 | `POST/PUT/DELETE /api/v1/admin/categories` | AdminCategoryController |
 | `POST /api/v1/admin/promocodes` | ✅ AdminPromoCodeController (+PromoCode entity) |
 | `GET /api/v1/admin/dashboard` | AdminDashboardController |
