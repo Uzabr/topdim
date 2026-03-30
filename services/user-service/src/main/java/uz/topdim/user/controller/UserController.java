@@ -2,6 +2,7 @@ package uz.topdim.user.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -67,5 +68,36 @@ public class UserController {
     ) {
         userService.removeFavorite(userId, couponOfferId);
         return ResponseEntity.ok(ApiResponse.success("Удалено из избранного", null));
+    }
+
+    // ==================== Admin ====================
+
+    /** Список пользователей с пагинацией и фильтрами (Admin). */
+    @GetMapping("/api/v1/admin/users")
+    public ResponseEntity<ApiResponse<Page<AdminUserResponse>>> getAllUsers(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(userService.getAllUsers(role, search, page, size)));
+    }
+
+    /** Детали пользователя по ID (Admin). */
+    @GetMapping("/api/v1/admin/users/{id}")
+    public ResponseEntity<ApiResponse<AdminUserResponse>> getUserAdmin(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(userService.getUserByIdAdmin(id)));
+    }
+
+    /** Блокировка/разблокировка пользователя (Admin). */
+    @PatchMapping("/api/v1/admin/users/{id}/block")
+    public ResponseEntity<ApiResponse<AdminUserResponse>> blockUser(
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> request
+    ) {
+        boolean blocked = Boolean.TRUE.equals(request.get("blocked"));
+        AdminUserResponse user = userService.blockUser(id, blocked);
+        String message = blocked ? "Пользователь заблокирован" : "Пользователь разблокирован";
+        return ResponseEntity.ok(ApiResponse.success(message, user));
     }
 }

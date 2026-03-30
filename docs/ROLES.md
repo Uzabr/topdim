@@ -204,12 +204,30 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 |---------|----------|--------|
 | Решение по возврату | `PATCH /api/v1/admin/refunds/{id}` | ✅ |
 
-### Управление → ❌ Нужно создать
+### Категории
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Все пользователи | `GET /api/v1/admin/users` | ❌ |
-| Заблокировать пользователя | `PATCH /api/v1/admin/users/{id}/block` | ❌ |
-| Управление категориями | `POST/PUT/DELETE /api/v1/admin/categories` | ❌ |
+| Категория по ID | `GET /api/v1/admin/categories/{id}` | ✅ |
+| Создать категорию | `POST /api/v1/admin/categories` | ✅ |
+| Обновить категорию | `PUT /api/v1/admin/categories/{id}` | ✅ |
+| Удалить категорию | `DELETE /api/v1/admin/categories/{id}` | ✅ |
+
+### Заказы
+| Функция | Endpoint | Статус |
+|---------|----------|--------|
+| Все заказы | `GET /api/v1/admin/orders` | ✅ |
+| Детали заказа | `GET /api/v1/admin/orders/{id}` | ✅ |
+
+### Управление пользователями
+| Функция | Endpoint | Статус |
+|---------|----------|--------|
+| Все пользователи | `GET /api/v1/admin/users` | ✅ |
+| Детали пользователя | `GET /api/v1/admin/users/{id}` | ✅ |
+| Заблокировать пользователя | `PATCH /api/v1/admin/users/{id}/block` | ✅ |
+
+### Нужно создать ❌
+| Функция | Endpoint | Статус |
+|---------|----------|--------|
 | Промокоды | `POST /api/v1/admin/promo-codes` | ❌ |
 | Dashboard (аналитика) | `GET /api/v1/admin/dashboard` | ❌ |
 
@@ -237,7 +255,7 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 | **USER** | 21 | 8 | **72%** |
 | **PARTNER** | 1 | 12 | **8%** |
 | **MODERATOR** | 0 | 6 | **0%** |
-| **ADMIN** | 13 | 5 | **72%** |
+| **ADMIN** | 25 | 2 | **93%** |
 | **SUPER_ADMIN** | 0 | 5 | **0%** |
 
 ---

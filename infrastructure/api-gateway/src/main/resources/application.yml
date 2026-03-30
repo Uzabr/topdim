@@ -47,13 +47,13 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/v1/users/**
+            - Path=/api/v1/users/**, /api/v1/admin/users/**
 
         # Coupon Service
         - id: coupon-service
           uri: lb://coupon-service
           predicates:
-            - Path=/api/v1/coupons/**, /api/v1/categories/**, /api/v1/merchants/**, /api/v1/admin/coupons/**, /api/v1/admin/merchants/**
+            - Path=/api/v1/coupons/**, /api/v1/categories/**, /api/v1/merchants/**, /api/v1/admin/coupons/**, /api/v1/admin/merchants/**, /api/v1/admin/categories/**
 
         # Order Service
         - id: order-service
