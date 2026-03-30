@@ -47,19 +47,19 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/v1/users/**, /api/v1/admin/users/**
+            - Path=/api/v1/users/**, /api/v1/admin/users/**, /api/v1/partner/staff/**
 
         # Coupon Service
         - id: coupon-service
           uri: lb://coupon-service
           predicates:
-            - Path=/api/v1/coupons/**, /api/v1/categories/**, /api/v1/merchants/**, /api/v1/admin/coupons/**, /api/v1/admin/merchants/**, /api/v1/admin/categories/**
+            - Path=/api/v1/coupons/**, /api/v1/categories/**, /api/v1/merchants/**, /api/v1/admin/coupons/**, /api/v1/admin/merchants/**, /api/v1/admin/categories/**, /api/v1/partner/coupons/**
 
         # Order Service
         - id: order-service
           uri: lb://order-service
           predicates:
-            - Path=/api/v1/cart/**, /api/v1/orders/**, /api/v1/admin/orders/**
+            - Path=/api/v1/cart/**, /api/v1/orders/**, /api/v1/admin/orders/**, /api/v1/partner/stats, /api/v1/partner/redemptions
 
         # Payment Service
         - id: payment-service
@@ -71,7 +71,7 @@ spring:
         - id: bazaar-service
           uri: lb://bazaar-service
           predicates:
-            - Path=/api/v1/bazaars/**, /api/v1/shops/**, /api/v1/admin/bazaars/**, /api/v1/admin/shops/**
+            - Path=/api/v1/bazaars/**, /api/v1/shops/**, /api/v1/admin/bazaars/**, /api/v1/admin/shops/**, /api/v1/partner/shops/**
 
         # Notification Service
         - id: notification-service

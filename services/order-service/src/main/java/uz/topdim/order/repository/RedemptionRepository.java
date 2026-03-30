@@ -12,4 +12,7 @@ import java.util.Optional;
 public interface RedemptionRepository extends JpaRepository<Redemption, Long> {
     Optional<Redemption> findByRedemptionCode(String code);
     Optional<Redemption> findByPurchasedCouponId(Long purchasedCouponId);
+
+    org.springframework.data.domain.Page<Redemption> findByMerchantId(Long merchantId, org.springframework.data.domain.Pageable pageable);
+    long countByMerchantId(Long merchantId);
 }

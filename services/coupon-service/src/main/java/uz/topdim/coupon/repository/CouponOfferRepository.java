@@ -34,4 +34,8 @@ public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> 
     List<CouponOffer> findByMerchantIdAndStatus(Long merchantId, CouponStatus status);
 
     Optional<CouponOffer> findByIdAndStatus(Long id, CouponStatus status);
+
+    Page<CouponOffer> findByMerchantId(Long merchantId, Pageable pageable);
+
+    Page<CouponOffer> findByMerchantIdAndStatus(Long merchantId, CouponStatus status, Pageable pageable);
 }

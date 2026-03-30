@@ -22,4 +22,8 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
     List<Shop> search(@Param("q") String query);
 
     List<Shop> findByCategoryIdAndActiveTrue(Long categoryId);
+
+    List<Shop> findByUserId(Long userId);
+
+    java.util.Optional<Shop> findByUserIdAndId(Long userId, Long shopId);
 }

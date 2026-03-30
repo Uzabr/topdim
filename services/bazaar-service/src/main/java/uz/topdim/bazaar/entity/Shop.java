@@ -64,6 +64,9 @@ public class Shop {
 
     private boolean active;
 
+    @Column(name = "user_id")
+    private Long userId;
+
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ShopProductTag> productTags = new ArrayList<>();

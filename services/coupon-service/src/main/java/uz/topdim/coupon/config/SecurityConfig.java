@@ -47,6 +47,9 @@ public class SecurityConfig {
                         // Admin endpoints — только ADMIN и SUPER_ADMIN
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
+                        // Partner endpoints — PARTNER, ADMIN, SUPER_ADMIN
+                        .requestMatchers("/api/v1/partner/**").hasAnyRole("PARTNER", "ADMIN", "SUPER_ADMIN")
+
                         // Всё остальное — аутентификация
                         .anyRequest().authenticated()
                 )

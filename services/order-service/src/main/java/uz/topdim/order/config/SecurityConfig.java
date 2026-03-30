@@ -48,6 +48,9 @@ public class SecurityConfig {
                         // Погашение купона — только PARTNER (и выше по иерархии)
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders/redeem").hasRole("PARTNER")
 
+                        // Статистика и история партнёра
+                        .requestMatchers("/api/v1/partner/**").hasAnyRole("PARTNER", "ADMIN", "SUPER_ADMIN")
+
                         // Все остальные endpoints — требуют аутентификации
                         .anyRequest().authenticated()
                 )
