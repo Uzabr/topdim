@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.user.dto.*;
@@ -73,6 +74,7 @@ public class UserController {
     // ==================== Admin ====================
 
     /** Список пользователей с пагинацией и фильтрами (Admin). */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/api/v1/admin/users")
     public ResponseEntity<ApiResponse<Page<AdminUserResponse>>> getAllUsers(
             @RequestParam(required = false) String role,
@@ -84,12 +86,14 @@ public class UserController {
     }
 
     /** Детали пользователя по ID (Admin). */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/api/v1/admin/users/{id}")
     public ResponseEntity<ApiResponse<AdminUserResponse>> getUserAdmin(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(userService.getUserByIdAdmin(id)));
     }
 
     /** Блокировка/разблокировка пользователя (Admin). */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PatchMapping("/api/v1/admin/users/{id}/block")
     public ResponseEntity<ApiResponse<AdminUserResponse>> blockUser(
             @PathVariable Long id,

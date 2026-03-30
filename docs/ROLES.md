@@ -130,28 +130,26 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 |---------|----------|--------|
 | Погасить купон (QR/код) | `POST /api/v1/orders/redeem` | ✅ |
 
-### Мои предложения → ❌ Нужно создать
+### Мои предложения
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Мои купоны-предложения | `GET /api/v1/partner/coupons` | ❌ |
-| Создать предложение (на модерацию) | `POST /api/v1/partner/coupons` | ❌ |
-| Редактировать предложение | `PUT /api/v1/partner/coupons/{id}` | ❌ |
-| Мой магазин | `GET /api/v1/partner/shop` | ❌ |
+| Мои купоны-предложения | `GET /api/v1/partner/coupons` | ✅ |
+| Создать предложение (на модерацию) | `POST /api/v1/partner/coupons` | ✅ |
+| Редактировать предложение | `PUT /api/v1/partner/coupons/{id}` | ✅ |
+| Мой магазин | `GET /api/v1/partner/shops` | ✅ |
 
-### Статистика → ❌ Нужно создать
+### Статистика
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Статистика продаж | `GET /api/v1/partner/stats/sales` | ❌ |
-| Статистика погашений | `GET /api/v1/partner/stats/redemptions` | ❌ |
-| Выручка за период | `GET /api/v1/partner/stats/revenue` | ❌ |
-| История погашений | `GET /api/v1/partner/redemptions` | ❌ |
+| Статистика (продажи, погашения, выручка) | `GET /api/v1/partner/stats` | ✅ |
+| История погашений | `GET /api/v1/partner/redemptions` | ✅ |
 
-### Команда → ❌ Нужно создать
+### Команда
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Мои сотрудники | `GET /api/v1/partner/staff` | ❌ |
-| Добавить сотрудника | `POST /api/v1/partner/staff` | ❌ |
-| Удалить сотрудника | `DELETE /api/v1/partner/staff/{id}` | ❌ |
+| Мои сотрудники | `GET /api/v1/partner/staff` | ✅ |
+| Добавить сотрудника | `POST /api/v1/partner/staff` | ✅ |
+| Удалить сотрудника | `DELETE /api/v1/partner/staff/{id}` | ✅ |
 
 ---
 
@@ -253,33 +251,19 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 |------|----------|--------|-------------|
 | **GUEST** | 10 | 0 | **100%** |
 | **USER** | 21 | 8 | **72%** |
-| **PARTNER** | 1 | 12 | **8%** |
+| **PARTNER** | 10 | 0 | **100%** |
 | **MODERATOR** | 0 | 6 | **0%** |
 | **ADMIN** | 25 | 2 | **93%** |
 | **SUPER_ADMIN** | 0 | 5 | **0%** |
 
 ---
 
-## ⚠️ Критическая проблема: нет защиты по ролям
+## ✅ Защита по ролям (Раньше была крит. проблема)
 
-Сейчас **ни один endpoint не защищён `@PreAuthorize`**.
-Любой авторизованный USER может вызвать **admin** endpoints.
-
-### Нужно добавить:
-
-```java
-// Пример: AdminCouponController
-@PreAuthorize("hasRole('ADMIN')")
-@RestController
-@RequestMapping("/api/v1/admin")
-public class AdminCouponController { ... }
-
-// Пример: partner endpoints
-@PreAuthorize("hasRole('PARTNER')")
-@RestController
-@RequestMapping("/api/v1/partner")
-public class PartnerController { ... }
-```
+Все эндпоинты теперь защищены с помощью **`@PreAuthorize`**:
+- Admin endpoints: `@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")`
+- Partner endpoints: `@PreAuthorize("hasAnyRole('PARTNER', 'ADMIN', 'SUPER_ADMIN')")`
+- Настройки дублируются в `SecurityConfig.java`.
 
 ---
 
@@ -287,7 +271,7 @@ public class PartnerController { ... }
 
 | Приоритет | Что делать |
 |-----------|-----------|
-| 🔴 **P0** | Защитить admin endpoints `@PreAuthorize` |
+| ✅ **P0** | Защитить admin/partner endpoints `@PreAuthorize` (Выполнено) |
 | 🔴 **P0** | Добавить `SUPER_ADMIN`, `MODERATOR` в Role enum |
 | 🟡 **P1** | PARTNER: погашения + статистика |
 | 🟡 **P1** | USER: верификация email/телефон |

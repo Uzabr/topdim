@@ -2,6 +2,7 @@ package uz.topdim.bazaar.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.bazaar.dto.ShopResponse;
 import uz.topdim.bazaar.dto.UpdateShopRequest;
@@ -15,6 +16,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/partner/shops")
+@PreAuthorize("hasAnyRole('PARTNER', 'ADMIN', 'SUPER_ADMIN')")
 @RequiredArgsConstructor
 public class PartnerShopController {
 

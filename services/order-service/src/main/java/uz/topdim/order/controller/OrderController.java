@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.order.dto.*;
@@ -128,6 +129,7 @@ public class OrderController {
     // ==================== Redemption ====================
 
     /** Погашение купона (QR / код). */
+    @PreAuthorize("hasAnyRole('PARTNER', 'ADMIN', 'SUPER_ADMIN')")
     @PostMapping("/api/v1/orders/redeem")
     public ResponseEntity<ApiResponse<PurchasedCoupon>> redeemCoupon(
             @Valid @RequestBody RedeemCouponRequest request
@@ -164,6 +166,7 @@ public class OrderController {
     // ==================== Admin ====================
 
     /** Все заказы с пагинацией и фильтром (Admin). */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/api/v1/admin/orders")
     public ResponseEntity<ApiResponse<Page<Order>>> getAllOrders(
             @RequestParam(required = false) OrderStatus status,
@@ -174,12 +177,14 @@ public class OrderController {
     }
 
     /** Детали заказа без проверки владельца (Admin). */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/api/v1/admin/orders/{id}")
     public ResponseEntity<ApiResponse<Order>> getOrderAdmin(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(orderService.getOrderByIdAdmin(id)));
     }
 
     /** Решение по возврату (Admin). */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PatchMapping("/api/v1/admin/refunds/{id}")
     public ResponseEntity<ApiResponse<RefundRequest>> resolveRefund(
             @PathVariable Long id,

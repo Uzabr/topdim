@@ -5,11 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
-import uz.topdim.coupon.dto.CouponOfferResponse;
-import uz.topdim.coupon.dto.CreateCouponOfferRequest;
-import uz.topdim.coupon.service.PartnerCouponService;
 
 /**
  * Контроллер партнёра — управление СВОИМИ купонами.
@@ -17,6 +15,7 @@ import uz.topdim.coupon.service.PartnerCouponService;
  */
 @RestController
 @RequestMapping("/api/v1/partner/coupons")
+@PreAuthorize("hasAnyRole('PARTNER', 'ADMIN', 'SUPER_ADMIN')")
 @RequiredArgsConstructor
 public class PartnerCouponController {
 

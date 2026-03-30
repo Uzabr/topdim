@@ -210,14 +210,14 @@
 
 ## Roles — недостающие endpoints (из ROLES.md)
 
-### PARTNER (8% → только redeem)
-| Чего нет | Нужен контроллер |
+### PARTNER (100% — Функционал реализован)
+| Все эндпоинты реализованы | Сервис |
 |---|---|
-| `GET/POST/PUT /api/v1/partner/coupons` | PartnerCouponController |
-| `GET /api/v1/partner/shop` | PartnerShopController |
-| `GET /api/v1/partner/stats/*` | PartnerStatsController |
-| `GET /api/v1/partner/redemptions` | PartnerRedemptionController |
-| `GET/POST/DELETE /api/v1/partner/staff` | PartnerStaffController |
+| `/api/v1/partner/coupons` | `coupon-service` |
+| `/api/v1/partner/shops` | `bazaar-service` |
+| `/api/v1/partner/stats` | `order-service` |
+| `/api/v1/partner/redemptions` | `order-service` |
+| `/api/v1/partner/staff` | `user-service` |
 
 ### MODERATOR (0%)
 | Чего нет | Нужен контроллер |
@@ -273,11 +273,11 @@
 | 6 | Notification + Media | **70%** (нет in-app, нет user endpoints) |
 | 7 | Frontend Web App | **65%** (нет UI kit, i18n, forms, CSS modules) |
 | 8 | Admin Panel | **0%** |
-| 9 | Тестирование | **15%** (unit частично, нет integration/e2e) |
+| 9 | Тестирование | **30%** (unit-тесты для ADMIN, USER, PARTNER) |
 | 10 | Деплой | **10%** (только мониторинг контейнеры) |
-| + | Безопасность | **100%** ✅ |
-| + | PARTNER роль | **8%** |
+| + | Безопасность | **100%** ✅ (ролевая модель внедрена) |
+| + | PARTNER роль | **100%** ✅ |
 | + | MODERATOR роль | **0%** |
 | + | SUPER_ADMIN роль | **0%** |
 
-### **Общая готовность проекта: ~55-60%**
+### **Общая готовность проекта: ~70%**

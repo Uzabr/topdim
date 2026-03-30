@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.bazaar.dto.*;
@@ -72,30 +73,35 @@ public class BazaarController {
 
     // ==================== Admin ====================
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PostMapping("/api/v1/admin/bazaars")
     public ResponseEntity<ApiResponse<BazaarResponse>> createBazaar(@Valid @RequestBody CreateBazaarRequest request) {
         BazaarResponse bazaar = bazaarService.createBazaar(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Базар создан", bazaar));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PutMapping("/api/v1/admin/bazaars/{id}")
     public ResponseEntity<ApiResponse<BazaarResponse>> updateBazaar(
             @PathVariable Long id, @Valid @RequestBody CreateBazaarRequest request) {
         return ResponseEntity.ok(ApiResponse.success("Базар обновлён", bazaarService.updateBazaar(id, request)));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PostMapping("/api/v1/admin/shops")
     public ResponseEntity<ApiResponse<ShopResponse>> createShop(@Valid @RequestBody CreateShopRequest request) {
         ShopResponse shop = shopService.createShop(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Магазин создан", shop));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PutMapping("/api/v1/admin/shops/{id}")
     public ResponseEntity<ApiResponse<ShopResponse>> updateShop(
             @PathVariable Long id, @Valid @RequestBody CreateShopRequest request) {
         return ResponseEntity.ok(ApiResponse.success("Магазин обновлён", shopService.updateShop(id, request)));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PostMapping("/api/v1/admin/bazaars/{id}/maps")
     public ResponseEntity<ApiResponse<BazaarMap>> uploadMap(
             @PathVariable Long id, @RequestBody BazaarMap map) {

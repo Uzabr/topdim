@@ -5,14 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
-import uz.topdim.coupon.dto.*;
-import uz.topdim.coupon.entity.CouponStatus;
-import uz.topdim.coupon.service.CouponOfferService;
-import uz.topdim.coupon.service.MerchantService;
-
-import java.util.List;
 
 /**
  * REST контроллер администрирования купонов.
@@ -21,6 +16,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
 @RequiredArgsConstructor
 public class AdminCouponController {
 
