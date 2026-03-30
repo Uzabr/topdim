@@ -163,6 +163,22 @@ public class OrderController {
 
     // ==================== Admin ====================
 
+    /** Все заказы с пагинацией и фильтром (Admin). */
+    @GetMapping("/api/v1/admin/orders")
+    public ResponseEntity<ApiResponse<Page<Order>>> getAllOrders(
+            @RequestParam(required = false) OrderStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(orderService.getAllOrders(status, page, size)));
+    }
+
+    /** Детали заказа без проверки владельца (Admin). */
+    @GetMapping("/api/v1/admin/orders/{id}")
+    public ResponseEntity<ApiResponse<Order>> getOrderAdmin(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(orderService.getOrderByIdAdmin(id)));
+    }
+
     /** Решение по возврату (Admin). */
     @PatchMapping("/api/v1/admin/refunds/{id}")
     public ResponseEntity<ApiResponse<RefundRequest>> resolveRefund(

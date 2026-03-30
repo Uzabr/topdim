@@ -251,6 +251,35 @@ public class OrderService {
         return orderRepository.findByUserId(userId, PageRequest.of(page, size, Sort.by("createdAt").descending()));
     }
 
+    // ==================== Admin Orders ====================
+
+    /**
+     * Получает все заказы с пагинацией (Admin).
+     * Опциональный фильтр по статусу.
+     *
+     * @param status фильтр по статусу (null = все)
+     * @param page номер страницы
+     * @param size размер страницы
+     * @return страница заказов
+     */
+    @Transactional(readOnly = true)
+    public Page<Order> getAllOrders(OrderStatus status, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        if (status != null) {
+            return orderRepository.findByStatus(status, pageable);
+        }
+        return orderRepository.findAll(pageable);
+    }
+
+    /**
+     * Получает заказ по ID без проверки владельца (Admin).
+     */
+    @Transactional(readOnly = true)
+    public Order getOrderByIdAdmin(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Заказ не найден"));
+    }
+
     /**
      * Получает конкретный заказ по ID с проверкой владельца.
      *
