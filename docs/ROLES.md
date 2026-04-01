@@ -109,15 +109,15 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 ### Уведомления
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Мои уведомления | `GET /api/v1/notifications` | ❌ |
-| Прочитать уведомление | `PATCH /api/v1/notifications/{id}/read` | ❌ |
+| Мои уведомления | `GET /api/v1/notifications` | ✅ |
+| Прочитать уведомление | `PATCH /api/v1/notifications/{id}/read` | ✅ |
 | Настройки уведомлений | `PUT /api/v1/users/me/notification-settings` | ❌ |
 
 ### Отзывы
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Оставить отзыв | `POST /api/v1/reviews` | ❌ |
-| Мои отзывы | `GET /api/v1/reviews/me` | ❌ |
+| Оставить отзыв | `POST /api/v1/reviews` | ✅ |
+| Мои отзывы | `GET /api/v1/reviews/me` | ✅ |
 
 ---
 
@@ -130,43 +130,42 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 |---------|----------|--------|
 | Погасить купон (QR/код) | `POST /api/v1/orders/redeem` | ✅ |
 
-### Мои предложения → ❌ Нужно создать
+### Мои предложения
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Мои купоны-предложения | `GET /api/v1/partner/coupons` | ❌ |
-| Создать предложение (на модерацию) | `POST /api/v1/partner/coupons` | ❌ |
-| Редактировать предложение | `PUT /api/v1/partner/coupons/{id}` | ❌ |
-| Мой магазин | `GET /api/v1/partner/shop` | ❌ |
+| Мои купоны-предложения | `GET /api/v1/partner/coupons` | ✅ |
+| Создать предложение (на модерацию) | `POST /api/v1/partner/coupons` | ✅ |
+| Редактировать предложение | `PUT /api/v1/partner/coupons/{id}` | ✅ |
+| Мой магазин | `GET /api/v1/partner/shops` | ✅ |
 
-### Статистика → ❌ Нужно создать
+### Статистика
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Статистика продаж | `GET /api/v1/partner/stats/sales` | ❌ |
-| Статистика погашений | `GET /api/v1/partner/stats/redemptions` | ❌ |
-| Выручка за период | `GET /api/v1/partner/stats/revenue` | ❌ |
-| История погашений | `GET /api/v1/partner/redemptions` | ❌ |
+| Статистика (продажи, погашения, выручка) | `GET /api/v1/partner/stats` | ✅ |
+| История погашений | `GET /api/v1/partner/redemptions` | ✅ |
 
-### Команда → ❌ Нужно создать
+### Команда
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Мои сотрудники | `GET /api/v1/partner/staff` | ❌ |
-| Добавить сотрудника | `POST /api/v1/partner/staff` | ❌ |
-| Удалить сотрудника | `DELETE /api/v1/partner/staff/{id}` | ❌ |
+| Мои сотрудники | `GET /api/v1/partner/staff` | ✅ |
+| Добавить сотрудника | `POST /api/v1/partner/staff` | ✅ |
+| Удалить сотрудника | `DELETE /api/v1/partner/staff/{id}` | ✅ |
 
 ---
 
-## 4. MODERATOR → ❌ Новая роль
+## 4. MODERATOR (модератор)
 
-> Модерирует контент: купоны, отзывы, жалобы.
+> Развивает платформу: создаёт купоны, модерирует отзывы, жалобы и заявки партнёров.
 
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Купоны на модерации | `GET /api/v1/mod/coupons?status=PENDING` | ❌ |
-| Одобрить/отклонить купон | `PATCH /api/v1/mod/coupons/{id}/review` | ❌ |
-| Список жалоб | `GET /api/v1/mod/complaints` | ❌ |
-| Решение по жалобе | `PATCH /api/v1/mod/complaints/{id}` | ❌ |
-| Блокировка отзыва | `PATCH /api/v1/mod/reviews/{id}/block` | ❌ |
-| Просмотр пользователей | `GET /api/v1/mod/users` | ❌ |
+| Все купоны | `GET /api/v1/admin/coupons` | ✅ |
+| Создать купон (без партнерки) | `POST /api/v1/admin/coupons` | ✅ |
+| Обновить купон / статус | `PATCH /api/v1/admin/coupons/{id}/status` | ✅ |
+| Список жалоб | `GET /api/v1/mod/complaints` | ✅ |
+| Решение по жалобе | `PATCH /api/v1/mod/complaints/{id}/resolve` | ✅ |
+| Блокировка отзыва | `PATCH /api/v1/mod/reviews/{id}/status` | ✅ |
+| Заявки на партнерство | `GET /api/v1/admin/partners/applications` | ✅ |
 
 ---
 
@@ -204,28 +203,46 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 |---------|----------|--------|
 | Решение по возврату | `PATCH /api/v1/admin/refunds/{id}` | ✅ |
 
-### Управление → ❌ Нужно создать
+### Категории
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Все пользователи | `GET /api/v1/admin/users` | ❌ |
-| Заблокировать пользователя | `PATCH /api/v1/admin/users/{id}/block` | ❌ |
-| Управление категориями | `POST/PUT/DELETE /api/v1/admin/categories` | ❌ |
-| Промокоды | `POST /api/v1/admin/promo-codes` | ❌ |
+| Категория по ID | `GET /api/v1/admin/categories/{id}` | ✅ |
+| Создать категорию | `POST /api/v1/admin/categories` | ✅ |
+| Обновить категорию | `PUT /api/v1/admin/categories/{id}` | ✅ |
+| Удалить категорию | `DELETE /api/v1/admin/categories/{id}` | ✅ |
+
+### Заказы
+| Функция | Endpoint | Статус |
+|---------|----------|--------|
+| Все заказы | `GET /api/v1/admin/orders` | ✅ |
+| Детали заказа | `GET /api/v1/admin/orders/{id}` | ✅ |
+
+### Управление пользователями
+| Функция | Endpoint | Статус |
+|---------|----------|--------|
+| Все пользователи | `GET /api/v1/admin/users` | ✅ |
+| Детали пользователя | `GET /api/v1/admin/users/{id}` | ✅ |
+| Заблокировать пользователя | `PATCH /api/v1/admin/users/{id}/block` | ✅ |
+
+### Дополнительно
+| Функция | Endpoint | Статус |
+|---------|----------|--------|
+| Промокоды | `POST /api/v1/admin/promocodes` | ✅ |
 | Dashboard (аналитика) | `GET /api/v1/admin/dashboard` | ❌ |
 
 ---
 
-## 6. SUPER_ADMIN → ❌ Новая роль
+## 6. SUPER_ADMIN (супер-администратор)
 
 > Управление системой, другими админами, финансы.
 
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Управление админами | `POST/DELETE /api/v1/super/admins` | ❌ |
-| Назначение ролей | `PATCH /api/v1/super/users/{id}/role` | ❌ |
+| Управление админами | `POST/DELETE /api/v1/super/admins` | ✅ |
+| Назначение ролей | `PATCH /api/v1/super/users/{id}/role` | ✅ |
 | Системные настройки | `GET/PUT /api/v1/super/settings` | ❌ |
 | Финансовая отчётность | `GET /api/v1/super/finance` | ❌ |
-| Аудит логи | `GET /api/v1/super/audit-logs` | ❌ |
+| Аудит логи | `GET /api/v1/super/audit-logs` | ✅ |
 
 ---
 
@@ -234,34 +251,20 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 | Роль | ✅ Готово | ❌ Нет | % готовности |
 |------|----------|--------|-------------|
 | **GUEST** | 10 | 0 | **100%** |
-| **USER** | 21 | 8 | **72%** |
-| **PARTNER** | 1 | 12 | **8%** |
-| **MODERATOR** | 0 | 6 | **0%** |
-| **ADMIN** | 13 | 5 | **72%** |
-| **SUPER_ADMIN** | 0 | 5 | **0%** |
+| **USER** | 25 | 4 | **86%** |
+| **PARTNER** | 10 | 0 | **100%** |
+| **MODERATOR** | 5 | 1 | **83%** |
+| **ADMIN** | 26 | 1 | **96%** |
+| **SUPER_ADMIN** | 3 | 2 | **60%** |
 
 ---
 
-## ⚠️ Критическая проблема: нет защиты по ролям
+## ✅ Защита по ролям (Раньше была крит. проблема)
 
-Сейчас **ни один endpoint не защищён `@PreAuthorize`**.
-Любой авторизованный USER может вызвать **admin** endpoints.
-
-### Нужно добавить:
-
-```java
-// Пример: AdminCouponController
-@PreAuthorize("hasRole('ADMIN')")
-@RestController
-@RequestMapping("/api/v1/admin")
-public class AdminCouponController { ... }
-
-// Пример: partner endpoints
-@PreAuthorize("hasRole('PARTNER')")
-@RestController
-@RequestMapping("/api/v1/partner")
-public class PartnerController { ... }
-```
+Все эндпоинты теперь защищены с помощью **`@PreAuthorize`**:
+- Admin endpoints: `@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")`
+- Partner endpoints: `@PreAuthorize("hasAnyRole('PARTNER', 'ADMIN', 'SUPER_ADMIN')")`
+- Настройки дублируются в `SecurityConfig.java`.
 
 ---
 
@@ -269,7 +272,7 @@ public class PartnerController { ... }
 
 | Приоритет | Что делать |
 |-----------|-----------|
-| 🔴 **P0** | Защитить admin endpoints `@PreAuthorize` |
+| ✅ **P0** | Защитить admin/partner endpoints `@PreAuthorize` (Выполнено) |
 | 🔴 **P0** | Добавить `SUPER_ADMIN`, `MODERATOR` в Role enum |
 | 🟡 **P1** | PARTNER: погашения + статистика |
 | 🟡 **P1** | USER: верификация email/телефон |

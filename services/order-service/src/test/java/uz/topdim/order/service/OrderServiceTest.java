@@ -7,6 +7,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import uz.topdim.order.entity.*;
 import uz.topdim.order.repository.*;
 
@@ -254,5 +257,59 @@ class OrderServiceTest {
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getCouponCode()).isEqualTo("CP-001");
+    }
+
+    // ==================== Admin Orders ====================
+
+    @Test
+    @DisplayName("Admin: все заказы без фильтра — возвращает все")
+    void getAllOrders_noFilter_returnsAll() {
+        Order o1 = Order.builder().id(1L).userId(10L).status(OrderStatus.PAID).build();
+        Order o2 = Order.builder().id(2L).userId(20L).status(OrderStatus.PENDING).build();
+        Page<Order> page = new PageImpl<>(List.of(o1, o2));
+
+        when(orderRepository.findAll(any(Pageable.class))).thenReturn(page);
+
+        Page<Order> result = orderService.getAllOrders(null, 0, 20);
+
+        assertThat(result.getContent()).hasSize(2);
+        verify(orderRepository).findAll(any(Pageable.class));
+        verify(orderRepository, never()).findByStatus(any(), any());
+    }
+
+    @Test
+    @DisplayName("Admin: заказы с фильтром по статусу PAID")
+    void getAllOrders_withStatus_filtersCorrectly() {
+        Order o1 = Order.builder().id(1L).status(OrderStatus.PAID).build();
+        Page<Order> page = new PageImpl<>(List.of(o1));
+
+        when(orderRepository.findByStatus(eq(OrderStatus.PAID), any(Pageable.class))).thenReturn(page);
+
+        Page<Order> result = orderService.getAllOrders(OrderStatus.PAID, 0, 20);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getStatus()).isEqualTo(OrderStatus.PAID);
+    }
+
+    @Test
+    @DisplayName("Admin: заказ по ID — возвращает без проверки владельца")
+    void getOrderByIdAdmin_found_returnsWithoutOwnerCheck() {
+        Order order = Order.builder().id(100L).userId(99L).status(OrderStatus.PAID).build();
+        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+
+        Order result = orderService.getOrderByIdAdmin(100L);
+
+        assertThat(result.getId()).isEqualTo(100L);
+        assertThat(result.getUserId()).isEqualTo(99L); // не проверяем владельца
+    }
+
+    @Test
+    @DisplayName("Admin: заказ по ID — не найден → IllegalArgumentException")
+    void getOrderByIdAdmin_notFound_throws() {
+        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.getOrderByIdAdmin(999L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("не найден");
     }
 }

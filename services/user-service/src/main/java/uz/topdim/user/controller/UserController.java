@@ -2,8 +2,10 @@ package uz.topdim.user.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.user.dto.*;
@@ -68,4 +70,5 @@ public class UserController {
         userService.removeFavorite(userId, couponOfferId);
         return ResponseEntity.ok(ApiResponse.success("Удалено из избранного", null));
     }
+
 }

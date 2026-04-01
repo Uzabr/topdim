@@ -1,7 +1,9 @@
 package uz.topdim.auth.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import uz.topdim.auth.repository.RefreshTokenRepository;
 import uz.topdim.auth.repository.UserRepository;
 import uz.topdim.auth.security.JwtService;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -22,7 +25,15 @@ import java.util.UUID;
  * Сервис аутентификации.
  * Регистрация, логин, обновление токенов и logout.
  * При logout access token заносится в Redis blacklist.
+ *
+ * <p>Безопасность:
+ * <ul>
+ *   <li>Generic error messages для всех auth ошибок (OWASP)</li>
+ *   <li>Progressive delay при множественных неудачных попытках</li>
+ *   <li>Логирование событий безопасности</li>
+ * </ul>
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -33,6 +44,10 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final TokenBlacklistService tokenBlacklistService;
+    private final LoginAttemptService loginAttemptService;
+
+    /** Generic сообщение — одинаковое для wrong password, user not found, locked (OWASP). */
+    private static final String GENERIC_AUTH_ERROR = "Неверный email или пароль";
 
     /**
      * Регистрация нового пользователя.
@@ -66,6 +81,8 @@ public class AuthService {
 
         user = userRepository.save(user);
 
+        log.info("SECURITY: New user registered: {}", maskEmail(request.getEmail()));
+
         return buildAuthResponse(user);
     }
 
@@ -73,21 +90,51 @@ public class AuthService {
      * Аутентификация пользователя.
      * Проверяет credentials через AuthenticationManager, отзывает старые refresh tokens.
      *
+     * <p>Безопасность:
+     * <ul>
+     *   <li>Progressive delay при множественных неудачных попытках</li>
+     *   <li>Generic error message для всех ошибок</li>
+     *   <li>Сброс счётчика при успешном логине</li>
+     * </ul>
+     *
      * @param request email и password
      * @return AuthResponse с новыми токенами
-     * @throws AuthException при неверных credentials
+     * @throws AuthException при неверных credentials (generic message)
      */
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        String email = request.getEmail();
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new AuthException("Неверный email или пароль"));
+        // Progressive delay — замедляем ответ при множественных попытках
+        Duration delay = loginAttemptService.getDelay(email);
+        if (!delay.isZero()) {
+            try {
+                Thread.sleep(delay.toMillis());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, request.getPassword())
+            );
+        } catch (BadCredentialsException e) {
+            loginAttemptService.recordFailedAttempt(email);
+            log.info("SECURITY: Failed login attempt for: {}", maskEmail(email));
+            throw new AuthException(GENERIC_AUTH_ERROR);
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AuthException(GENERIC_AUTH_ERROR));
+
+        // Успешный логин — сбрасываем счётчик попыток
+        loginAttemptService.resetAttempts(email);
 
         // Revoke old refresh tokens
         refreshTokenRepository.revokeAllByUser(user);
+
+        log.info("SECURITY: Successful login for: {}", maskEmail(email));
 
         return buildAuthResponse(user);
     }
@@ -147,6 +194,8 @@ public class AuthService {
 
         // Revoke all refresh tokens — force re-login
         refreshTokenRepository.revokeAllByUser(user);
+
+        log.info("SECURITY: Password changed for userId: {}", userId);
     }
 
     /**
@@ -161,6 +210,8 @@ public class AuthService {
                 .ifPresent(token -> {
                     token.setRevoked(true);
                     refreshTokenRepository.save(token);
+                    log.info("SECURITY: User logged out, userId: {}",
+                            token.getUser().getId());
                 });
     }
 
@@ -205,5 +256,14 @@ public class AuthService {
                 .build();
         refreshTokenRepository.save(refreshToken);
         return token;
+    }
+
+    /**
+     * Маскирует email для логов.
+     */
+    private String maskEmail(String email) {
+        int at = email.indexOf('@');
+        if (at <= 1) return "***" + email.substring(at);
+        return email.charAt(0) + "***" + email.substring(at);
     }
 }

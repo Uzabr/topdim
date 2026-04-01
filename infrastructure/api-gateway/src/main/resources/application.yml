@@ -9,29 +9,57 @@ spring:
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
       routes:
-        # Auth Service
+        # Auth Service — login (строгий rate limit: 2 req/sec, burst 3)
+        - id: auth-login
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/v1/auth/login
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 2
+                redis-rate-limiter.burstCapacity: 3
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
+        # Auth Service — register (строже: 1 req/sec, burst 2)
+        - id: auth-register
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/v1/auth/register
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 2
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
+        # Auth Service — остальные endpoints (refresh, logout, change-password, super admin)
         - id: auth-service
           uri: lb://auth-service
           predicates:
-            - Path=/api/v1/auth/**
+            - Path=/api/v1/auth/**, /api/v1/super/**
 
         # User Service
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/v1/users/**
+            - Path=/api/v1/users/**, /api/v1/admin/users/**, /api/v1/partner/staff/**
 
         # Coupon Service
         - id: coupon-service
           uri: lb://coupon-service
           predicates:
-            - Path=/api/v1/coupons/**, /api/v1/categories/**, /api/v1/merchants/**, /api/v1/admin/coupons/**, /api/v1/admin/merchants/**
+            - Path=/api/v1/coupons/**, /api/v1/categories/**, /api/v1/merchants/**, /api/v1/admin/coupons/**, /api/v1/admin/merchants/**, /api/v1/admin/categories/**, /api/v1/partner/coupons/**, /api/v1/mod/coupons/**, /api/v1/mod/reviews/**, /api/v1/reviews/**, /api/v1/admin/promocodes/**
 
         # Order Service
         - id: order-service
           uri: lb://order-service
           predicates:
-            - Path=/api/v1/cart/**, /api/v1/orders/**, /api/v1/admin/orders/**
+            - Path=/api/v1/cart/**, /api/v1/orders/**, /api/v1/admin/orders/**, /api/v1/partner/stats, /api/v1/partner/redemptions, /api/v1/complaints/**, /api/v1/mod/complaints/**
 
         # Payment Service
         - id: payment-service
@@ -43,7 +71,7 @@ spring:
         - id: bazaar-service
           uri: lb://bazaar-service
           predicates:
-            - Path=/api/v1/bazaars/**, /api/v1/shops/**, /api/v1/admin/bazaars/**, /api/v1/admin/shops/**
+            - Path=/api/v1/bazaars/**, /api/v1/shops/**, /api/v1/admin/bazaars/**, /api/v1/admin/shops/**, /api/v1/partner/shops/**
 
         # Notification Service
         - id: notification-service
@@ -72,12 +100,20 @@ spring:
             - Path=/eureka/**
 
 jwt:
-  secret: dG9wZGltLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1zaWduaW5nLTI1Ni1iaXQ=
+  secret: ${JWT_SECRET:dG9wZGltLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1zaWduaW5nLTI1Ni1iaXQ=}
+
+# CORS — типобезопасная конфигурация через @ConfigurationProperties
+app:
+  cors:
+    allowed-origins:
+      - ${CORS_ORIGIN_1:http://localhost:3000}
+      - ${CORS_ORIGIN_2:http://localhost:5173}
+    allow-credentials: true
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
 
 logging:
   level:

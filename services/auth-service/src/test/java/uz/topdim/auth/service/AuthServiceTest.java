@@ -35,6 +35,7 @@ class AuthServiceTest {
     @Mock private JwtService jwtService;
     @Mock private AuthenticationManager authenticationManager;
     @Mock private TokenBlacklistService tokenBlacklistService;
+    @Mock private LoginAttemptService loginAttemptService;
 
     @InjectMocks
     private AuthService authService;
@@ -124,6 +125,7 @@ class AuthServiceTest {
                 .id(1L).email("user@topdim.uz").firstName("Test").lastName("User")
                 .role(Role.USER).build();
 
+        when(loginAttemptService.getDelay("user@topdim.uz")).thenReturn(java.time.Duration.ZERO);
         when(userRepository.findByEmail("user@topdim.uz")).thenReturn(Optional.of(user));
         when(jwtService.generateAccessToken(user)).thenReturn("access_token");
         when(jwtService.getAccessTokenExpiration()).thenReturn(900000L);
@@ -144,11 +146,15 @@ class AuthServiceTest {
         request.setEmail("user@topdim.uz");
         request.setPassword("wrong");
 
+        when(loginAttemptService.getDelay("user@topdim.uz")).thenReturn(java.time.Duration.ZERO);
         when(authenticationManager.authenticate(any()))
                 .thenThrow(new BadCredentialsException("Bad credentials"));
 
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(BadCredentialsException.class);
+                .isInstanceOf(AuthException.class)
+                .hasMessageContaining("Неверный email или пароль");
+
+        verify(loginAttemptService).recordFailedAttempt("user@topdim.uz");
     }
 
     // ==================== Refresh Token ====================
@@ -218,8 +224,9 @@ class AuthServiceTest {
     @Test
     @DisplayName("Logout: отзывает refresh token")
     void logout_revokesRefreshToken() {
+        User user = User.builder().id(1L).email("user@topdim.uz").firstName("Test").role(Role.USER).build();
         RefreshToken token = RefreshToken.builder()
-                .token("logout-token").revoked(false).build();
+                .token("logout-token").revoked(false).user(user).build();
 
         when(refreshTokenRepository.findByToken("logout-token")).thenReturn(Optional.of(token));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(inv -> inv.getArgument(0));

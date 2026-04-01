@@ -1,6 +1,10 @@
 package uz.topdim.user.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.user.dto.*;
@@ -16,7 +20,9 @@ import java.util.stream.Collectors;
 /**
  * Сервис управления пользователями.
  * Получение/обновление профиля, управление избранным.
+ * Admin: список пользователей, блокировка.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -73,9 +79,6 @@ public class UserService {
 
     /**
      * Получает список избранных купонов пользователя.
-     *
-     * @param userId ID пользователя
-     * @return список FavoriteResponse
      */
     @Transactional(readOnly = true)
     public List<FavoriteResponse> getFavorites(Long userId) {
@@ -86,11 +89,6 @@ public class UserService {
 
     /**
      * Добавляет купон в избранное.
-     *
-     * @param userId ID пользователя
-     * @param couponOfferId ID купона
-     * @return созданная запись избранного
-     * @throws IllegalArgumentException если уже в избранном
      */
     @Transactional
     public FavoriteResponse addFavorite(Long userId, Long couponOfferId) {
@@ -108,13 +106,75 @@ public class UserService {
 
     /**
      * Удаляет купон из избранного.
-     *
-     * @param userId ID пользователя
-     * @param couponOfferId ID купона
      */
     @Transactional
     public void removeFavorite(Long userId, Long couponOfferId) {
         favoriteRepository.deleteByUserIdAndCouponOfferId(userId, couponOfferId);
+    }
+
+    // ==================== Admin ====================
+
+    /**
+     * Получает список всех пользователей с пагинацией (Admin).
+     * Опциональные фильтры: по роли, по поиску (email/имя).
+     *
+     * @param role фильтр по роли (null = все)
+     * @param search поиск по email/имени (null = все)
+     * @param page номер страницы
+     * @param size размер страницы
+     * @return страница пользователей
+     */
+    @Transactional(readOnly = true)
+    public Page<AdminUserResponse> getAllUsers(String role, String search, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        Page<User> users;
+        if (search != null && !search.isBlank()) {
+            users = userRepository.searchByEmailOrName(search.trim(), pageable);
+        } else if (role != null && !role.isBlank()) {
+            users = userRepository.findByRole(role.toUpperCase(), pageable);
+        } else {
+            users = userRepository.findAll(pageable);
+        }
+
+        return users.map(this::mapToAdminUser);
+    }
+
+    /**
+     * Блокирует или разблокирует пользователя (Admin).
+     * Нельзя заблокировать ADMIN или SUPER_ADMIN.
+     *
+     * @param userId ID пользователя
+     * @param blocked true = заблокировать, false = разблокировать
+     * @return обновлённый AdminUserResponse
+     */
+    @Transactional
+    public AdminUserResponse blockUser(Long userId, boolean blocked) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
+
+        // Защита: нельзя блокировать админов
+        if ("ADMIN".equals(user.getRole()) || "SUPER_ADMIN".equals(user.getRole())) {
+            throw new IllegalStateException("Невозможно заблокировать администратора");
+        }
+
+        user.setEnabled(!blocked);
+        user = userRepository.save(user);
+
+        log.info("ADMIN: Пользователь {} (email: {}) {}", userId,
+                user.getEmail(), blocked ? "заблокирован" : "разблокирован");
+
+        return mapToAdminUser(user);
+    }
+
+    /**
+     * Получает пользователя по ID без ограничений (Admin).
+     */
+    @Transactional(readOnly = true)
+    public AdminUserResponse getUserByIdAdmin(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
+        return mapToAdminUser(user);
     }
 
     // ==================== Mapping ====================
@@ -128,6 +188,21 @@ public class UserService {
                 .lastName(user.getLastName())
                 .role(user.getRole())
                 .avatarUrl(user.getAvatarUrl())
+                .emailVerified(user.isEmailVerified())
+                .phoneVerified(user.isPhoneVerified())
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+
+    private AdminUserResponse mapToAdminUser(User user) {
+        return AdminUserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .role(user.getRole())
+                .enabled(user.isEnabled())
                 .emailVerified(user.isEmailVerified())
                 .phoneVerified(user.isPhoneVerified())
                 .createdAt(user.getCreatedAt())

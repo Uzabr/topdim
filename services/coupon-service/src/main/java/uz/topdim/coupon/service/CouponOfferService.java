@@ -113,8 +113,11 @@ public class CouponOfferService {
      */
     @Transactional
     public CouponOfferResponse create(CreateCouponOfferRequest request) {
-        Merchant merchant = merchantRepository.findById(request.getMerchantId())
-                .orElseThrow(() -> new ResourceNotFoundException("Партнёр не найден"));
+        Merchant merchant = null;
+        if (request.getMerchantId() != null) {
+            merchant = merchantRepository.findById(request.getMerchantId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Партнёр не найден"));
+        }
 
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
@@ -138,7 +141,7 @@ public class CouponOfferService {
                 .contactPhone(request.getContactPhone())
                 .workingHours(request.getWorkingHours())
                 .giftAvailable(request.isGiftAvailable())
-                .status(CouponStatus.DRAFT)
+                .status(CouponStatus.ACTIVE)
                 .totalSold(0)
                 .viewCount(0)
                 .build();
@@ -215,17 +218,17 @@ public class CouponOfferService {
 
     // ==================== Mapping ====================
 
-    private CouponOfferResponse mapToResponse(CouponOffer offer) {
+    public CouponOfferResponse mapToResponse(CouponOffer offer) {
         return CouponOfferResponse.builder()
                 .id(offer.getId())
                 .title(offer.getTitle())
                 .shortDescription(offer.getShortDescription())
                 .fullDescription(offer.getFullDescription())
-                .merchant(CouponOfferResponse.MerchantSummary.builder()
+                .merchant(offer.getMerchant() != null ? CouponOfferResponse.MerchantSummary.builder()
                         .id(offer.getMerchant().getId())
                         .name(offer.getMerchant().getName())
                         .logoUrl(offer.getMerchant().getLogoUrl())
-                        .build())
+                        .build() : null)
                 .category(CouponOfferResponse.CategorySummary.builder()
                         .id(offer.getCategory().getId())
                         .name(offer.getCategory().getName())

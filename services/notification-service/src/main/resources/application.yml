@@ -5,10 +5,25 @@ spring:
   application:
     name: notification-service
   rabbitmq:
-    host: localhost
-    port: 5672
-    username: topdim
-    password: topdim_secret
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:topdim}
+    password: ${RABBITMQ_PASSWORD:topdim_secret}
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/topdim_notification?sslmode=disable
+    username: ${DB_USERNAME:topdim}
+    password: ${DB_PASSWORD:topdim_secret}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
   mail:
     host: smtp.gmail.com
     port: 587
@@ -21,7 +36,7 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
   instance:
     prefer-ip-address: true
 

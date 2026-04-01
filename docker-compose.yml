@@ -4,28 +4,30 @@ services:
     image: postgres:16-alpine
     container_name: topdim-postgres
     environment:
-      POSTGRES_USER: topdim
-      POSTGRES_PASSWORD: topdim_secret
+      POSTGRES_USER: ${DB_USERNAME:-topdim}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-topdim_secret}
       POSTGRES_DB: topdim_auth
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
       - ./docker/postgresql.conf:/etc/postgresql/postgresql.conf
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U topdim"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-topdim}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - backend
 
   # ==================== Cache ====================
   redis:
     image: redis:7-alpine
     container_name: topdim-redis
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -33,17 +35,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - backend
 
   # ==================== Messaging ====================
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: topdim-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: topdim
-      RABBITMQ_DEFAULT_PASS: topdim_secret
-    ports:
-      - "5672:5672"
-      - "15672:15672"
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-topdim}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-topdim_secret}
+    expose:
+      - "5672"
+      - "15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -51,17 +55,19 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - backend
 
   # ==================== Object Storage ====================
   minio:
     image: minio/minio:latest
     container_name: topdim-minio
     environment:
-      MINIO_ROOT_USER: topdim
-      MINIO_ROOT_PASSWORD: topdim_secret
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-topdim}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-topdim_secret}
+    expose:
+      - "9000"
+      - "9001"
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -70,13 +76,15 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - backend
 
   # ==================== Monitoring ====================
   prometheus:
     image: prom/prometheus:latest
     container_name: topdim-prometheus
-    ports:
-      - "9090:9090"
+    expose:
+      - "9090"
     volumes:
       - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -85,29 +93,35 @@ services:
       - '--storage.tsdb.retention.time=15d'
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - backend
 
   grafana:
     image: grafana/grafana:latest
     container_name: topdim-grafana
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=topdim
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-topdim}
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
+    networks:
+      - backend
 
   loki:
     image: grafana/loki:latest
     container_name: topdim-loki
-    ports:
-      - "3100:3100"
+    expose:
+      - "3100"
     volumes:
       - ./docker/loki.yml:/etc/loki/local-config.yaml
       - loki_data:/loki
     command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - backend
 
   # ==================== Search (CQRS Read Side) ====================
   elasticsearch:
@@ -117,8 +131,8 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ports:
-      - "9200:9200"
+    expose:
+      - "9200"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     healthcheck:
@@ -126,16 +140,28 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - backend
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.12.0
     container_name: topdim-kibana
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    ports:
-      - "5601:5601"
+    expose:
+      - "5601"
     depends_on:
       - elasticsearch
+    networks:
+      - backend
+
+networks:
+  edge:
+    driver: bridge
+    name: topdim-edge
+  backend:
+    driver: bridge
+    name: topdim-backend
 
 volumes:
   postgres_data:
@@ -146,4 +172,3 @@ volumes:
   grafana_data:
   loki_data:
   elasticsearch_data:
-

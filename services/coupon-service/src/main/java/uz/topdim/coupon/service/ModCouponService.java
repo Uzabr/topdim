@@ -1,0 +1,104 @@
+package uz.topdim.coupon.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import uz.topdim.common.events.NotificationEvent;
+
+
+import uz.topdim.coupon.dto.CouponOfferResponse;
+import uz.topdim.coupon.dto.ReviewResponse;
+import uz.topdim.coupon.entity.CouponOffer;
+import uz.topdim.coupon.entity.CouponStatus;
+import uz.topdim.coupon.entity.Review;
+import uz.topdim.coupon.entity.ReviewStatus;
+import uz.topdim.coupon.repository.CouponOfferRepository;
+import uz.topdim.coupon.repository.ReviewRepository;
+
+@Service
+@RequiredArgsConstructor
+public class ModCouponService {
+
+    private final CouponOfferRepository couponOfferRepository;
+    private final ReviewRepository reviewRepository;
+    private final CouponOfferService couponOfferService;
+    private final RabbitTemplate rabbitTemplate;
+
+    @Transactional(readOnly = true)
+    public Page<CouponOfferResponse> getPendingCoupons(Pageable pageable) {
+        return couponOfferRepository.findAllByStatus(CouponStatus.PENDING_REVIEW, pageable)
+                .map(couponOfferService::mapToResponse);
+    }
+
+    @Transactional
+    public void reviewCoupon(Long modId, Long couponId, String decision, String reason) {
+        CouponOffer coupon = couponOfferRepository.findById(couponId)
+                .orElseThrow(() -> new RuntimeException("Купон не найден"));
+
+        if ("APPROVE".equalsIgnoreCase(decision)) {
+            coupon.setStatus(CouponStatus.ACTIVE);
+            sendNotification(coupon.getMerchant().getUserId(), "Купон одобрен", 
+                    "Ваш купон '" + coupon.getTitle() + "' был успешно промодерирован и опубликован.", "SUCCESS");
+        } else if ("REJECT".equalsIgnoreCase(decision)) {
+            coupon.setStatus(CouponStatus.REJECTED);
+            sendNotification(coupon.getMerchant().getUserId(), "Купон отклонен", 
+                    "Ваш купон '" + coupon.getTitle() + "' был отклонен. Причина: " + reason, "ALERT");
+        } else {
+            throw new IllegalArgumentException("Unknown decision: " + decision);
+        }
+        
+        couponOfferRepository.save(coupon);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReviewResponse> getPendingReviews(Pageable pageable) {
+        return reviewRepository.findByStatusOrderByCreatedAtDesc(ReviewStatus.PENDING, pageable)
+                .map(this::mapReview);
+    }
+
+    @Transactional
+    public void reviewUserReview(Long modId, Long reviewId, String decision, String reason) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Отзыв не найден"));
+
+        if ("APPROVE".equalsIgnoreCase(decision)) {
+            review.setStatus(ReviewStatus.APPROVED);
+        } else if ("REJECT".equalsIgnoreCase(decision)) {
+            review.setStatus(ReviewStatus.REJECTED);
+            review.setRejectReason(reason);
+            // Optional: send notification to user that their review was rejected
+            sendNotification(review.getUserId(), "Отзыв отклонен", 
+                    "Мы не смогли опубликовать ваш отзыв. Причина: " + reason, "INFO");
+        } else {
+            throw new IllegalArgumentException("Unknown decision: " + decision);
+        }
+
+        reviewRepository.save(review);
+    }
+
+    private void sendNotification(Long userId, String title, String message, String type) {
+        NotificationEvent event = NotificationEvent.builder()
+                .userId(userId)
+                .title(title)
+                .message(message)
+                .type(type)
+                .build();
+        rabbitTemplate.convertAndSend("notification.exchange", "notification.sent", event);
+    }
+
+    private ReviewResponse mapReview(Review review) {
+        return ReviewResponse.builder()
+                .id(review.getId())
+                .userId(review.getUserId())
+                .couponOfferId(review.getCouponOffer().getId())
+                .rating(review.getRating())
+                .comment(review.getComment())
+                .status(review.getStatus())
+                .rejectReason(review.getRejectReason())
+                .createdAt(review.getCreatedAt())
+                .build();
+    }
+}

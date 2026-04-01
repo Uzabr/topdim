@@ -48,6 +48,8 @@ graph TB
         PG_COUPON["PostgreSQL<br/>(coupons)"]
         PG_ORDER["PostgreSQL<br/>(orders)"]
         PG_BAZAAR["PostgreSQL<br/>(bazaar)"]
+        PG_USER["PostgreSQL<br/>(user)"]
+        PG_NOTIF["PostgreSQL<br/>(notification)"]
         REDIS["Redis<br/>(cache + sessions)"]
         S3["S3 / MinIO<br/>(media)"]
     end
@@ -76,10 +78,11 @@ graph TB
     GW --> MEDIA
 
     AUTH --> PG_AUTH
-    USER --> PG_AUTH
+    USER --> PG_USER
     COUPON --> PG_COUPON
     ORDER --> PG_ORDER
     BAZAAR --> PG_BAZAAR
+    NOTIF --> PG_NOTIF
 
     AUTH --> REDIS
     COUPON --> REDIS
@@ -221,7 +224,7 @@ topdim/
 ---
 
 #### User Service (`user-service`)
-**Port:** 8082 | **DB:** `topdim_auth` (shared with auth)
+**Port:** 8082 | **DB:** `topdim_user`
 
 | Endpoint | Method | Описание |
 |---|---|---|
@@ -229,6 +232,8 @@ topdim/
 | `/api/v1/users/me` | PUT | Обновление профиля |
 | `/api/v1/users/me/favorites` | GET | Избранное |
 | `/api/v1/users/me/favorites` | POST/DELETE | Управление избранным |
+| `/api/v1/partner/staff` | POST/GET | Управление сотрудниками (кассирами) |
+| `/api/v1/admin/users` | GET | Управление пользователями |
 
 ---
 
@@ -308,14 +313,19 @@ topdim/
 ---
 
 #### Notification Service (`notification-service`)
-**Port:** 8087 | Без собственной БД (stateless)
+**Port:** 8087 | **DB:** `topdim_notification`
 
 Слушает события из RabbitMQ и отправляет:
 - Email (SMTP / SendGrid)
 - SMS (Eskiz.uz / Play Mobile)
-- In-app уведомления (WebSocket / SSE)
+- In-app уведомления (в БД `notifications`)
 
-**Events consumed:** `OrderPaid`, `CouponRedeemed`, `UserRegistered`
+| Endpoint | Method | Описание |
+|---|---|---|
+| `/api/v1/notifications` | GET | Мои уведомления |
+| `/api/v1/notifications/{id}/read` | PATCH | Прочитать |
+
+**Events consumed:** `OrderPaid`, `CouponRedeemed`, `UserRegistered`, `CouponPurchased`
 
 ---
 
@@ -400,8 +410,8 @@ graph LR
 | Аспект | Реализация |
 |---|---|
 | **Аутентификация** | JWT (access token: 15 мин, refresh: 7 дней) |
-| **Авторизация** | Spring Security + roles (GUEST, USER, PARTNER, ADMIN) |
-| **API Gateway Auth** | JWT filter на gateway, forwarding userId в header |
+| **Авторизация** | Spring Security + roles (GUEST, USER, PARTNER, MODERATOR, ADMIN, SUPER_ADMIN) |
+| **API Gateway Auth** | JWT filter на gateway, forwarding userId, userRole в header |
 | **Rate Limiting** | Redis-based rate limiter на gateway |
 | **CORS** | Настроен на gateway для фронт-домена |
 | **Idempotency** | Idempotency key для платежей (защита от дублей) |

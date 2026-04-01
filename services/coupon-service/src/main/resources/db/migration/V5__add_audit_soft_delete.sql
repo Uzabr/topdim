@@ -15,3 +15,4 @@ ALTER TABLE categories ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW
 -- Partial indexes for non-deleted records
 CREATE INDEX IF NOT EXISTS idx_coupon_offers_not_deleted ON coupon_offers(status, category_id) WHERE deleted = FALSE;
 CREATE INDEX IF NOT EXISTS idx_merchants_not_deleted ON merchants(id) WHERE deleted = FALSE;
+

@@ -25,7 +25,7 @@
 - [x] **2.6 Notification** (EmailService + SmsService, stub mode)
 
 ### Оставшиеся backend задачи (из аудита v2):
-- [ ] **2.7 Complaint entity** (user жалобы — из ER-диаграммы)
+- [x] **2.7 Complaint entity** (user жалобы — из ER-диаграммы)
 - [ ] **2.8 BazaarMap entity** (внутренняя карта базара)
 - [ ] **2.9 GET /auth/verify** (подтверждение email/phone)
 - [ ] **2.10 Payme/Click реальная интеграция**
@@ -59,9 +59,11 @@
 
 ## Sprint 4 · Admin Panel (3-5 дней)
 
-- [ ] **4.1 Инициализация** `frontend/admin-app/` (Vite + React)
-- [ ] **4.2 CRUD** — купоны, партнёры, категории, базары, магазины, заказы
-- [ ] **4.3 Dashboard** — аналитика + графики (Recharts)
+- [x] **4.1 Инициализация** `frontend/admin-app/` (Vite + React)
+- [x] **4.2 Архитектура безопасности** (Axios interceptors, Protected Routes, JWT refresh)
+- [x] **4.3 Функционал Супер Админа** (Управление персоналом, блокировка, просмотр логов)
+- [ ] **4.4 CRUD** — купоны, партнёры, категории, базары, магазины, заказы
+- [ ] **4.5 Dashboard** — аналитика + графики (Recharts)
 
 ---
 

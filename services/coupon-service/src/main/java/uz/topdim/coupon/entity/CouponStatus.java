@@ -6,7 +6,9 @@ package uz.topdim.coupon.entity;
  */
 public enum CouponStatus {
     DRAFT,
+    PENDING_REVIEW,
     ACTIVE,
+    REJECTED,
     PAUSED,
     EXPIRED,
     ARCHIVED

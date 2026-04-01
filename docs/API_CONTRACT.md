@@ -1247,11 +1247,11 @@ export const formatPrice = (price: number): string => {
 | 28 | GET | `/api/v1/shops/{id}` | ❌ | bazaar |
 | 29 | GET | `/api/v1/shops/search?q=` | ❌ | bazaar |
 | 30 | GET | `/api/v1/shops/categories` | ❌ | bazaar |
-| 31 | GET | `/api/v1/users/profile` | ✅ | user |
-| 32 | PUT | `/api/v1/users/profile` | ✅ | user |
-| 33 | GET | `/api/v1/users/favorites` | ✅ | user |
-| 34 | POST | `/api/v1/users/favorites` | ✅ | user |
-| 35 | DELETE | `/api/v1/users/favorites/{couponOfferId}` | ✅ | user |
+| 31 | GET | `/api/v1/users/me` | ✅ | user |
+| 32 | PUT | `/api/v1/users/me` | ✅ | user |
+| 33 | GET | `/api/v1/users/me/favorites` | ✅ | user |
+| 34 | POST | `/api/v1/users/me/favorites` | ✅ | user |
+| 35 | DELETE | `/api/v1/users/me/favorites/{couponOfferId}` | ✅ | user |
 | 36 | POST | `/api/v1/media/upload` | ✅ | media |
 | 37 | GET | `/api/v1/media/{fileName}` | ❌ | media |
 | 38 | DELETE | `/api/v1/media/{fileName}` | ✅ | media |
@@ -1263,3 +1263,20 @@ export const formatPrice = (price: number): string => {
 | 44 | GET | `/api/v1/admin/merchants/{id}` | 🔒 ADMIN | coupon |
 | 45 | POST | `/api/v1/admin/merchants` | 🔒 ADMIN | coupon |
 | 46 | PUT | `/api/v1/admin/merchants/{id}` | 🔒 ADMIN | coupon |
+| 47 | GET | `/api/v1/admin/users` | 🔒 ADMIN | user |
+| 48 | PATCH | `/api/v1/admin/users/{id}/block` | 🔒 ADMIN | user |
+| 49 | POST | `/api/v1/admin/promocodes` | 🔒 ADMIN/PARTNER | coupon |
+| 50 | POST | `/api/v1/partner/staff` | 🔒 PARTNER | user |
+| 51 | GET | `/api/v1/partner/staff` | 🔒 PARTNER | user |
+| 52 | GET | `/api/v1/mod/coupons` | 🛡️ MODERATOR | coupon |
+| 53 | PATCH | `/api/v1/mod/coupons/{id}/review` | 🛡️ MODERATOR | coupon |
+| 54 | GET | `/api/v1/mod/complaints` | 🛡️ MODERATOR | order |
+| 55 | PATCH | `/api/v1/mod/complaints/{id}/resolve`| 🛡️ MODERATOR | order |
+| 56 | PATCH | `/api/v1/mod/reviews/{id}/status` | 🛡️ MODERATOR | coupon |
+| 57 | POST | `/api/v1/super/admins` | 👑 SUPER_ADMIN | auth |
+| 58 | PATCH | `/api/v1/super/users/{id}/role` | 👑 SUPER_ADMIN | auth |
+| 59 | GET | `/api/v1/super/audit-logs` | 👑 SUPER_ADMIN | auth |
+| 60 | POST | `/api/v1/reviews` | ✅ USER | coupon |
+| 61 | POST | `/api/v1/complaints` | ✅ USER | order |
+| 62 | GET | `/api/v1/notifications` | ✅ USER | notification |
+| 63 | PATCH | `/api/v1/notifications/{id}/read` | ✅ USER | notification |

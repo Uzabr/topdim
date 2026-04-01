@@ -27,6 +27,23 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public TopicExchange notificationExchange() {
+        return new TopicExchange("notification.exchange");
+    }
+
+    @Bean
+    public Queue notificationQueue() {
+        return QueueBuilder.durable("notification.queue").build();
+    }
+
+    @Bean
+    public Binding notificationBinding() {
+        return BindingBuilder.bind(notificationQueue())
+                .to(notificationExchange())
+                .with("notification.sent");
+    }
+
+    @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }

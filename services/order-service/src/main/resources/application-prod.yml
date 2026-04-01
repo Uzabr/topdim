@@ -1,0 +1,7 @@
+# Production profile — отключает Swagger UI и API docs.
+# Активируется через: SPRING_PROFILES_ACTIVE=prod
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

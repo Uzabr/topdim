@@ -17,4 +17,10 @@ public interface PurchasedCouponRepository extends JpaRepository<PurchasedCoupon
     List<PurchasedCoupon> findByOrderId(Long orderId);
     Optional<PurchasedCoupon> findByCouponCode(String couponCode);
     Optional<PurchasedCoupon> findByQrToken(String qrToken);
+
+    long countByCouponOfferIdIn(java.util.Collection<Long> couponOfferIds);
+    long countByCouponOfferIdInAndStatus(java.util.Collection<Long> couponOfferIds, PurchasedCouponStatus status);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(oi.unitPrice * oi.quantity), 0) FROM OrderItem oi WHERE oi.couponOfferId IN :ids")
+    java.math.BigDecimal sumRevenueByCouponOfferIds(@org.springframework.data.repository.query.Param("ids") java.util.Collection<Long> couponOfferIds);
 }

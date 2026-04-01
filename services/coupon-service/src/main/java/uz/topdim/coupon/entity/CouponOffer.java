@@ -38,7 +38,7 @@ public class CouponOffer {
     private String fullDescription;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "merchant_id", nullable = false)
+    @JoinColumn(name = "merchant_id")
     private Merchant merchant;
 
     @ManyToOne(fetch = FetchType.LAZY)

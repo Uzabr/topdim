@@ -16,13 +16,15 @@
 
 ```
 PostgreSQL Instance
-├── topdim_auth     ← auth-service
-├── topdim_coupon   ← coupon-service
-├── topdim_order    ← order-service
-├── topdim_payment  ← payment-service
-├── topdim_bazaar   ← bazaar-service
-└── topdim_user     ← user-service (+ favorites)
+├── topdim_auth         ← auth-service
+├── topdim_coupon       ← coupon-service
+├── topdim_order        ← order-service
+├── topdim_payment      ← payment-service
+├── topdim_bazaar       ← bazaar-service
+├── topdim_user         ← user-service
+└── topdim_notification ← notification-service
 ```
+
 
 ---
 
@@ -55,6 +57,16 @@ erDiagram
         boolean revoked
         timestamp created_at
     }
+    audit_logs {
+        bigint id PK
+        bigint user_id
+        varchar action
+        varchar entity_type
+        bigint entity_id
+        text details
+        varchar ip_address
+        timestamp created_at
+    }
     users ||--o{ refresh_tokens : "has"
 
     %% Coupon Service
@@ -82,7 +94,7 @@ erDiagram
         varchar title
         text short_description
         text full_description
-        bigint merchant_id FK
+        bigint merchant_id FK "nullable (MVP manual creation)"
         bigint category_id FK
         decimal old_price
         decimal from_price
@@ -111,10 +123,28 @@ erDiagram
         varchar url
         int sort_order
     }
+    promo_codes {
+        bigint id PK
+        varchar code UK
+        bigint merchant_id FK
+        int discount_percent
+        timestamp expires_at
+        boolean active
+    }
+    reviews {
+        bigint id PK
+        bigint coupon_offer_id FK
+        bigint user_id
+        int rating
+        text comment
+        varchar status
+        timestamp created_at
+    }
     categories ||--o{ coupon_offers : "contains"
     merchants ||--o{ coupon_offers : "sells"
     coupon_offers ||--o{ coupon_options : "has"
     coupon_offers ||--o{ coupon_images : "has"
+    coupon_offers ||--o{ reviews : "has"
 
     %% Order Service
     carts {
@@ -179,10 +209,21 @@ erDiagram
         timestamp created_at
         timestamp resolved_at
     }
+    complaints {
+        bigint id PK
+        bigint order_id FK
+        bigint user_id
+        text reason
+        varchar status
+        text resolution_comment
+        timestamp created_at
+        timestamp resolved_at
+    }
     carts ||--o{ cart_items : "contains"
     orders ||--o{ order_items : "contains"
     orders ||--o{ purchased_coupons : "generates"
     orders ||--o{ refund_requests : "has"
+    orders ||--o{ complaints : "has"
     purchased_coupons ||--o| redemptions : "redeemed"
 
     %% Payment Service
@@ -251,10 +292,38 @@ erDiagram
     shops ||--o{ shop_product_tags : "tagged"
 
     %% User Service
+    users_profile {
+        bigint id PK
+        varchar email UK
+        varchar phone UK
+        varchar first_name
+        varchar last_name
+        varchar role
+        varchar avatar_url
+    }
+    staff {
+        bigint id PK
+        bigint user_id
+        varchar name
+        varchar phone
+        varchar role
+        boolean active
+    }
     favorites {
         bigint id PK
-        bigint user_id FK
+        bigint user_id
         bigint coupon_offer_id
+        timestamp created_at
+    }
+
+    %% Notification Service
+    notifications {
+        bigint id PK
+        bigint user_id
+        varchar type
+        varchar title
+        text message
+        boolean is_read
         timestamp created_at
     }
 ```
@@ -263,14 +332,15 @@ erDiagram
 
 ## Таблицы по сервисам
 
-### Auth Service (topdim_auth) — 2 таблицы
+### Auth Service (topdim_auth) — 3 таблицы
 
 | Таблица | Строк (5M юзеров) | Описание |
 |---|---|---|
 | `users` | 5 000 000 | Пользователи |
 | `refresh_tokens` | ~10 000 000 | Refresh токены (2 на юзера) |
+| `audit_logs` | ~50 000 000 | Логи действий администраторов |
 
-### Coupon Service (topdim_coupon) — 5 таблиц
+### Coupon Service (topdim_coupon) — 7 таблиц
 
 | Таблица | Строк | Описание |
 |---|---|---|
@@ -279,8 +349,10 @@ erDiagram
 | `coupon_offers` | ~5 000 | Купонные предложения |
 | `coupon_options` | ~15 000 | Варианты купонов |
 | `coupon_images` | ~20 000 | Изображения купонов |
+| `promo_codes` | ~1 000 | Промокоды от партнёров |
+| `reviews` | ~500 000 | Отзывы на купоны |
 
-### Order Service (topdim_order) — 7 таблиц
+### Order Service (topdim_order) — 8 таблиц
 
 | Таблица | Строк (год) | Описание |
 |---|---|---|
@@ -291,6 +363,7 @@ erDiagram
 | `purchased_coupons` | **24 000 000** | Купленные купоны |
 | `redemptions` | ~15 000 000 | Записи погашения |
 | `refund_requests` | ~500 000 | Запросы на возврат |
+| `complaints` | ~50 000 | Жалобы на заказы |
 
 ### Payment Service (topdim_payment) — 1 таблица
 
@@ -308,11 +381,19 @@ erDiagram
 | `shops` | ~50 000 | Магазины |
 | `shop_product_tags` | ~200 000 | Теги продуктов |
 
-### User Service (topdim_user) — 1 таблица
+### User Service (topdim_user) — 3 таблицы
 
 | Таблица | Строк | Описание |
 |---|---|---|
+| `users` | 5 000 000 | Профили пользователей (без паролей) |
+| `staff` | ~15 000 | Сотрудники партнёров (кассиры) |
 | `favorites` | ~10 000 000 | Избранные купоны |
+
+### Notification Service (topdim_notification) — 1 таблица
+
+| Таблица | Строк | Описание |
+|---|---|---|
+| `notifications` | ~100 000 000 | Уведомления (сильно изменяемая) |
 
 ---
 
@@ -410,12 +491,13 @@ Shard 3: user_id 4,000,001 — 6,000,000
 
 | Сервис | Миграции |
 |---|---|
-| auth | V1 (tables), V2 (indexes), V3 (audit) |
-| coupon | V1 (tables), V2 (indexes), V3 (audit), V4 (GIN search) |
-| order | V1 (tables), V2 (redemptions), V3 (refunds), V4 (indexes), V5 (audit), V6 (partitioning) |
+| auth | V1 (tables), V2 (indexes), V3 (staff deleted), V4 (audit logs) |
+| coupon | V1 (tables), V2 (indexes), V3 (reviews & promos), V4 (GIN search), V5 (soft delete) |
+| order | V1 (tables), V2 (redemptions), V3 (refunds), V4 (indexes), V5 (audit), V6 (partitioning), V7 (complaints) |
 | payment | V1 (tables), V2 (indexes), V3 (audit) |
-| bazaar | V1 (tables), V2 (indexes), V3 (audit), V4 (GIN search) |
-| user | V1 (favorites), V2 (indexes) |
+| bazaar | V1 (tables), V2 (indexes), V3 (audit), V4 (GIN search), V5 (user id to shops) |
+| user | V1 (favorites), V2 (indexes), V3 (create staff), V4 (alter staff), V5 (create users) |
+| notification | V1 (notifications table) |
 
 ## Резервное копирование
 
