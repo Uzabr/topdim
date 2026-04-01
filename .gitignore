@@ -13,6 +13,7 @@ dist/
 
 # Agent
 .gemini/
+.agents/
 
 # IDE
 .idea/
