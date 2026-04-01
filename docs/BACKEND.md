@@ -48,9 +48,11 @@ payment-service ──publish──▶ payment.exchange / payment.completed
 | POST | `/api/v1/auth/refresh` | ❌ | Обновление токена |
 | POST | `/api/v1/auth/logout` | ✅ | Выход |
 | PUT  | `/api/v1/auth/change-password` | ✅ | Смена пароля |
-| PATCH| `/api/v1/super/users/{id}/role`| ✅ SUPER_ADMIN | Изменение роли пользователя |
-| POST | `/api/v1/super/admins` | ✅ SUPER_ADMIN | Назначение нового админа |
-| GET  | `/api/v1/super/audit-logs` | ✅ SUPER_ADMIN | Просмотр логов действий |
+| GET  | `/api/v1/super/staff` | ✅ SUPER_ADMIN | Список персонала (Admin/Moderator) |
+| POST | `/api/v1/super/admins` | ✅ SUPER_ADMIN | Назначение нового сотрудника |
+| PATCH| `/api/v1/super/users/{id}/role`| ✅ SUPER_ADMIN | Изменение роли сотрудника |
+| PATCH| `/api/v1/super/users/{id}/block`| ✅ SUPER_ADMIN | Блокировка/разблокировка сотрудника |
+| GET  | `/api/v1/super/audit-logs` | ✅ SUPER_ADMIN | Просмотр логов действий администраторов |
 
 ### Ключевые классы
 - `AuthService` — основная бизнес-логика

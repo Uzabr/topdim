@@ -60,7 +60,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     );
 
     /** Роли, которым разрешён доступ к /api/v1/admin/**. */
-    private static final Set<String> ADMIN_ROLES = Set.of("ADMIN", "SUPER_ADMIN");
+    private static final Set<String> ADMIN_ROLES = Set.of("ADMIN", "SUPER_ADMIN", "MODERATOR");
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -106,6 +106,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             // Проверка доступа к admin endpoints
             if (path.startsWith("/api/v1/admin/") && !ADMIN_ROLES.contains(role)) {
                 log.warn("Access denied to {} for userId: {} with role: {}", path, userId, role);
+                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                return exchange.getResponse().setComplete();
+            }
+
+            // Проверка доступа к super admin endpoints (только SUPER_ADMIN)
+            if (path.startsWith("/api/v1/super/") && !"SUPER_ADMIN".equals(role)) {
+                log.warn("Access denied to super admin endpoint {} for userId: {} with role: {}", path, userId, role);
                 exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                 return exchange.getResponse().setComplete();
             }

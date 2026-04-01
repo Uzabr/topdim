@@ -59,18 +59,10 @@ public class SecurityConfig {
                         .xssProtection(xss -> xss.disable())
                 )
 
+                // Авторизацию выполняет наш JwtAuthenticationFilter (GlobalFilter),
+                // а не Spring Security. Поэтому разрешаем все запросы на уровне Security.
                 .authorizeExchange(exchange -> exchange
-                        .pathMatchers(
-                                "/api/v1/auth/**",
-                                "/api/v1/coupons/**",
-                                "/api/v1/categories/**",
-                                "/api/v1/bazaars/**",
-                                "/api/v1/shops/**",
-                                "/api/v1/media/**",
-                                "/eureka/**",
-                                "/actuator/**"
-                        ).permitAll()
-                        .anyExchange().authenticated()
+                        .anyExchange().permitAll()
                 )
                 .build();
     }

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.auth.dto.AuditLogResponse;
 import uz.topdim.auth.dto.CreateAdminRequest;
-import uz.topdim.auth.entity.AuditLog;
+import uz.topdim.auth.dto.StaffResponse;
 import uz.topdim.auth.entity.Role;
 import uz.topdim.auth.entity.User;
 import uz.topdim.auth.repository.AuditLogRepository;
@@ -102,5 +102,37 @@ public class SuperAdminService {
                         .details(log.getDetails())
                         .createdAt(log.getCreatedAt())
                         .build());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<StaffResponse> getStaffByRole(Role role, Pageable pageable) {
+        return userRepository.findByRole(role, pageable)
+                .map(user -> StaffResponse.builder()
+                        .id(user.getId())
+                        .email(user.getEmail())
+                        .phone(user.getPhone())
+                        .firstName(user.getFirstName())
+                        .lastName(user.getLastName())
+                        .role(user.getRole().name())
+                        .enabled(user.isEnabled())
+                        .createdAt(user.getCreatedAt())
+                        .build());
+    }
+
+    @Transactional
+    public void blockUser(Long currentAdminId, Long userId, boolean blocked) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+        user.setEnabled(!blocked);
+        userRepository.save(user);
+
+        String action = blocked ? "BLOCK_USER" : "UNBLOCK_USER";
+        auditLogService.logAction(
+                currentAdminId,
+                action,
+                "USER",
+                userId,
+                (blocked ? "Заблокирован" : "Разблокирован") + " пользователь: " + user.getEmail()
+        );
     }
 }

@@ -32,7 +32,10 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
 
-                        // Admin endpoints (будущие: управление пользователями)
+                        // Публичный endpoint: заявки на партнёрство с лендинга
+                        .requestMatchers("/api/v1/partners/applications").permitAll()
+
+                        // Admin endpoints: управление пользователями и заявками
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                         // Доступ партнёра к своим сотрудникам

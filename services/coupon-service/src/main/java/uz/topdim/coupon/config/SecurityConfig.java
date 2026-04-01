@@ -44,8 +44,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/merchants/**").permitAll()
 
-                        // Admin endpoints — только ADMIN и SUPER_ADMIN
-                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        // Admin/Moderator endpoints (модаратору теперь тоже можно работать с контентом)
+                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "MODERATOR")
 
                         // Partner endpoints — PARTNER, ADMIN, SUPER_ADMIN
                         .requestMatchers("/api/v1/partner/**").hasAnyRole("PARTNER", "ADMIN", "SUPER_ADMIN")

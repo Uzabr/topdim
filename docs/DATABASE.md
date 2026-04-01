@@ -94,7 +94,7 @@ erDiagram
         varchar title
         text short_description
         text full_description
-        bigint merchant_id FK
+        bigint merchant_id FK "nullable (MVP manual creation)"
         bigint category_id FK
         decimal old_price
         decimal from_price

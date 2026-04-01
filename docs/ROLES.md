@@ -155,16 +155,17 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 
 ## 4. MODERATOR (модератор)
 
-> Модерирует контент: купоны, отзывы, жалобы.
+> Развивает платформу: создаёт купоны, модерирует отзывы, жалобы и заявки партнёров.
 
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Купоны на модерации | `GET /api/v1/mod/coupons?status=PENDING` | ✅ |
-| Одобрить/отклонить купон | `PATCH /api/v1/mod/coupons/{id}/review` | ✅ |
+| Все купоны | `GET /api/v1/admin/coupons` | ✅ |
+| Создать купон (без партнерки) | `POST /api/v1/admin/coupons` | ✅ |
+| Обновить купон / статус | `PATCH /api/v1/admin/coupons/{id}/status` | ✅ |
 | Список жалоб | `GET /api/v1/mod/complaints` | ✅ |
 | Решение по жалобе | `PATCH /api/v1/mod/complaints/{id}/resolve` | ✅ |
 | Блокировка отзыва | `PATCH /api/v1/mod/reviews/{id}/status` | ✅ |
-| Просмотр пользователей | `GET /api/v1/mod/users` | ❌ |
+| Заявки на партнерство | `GET /api/v1/admin/partners/applications` | ✅ |
 
 ---
 

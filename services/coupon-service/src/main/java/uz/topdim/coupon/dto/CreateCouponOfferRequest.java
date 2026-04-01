@@ -22,7 +22,6 @@ public class CreateCouponOfferRequest {
     private String shortDescription;
     private String fullDescription;
 
-    @NotNull(message = "Укажите партнёра")
     private Long merchantId;
 
     @NotNull(message = "Укажите категорию")
