@@ -4,6 +4,7 @@ import { UploadOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UploadProps } from 'antd';
 import api from '../../api/client';
+import { useAuthStore } from '../../store/authStore';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Title, Text } = Typography;
@@ -52,11 +53,12 @@ export const CategoriesPage = () => {
   };
 
   // Настройки загрузки файлов
+  const token = useAuthStore.getState().accessToken;
   const uploadProps: UploadProps = {
     name: 'file',
-    action: 'http://localhost:8080/api/v1/admin/categories/upload', // Используем API Gateway
+    action: 'http://localhost:8080/api/v1/admin/categories/upload',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('admin_token')}`, // Убеждаемся что токен отправляется
+      Authorization: `Bearer ${token}`,
     },
     showUploadList: false,
     onChange(info) {
@@ -117,7 +119,7 @@ export const CategoriesPage = () => {
     { title: 'Сортировка', dataIndex: 'sortOrder', width: 100 },
     {
       title: 'Действия',
-      render: (_, record) => (
+      render: (_: unknown, _record: Category) => (
         <Space>
            {/* Кнопки редактирования пока заглушки */}
           <Button type="link" size="small">Изменить иконку</Button>
