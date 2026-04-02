@@ -95,36 +95,4 @@ public class AdminCouponController {
         return ResponseEntity.ok(ApiResponse.success("Партнёр обновлён", merchantService.updateMerchant(id, request)));
     }
 
-    // ==================== Categories ====================
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    @GetMapping("/categories/{id}")
-    public ResponseEntity<ApiResponse<CategoryResponse>> getCategory(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success(merchantService.getCategoryById(id)));
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    @PostMapping("/categories")
-    public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(
-            @Valid @RequestBody CreateCategoryRequest request
-    ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Категория создана", merchantService.createCategory(request)));
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    @PutMapping("/categories/{id}")
-    public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(
-            @PathVariable Long id,
-            @Valid @RequestBody CreateCategoryRequest request
-    ) {
-        return ResponseEntity.ok(ApiResponse.success("Категория обновлена", merchantService.updateCategory(id, request)));
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    @DeleteMapping("/categories/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable Long id) {
-        merchantService.deleteCategory(id);
-        return ResponseEntity.ok(ApiResponse.success("Категория удалена", null));
-    }
 }

@@ -34,6 +34,7 @@ public class CreateCouponOfferRequest {
     private BigDecimal fromPrice;
 
     private Integer discountPercent;
+    @NotBlank(message = "URL изображения обязателен")
     private String coverImageUrl;
 
     @NotNull(message = "Укажите срок покупки")

@@ -73,7 +73,11 @@ export default function CouponDetailPage() {
       <div className="detail-content container">
         {/* Info */}
         <div className="detail-main">
-          <div className="detail-merchant-badge">{c.merchant.name}</div>
+          {c.merchant ? (
+            <div className="detail-merchant-badge">{c.merchant.name}</div>
+          ) : (
+            <div className="detail-merchant-badge" style={{ background: 'var(--primary)', color: '#fff' }}>Эксклюзив платформы</div>
+          )}
           <h1 className="detail-title">{c.title}</h1>
           {c.shortDescription && <p className="detail-short-desc">{c.shortDescription}</p>}
 
