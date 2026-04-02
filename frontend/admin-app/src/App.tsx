@@ -12,6 +12,7 @@ import { PartnerApplicationsPage } from './features/partners/PartnerApplications
 
 import { CouponsListPage } from './features/coupons/CouponsListPage';
 import { CreateCouponPage } from './features/coupons/CreateCouponPage';
+import { CategoriesPage } from './features/catalog/CategoriesPage';
 import { StaffPage } from './features/system/StaffPage';
 import { AuditLogPage } from './features/system/AuditLogPage';
 
@@ -58,7 +59,8 @@ function App() {
                   {/* TODO: подключить ComplaintsPage, ReviewsPage */}
 
                   {/* Справочники (только ADMIN, SUPER_ADMIN) */}
-                  {/* TODO: подключить CategoriesPage, BazaarsPage, ShopsPage */}
+                  <Route path="/catalog/categories" element={<CategoriesPage />} />
+                  {/* TODO: подключить BazaarsPage, ShopsPage */}
 
                   {/* Заказы (только ADMIN, SUPER_ADMIN) */}
                   {/* TODO: подключить OrdersPage, PromocodesPage */}
