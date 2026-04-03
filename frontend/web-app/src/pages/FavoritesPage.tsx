@@ -1,10 +1,10 @@
-import { Heart, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import DealCard from '../components/marketplace/DealCard';
-import { topdimDeals } from '../data/topdim';
+import { useFavoritesStore } from '../store/favoritesStore';
 import './FavoritesPage.css';
 
 export default function FavoritesPage() {
-  const savedDeals = topdimDeals.slice(1, 4);
+  const { favorites } = useFavoritesStore();
 
   return (
     <div className="favorites-page container">
@@ -19,14 +19,20 @@ export default function FavoritesPage() {
         </p>
       </section>
 
-      <section className="favorites-grid">
-        {savedDeals.map((deal) => (
-          <div key={deal.id} className="favorites-grid__item">
-            <Heart size={18} />
-            <DealCard deal={deal} />
-          </div>
-        ))}
-      </section>
+      {favorites.length === 0 ? (
+        <div className="favorites-empty surface-card" style={{ padding: '40px', textAlign: 'center', marginTop: '20px' }}>
+          <h2>Пока ничего нет</h2>
+          <p>Нажимайте на сердечки на купонах, чтобы сохранить их здесь</p>
+        </div>
+      ) : (
+        <section className="favorites-grid">
+          {favorites.map((deal) => (
+            <div key={deal.id} className="favorites-grid__item">
+              <DealCard deal={deal} />
+            </div>
+          ))}
+        </section>
+      )}
     </div>
   );
 }

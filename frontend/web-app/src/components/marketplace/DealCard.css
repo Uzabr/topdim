@@ -77,9 +77,36 @@
   animation: pulseDeal 1.8s ease-in-out infinite;
 }
 
-.deal-card__hot {
+.deal-card__favorite {
+  position: absolute;
   top: 12px;
   right: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(4px);
+  color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.deal-card__favorite:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: scale(1.1);
+}
+
+.deal-card__favorite--active {
+  color: var(--secondary);
+}
+
+.deal-card__hot {
+  top: 12px;
+  right: 56px;
   padding: 8px 12px;
   color: #8a2f00;
   background: rgba(255, 227, 143, 0.95);

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './store/authStore';
 import Header from './components/layout/Header';
 import BottomNav from './components/layout/BottomNav';
+import Footer from './components/layout/Footer';
 import CartDrawer from './components/cart/CartDrawer';
 import HomePage from './pages/HomePage';
 import CouponCatalogPage from './pages/CouponCatalogPage';
@@ -17,6 +18,7 @@ import LoginPage from './pages/LoginPage';
 import ProfilePage from './pages/ProfilePage';
 import SearchPage from './pages/SearchPage';
 import FavoritesPage from './pages/FavoritesPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,8 +55,10 @@ function AppContent() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
         </main>
+        <Footer />
         <BottomNav />
         <CartDrawer />
       </div>

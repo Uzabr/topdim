@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "coupons": "Kuponlar",
+    "bazaar": "Bozor",
+    "favorites": "Sevimlilar"
+  },
+  "header": {
+    "language": "Tilni o'zgartirish",
+    "search": "Qidiruv",
+    "cart": "Savatcha",
+    "profile": "Profil",
+    "login": "Kirish"
+  },
+  "home": {
+    "heroEyebrow": "Toshkentda 70% gacha chegirmalar",
+    "heroTitle": "Hidden deals'ni hammadan ",
+    "heroTitleHighlight": "oldinga top",
+    "heroCopy": "Topdim kuponlar va bozorni ajoyib discovery feed'ga aylantiradi: qaynoq takliflar va keyingi topilma yanada zo'r bo'lish hissi.",
+    "searchPlaceholder": "Kategoriyani tanlang yoki kiriting...",
+    "btnSearch": "Chegirmani qidirish",
+    "btnBazaar": "Bozorga o'tish",
+    "statsUsers": "chegirma ovchilari",
+    "statsBought": "bugun xarid qildi",
+    "statsScroll": "o'rtacha ko'rish vaqti",
+    "categoryAll": "Barchasi",
+    "categoriesLabel": "Kategoriyalar",
+    "categoriesTitle": "Qiziqish bo'yicha qidiring",
+    "trendingLabel": "Hozir trendda",
+    "trendingTitle": "Yana ko'rishni xohlaydigan lenta",
+    "hotLabel": "Qaynoq chegirmalar",
+    "hotDesc": "Har 15 daqiqada yangilanadi",
+    "timers": "Taymerlar",
+    "timersDesc": "Ajoyib FOMO hissi",
+    "socialProof": "Ijtimoiy isbot",
+    "socialProofDesc": "Sharhlar, reytinglar, bugungi xaridlar",
+    "emptyState": "Hozircha bo'sh",
+    "emptyStateDesc": "Boshqa kategoriya yoki qidiruvdan foydalaning."
+  },
+  "footer": {
+    "desc": "O'zbekistondagi eng yaxshi chegirmalar agregatori va onlayn bozor. Har kuni foydali xaridlar qiling.",
+    "contacts": "Aloqa",
+    "info": "Ma'lumot",
+    "faq": "FAQ (Ko'p beriladigan savollar)",
+    "terms": "Foydalanish shartlari",
+    "business": "Biznes uchun (Hamkorlarga)",
+    "rights": "TopDim. Barcha huquqlar himoyalangan."
+  }
+}

@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { X, Trash2, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCartStore } from '../../store/cartStore';
 import './CartDrawer.css';
 
 export default function CartDrawer() {
+  const [cartTab, setCartTab] = useState<'COUPONS' | 'GOODS'>('COUPONS');
   const { items, isOpen, closeCart, removeFromCart, totalItems, totalPrice } = useCartStore();
+
+  const filteredItems = items.filter(item => cartTab === 'COUPONS' ? item.couponTitle : !item.couponTitle);
 
   if (!isOpen) return null;
 
@@ -26,15 +30,30 @@ export default function CartDrawer() {
           <div className="cart-drawer__empty">
             <span className="cart-empty-icon">🛒</span>
             <p>Корзина пуста</p>
-            <p className="cart-empty-hint">Добавьте купоны из каталога</p>
+            <p className="cart-empty-hint">Добавьте купоны или товары из каталога</p>
             <button className="cart-empty-btn" onClick={closeCart}>
-              Смотреть купоны
+              Перейти к покупкам
             </button>
           </div>
         ) : (
           <>
+            <div className="cart-drawer-tabs" style={{ display: 'flex', gap: '8px', padding: '0 20px 16px' }}>
+              <button 
+                style={{ flex: 1, padding: '10px', borderRadius: '12px', background: cartTab === 'COUPONS' ? 'var(--primary-strong)' : 'transparent', color: cartTab === 'COUPONS' ? 'white' : 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                onClick={() => setCartTab('COUPONS')}
+              >
+                Купоны
+              </button>
+              <button 
+                style={{ flex: 1, padding: '10px', borderRadius: '12px', background: cartTab === 'GOODS' ? 'var(--primary-strong)' : 'transparent', color: cartTab === 'GOODS' ? 'white' : 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                onClick={() => setCartTab('GOODS')}
+              >
+                Товары
+              </button>
+            </div>
+          
             <div className="cart-drawer__items">
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <div key={item.id} className="cart-item">
                   <div className="cart-item__info">
                     <h4 className="cart-item__title">{item.couponTitle}</h4>

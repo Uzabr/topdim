@@ -30,7 +30,19 @@ export default function SearchBar({
           placeholder={placeholder}
           aria-label={placeholder}
         />
-        <button type="button" className="search-bar__voice" aria-label="Голосовой поиск">
+        <button type="button" className="search-bar__voice" aria-label="Голосовой поиск" onClick={() => {
+          const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+          if (!SpeechRecognition) {
+            alert("Ваш браузер не поддерживает голосовой ввод");
+            return;
+          }
+          const recognition = new SpeechRecognition();
+          recognition.lang = 'ru-RU';
+          recognition.onresult = (event: any) => {
+            onChange(event.results[0][0].transcript);
+          };
+          recognition.start();
+        }}>
           <Mic size={18} />
         </button>
       </div>
