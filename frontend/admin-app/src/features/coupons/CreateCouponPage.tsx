@@ -132,6 +132,7 @@ export const CreateCouponPage = () => {
                 name="title"
                 label="Название услуги/акции"
                 rules={[{ required: true, message: 'Введите название' }]}
+                extra="Отображается крупным шрифтом в карточке купона (на Главной странице и в Каталоге)."
               >
                 <Input placeholder="Например: Скидка 50% на все сеты роллов" size="large" />
               </Form.Item>
@@ -164,6 +165,7 @@ export const CreateCouponPage = () => {
                     name="categoryId"
                     label="Категория"
                     rules={[{ required: true, message: 'Выберите категорию' }]}
+                    extra="Определяет раздел в клиентском каталоге."
                   >
                     <Select placeholder="Выберите категорию" loading={isCategoriesLoading} showSearch optionFilterProp="children">
                       {categories?.map((c: any) => (
@@ -176,7 +178,7 @@ export const CreateCouponPage = () => {
 
               <Row gutter={16}>
                 <Col span={8}>
-                  <Form.Item name="oldPrice" label="Старая цена (сум)">
+                  <Form.Item name="oldPrice" label="Старая цена (сум)" tooltip="Цена без скидки (будет эффектно перечеркнута в карточке)">
                     <InputNumber min={0} style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
@@ -185,12 +187,13 @@ export const CreateCouponPage = () => {
                     name="fromPrice"
                     label="Новая цена (сум)"
                     rules={[{ required: true, message: 'Обязательное поле' }]}
+                    tooltip="Текущая финальная цена (жирным шрифтом)"
                   >
                     <InputNumber min={0} style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
-                  <Form.Item name="discountPercent" label="Процент скидки (%)">
+                  <Form.Item name="discountPercent" label="Процент скидки (%)" tooltip="Выводится в виде яркого красного бейджа, например '-50%'">
                     <InputNumber min={0} max={100} style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
@@ -231,11 +234,11 @@ export const CreateCouponPage = () => {
                 </Upload>
               </Form.Item>
 
-              <Form.Item name="shortDescription" label="Краткое описание">
+              <Form.Item name="shortDescription" label="Краткое описание" extra="Пара слов об акции. Отображается прямо на плитке купона в общей ленте.">
                 <TextArea rows={2} placeholder="Пара слов об акции..." />
               </Form.Item>
 
-              <Form.Item name="fullDescription" label="Полное описание">
+              <Form.Item name="fullDescription" label="Полное описание" extra="Подробное описание услуг и преимуществ. Видно только когда пользователь кликнет по купону.">
                 <TextArea rows={4} placeholder="Подробное описание услуг и преимуществ..." />
               </Form.Item>
             </Col>
@@ -247,6 +250,7 @@ export const CreateCouponPage = () => {
                   name="buyUntil"
                   label="Можно купить купон до"
                   rules={[{ required: true, message: 'Укажите дату' }]}
+                  tooltip="С этой даты купон исчезнет из активных каталогов"
                 >
                   <DatePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
                 </Form.Item>
@@ -254,6 +258,7 @@ export const CreateCouponPage = () => {
                   name="useUntil"
                   label="Можно использовать купон до"
                   rules={[{ required: true, message: 'Укажите дату' }]}
+                  tooltip="Крайний срок, когда клиент может прийти с этим купоном в заведение"
                 >
                   <DatePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
                 </Form.Item>
