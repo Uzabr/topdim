@@ -86,7 +86,7 @@ export default function HomePage() {
 
           <div className="home-hero__actions">
             <a href="#feed" className="primary-button">
-              Найти скидку
+              Поиск скидки
               <ArrowRight size={18} />
             </a>
             <Link to="/bazaar" className="secondary-button">
@@ -255,7 +255,7 @@ export default function HomePage() {
       </section>
 
       <a href="#feed" className="home-sticky-cta">
-        Найти скидку
+        Поиск скидки
       </a>
 
       {trendingDeals.length === 0 && (

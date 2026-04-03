@@ -91,6 +91,7 @@ body {
   background: var(--bg-gradient);
   min-height: 100vh;
   overflow-x: hidden;
+  cursor: default;
 }
 
 body::before {
@@ -312,6 +313,10 @@ img {
     --space-3xl: 56px;
     --font-3xl: 2.15rem;
     --font-4xl: 3rem;
+  }
+
+  .container {
+    padding: 0 20px;
   }
 
   .app-main {
