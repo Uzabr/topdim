@@ -169,6 +169,102 @@ public class CouponOfferService {
         return mapToResponse(couponOfferRepository.findById(offer.getId()).orElseThrow());
     }
 
+    /**
+     * Обновляет существующий купон (Admin).
+     * Перезаписывает скалярные поля и мержит варианты покупки (options).
+     * Сбрасывает Redis кэш каталога.
+     *
+     * @param id идентификатор купона
+     * @param request обновлённые данные
+     * @return обновлённый купон
+     */
+    @Caching(evict = {
+            @CacheEvict(value = "catalog", allEntries = true),
+            @CacheEvict(value = "topSelling", allEntries = true),
+            @CacheEvict(value = "couponDetail", key = "#id")
+    })
+    @Transactional
+    public CouponOfferResponse update(Long id, CreateCouponOfferRequest request) {
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        // Обновляем мерчанта
+        if (request.getMerchantId() != null) {
+            Merchant merchant = merchantRepository.findById(request.getMerchantId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Партнёр не найден"));
+            offer.setMerchant(merchant);
+        } else {
+            offer.setMerchant(null);
+        }
+
+        // Обновляем категорию
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
+        offer.setCategory(category);
+
+        // Обновляем скалярные поля
+        offer.setTitle(request.getTitle());
+        offer.setShortDescription(request.getShortDescription());
+        offer.setFullDescription(request.getFullDescription());
+        offer.setOldPrice(request.getOldPrice());
+        offer.setFromPrice(request.getFromPrice());
+        offer.setDiscountPercent(request.getDiscountPercent());
+        offer.setCoverImageUrl(request.getCoverImageUrl());
+        offer.setBuyUntil(request.getBuyUntil());
+        offer.setUseUntil(request.getUseUntil());
+        offer.setTerms(request.getTerms());
+        offer.setUsageRules(request.getUsageRules());
+        offer.setHowToUse(request.getHowToUse());
+        offer.setAddress(request.getAddress());
+        offer.setContactPhone(request.getContactPhone());
+        offer.setWorkingHours(request.getWorkingHours());
+        offer.setGiftAvailable(request.isGiftAvailable());
+
+        // Мержим Options
+        if (request.getOptions() != null) {
+            var requestTitles = request.getOptions().stream()
+                    .map(CreateCouponOptionRequest::getTitle)
+                    .collect(Collectors.toSet());
+
+            // Деактивируем варианты, которых нет в запросе
+            for (CouponOption existing : offer.getOptions()) {
+                if (!requestTitles.contains(existing.getTitle())) {
+                    existing.setStatus(CouponOptionStatus.DISABLED);
+                    couponOptionRepository.save(existing);
+                }
+            }
+
+            // Обновляем существующие / добавляем новые
+            for (CreateCouponOptionRequest optReq : request.getOptions()) {
+                CouponOption existingOpt = offer.getOptions().stream()
+                        .filter(o -> o.getTitle().equals(optReq.getTitle()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (existingOpt != null) {
+                    existingOpt.setRegularPrice(optReq.getRegularPrice());
+                    existingOpt.setCouponPrice(optReq.getCouponPrice());
+                    existingOpt.setQuantityLimit(optReq.getQuantityLimit());
+                    existingOpt.setStatus(CouponOptionStatus.ACTIVE);
+                    couponOptionRepository.save(existingOpt);
+                } else {
+                    CouponOption newOpt = CouponOption.builder()
+                            .couponOffer(offer)
+                            .title(optReq.getTitle())
+                            .regularPrice(optReq.getRegularPrice())
+                            .couponPrice(optReq.getCouponPrice())
+                            .quantityLimit(optReq.getQuantityLimit())
+                            .quantitySold(0)
+                            .status(CouponOptionStatus.ACTIVE)
+                            .build();
+                    couponOptionRepository.save(newOpt);
+                }
+            }
+        }
+
+        return mapToResponse(couponOfferRepository.findById(offer.getId()).orElseThrow());
+    }
+
     @Caching(evict = {
             @CacheEvict(value = "catalog", allEntries = true),
             @CacheEvict(value = "topSelling", allEntries = true),

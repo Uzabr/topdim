@@ -48,6 +48,21 @@ public class AdminCouponController {
     }
 
     @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @GetMapping("/coupons/{id}")
+    public ResponseEntity<ApiResponse<CouponOfferResponse>> getCouponById(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(couponOfferService.getById(id)));
+    }
+
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PutMapping("/coupons/{id}")
+    public ResponseEntity<ApiResponse<CouponOfferResponse>> updateCoupon(
+            @PathVariable Long id,
+            @Valid @RequestBody CreateCouponOfferRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Купон обновлён", couponOfferService.update(id, request)));
+    }
+
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
     @PatchMapping("/coupons/{id}/status")
     public ResponseEntity<ApiResponse<CouponOfferResponse>> updateCouponStatus(
             @PathVariable Long id,
