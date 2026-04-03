@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Card, Form, Input, InputNumber, Button, Typography, App, Row, Col, DatePicker, Select, Tag, Modal, Space, Upload } from 'antd';
-import { ExclamationCircleOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons';
+import { ExclamationCircleOutlined, PlusOutlined, UploadOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -10,6 +10,13 @@ import { useAuthStore } from '../../store/authStore';
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
+interface CreateCouponOptionData {
+  title: string;
+  regularPrice: number;
+  couponPrice: number;
+  quantityLimit?: number;
+}
+
 interface CreateCouponFormData {
   title: string;
   categoryId: number;
@@ -17,9 +24,13 @@ interface CreateCouponFormData {
   coverImageUrl: string;
   shortDescription: string;
   fullDescription: string;
+  terms: string;
+  usageRules: string;
+  howToUse: string;
   oldPrice: number;
   fromPrice: number;
   discountPercent: number;
+  options: CreateCouponOptionData[];
   buyUntil: dayjs.Dayjs;
   useUntil: dayjs.Dayjs;
   address: string;
@@ -123,7 +134,7 @@ export const CreateCouponPage = () => {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ discountPercent: 0, oldPrice: 0 }}
+          initialValues={{ discountPercent: 0, oldPrice: 0, options: [] }}
         >
           <Row gutter={24}>
             {/* Левая колонка */}
@@ -241,6 +252,78 @@ export const CreateCouponPage = () => {
               <Form.Item name="fullDescription" label="Полное описание" extra="Подробное описание услуг и преимуществ. Видно только когда пользователь кликнет по купону.">
                 <TextArea rows={4} placeholder="Подробное описание услуг и преимуществ..." />
               </Form.Item>
+
+              <Card type="inner" title="Варианты покупки (Виды сертификатов)" style={{ marginBottom: 24, marginTop: 16 }}>
+                <Form.List name="options">
+                  {(fields, { add, remove }) => (
+                    <>
+                      {fields.map(({ key, name, ...restField }) => (
+                        <Row gutter={16} key={key} style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
+                          <Col span={8}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'title']}
+                              label="Название опции"
+                              rules={[{ required: true, message: 'Обязательно' }]}
+                            >
+                              <Input placeholder="Например: Сет для двоих" />
+                            </Form.Item>
+                          </Col>
+                          <Col span={5}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'regularPrice']}
+                              label="Обычная цена"
+                              rules={[{ required: true, message: 'Обязательно' }]}
+                            >
+                              <InputNumber min={0} style={{ width: '100%' }} />
+                            </Form.Item>
+                          </Col>
+                          <Col span={5}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'couponPrice']}
+                              label="Цена со скидкой"
+                              rules={[{ required: true, message: 'Обязательно' }]}
+                            >
+                              <InputNumber min={0} style={{ width: '100%' }} />
+                            </Form.Item>
+                          </Col>
+                          <Col span={4}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'quantityLimit']}
+                              label="Лимит (шт)"
+                            >
+                              <InputNumber min={1} style={{ width: '100%' }} placeholder="∞" />
+                            </Form.Item>
+                          </Col>
+                          <Col span={2} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <MinusCircleOutlined onClick={() => remove(name)} style={{ color: 'red', fontSize: '20px', marginTop: '10px', cursor: 'pointer' }} />
+                          </Col>
+                        </Row>
+                      ))}
+                      <Form.Item style={{ margin: 0 }}>
+                        <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                          Добавить вариант покупки
+                        </Button>
+                      </Form.Item>
+                    </>
+                  )}
+                </Form.List>
+              </Card>
+
+              <Card type="inner" title="Правила и Условия" style={{ marginBottom: 24 }}>
+                <Form.Item name="terms" label="Условия (ограничения)" extra="Возрастные ограничения, средний чек и прочая важная информация.">
+                  <TextArea rows={2} placeholder="Например: Обслуживание 10% оплачивается отдельно." />
+                </Form.Item>
+                <Form.Item name="usageRules" label="Общие правила" extra="На что скидка не действует и с какими акциями суммируется.">
+                  <TextArea rows={2} placeholder="Например: Скидка не действует на бар." />
+                </Form.Item>
+                <Form.Item name="howToUse" label="Как использовать (Инструкция)" extra="Пошаговое описание процесса активации.">
+                  <TextArea rows={2} placeholder="1. Покажите купон... 2. Закажите..." />
+                </Form.Item>
+              </Card>
             </Col>
 
             {/* Правая колонка (Сайдбар) */}

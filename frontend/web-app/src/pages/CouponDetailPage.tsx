@@ -63,7 +63,10 @@ export default function CouponDetailPage() {
       {/* Hero */}
       <div className="detail-hero">
         {c.coverImageUrl ? (
-          <img src={c.coverImageUrl} alt={c.title} className="detail-hero__img" />
+          <>
+            <img src={c.coverImageUrl} className="detail-hero__bg" alt="" aria-hidden="true" />
+            <img src={c.coverImageUrl} alt={c.title} className="detail-hero__img" />
+          </>
         ) : (
           <div className="detail-hero__placeholder">💎</div>
         )}
