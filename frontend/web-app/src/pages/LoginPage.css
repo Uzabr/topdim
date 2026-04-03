@@ -137,3 +137,16 @@
 .login-switch button:hover {
   text-decoration: underline;
 }
+
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.invalid-feedback {
+  color: var(--error-light, #ef4444);
+  font-size: 12px;
+  text-align: left;
+  margin-left: 4px;
+}

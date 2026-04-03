@@ -1,0 +1,12 @@
+{
+  "nav": {
+    "coupons": "Купоны",
+    "bazaar": "Базар",
+    "favorites": "Избранное"
+  },
+  "header": {
+    "profile": "Профиль",
+    "login": "Войти",
+    "language": "Рус"
+  }
+}

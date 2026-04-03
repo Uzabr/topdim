@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { ArrowRight, Flame, MapPinned, Sparkles, Star, TimerReset, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { couponsApi } from '../api/coupons';
 import type { Category } from '../api/coupons';
 import DealCard from '../components/marketplace/DealCard';
 import SearchBar from '../components/marketplace/SearchBar';
@@ -13,19 +15,51 @@ export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [search, setSearch] = useState('');
 
-  const categories: Category[] = topdimCategories;
+  const { data: categoriesData } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => couponsApi.getCategories(),
+    select: (res) => res.data.data,
+  });
+
+  const { data: couponsData } = useQuery({
+    queryKey: ['coupons-home'],
+    queryFn: () => couponsApi.getCatalog({ size: 50 }),
+    select: (res) => res.data.data.content,
+  });
+
+  const categories: Category[] = categoriesData || topdimCategories;
+  const apiDeals = couponsData || [];
+
+  const mappedDeals = useMemo(() => {
+    // Map backend CouponOffer to UI TopdimDeal requirements
+    return apiDeals.map((deal: any) => ({
+      ...deal,
+      rating: deal.rating || 4.8,
+      reviews: deal.reviews || 0,
+      stockLeft: deal.options?.[0]?.quantityLimit || 10,
+      boughtToday: deal.totalSold || 0,
+      countdownText: '23:59:59',
+      location: deal.address || 'Ташкент',
+      vibe: deal.category?.name || '',
+      image: deal.coverImageUrl || '',
+      isHot: (deal.discountPercent || 0) >= 50,
+      isTrending: (deal.viewCount || 0) > 10,
+    }));
+  }, [apiDeals]);
 
   const filteredDeals = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
-    return topdimDeals.filter((deal) => {
-      const matchesCategory = activeCategory === null || deal.category.id === activeCategory;
-      const haystack = `${deal.title} ${deal.shortDescription} ${deal.category.name} ${deal.merchant.name}`.toLowerCase();
+    const baseDeals = mappedDeals.length > 0 ? mappedDeals : topdimDeals.map(d => ({ ...d, image: d.coverImageUrl || d.image }));
+
+    return baseDeals.filter((deal: any) => {
+      const matchesCategory = activeCategory === null || deal.category?.id === activeCategory;
+      const haystack = `${deal.title} ${deal.shortDescription} ${deal.category?.name} ${deal.merchant?.name}`.toLowerCase();
       const matchesSearch = normalizedSearch.length === 0 || haystack.includes(normalizedSearch);
 
       return matchesCategory && matchesSearch;
     });
-  }, [activeCategory, search]);
+  }, [mappedDeals, activeCategory, search]);
 
   const featuredDeals = filteredDeals.slice(0, 4);
   const hotDeals = filteredDeals.filter((deal) => deal.isHot);
@@ -92,7 +126,7 @@ export default function HomePage() {
           <div className="home-hero__sticker home-hero__sticker--one">-70%</div>
           <div className="home-hero__sticker home-hero__sticker--two">🔥 5 купонов</div>
           <div className="home-hero__sticker home-hero__sticker--three">234 купили сегодня</div>
-          <DealCard deal={topdimDeals[0]} layout="featured" />
+          {filteredDeals.length > 0 && <DealCard deal={filteredDeals[0]} layout="featured" />}
         </div>
       </section>
 

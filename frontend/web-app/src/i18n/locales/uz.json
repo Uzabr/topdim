@@ -1,0 +1,12 @@
+{
+  "nav": {
+    "coupons": "Kuponlar",
+    "bazaar": "Bozor",
+    "favorites": "Saralanganlar"
+  },
+  "header": {
+    "profile": "Profil",
+    "login": "Kirish",
+    "language": "Uzb"
+  }
+}

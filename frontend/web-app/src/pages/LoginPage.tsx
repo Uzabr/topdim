@@ -2,32 +2,68 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import './LoginPage.css';
+
+const loginSchema = z.object({
+  email: z.string().min(1, 'Email обязателен').email('Неверный формат email'),
+  password: z.string().min(1, 'Пароль обязателен'),
+});
+
+const registerSchema = loginSchema.extend({
+  firstName: z.string().min(2, 'Имя должно быть не короче 2 символов'),
+  phone: z.string()
+    .optional()
+    .transform(e => e === "" ? undefined : e)
+    .refine((val) => !val || /^\+998\d{9}$/.test(val), {
+      message: 'Формат: +998XXXXXXXXX',
+    }),
+  password: z.string().min(8, 'Пароль должен быть от 8 символов'), // backend restriction
+});
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [phone, setPhoneNum] = useState('');
-  const [error, setError] = useState('');
+  const [serverError, setServerError] = useState('');
+  
   const { login, register, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+  const {
+    register: formRegister,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<any>({
+    resolver: zodResolver(isLogin ? loginSchema : registerSchema),
+    mode: 'onBlur',
+  });
+
+  const onSubmit = async (data: any) => {
+    setServerError('');
     try {
       if (isLogin) {
-        await login({ email, password });
+        await login({ email: data.email, password: data.password });
       } else {
-        await register({ email, password, firstName, phone });
+        await register({
+          email: data.email,
+          password: data.password,
+          firstName: data.firstName,
+          phone: data.phone,
+        });
       }
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка. Попробуйте ещё раз.');
+      setServerError(err.response?.data?.message || 'Ошибка. Попробуйте ещё раз.');
     }
+  };
+
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    setServerError('');
+    reset(); // reset form fields
   };
 
   return (
@@ -41,63 +77,67 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form className="login-form" onSubmit={handleSubmit}>
+        <form className="login-form" onSubmit={handleSubmit(onSubmit)}>
           {!isLogin && (
-            <div className="input-group">
-              <User size={18} className="input-icon" />
-              <input
-                type="text"
-                placeholder="Имя"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-              />
+            <div className="input-wrapper">
+              <div className="input-group">
+                <User size={18} className="input-icon" />
+                <input
+                  type="text"
+                  placeholder="Имя"
+                  {...formRegister('firstName')}
+                />
+              </div>
+              {errors.firstName && <span className="invalid-feedback">{errors.firstName.message?.toString()}</span>}
             </div>
           )}
 
-          <div className="input-group">
-            <Mail size={18} className="input-icon" />
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+          <div className="input-wrapper">
+            <div className="input-group">
+              <Mail size={18} className="input-icon" />
+              <input
+                type="email"
+                placeholder="Email"
+                {...formRegister('email')}
+              />
+            </div>
+            {errors.email && <span className="invalid-feedback">{errors.email.message?.toString()}</span>}
           </div>
 
           {!isLogin && (
-            <div className="input-group">
-              <Phone size={18} className="input-icon" />
-              <input
-                type="tel"
-                placeholder="Телефон (необязательно)"
-                value={phone}
-                onChange={(e) => setPhoneNum(e.target.value)}
-              />
+            <div className="input-wrapper">
+              <div className="input-group">
+                <Phone size={18} className="input-icon" />
+                <input
+                  type="tel"
+                  placeholder="Телефон (+998XXXXXXXXX)"
+                  {...formRegister('phone')}
+                />
+              </div>
+              {errors.phone && <span className="invalid-feedback">{errors.phone.message?.toString()}</span>}
             </div>
           )}
 
-          <div className="input-group">
-            <Lock size={18} className="input-icon" />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Пароль"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-            />
-            <button
-              type="button"
-              className="input-toggle"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
+          <div className="input-wrapper">
+            <div className="input-group">
+              <Lock size={18} className="input-icon" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Пароль"
+                {...formRegister('password')}
+              />
+              <button
+                type="button"
+                className="input-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {errors.password && <span className="invalid-feedback">{errors.password.message?.toString()}</span>}
           </div>
 
-          {error && <div className="login-error">{error}</div>}
+          {serverError && <div className="login-error">{serverError}</div>}
 
           <button type="submit" className="login-submit" disabled={isLoading}>
             {isLoading ? 'Загрузка...' : isLogin ? 'Войти' : 'Зарегистрироваться'}
@@ -107,7 +147,7 @@ export default function LoginPage() {
         <div className="login-footer">
           <span className="login-switch">
             {isLogin ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}
-            <button onClick={() => { setIsLogin(!isLogin); setError(''); }}>
+            <button onClick={toggleMode}>
               {isLogin ? 'Зарегистрироваться' : 'Войти'}
             </button>
           </span>
