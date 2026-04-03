@@ -11,7 +11,7 @@ import { DashboardPage } from './features/dashboard/DashboardPage';
 import { PartnerApplicationsPage } from './features/partners/PartnerApplicationsPage';
 
 import { CouponsListPage } from './features/coupons/CouponsListPage';
-import { CreateCouponPage } from './features/coupons/CreateCouponPage';
+import { CouponFormPage } from './features/coupons/CouponFormPage';
 import { CategoriesPage } from './features/catalog/CategoriesPage';
 import { StaffPage } from './features/system/StaffPage';
 import { AuditLogPage } from './features/system/AuditLogPage';
@@ -53,7 +53,8 @@ function App() {
 
                   {/* Управление купонами (MODERATOR, ADMIN, SUPER_ADMIN) */}
                   <Route path="/moderation/coupons" element={<CouponsListPage />} />
-                  <Route path="/moderation/coupons/create" element={<CreateCouponPage />} />
+                  <Route path="/moderation/coupons/create" element={<CouponFormPage />} />
+                  <Route path="/moderation/coupons/edit/:id" element={<CouponFormPage />} />
                   
                   {/* Поддержка */}
                   {/* TODO: подключить ComplaintsPage, ReviewsPage */}

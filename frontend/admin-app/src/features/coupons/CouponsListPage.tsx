@@ -62,7 +62,7 @@ export const CouponsListPage = () => {
       width: 120,
       render: (_, record) => (
         <Space>
-          <Button type="text" icon={<EditOutlined />} onClick={() => message.info('Редактирование пока не реализовано')} />
+          <Button type="text" icon={<EditOutlined />} onClick={() => navigate(`/moderation/coupons/edit/${record.id}`)} />
           <Popconfirm
             title="Удалить купон?"
             description="Это действие необратимо."
