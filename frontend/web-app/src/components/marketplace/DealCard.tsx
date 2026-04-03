@@ -1,5 +1,6 @@
-import { Clock3, Flame, Star, Ticket, Users } from 'lucide-react';
+import { Clock3, Flame, Star, Ticket, Users, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useFavoritesStore } from '../../store/favoritesStore';
 import type { TopdimDeal } from '../../data/topdim';
 import './DealCard.css';
 
@@ -9,11 +10,20 @@ interface DealCardProps {
 }
 
 export default function DealCard({ deal, layout = 'standard' }: DealCardProps) {
+  const { toggleFavorite, isFavorite } = useFavoritesStore();
+  const fav = isFavorite(deal.id);
+
   return (
     <Link to={`/coupons/${deal.id}`} className={`deal-card deal-card--${layout}`}>
       <div className="deal-card__media">
         <img src={deal.image} alt={deal.title} loading="lazy" />
         <div className="deal-card__overlay" />
+        <button 
+          className={`deal-card__favorite ${fav ? 'deal-card__favorite--active' : ''}`}
+          onClick={(e) => { e.preventDefault(); toggleFavorite(deal); }}
+        >
+          <Heart size={18} fill={fav ? "currentColor" : "none"} />
+        </button>
         <span className="deal-card__discount">-{deal.discountPercent}%</span>
         {deal.isHot && (
           <span className="deal-card__hot">

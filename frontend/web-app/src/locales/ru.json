@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "coupons": "Купоны",
+    "bazaar": "Базар",
+    "favorites": "Избранное"
+  },
+  "header": {
+    "language": "Сменить язык",
+    "search": "Поиск",
+    "cart": "Корзина",
+    "profile": "Профиль",
+    "login": "Войти"
+  },
+  "home": {
+    "heroEyebrow": "Скидки до 70% в Ташкенте",
+    "heroTitle": "Лови hidden deals ",
+    "heroTitleHighlight": "быстрее других",
+    "heroCopy": "Topdim превращает купоны и базар в addictive discovery feed: горячие предложения, быстрый дефицит и ощущение, что следующая находка будет ещё лучше.",
+    "searchPlaceholder": "Выбери/введите категорию...",
+    "btnSearch": "Поиск скидки",
+    "btnBazaar": "Перейти к базару",
+    "statsUsers": "охотников за скидками",
+    "statsBought": "купили сегодня",
+    "statsScroll": "среднее время скролла",
+    "categoryAll": "Все",
+    "categoriesLabel": "Категории",
+    "categoriesTitle": "Свайпай по интересам",
+    "trendingLabel": "Trending now",
+    "trendingTitle": "Лента, которую хочется листать дальше",
+    "hotLabel": "Горящие скидки",
+    "hotDesc": "Обновляются каждые 15 минут",
+    "timers": "Таймеры",
+    "timersDesc": "Давят на FOMO, но красиво",
+    "socialProof": "Social proof",
+    "socialProofDesc": "Отзывы, рейтинги, покупки сегодня",
+    "emptyState": "Пока пусто по этому фильтру",
+    "emptyStateDesc": "Попробуй другую категорию или быстрый поиск выше."
+  },
+  "footer": {
+    "desc": "Онлайн базар и агрегатор лучших скидок в Узбекистане. Находи горящие предложения и покупай выгодно каждый день.",
+    "contacts": "Контакты",
+    "info": "Информация",
+    "faq": "FAQ (Частые вопросы)",
+    "terms": "Пользовательское соглашение",
+    "business": "Для бизнеса (Партнерам)",
+    "rights": "TopDim. Все права защищены."
+  }
+}

@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { IMaskInput } from 'react-imask';
 import './LoginPage.css';
 
 const loginSchema = z.object({
@@ -34,6 +35,7 @@ export default function LoginPage() {
   const {
     register: formRegister,
     handleSubmit,
+    control,
     formState: { errors },
     reset,
   } = useForm<any>({
@@ -108,10 +110,19 @@ export default function LoginPage() {
             <div className="input-wrapper">
               <div className="input-group">
                 <Phone size={18} className="input-icon" />
-                <input
-                  type="tel"
-                  placeholder="Телефон (+998XXXXXXXXX)"
-                  {...formRegister('phone')}
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field: { onChange, onBlur, value, ref } }) => (
+                    <IMaskInput
+                      mask="+{998} 00 000-00-00"
+                      placeholder="Телефон (+998 XX XXX-XX-XX)"
+                      value={value || ''}
+                      onAccept={(val) => onChange(val.replace(/\s|-/g, ''))}
+                      onBlur={onBlur}
+                      inputRef={ref}
+                    />
+                  )}
                 />
               </div>
               {errors.phone && <span className="invalid-feedback">{errors.phone.message?.toString()}</span>}
