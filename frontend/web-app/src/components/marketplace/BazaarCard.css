@@ -1,0 +1,120 @@
+.bazaar-item-card {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 158, 109, 0.25);
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.bazaar-item-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: var(--shadow-lg);
+}
+
+.bazaar-item-card--list {
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: center;
+}
+
+.bazaar-item-card__image {
+  position: relative;
+  min-height: 220px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.bazaar-item-card--list .bazaar-item-card__image {
+  min-height: 170px;
+}
+
+.bazaar-item-card__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bazaar-item-card__discount {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff5a36, #ff4f8b);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.bazaar-item-card__content {
+  display: grid;
+  gap: 12px;
+}
+
+.bazaar-item-card__topline,
+.bazaar-item-card__meta,
+.bazaar-item-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bazaar-item-card__topline span:first-child {
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--primary-strong);
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.bazaar-item-card__topline span:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary);
+}
+
+.bazaar-item-card h3 {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.15;
+}
+
+.bazaar-item-card__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.bazaar-item-card__footer strong {
+  display: block;
+  font-size: 1.12rem;
+}
+
+.bazaar-item-card__footer span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  text-decoration: line-through;
+}
+
+.bazaar-item-card__footer button {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 16px;
+  background: rgba(255, 241, 228, 0.95);
+  color: var(--primary-strong);
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .bazaar-item-card--list {
+    grid-template-columns: 1fr;
+  }
+}

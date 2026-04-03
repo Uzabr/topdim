@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Card, Form, Input, InputNumber, Button, Typography, App, Row, Col, DatePicker, Select, Tag, Modal, Space, Divider } from 'antd';
-import { ExclamationCircleOutlined, PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
+import { Card, Form, Input, InputNumber, Button, Typography, App, Row, Col, DatePicker, Select, Tag, Modal, Space } from 'antd';
+import { ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -24,12 +24,6 @@ interface CreateCouponFormData {
   address: string;
   contactPhone: string;
   workingHours: string;
-  options: {
-    title: string;
-    regularPrice: number;
-    couponPrice: number;
-    quantityLimit?: number;
-  }[];
 }
 
 export const CreateCouponPage = () => {
@@ -103,7 +97,7 @@ export const CreateCouponPage = () => {
       icon: <ExclamationCircleOutlined />,
       content: (
         <div>
-          <p>Внимательно проверьте все данные. У купона должна быть картинка и правильные цены (Варианты).</p>
+          <p>Внимательно проверьте все данные. У купона должна быть картинка и правильные цены.</p>
           <Text type="danger">Публикуем купон?</Text>
         </div>
       ),
@@ -127,7 +121,7 @@ export const CreateCouponPage = () => {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ discountPercent: 0, oldPrice: 0, options: [{}] }}
+          initialValues={{ discountPercent: 0, oldPrice: 0 }}
         >
           <Row gutter={24}>
             {/* Левая колонка */}
@@ -180,14 +174,14 @@ export const CreateCouponPage = () => {
 
               <Row gutter={16}>
                 <Col span={8}>
-                  <Form.Item name="oldPrice" label="Старая цена (сум) к примеру">
+                  <Form.Item name="oldPrice" label="Старая цена (сум)">
                     <InputNumber min={0} style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
                   <Form.Item
                     name="fromPrice"
-                    label="Новая цена от (сум)"
+                    label="Новая цена (сум)"
                     rules={[{ required: true, message: 'Обязательное поле' }]}
                   >
                     <InputNumber min={0} style={{ width: '100%' }} />
@@ -215,68 +209,6 @@ export const CreateCouponPage = () => {
               <Form.Item name="fullDescription" label="Полное описание">
                 <TextArea rows={4} placeholder="Подробное описание услуг и преимуществ..." />
               </Form.Item>
-
-              {/* Варианты купонов (Options) */}
-              <Card type="inner" title="Варианты покупки (Цены)" style={{ marginBottom: 24 }}>
-                <Form.List name="options" rules={[
-                    {
-                      validator: async (_, options) => {
-                        if (!options || options.length < 1) {
-                          return Promise.reject(new Error('Добавьте хотя бы один вариант покупки'));
-                        }
-                      },
-                    },
-                  ]}>
-                  {(fields, { add, remove }, { errors }) => (
-                    <>
-                      {fields.map(({ key, name, ...restField }) => (
-                        <div key={key} style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 16 }}>
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'title']}
-                            rules={[{ required: true, message: 'Название обязательно' }]}
-                            style={{ flex: 2, marginBottom: 0 }}
-                          >
-                            <Input placeholder="Название (напр. Сет №1)" />
-                          </Form.Item>
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'regularPrice']}
-                            rules={[{ required: true, message: 'Обычная цена' }]}
-                            style={{ flex: 1, marginBottom: 0 }}
-                          >
-                            <InputNumber placeholder="Обычная цена" style={{ width: '100%' }} />
-                          </Form.Item>
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'couponPrice']}
-                            rules={[{ required: true, message: 'Цена со скидкой' }]}
-                            style={{ flex: 1, marginBottom: 0 }}
-                          >
-                            <InputNumber placeholder="Цена со скидкой" style={{ width: '100%' }} />
-                          </Form.Item>
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'quantityLimit']}
-                            style={{ flex: 1, marginBottom: 0 }}
-                          >
-                            <InputNumber placeholder="Лимит (шт)" style={{ width: '100%' }} />
-                          </Form.Item>
-                          {fields.length > 1 && (
-                            <MinusCircleOutlined onClick={() => remove(name)} style={{ marginTop: 10, color: 'red' }} />
-                          )}
-                        </div>
-                      ))}
-                      <Form.Item style={{ marginBottom: 0 }}>
-                        <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                          Добавить вариант покупки
-                        </Button>
-                        <Form.ErrorList errors={errors} />
-                      </Form.Item>
-                    </>
-                  )}
-                </Form.List>
-              </Card>
             </Col>
 
             {/* Правая колонка (Сайдбар) */}

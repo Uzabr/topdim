@@ -16,6 +16,7 @@ import ShopDetailPage from './pages/ShopDetailPage';
 import LoginPage from './pages/LoginPage';
 import ProfilePage from './pages/ProfilePage';
 import SearchPage from './pages/SearchPage';
+import FavoritesPage from './pages/FavoritesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,8 +37,9 @@ function AppContent() {
 
   return (
     <BrowserRouter>
-      <Header />
-      <main style={{ paddingBottom: 'var(--bottom-nav-height)' }}>
+      <div className="app-shell">
+        <Header />
+        <main className="app-main">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/coupons" element={<CouponCatalogPage />} />
@@ -50,10 +52,12 @@ function AppContent() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/favorites" element={<FavoritesPage />} />
         </Routes>
-      </main>
-      <BottomNav />
-      <CartDrawer />
+        </main>
+        <BottomNav />
+        <CartDrawer />
+      </div>
     </BrowserRouter>
   );
 }

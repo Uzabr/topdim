@@ -45,7 +45,8 @@ public class CouponOfferService {
      * @param size размер страницы
      * @return страница купонов
      */
-    @Cacheable(value = "catalog", key = "#categoryId + '-' + #search + '-' + #sortBy + '-' + #page + '-' + #size")
+    // TODO: восстановить кэширование после настройки Redis serializer
+    // @Cacheable(value = "catalog", key = "#categoryId + '-' + #search + '-' + #sortBy + '-' + #page + '-' + #size")
     @Transactional(readOnly = true)
     public Page<CouponOfferResponse> getCatalog(Long categoryId, String search, String sortBy, int page, int size) {
         Pageable pageable = createPageable(sortBy, page, size);
@@ -89,7 +90,8 @@ public class CouponOfferService {
      * @param limit максимальное количество результатов
      * @return список топ купонов
      */
-    @Cacheable(value = "topSelling", key = "#limit")
+    // TODO: восстановить кэширование после настройки Redis serializer
+    // @Cacheable(value = "topSelling", key = "#limit")
     @Transactional(readOnly = true)
     public List<CouponOfferResponse> getTopSelling(int limit) {
         return couponOfferRepository.findTopSelling(PageRequest.of(0, limit))

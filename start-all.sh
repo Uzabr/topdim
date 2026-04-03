@@ -77,6 +77,7 @@ wait_for_port() {
 stop_all() {
   echo -e "\n${RED}🛑 Остановка всех сервисов...${NC}\n"
   
+  # Останавливаем Java-сервисы
   for svc in "${BACKEND_SERVICES[@]}" "${INFRA_SERVICES[@]}"; do
     local name=$(get_name "$svc")
     local port=$(get_port "$svc")
@@ -98,7 +99,12 @@ stop_all() {
     fi
   done
 
-  echo -e "\n${GREEN}Все сервисы остановлены.${NC}"
+  # Останавливаем Docker-контейнеры (НЕ удаляем, НЕ закрываем Docker Desktop)
+  echo -e "\n${CYAN}🐳 Остановка Docker-контейнеров...${NC}"
+  cd "$PROJECT_DIR"
+  docker compose stop 2>/dev/null && echo -e "  ${GREEN}✓ Контейнеры остановлены${NC}" || echo -e "  ${YELLOW}⚠ Docker не отвечает или контейнеры уже остановлены${NC}"
+
+  echo -e "\n${GREEN}Все сервисы остановлены. Docker Desktop продолжает работать.${NC}"
 }
 
 show_status() {
@@ -145,9 +151,9 @@ start_all() {
   sleep 2
 
   # Ждём готовности инфраструктуры (чтобы Flyway/AMQP не падали на старте)
-  wait_for_port 5432 "postgres"
-  wait_for_port 6379 "redis"
-  wait_for_port 5672 "rabbitmq"
+  wait_for_port 5433 "postgres"
+  wait_for_port 6380 "redis"
+  wait_for_port 5673 "rabbitmq"
   wait_for_port 9000 "minio"
 
   # 2. Infrastructure
@@ -183,7 +189,7 @@ start_all() {
   echo -e "  📊 Eureka:    ${CYAN}http://localhost:8761${NC}"
   echo -e "  🌐 Gateway:   ${CYAN}http://localhost:8080${NC}"
   echo -e "  🖥️  Frontend:  ${CYAN}http://localhost:5173${NC}"
-  echo -e "  🐰 RabbitMQ:  ${CYAN}http://localhost:15672${NC}"
+  echo -e "  🐰 RabbitMQ:  ${CYAN}http://localhost:15673${NC}"
   echo -e "  📦 MinIO:     ${CYAN}http://localhost:9001${NC}"
   echo ""
   echo -e "  Логи: ${YELLOW}$LOG_DIR/<service>.log${NC}"
