@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Card, Form, Input, InputNumber, Button, Typography, App, Row, Col, DatePicker, Select, Tag, Modal, Space, Upload } from 'antd';
-import { ExclamationCircleOutlined, PlusOutlined, UploadOutlined, MinusCircleOutlined } from '@ant-design/icons';
+import { Card, Form, Input, InputNumber, Button, Typography, App, Row, Col, DatePicker, Select, Tag, Modal, Space, Upload, Alert } from 'antd';
+import { ExclamationCircleOutlined, PlusOutlined, UploadOutlined, MinusCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -139,11 +139,17 @@ export const CreateCouponPage = () => {
           <Row gutter={24}>
             {/* Левая колонка */}
             <Col xs={24} md={16}>
+              <Alert 
+                message="Главное" 
+                action={<InfoCircleOutlined />} 
+                description="Эта информация появится на общей витрине каталога и на Главной странице сайта."
+                type="info" showIcon style={{ marginBottom: 16 }} 
+              />
               <Form.Item
                 name="title"
                 label="Название услуги/акции"
                 rules={[{ required: true, message: 'Введите название' }]}
-                extra="Отображается крупным шрифтом в карточке купона (на Главной странице и в Каталоге)."
+                extra="Крупный жирный шрифт в карточке купона."
               >
                 <Input placeholder="Например: Скидка 50% на все сеты роллов" size="large" />
               </Form.Item>
@@ -249,8 +255,14 @@ export const CreateCouponPage = () => {
                 <TextArea rows={2} placeholder="Пара слов об акции..." />
               </Form.Item>
 
-              <Form.Item name="fullDescription" label="Полное описание" extra="Подробное описание услуг и преимуществ. Видно только когда пользователь кликнет по купону.">
-                <TextArea rows={4} placeholder="Подробное описание услуг и преимуществ..." />
+              <Alert 
+                message="Блок: О заведении (Полное описание)" 
+                description="Поддерживается Markdown! Используйте (-) для списков и (**) для жирного шрифта. Раздел отображается в детальной странице купона снизу."
+                type="info" showIcon style={{ marginBottom: 16, marginTop: 16 }} 
+              />
+              
+              <Form.Item name="fullDescription" label="Полное описание">
+                <TextArea rows={6} placeholder="- Разнообразие вкусов\n- VIP-кабинки на 20 человек\n**Рекомендуем попробовать** салат «Мерилин»!" />
               </Form.Item>
 
               <Card type="inner" title="Варианты покупки (Виды сертификатов)" style={{ marginBottom: 24, marginTop: 16 }}>
@@ -313,15 +325,27 @@ export const CreateCouponPage = () => {
                 </Form.List>
               </Card>
 
-              <Card type="inner" title="Правила и Условия" style={{ marginBottom: 24 }}>
-                <Form.Item name="terms" label="Условия (ограничения)" extra="Возрастные ограничения, средний чек и прочая важная информация.">
-                  <TextArea rows={2} placeholder="Например: Обслуживание 10% оплачивается отдельно." />
+              <Alert 
+                message="Блок: Важная информация (Условия и Правила)" 
+                description="Все три поля поддерживают Markdown! Они группируются сверху карточки с красным значком предупреждения, как на Chocolife."
+                type="warning" showIcon style={{ marginBottom: 16 }} 
+              />
+
+              <Card type="inner" title="Правила и Условия" style={{ marginBottom: 24, paddingBottom: 0 }}>
+                <Form.Item name="terms" label="Условия (ограничения)" extra="Что обязательно нужно знать клиенту.">
+                  <TextArea rows={3} placeholder="- Купон даёт право скидки до 40%
+- Средний счёт — 5 000 тг. (без учёта скидки)
+- Обслуживание 10% оплачивается отдельно" />
                 </Form.Item>
-                <Form.Item name="usageRules" label="Общие правила" extra="На что скидка не действует и с какими акциями суммируется.">
-                  <TextArea rows={2} placeholder="Например: Скидка не действует на бар." />
+                <Form.Item name="usageRules" label="Общие правила" extra="Когда не работает скидка.">
+                  <TextArea rows={3} placeholder="- Акция не действует на Ифтар сеты
+- Не распространяется на доставку
+- Не суммируется с другими акциями" />
                 </Form.Item>
-                <Form.Item name="howToUse" label="Как использовать (Инструкция)" extra="Пошаговое описание процесса активации.">
-                  <TextArea rows={2} placeholder="1. Покажите купон... 2. Закажите..." />
+                <Form.Item name="howToUse" label="Как использовать (Инструкция)" extra="Пошаговое использование.">
+                  <TextArea rows={3} placeholder="1. Сообщите официанту, что у вас купон
+2. Назовите номер или покажите QR-код
+3. После закрытия счета скидка не применяется" />
                 </Form.Item>
               </Card>
             </Col>

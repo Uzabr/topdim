@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Clock, MapPin, Phone, Gift, ShoppingCart, Star, TrendingUp, Calendar } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, Phone, Gift, ShoppingCart, Star, TrendingUp, Calendar, AlertCircle, Info } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { couponsApi } from '../api/coupons';
 import type { CouponOffer, CouponOption } from '../api/coupons';
 import { useCartStore } from '../store/cartStore';
@@ -68,7 +69,9 @@ export default function CouponDetailPage() {
             <img src={c.coverImageUrl} alt={c.title} className="detail-hero__img" />
           </>
         ) : (
-          <div className="detail-hero__placeholder">💎</div>
+          <div className="detail-hero__placeholder">
+            <span>{c.merchant ? c.merchant.name : 'TopDim'}</span>
+          </div>
         )}
         {discount > 0 && <span className="detail-hero__discount">-{discount}%</span>}
       </div>
@@ -114,27 +117,48 @@ export default function CouponDetailPage() {
             ))}
           </div>
 
-          {/* Description */}
-          {c.fullDescription && (
-            <div className="detail-block">
-              <h2 className="detail-section-title">Описание</h2>
-              <p>{c.fullDescription}</p>
-            </div>
-          )}
+          {/* Important Info Group */}
+          <div className="detail-blocks-wrapper" style={{ marginTop: '24px' }}>
+            {c.terms && (
+              <div className="detail-block">
+                <h2 className="detail-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--error)' }}>
+                  <AlertCircle size={20} /> Важная информация (Условия)
+                </h2>
+                <div className="markdown-body">
+                  <ReactMarkdown>{c.terms}</ReactMarkdown>
+                </div>
+              </div>
+            )}
 
-          {c.terms && (
-            <div className="detail-block">
-              <h2 className="detail-section-title">Условия</h2>
-              <p>{c.terms}</p>
-            </div>
-          )}
+            {c.usageRules && (
+              <div className="detail-block">
+                <h2 className="detail-section-title">Правила использования</h2>
+                <div className="markdown-body">
+                  <ReactMarkdown>{c.usageRules}</ReactMarkdown>
+                </div>
+              </div>
+            )}
 
-          {c.howToUse && (
-            <div className="detail-block">
-              <h2 className="detail-section-title">Как использовать</h2>
-              <p style={{ whiteSpace: 'pre-line' }}>{c.howToUse}</p>
-            </div>
-          )}
+            {c.howToUse && (
+              <div className="detail-block">
+                <h2 className="detail-section-title">Как использовать (Инструкция)</h2>
+                <div className="markdown-body">
+                  <ReactMarkdown>{c.howToUse}</ReactMarkdown>
+                </div>
+              </div>
+            )}
+            
+            {c.fullDescription && (
+              <div className="detail-block" style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid var(--border)' }}>
+                <h2 className="detail-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Info size={20} /> О заведении (Полное описание)
+                </h2>
+                <div className="markdown-body">
+                  <ReactMarkdown>{c.fullDescription}</ReactMarkdown>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Sidebar */}
