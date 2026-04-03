@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { Heart, MapPinned, Menu, Search, ShoppingBag, Ticket, User, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { Ticket, Map, ShoppingCart, User, Search, Menu, X } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import './Header.css';
@@ -8,69 +8,58 @@ import './Header.css';
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { isAuthenticated, user } = useAuthStore();
   const { totalItems, toggleCart } = useCartStore();
+  const { isAuthenticated, user } = useAuthStore();
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
     <header className="header glass">
       <div className="header-inner container">
-        <Link to="/" className="logo">
-          <span className="logo-icon">💎</span>
-          <span className="logo-text">Top<span className="text-gradient">Dim</span></span>
+        <Link to="/" className="logo" onClick={() => setMobileMenuOpen(false)}>
+          <span className="logo-mark" aria-hidden="true">
+            <span className="logo-mark__diamond" />
+            <span className="logo-mark__pin" />
+          </span>
+          <span className="logo-text">
+            Top<span>dim</span>
+          </span>
         </Link>
 
         <nav className={`nav ${mobileMenuOpen ? 'nav--open' : ''}`}>
-          <Link
-            to="/"
-            className={`nav-link ${isActive('/') ? 'nav-link--active' : ''}`}
-            onClick={() => setMobileMenuOpen(false)}
-          >
+          <Link to="/" className={`nav-link ${isActive('/') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
             <Ticket size={18} />
-            <span>Купоны</span>
+            Купоны
           </Link>
-          <Link
-            to="/bazaar"
-            className={`nav-link ${isActive('/bazaar') ? 'nav-link--active' : ''}`}
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <Map size={18} />
-            <span>Базар</span>
+          <Link to="/bazaar" className={`nav-link ${isActive('/bazaar') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
+            <MapPinned size={18} />
+            Базар
           </Link>
-          <Link
-            to="/search"
-            className={`nav-link ${isActive('/search') ? 'nav-link--active' : ''}`}
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <Search size={18} />
-            <span>Поиск</span>
+          <Link to="/favorites" className={`nav-link ${isActive('/favorites') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
+            <Heart size={18} />
+            Избранное
           </Link>
         </nav>
 
         <div className="header-actions">
-          <button className="cart-btn" onClick={toggleCart} aria-label="Корзина">
-            <ShoppingCart size={20} />
+          <Link to="/search" className="icon-button" aria-label="Поиск">
+            <Search size={19} />
+          </Link>
+          <button type="button" className="icon-button" onClick={toggleCart} aria-label="Корзина">
+            <ShoppingBag size={19} />
             {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
           </button>
-
-          {isAuthenticated ? (
-            <Link to="/profile" className="profile-btn">
-              <User size={20} />
-              <span className="profile-name">{user?.firstName}</span>
-            </Link>
-          ) : (
-            <Link to="/login" className="login-btn">
-              Войти
-            </Link>
-          )}
-
+          <Link to={isAuthenticated ? '/profile' : '/login'} className="account-pill">
+            <User size={18} />
+            <span>{isAuthenticated ? user?.firstName ?? 'Профиль' : 'Войти'}</span>
+          </Link>
           <button
+            type="button"
             className="mobile-menu-btn"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Меню"
+            onClick={() => setMobileMenuOpen((value) => !value)}
           >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>

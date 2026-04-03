@@ -1,0 +1,20 @@
+.topdim-map-pin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 74px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff7a18, #ff4f8b);
+  color: white;
+  font-size: 0.84rem;
+  font-weight: 800;
+  box-shadow: 0 12px 24px rgba(255, 95, 79, 0.35);
+  border: 3px solid rgba(255, 255, 255, 0.84);
+}
+
+.topdim-map-pin--active {
+  transform: scale(1.08);
+  box-shadow: 0 16px 32px rgba(255, 95, 79, 0.45);
+}

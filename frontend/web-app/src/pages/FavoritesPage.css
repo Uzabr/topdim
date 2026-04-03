@@ -1,0 +1,42 @@
+.favorites-page {
+  display: grid;
+  gap: 20px;
+  padding-top: 20px;
+}
+
+.favorites-hero {
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+}
+
+.favorites-hero__pill {
+  width: fit-content;
+  color: var(--secondary);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.favorites-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding-bottom: 24px;
+}
+
+.favorites-grid__item {
+  position: relative;
+}
+
+.favorites-grid__item > svg {
+  position: absolute;
+  top: 26px;
+  right: 26px;
+  z-index: 3;
+  color: white;
+}
+
+@media (max-width: 1024px) {
+  .favorites-grid {
+    grid-template-columns: 1fr;
+  }
+}
