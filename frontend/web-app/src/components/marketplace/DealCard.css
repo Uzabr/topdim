@@ -15,7 +15,7 @@
 }
 
 .deal-card:hover {
-  transform: translateY(-4px) scale(1.03);
+  transform: translateY(-4px) scale(1.01);
   border-color: rgba(255, 90, 70, 0.32);
   box-shadow: var(--shadow-lg);
 }
