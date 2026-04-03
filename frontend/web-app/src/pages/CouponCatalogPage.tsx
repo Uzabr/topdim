@@ -56,8 +56,10 @@ export default function CouponCatalogPage() {
     select: (res) => res.data.data,
   });
 
-  const categories = categoriesData || DEMO_CATEGORIES;
-  const coupons = couponsData?.content || DEMO_COUPONS;
+  const categories = categoriesData && categoriesData.length > 0 ? categoriesData : DEMO_CATEGORIES;
+  
+  // If we have an actual response from the backend (even empty), use it.
+  const coupons = couponsData ? couponsData.content : DEMO_COUPONS;
   const totalPages = couponsData?.totalPages || 1;
 
   return (

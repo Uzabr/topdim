@@ -42,14 +42,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
-    /** Endpoints, доступные без JWT. */
     private static final List<String> OPEN_ENDPOINTS = List.of(
             "/api/v1/auth/",
             "/api/v1/coupons",
             "/api/v1/categories",
             "/api/v1/bazaars",
             "/api/v1/shops",
-            "/api/v1/media",
             "/eureka",
             "/actuator"
     );
@@ -77,7 +75,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         exchange = exchange.mutate().request(cleanedRequest).build();
 
         // Skip open endpoints
-        if (isOpenEndpoint(path)) {
+        if (isOpenEndpoint(exchange)) {
             return chain.filter(exchange);
         }
 
@@ -141,7 +139,16 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .getPayload();
     }
 
-    private boolean isOpenEndpoint(String path) {
+    private boolean isOpenEndpoint(ServerWebExchange exchange) {
+        String path = exchange.getRequest().getURI().getPath();
+        String method = exchange.getRequest().getMethod().name();
+
+        // Специфичное правило для медиа:
+        // Скачивание (GET) открыто для всех, Upload (POST) и Delete (DELETE) требуют токен
+        if (path.startsWith("/api/v1/media")) {
+            return "GET".equalsIgnoreCase(method);
+        }
+
         return OPEN_ENDPOINTS.stream().anyMatch(path::startsWith);
     }
 

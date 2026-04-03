@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Card, Form, Input, InputNumber, Button, Typography, App, Row, Col, DatePicker, Select, Tag, Modal, Space } from 'antd';
-import { ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { Card, Form, Input, InputNumber, Button, Typography, App, Row, Col, DatePicker, Select, Tag, Modal, Space, Upload } from 'antd';
+import { ExclamationCircleOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import api from '../../api/client';
+import { useAuthStore } from '../../store/authStore';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -30,6 +31,7 @@ export const CreateCouponPage = () => {
   const [form] = Form.useForm<CreateCouponFormData>();
   const [merchantForm] = Form.useForm();
   const [isMerchantModalOpen, setIsMerchantModalOpen] = useState(false);
+  const [coverImageUrl, setCoverImageUrl] = useState<string>('');
   
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -196,10 +198,37 @@ export const CreateCouponPage = () => {
 
               <Form.Item
                 name="coverImageUrl"
-                label="URL картинки (Обязательно)"
+                label="Изображение (Миниатюра купона)"
                 rules={[{ required: true, message: 'Добавьте изображение для карточки товара' }]}
               >
-                <Input placeholder="https://example.com/image.jpg" />
+                <Upload
+                  name="file"
+                  action="http://localhost:8080/api/v1/media/upload"
+                  headers={{ Authorization: `Bearer ${useAuthStore.getState().accessToken}` }}
+                  listType="picture-card"
+                  maxCount={1}
+                  showUploadList={false}
+                  onChange={(info) => {
+                    if (info.file.status === 'done') {
+                      const urlPath = info.file.response?.data?.url;
+                      const fullUrl = `http://localhost:8080${urlPath}`;
+                      setCoverImageUrl(fullUrl);
+                      form.setFieldValue('coverImageUrl', fullUrl);
+                      message.success('Изображение успешно загружено!');
+                    } else if (info.file.status === 'error') {
+                      message.error('Ошибка загрузки изображения');
+                    }
+                  }}
+                >
+                  {coverImageUrl ? (
+                    <img src={coverImageUrl} alt="cover" style={{ width: '100%', maxHeight: '100px', objectFit: 'contain' }} />
+                  ) : (
+                    <div>
+                      <UploadOutlined />
+                      <div style={{ marginTop: 8 }}>Загрузить (Max 5MB)</div>
+                    </div>
+                  )}
+                </Upload>
               </Form.Item>
 
               <Form.Item name="shortDescription" label="Краткое описание">
