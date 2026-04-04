@@ -1,0 +1,94 @@
+.city-selector {
+  position: relative;
+}
+
+.city-selector__trigger {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-chip);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.city-selector__trigger:hover {
+  background: rgba(255, 122, 24, 0.12);
+  color: var(--primary);
+}
+
+.city-selector__chevron {
+  transition: transform var(--transition-fast);
+}
+
+.city-selector__chevron--open {
+  transform: rotate(180deg);
+}
+
+.city-selector__dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 200;
+  min-width: 220px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  animation: cityDropdownIn 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.city-selector__header {
+  padding: 8px 12px;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.city-selector__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+
+.city-selector__option:hover {
+  background: var(--bg-chip);
+}
+
+.city-selector__option--active {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.city-selector__check {
+  margin-left: auto;
+  color: var(--primary);
+}
+
+@keyframes cityDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

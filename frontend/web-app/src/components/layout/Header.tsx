@@ -4,6 +4,7 @@ import { Heart, MapPinned, Menu, Search, ShoppingBag, Ticket, User, X, Globe } f
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
+import CitySelector from '../ui/CitySelector';
 import './Header.css';
 
 export default function Header() {
@@ -33,6 +34,8 @@ export default function Header() {
             Top<span>dim</span>
           </span>
         </Link>
+
+        <CitySelector />
 
         <nav className={`nav ${mobileMenuOpen ? 'nav--open' : ''}`}>
           <Link to="/" className={`nav-link ${isActive('/') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>

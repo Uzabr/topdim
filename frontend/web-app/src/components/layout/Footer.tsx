@@ -1,4 +1,5 @@
-import { Instagram, TextIcon as Telegram, Mail, MapPin } from 'lucide-react';
+import { Instagram, Send, Mail, MapPin, Phone, Smartphone } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import './Footer.css';
 
@@ -7,35 +8,72 @@ export default function Footer() {
   return (
     <footer className="app-footer">
       <div className="container footer-content">
-        <div className="footer-brand">
+        {/* Brand */}
+        <div className="footer-column footer-brand">
           <h2 className="footer-logo text-gradient">TopDim</h2>
-          <p className="footer-desc">
-            {t('footer.desc')}
-          </p>
+          <p className="footer-desc">{t('footer.desc')}</p>
           <div className="footer-socials">
-            <a href="#" aria-label="Instagram"><Instagram size={20} /></a>
-            <a href="#" aria-label="Telegram"><Telegram size={20} /></a>
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+              <Instagram size={20} />
+            </a>
+            <a href="https://t.me" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
+              <Send size={20} />
+            </a>
           </div>
         </div>
-        
-        <div className="footer-links">
-          <div className="footer-column">
-            <h3>{t('footer.contacts')}</h3>
-            <ul>
-              <li><Mail size={16} /> info@topdim.uz</li>
-              <li><MapPin size={16} /> г. Ташкент</li>
-            </ul>
-          </div>
-          <div className="footer-column">
-            <h3>{t('footer.info')}</h3>
-            <ul>
-              <li><a href="#">{t('footer.faq')}</a></li>
-              <li><a href="#">{t('footer.terms')}</a></li>
-              <li><a href="#">{t('footer.business')}</a></li>
-            </ul>
+
+        {/* User links */}
+        <div className="footer-column">
+          <h3>Пользователям</h3>
+          <ul>
+            <li><Link to="/coupons">Каталог купонов</Link></li>
+            <li><Link to="/favorites">Избранное</Link></li>
+            <li><Link to="/bazaar">Онлайн базар</Link></li>
+            <li><Link to="/profile">Мои купоны</Link></li>
+          </ul>
+        </div>
+
+        {/* Partners */}
+        <div className="footer-column">
+          <h3>Партнёрам</h3>
+          <ul>
+            <li><a href="#">{t('footer.business')}</a></li>
+            <li><a href="#">{t('footer.faq')}</a></li>
+            <li><a href="#">{t('footer.terms')}</a></li>
+            <li><a href="#">Политика конфиденциальности</a></li>
+          </ul>
+        </div>
+
+        {/* Contacts + App */}
+        <div className="footer-column">
+          <h3>{t('footer.contacts')}</h3>
+          <ul>
+            <li><Mail size={15} /> info@topdim.uz</li>
+            <li><Phone size={15} /> +998 71 200 00 00</li>
+            <li><MapPin size={15} /> г. Ташкент</li>
+          </ul>
+          <div className="footer-apps">
+            <h4>Мобильное приложение</h4>
+            <div className="footer-app-badges">
+              <button className="footer-app-badge footer-app-badge--disabled" disabled>
+                <Smartphone size={18} />
+                <div>
+                  <span className="footer-app-badge__label">Скоро в</span>
+                  <span className="footer-app-badge__store">App Store</span>
+                </div>
+              </button>
+              <button className="footer-app-badge footer-app-badge--disabled" disabled>
+                <Smartphone size={18} />
+                <div>
+                  <span className="footer-app-badge__label">Скоро в</span>
+                  <span className="footer-app-badge__store">Google Play</span>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
       <div className="footer-bottom">
         <div className="container">
           <p>&copy; {new Date().getFullYear()} {t('footer.rights')}</p>
