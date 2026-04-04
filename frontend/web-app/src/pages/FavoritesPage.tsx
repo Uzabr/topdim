@@ -1,37 +1,57 @@
-import { Sparkles } from 'lucide-react';
-import DealCard from '../components/marketplace/DealCard';
+import { Heart, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useFavoritesStore } from '../store/favoritesStore';
+import CouponCard from '../components/coupon/CouponCard';
+import type { CouponCardData } from '../components/coupon/CouponCard';
 import './FavoritesPage.css';
 
 export default function FavoritesPage() {
   const { favorites } = useFavoritesStore();
 
+  const mapped: CouponCardData[] = favorites.map((d: any) => ({
+    id: d.id,
+    title: d.title,
+    shortDescription: d.shortDescription,
+    merchant: d.merchant || { id: 0, name: 'TopDim' },
+    category: d.category,
+    oldPrice: d.oldPrice,
+    fromPrice: d.fromPrice,
+    discountPercent: d.discountPercent,
+    coverImageUrl: d.coverImageUrl || d.image,
+    totalSold: d.totalSold,
+    rating: d.rating,
+    reviewCount: d.reviewCount || d.reviews,
+    location: d.location || d.address,
+    isHot: d.isHot,
+    giftAvailable: d.giftAvailable,
+  }));
+
   return (
     <div className="favorites-page container">
-      <section className="favorites-hero surface-card">
-        <div className="pill favorites-hero__pill">
-          <Sparkles size={16} />
-          Твои сохранённые находки
-        </div>
-        <h1 className="page-title">Избранное для быстрого возврата к лучшим скидкам</h1>
-        <p className="section-copy">
-          Здесь живут купоны, к которым хочется вернуться: когда цена хорошая, а решение уже почти принято.
-        </p>
-      </section>
+      <div className="favorites-header">
+        <Heart size={24} className="favorites-icon" />
+        <h1>Избранное</h1>
+        {mapped.length > 0 && (
+          <span className="favorites-count">{mapped.length}</span>
+        )}
+      </div>
 
-      {favorites.length === 0 ? (
-        <div className="favorites-empty surface-card" style={{ padding: '40px', textAlign: 'center', marginTop: '20px' }}>
-          <h2>Пока ничего нет</h2>
-          <p>Нажимайте на сердечки на купонах, чтобы сохранить их здесь</p>
+      {mapped.length === 0 ? (
+        <div className="favorites-empty surface-card">
+          <span className="favorites-empty__icon">💛</span>
+          <h3>Пока пусто</h3>
+          <p>Добавляйте понравившиеся купоны, нажимая на ❤️ на карточке</p>
+          <Link to="/coupons" className="primary-button">
+            Перейти в каталог
+            <ArrowRight size={16} />
+          </Link>
         </div>
       ) : (
-        <section className="favorites-grid">
-          {favorites.map((deal) => (
-            <div key={deal.id} className="favorites-grid__item">
-              <DealCard deal={deal} />
-            </div>
+        <div className="favorites-grid">
+          {mapped.map((deal) => (
+            <CouponCard key={deal.id} coupon={deal} layout="card" />
           ))}
-        </section>
+        </div>
       )}
     </div>
   );

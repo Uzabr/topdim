@@ -6,6 +6,7 @@ import Header from './components/layout/Header';
 import BottomNav from './components/layout/BottomNav';
 import Footer from './components/layout/Footer';
 import CartDrawer from './components/cart/CartDrawer';
+import CookieConsent from './components/ui/CookieConsent';
 import HomePage from './pages/HomePage';
 import CouponCatalogPage from './pages/CouponCatalogPage';
 import CouponDetailPage from './pages/CouponDetailPage';
@@ -61,6 +62,7 @@ function AppContent() {
         <Footer />
         <BottomNav />
         <CartDrawer />
+        <CookieConsent />
       </div>
     </BrowserRouter>
   );

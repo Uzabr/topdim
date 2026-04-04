@@ -1,0 +1,61 @@
+.reveal-phone {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.reveal-phone__icon {
+  color: var(--text-muted);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.reveal-phone__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reveal-phone__label {
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.reveal-phone__number {
+  font-size: var(--font-md);
+  font-weight: 600;
+  color: var(--primary);
+  transition: color var(--transition-fast);
+}
+
+.reveal-phone__number:hover {
+  color: var(--primary-strong);
+}
+
+.reveal-phone__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-md);
+  color: var(--text-primary);
+  padding: 0;
+}
+
+.reveal-phone__show {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-chip);
+  color: var(--primary);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.reveal-phone__show:hover {
+  background: var(--primary);
+  color: #fff;
+}
