@@ -1,201 +1,313 @@
+/* ═══════════════════════════════════════════
+   ProfilePage — User dashboard
+   ═══════════════════════════════════════════ */
+
 .profile-page {
-  padding-top: calc(var(--header-height) + var(--space-xl));
-  padding-bottom: calc(var(--bottom-nav-height) + var(--space-xl));
+  padding: var(--space-xl) 0 var(--space-3xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+  max-width: 800px; /* Keep it focused */
+  margin: 0 auto;
 }
 
+/* ═══ Empty State (Unauth) ═══ */
+.profile-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-md);
+  padding: var(--space-3xl) var(--space-xl);
+  margin-top: var(--space-2xl);
+}
+
+.profile-empty-icon {
+  color: var(--text-muted);
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.05));
+  font-size: 3rem;
+}
+
+.profile-empty h2 {
+  margin: 0;
+  font-size: var(--font-2xl);
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.profile-empty p {
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-lg);
+  max-width: 300px;
+}
+
+/* ═══ Header Section ═══ */
 .profile-header {
+  padding: var(--space-xl);
+}
+
+.profile-header__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-xl);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-user {
   display: flex;
   align-items: center;
   gap: var(--space-lg);
-  padding: var(--space-xl);
-  background: var(--gradient-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  margin-bottom: var(--space-xl);
 }
 
 .profile-avatar {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bg-chip) 0%, var(--bg-muted) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--gradient-primary);
-  color: white;
-  font-size: var(--font-2xl);
+  font-size: 2rem;
   font-weight: 800;
-  border-radius: var(--radius-full);
-  flex-shrink: 0;
-}
-
-.profile-info {
-  flex: 1;
+  color: var(--text-secondary);
+  border: 4px solid var(--bg-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .profile-info h1 {
+  margin: 0 0 4px;
   font-size: var(--font-xl);
-  font-weight: 700;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 .profile-info p {
+  margin: 0;
+  font-size: var(--font-sm);
   color: var(--text-secondary);
-  font-size: var(--font-sm);
-}
-
-.profile-logout {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  font-size: var(--font-sm);
-  transition: all var(--transition-fast);
-}
-
-.profile-logout:hover {
-  border-color: var(--error);
-  color: var(--error);
-}
-
-.profile-section-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  font-size: var(--font-lg);
-  font-weight: 700;
-  margin-bottom: var(--space-md);
-}
-
-.profile-tabs {
-  display: flex;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-lg);
-  padding: 4px;
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-}
-
-.profile-tab {
-  flex: 1;
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-sm);
   font-weight: 500;
-  color: var(--text-secondary);
-  transition: all var(--transition-fast);
 }
 
-.profile-tab--active {
-  background: var(--gradient-primary);
-  color: white;
+.profile-actions {
+  display: flex;
+  gap: 8px;
 }
 
-.purchased-coupons {
+.icon-button.danger {
+  color: var(--danger);
+  background: rgba(255, 59, 48, 0.05);
+}
+
+.icon-button.danger:hover {
+  background: rgba(255, 59, 48, 0.15);
+}
+
+/* ═══ Stats ═══ */
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+.profile-stat-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+}
+
+.profile-stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-stat-data {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.profile-stat-value {
+  font-size: var(--font-xl);
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+/* ═══ Content ═══ */
+.profile-section-title {
+  font-size: var(--font-xl);
+  font-weight: 800;
+  margin: 0 0 var(--space-md);
+  letter-spacing: -0.01em;
+}
+
+.profile-coupons {
+  margin-top: var(--space-xl);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
 }
 
-.coupons-empty {
+.profile-loading {
   text-align: center;
-  padding: var(--space-3xl);
+  padding: var(--space-2xl);
   color: var(--text-muted);
+  font-weight: 500;
 }
 
-.coupons-empty span {
-  font-size: 48px;
-  display: block;
-  margin-bottom: var(--space-md);
-}
-
-.purchased-coupon {
-  padding: var(--space-lg);
-  background: var(--gradient-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+.profile-coupons-empty {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-3xl) var(--space-lg);
   gap: var(--space-sm);
 }
 
-.purchased-coupon--active {
-  border-left: 3px solid var(--success);
+.profile-coupons-empty h3 {
+  margin: 0;
+  font-size: var(--font-lg);
+  font-weight: 700;
 }
 
-.purchased-coupon--used {
-  border-left: 3px solid var(--text-muted);
-  opacity: 0.7;
+.profile-coupons-empty p {
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-xl);
+  font-size: var(--font-sm);
 }
 
-.purchased-coupon--expired {
-  border-left: 3px solid var(--error);
-  opacity: 0.6;
+/* ═══ Purchased Coupon Card ═══ */
+.purchased-coupon {
+  padding: var(--space-lg) var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  position: relative;
+  overflow: hidden;
 }
+
+.purchased-coupon::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--border-strong);
+}
+
+.purchased-coupon--active::before { background: var(--primary); }
+.purchased-coupon--used::before { background: var(--success); }
+.purchased-coupon--expired::before { background: var(--text-muted); }
 
 .purchased-coupon__main h3 {
-  font-size: var(--font-md);
-  font-weight: 600;
+  margin: 0 0 4px;
+  font-size: var(--font-lg);
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .purchased-coupon__main p {
+  margin: 0;
   font-size: var(--font-sm);
   color: var(--text-secondary);
 }
 
+.purchased-coupon__details {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-top: var(--space-md);
+  border-top: 1px dashed var(--border-strong);
+}
+
 .purchased-coupon__code {
   display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  background: var(--bg-primary);
-  border-radius: var(--radius-md);
-  font-family: monospace;
+  flex-direction: column;
 }
 
 .code-label {
-  font-size: var(--font-xs);
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 800;
   color: var(--text-muted);
+  letter-spacing: 0.05em;
 }
 
 .code-value {
-  font-size: var(--font-md);
-  font-weight: 700;
-  color: var(--primary-light);
-  letter-spacing: 1px;
+  font-size: var(--font-2xl);
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--text-primary);
+  font-family: monospace;
 }
 
 .purchased-coupon__meta {
   display: flex;
-  justify-content: space-between;
-  font-size: var(--font-sm);
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 
-.coupon-status--active {
-  color: var(--success-light);
+.badge {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
-.coupon-status--used {
-  color: var(--text-muted);
-}
-
-.coupon-status--expired {
-  color: var(--error-light);
-}
+.badge--active { background: rgba(255, 102, 96, 0.1); color: var(--primary); }
+.badge--used { background: rgba(52, 199, 89, 0.1); color: var(--success); text-decoration: line-through; }
+.badge--expired { background: var(--bg-muted); color: var(--text-secondary); }
 
 .coupon-expires {
-  color: var(--text-muted);
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
-@media (max-width: 768px) {
-  .profile-header {
-    flex-wrap: wrap;
-  }
+.purchased-coupon__btn {
+  margin-top: var(--space-sm);
+}
 
-  .profile-logout {
+/* ═══ Responsive ═══ */
+@media (max-width: 600px) {
+  .profile-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .purchased-coupon {
+    padding: var(--space-md);
+  }
+  
+  .purchased-coupon__details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
+  }
+  
+  .purchased-coupon__meta {
     width: 100%;
-    justify-content: center;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
 }
