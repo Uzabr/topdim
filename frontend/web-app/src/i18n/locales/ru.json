@@ -8,5 +8,9 @@
     "profile": "Профиль",
     "login": "Войти",
     "language": "Рус"
+  },
+  "search": {
+    "button": "Найти",
+    "placeholder": "Поиск..."
   }
 }

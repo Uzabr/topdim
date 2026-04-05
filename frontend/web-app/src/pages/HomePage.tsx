@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, MapPinned, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +7,7 @@ import { couponsApi } from '../api/coupons';
 import type { Category } from '../api/coupons';
 import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
-import SearchBar from '../components/marketplace/SearchBar';
+import SearchBar from '../components/ui/SearchBar';
 import { topdimCategories, topdimDeals } from '../data/topdim';
 import './HomePage.css';
 
@@ -23,45 +23,13 @@ const CategoryIcon = ({ slug }: { slug?: string }) => {
   }
 };
 
-/* Placeholder banners */
-const BANNERS = [
-  {
-    id: 1,
-    title: 'SPA программы\nсо скидкой до 50%',
-    cta: 'Посмотреть подборку',
-    gradient: 'linear-gradient(135deg, #ff9a3d 0%, #ff5d5d 100%)',
-    link: '/coupons?category=beauty',
-  },
-  {
-    id: 2,
-    title: 'Развлечения для всей\nсемьи со скидкой до 60%',
-    cta: 'Выбрать купон',
-    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    link: '/coupons?category=entertainment',
-  },
-  {
-    id: 3,
-    title: 'Фитнес и спорт\nот 99 000 сум',
-    cta: 'В каталог',
-    gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-    link: '/coupons?category=sport',
-  },
-];
+// Removed BANNERS array for new Hero section
 
 export default function HomePage() {
   const { t, i18n } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [search, setSearch] = useState('');
-  const [bannerIndex, setBannerIndex] = useState(0);
-  const carouselRef = useRef<HTMLDivElement>(null);
-
-  // Auto-rotate banners
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setBannerIndex((i) => (i + 1) % BANNERS.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
+  // Removed banner automatic sliding logic
 
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
@@ -121,13 +89,6 @@ export default function HomePage() {
     }));
   }, [apiDeals]);
 
-  const computedSuggestions = useMemo(() => {
-    const rawSearch = search.trim().toLowerCase();
-    if (!rawSearch) return [];
-    return categories
-      .map(c => c.name)
-      .filter(name => name.toLowerCase().includes(rawSearch));
-  }, [search, categories]);
 
   const filteredDeals = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -139,8 +100,10 @@ export default function HomePage() {
     });
   }, [mappedDeals, activeCategory, search]);
 
-  const topDeals = filteredDeals.filter((d) => d.isHot || (d.totalSold && d.totalSold > 200));
-  const newDeals = filteredDeals.slice(-6);
+  const topDeals = filteredDeals.filter((d) => d.isHot || (d.totalSold && d.totalSold > 200)).slice(0, 10);
+  const newDeals = filteredDeals.slice(0, 8); // Grab first 8 as "new"
+
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   const scrollCarousel = (dir: number) => {
     if (carouselRef.current) {
@@ -150,43 +113,50 @@ export default function HomePage() {
 
   return (
     <div className="home-page">
-      {/* ═══ Banner Section ═══ */}
-      <section className="home-banners container">
-        <div className="home-banners__track">
-          {BANNERS.map((banner, i) => (
-            <Link
-              key={banner.id}
-              to={banner.link}
-              className={`home-banner ${i === bannerIndex ? 'home-banner--active' : ''}`}
-              style={{ background: banner.gradient }}
-            >
-              <div className="home-banner__content">
-                <h2>{banner.title}</h2>
-                <span className="home-banner__cta">{banner.cta}</span>
-              </div>
+      {/* ═══ Hero Section ═══ */}
+      <section className="home-hero container">
+        <div className="home-hero__content">
+          <h1 className="home-hero__title">
+            Твои лучшие моменты <br/>
+            <span className="text-gradient">со скидкой до 90%</span>
+          </h1>
+          <p className="home-hero__subtitle">
+            Каждый день уникальные предложения на кафе, рестораны, SPA, развлечения и спорт. Покупай эмоции выгодно.
+          </p>
+          <div className="home-hero__actions">
+            <Link to="/coupons" className="primary-button home-hero__btn">
+              Смотреть предложения
             </Link>
-          ))}
+          </div>
         </div>
-        <div className="home-banners__dots">
-          {BANNERS.map((_, i) => (
-            <button
-              key={i}
-              className={`home-banners__dot ${i === bannerIndex ? 'home-banners__dot--active' : ''}`}
-              onClick={() => setBannerIndex(i)}
+        <div className="home-hero__visual">
+          <div className="home-hero__visual-inner">
+            <img 
+              src="https://images.unsplash.com/photo-1555529771-835f59bfc50c?auto=format&fit=crop&w=800&q=80" 
+              alt="Скидки" 
+              className="home-hero__img" 
             />
-          ))}
+            <div className="home-hero__badge">
+              <span className="home-hero__badge-icon">🔥</span>
+              <div>
+                <span className="home-hero__badge-title">TopDim Choice</span>
+                <span className="home-hero__badge-desc">Сэкономлено 1M+ сум</span>
+              </div>
+            </div>
+            <div className="home-hero__glow"></div>
+          </div>
         </div>
       </section>
 
       {/* ═══ Search ═══ */}
       <section className="home-search container">
-        <SearchBar
-          value={search}
-          onChange={setSearch}
-          placeholder={t('home.searchPlaceholder')}
-          suggestions={computedSuggestions}
-          onSuggestionSelect={setSearch}
-        />
+        <div className="home-search-wrapper">
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder={t('home.searchPlaceholder') || 'Поиск скидок и заведений...'}
+          />
+        </div>
       </section>
 
       {/* ═══ Categories ═══ */}

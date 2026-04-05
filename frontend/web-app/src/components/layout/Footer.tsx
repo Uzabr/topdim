@@ -48,8 +48,16 @@ export default function Footer() {
         <div className="footer-column">
           <h3>{t('footer.contacts')}</h3>
           <ul>
-            <li><Mail size={15} /> info@topdim.uz</li>
-            <li><Phone size={15} /> +998 71 200 00 00</li>
+            <li>
+              <a href="mailto:info@topdim.uz" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'inherit' }}>
+                <Mail size={15} /> info@topdim.uz
+              </a>
+            </li>
+            <li>
+              <a href="tel:+998712000000" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'inherit' }}>
+                <Phone size={15} /> +998 71 200 00 00
+              </a>
+            </li>
             <li><MapPin size={15} /> г. Ташкент</li>
           </ul>
           <div className="footer-apps">

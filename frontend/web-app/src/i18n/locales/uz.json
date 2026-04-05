@@ -8,5 +8,9 @@
     "profile": "Profil",
     "login": "Kirish",
     "language": "Uzb"
+  },
+  "search": {
+    "button": "Izlash",
+    "placeholder": "Qidirish..."
   }
 }

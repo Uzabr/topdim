@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Clock3, Flame, Heart, MapPin, Star, Ticket, Users } from 'lucide-react';
-import { useFavoritesStore } from '../../store/favoritesStore';
+import { Clock3, MapPin, Star, Users } from 'lucide-react';
+import FavoriteButton from '../ui/FavoriteButton';
 import './CouponCard.css';
 
 export interface CouponCardData {
@@ -29,8 +29,6 @@ interface CouponCardProps {
 }
 
 export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps) {
-  const { toggleFavorite, isFavorite } = useFavoritesStore();
-  const fav = isFavorite(coupon.id);
 
   const discount =
     coupon.discountPercent ||
@@ -39,12 +37,6 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
       : 0);
 
   const locationText = coupon.location || coupon.address || '';
-
-  const formatSold = (n?: number) => {
-    if (!n) return '';
-    if (n >= 1000) return `${(n / 1000).toFixed(1).replace('.0', '')}k`;
-    return String(n);
-  };
 
   return (
     <Link to={`/coupons/${coupon.id}`} className={`coupon-card coupon-card--${layout}`}>
@@ -73,25 +65,8 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
           <span className="coupon-card__discount">до -{discount}%</span>
         )}
 
-        {/* Hot badge */}
-        {coupon.isHot && (
-          <span className="coupon-card__hot">
-            <Flame size={12} />
-          </span>
-        )}
-
-        {/* Favorite button */}
-        <button
-          className={`coupon-card__fav ${fav ? 'coupon-card__fav--active' : ''}`}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleFavorite(coupon.id);
-          }}
-          aria-label="В избранное"
-        >
-          <Heart size={16} fill={fav ? 'currentColor' : 'none'} />
-        </button>
+        {/* Favorite button (includes Hot marker if isTop=true) */}
+        <FavoriteButton couponId={coupon.id} isTop={coupon.isHot} />
 
         {/* Countdown */}
         {coupon.countdownText && (
