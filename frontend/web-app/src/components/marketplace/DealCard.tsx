@@ -20,7 +20,7 @@ export default function DealCard({ deal, layout = 'standard' }: DealCardProps) {
         <div className="deal-card__overlay" />
         <button 
           className={`deal-card__favorite ${fav ? 'deal-card__favorite--active' : ''}`}
-          onClick={(e) => { e.preventDefault(); toggleFavorite(deal); }}
+          onClick={(e) => { e.preventDefault(); toggleFavorite(deal.id); }}
         >
           <Heart size={18} fill={fav ? "currentColor" : "none"} />
         </button>

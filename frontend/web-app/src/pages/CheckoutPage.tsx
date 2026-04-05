@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ShieldCheck, ChevronLeft, CreditCard, Apple, Smartphone, AlertCircle } from 'lucide-react';
+import { ShieldCheck, ChevronLeft, CreditCard, Smartphone, AlertCircle, Loader2 } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { formatPrice } from '../utils/format';
 import { useAuthStore } from '../store/authStore';
+import { authApi } from '../api/auth';
+import { ordersApi } from '../api/orders';
 import './CheckoutPage.css';
 
 export default function CheckoutPage() {
   const [searchParams] = useSearchParams();
   const isGuest = searchParams.get('guest') === 'true';
   const couponId = searchParams.get('couponId');
-  const optionId = searchParams.get('optionId'); // 1-click direct link case
+  const optionId = searchParams.get('optionId');
   
   const { items, totalPrice, clearCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
@@ -19,12 +21,10 @@ export default function CheckoutPage() {
   const [step, setStep] = useState(isGuest && !isAuthenticated ? 1 : 2);
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
-  const [smsCode, setSmsCode] = useState('');
-  const [isSmsSent, setIsSmsSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'CLICK' | 'PAYME'>('CARD');
 
-  // If we came from 1-click buy, we might have no items in cart but a direct coupon.
-  // For now, assume cart has items or we mock it.
   const displayItems = items.length > 0 ? items : (
     couponId && optionId ? [{ id: 'mock', couponTitle: 'Скидка на пиццу', optionTitle: 'Пицца 33см + напиток', unitPrice: 45000, quantity: 1 }] : []
   );
@@ -41,26 +41,40 @@ export default function CheckoutPage() {
     );
   }
 
-  const handleSendSms = (e: React.FormEvent) => {
+  const handleGuestAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phone.length > 8 && name) {
-      setIsSmsSent(true);
-    }
-  };
-
-  const handleVerifySms = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (smsCode === '0000') { // Mock OTP
+    if (phone.length < 9 || !name) return;
+    
+    setIsLoading(true);
+    setError('');
+    try {
+      const fullPhone = '+998' + phone;
+      const response = await authApi.guestAuth({ phone: fullPhone, name });
+      const { accessToken, refreshToken, user } = response.data.data;
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('user', JSON.stringify(user));
       setStep(2);
-    } else {
-      alert('Неверный код (введите 0000 для теста)');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка авторизации');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handlePayment = () => {
-    alert('Mock: Оплата успешна! Купон отправлен в ваш профиль (и SMS).');
-    clearCart();
-    navigate('/profile');
+  const handlePayment = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const fullPhone = phone ? '+998' + phone : '';
+      await ordersApi.createOrder('', fullPhone);
+      clearCart();
+      navigate('/profile');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка оформления заказа');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -82,60 +96,40 @@ export default function CheckoutPage() {
               <h2 className="checkout-section__title">1. Контактные данные</h2>
               <p className="checkout-section__subtitle">Куда прислать купленные купоны?</p>
               
-              {!isSmsSent ? (
-                <form className="checkout-form" onSubmit={handleSendSms}>
-                  <div className="form-group">
-                    <label>Имя</label>
+              {error && <div className="checkout-error"><AlertCircle size={16} /> {error}</div>}
+
+              <form className="checkout-form" onSubmit={handleGuestAuth}>
+                <div className="form-group">
+                  <label>Имя</label>
+                  <input 
+                    type="text" 
+                    placeholder="Иван Иванов" 
+                    className="form-input"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required 
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Телефон</label>
+                  <div className="form-input-wrapper">
+                    <span className="form-input-prefix">+998</span>
                     <input 
-                      type="text" 
-                      placeholder="Иван Иванов" 
-                      className="form-input"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required 
+                      type="tel" 
+                      placeholder="90 123 45 67" 
+                      className="form-input" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                      required
+                      disabled={isLoading}
                     />
                   </div>
-                  <div className="form-group">
-                    <label>Телефон</label>
-                    <div className="form-input-wrapper">
-                      <span className="form-input-prefix">+998</span>
-                      <input 
-                        type="tel" 
-                        placeholder="90 123 45 67" 
-                        className="form-input" 
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <button type="submit" className="primary-button checkout-next-btn">
-                    Получить SMS-код
-                  </button>
-                </form>
-              ) : (
-                <form className="checkout-form" onSubmit={handleVerifySms}>
-                  <div className="form-group">
-                    <label>Код из SMS</label>
-                    <p className="form-hint">Мы отправили код на +998 {phone}</p>
-                    <input 
-                      type="text" 
-                      placeholder="0000" 
-                      className="form-input form-input--center"
-                      maxLength={4}
-                      value={smsCode}
-                      onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, ''))}
-                      required 
-                    />
-                  </div>
-                  <button type="submit" className="primary-button checkout-next-btn">
-                    Подтвердить и продолжить
-                  </button>
-                  <button type="button" className="text-button checkout-edit-btn" onClick={() => setIsSmsSent(false)}>
-                    Изменить номер
-                  </button>
-                </form>
-              )}
+                </div>
+                <button type="submit" className="primary-button checkout-next-btn" disabled={isLoading || phone.length < 9 || !name}>
+                  {isLoading ? <><Loader2 size={18} className="spin" /> Проверяем...</> : 'Продолжить к оплате'}
+                </button>
+              </form>
             </div>
           )}
 

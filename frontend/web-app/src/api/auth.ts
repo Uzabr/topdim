@@ -44,4 +44,7 @@ export const authApi = {
 
   logout: (refreshToken: string) =>
     apiClient.post<ApiResponse<void>>('/api/v1/auth/logout', { refreshToken }),
+
+  guestAuth: (data: { phone: string; name: string }) =>
+    apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/guest', data),
 };
