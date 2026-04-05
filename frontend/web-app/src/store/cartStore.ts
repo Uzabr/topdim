@@ -14,6 +14,7 @@ interface CartState {
   fetchCart: () => Promise<void>;
   addToCart: (request: AddToCartRequest) => Promise<void>;
   removeFromCart: (itemId: number) => void;
+  clearCart: () => void;
 }
 
 const calcTotals = (items: CartItem[]) => ({
@@ -62,5 +63,9 @@ export const useCartStore = create<CartState>((set, get) => ({
     } catch {
       set({ items: prevItems, ...calcTotals(prevItems) });
     }
+  },
+
+  clearCart: () => {
+    set({ items: [], totalItems: 0, totalPrice: 0 });
   },
 }));

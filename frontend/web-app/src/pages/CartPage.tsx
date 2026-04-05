@@ -1,11 +1,22 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
+import { useAuthStore } from '../store/authStore';
 import { formatPrice } from '../utils/format';
 import './CartPage.css';
 
 export default function CartPage() {
   const { items, totalItems, totalPrice, removeFromCart } = useCartStore();
+  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleCheckout = () => {
+    if (isAuthenticated) {
+      navigate('/checkout');
+    } else {
+      navigate('/checkout?guest=true');
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -13,8 +24,8 @@ export default function CartPage() {
         <div className="cart-empty container">
           <div className="cart-empty__icon">🛒</div>
           <h2>Корзина пуста</h2>
-          <p>Добавьте купоны из каталога</p>
-          <Link to="/coupons" className="cart-empty__btn">
+          <p>Добавьте купоны из каталога, чтобы начать покупки</p>
+          <Link to="/coupons" className="primary-button cart-empty__btn">
             <ShoppingBag size={18} /> К купонам
           </Link>
         </div>
@@ -26,21 +37,23 @@ export default function CartPage() {
     <div className="cart-page">
       <div className="cart-header container">
         <h1 className="cart-title">Корзина</h1>
-        <span className="cart-count">{totalItems} товар(ов)</span>
+        <span className="cart-count badge">{totalItems} товар(ов)</span>
       </div>
 
       <div className="cart-content container">
-        <div className="cart-items">
+        <div className="cart-items glass-card">
           {items.map((item) => (
             <div key={item.id} className="cart-item">
-              <div className="cart-item__icon">🎫</div>
+              <div className="cart-item__icon-wrapper">
+                <div className="cart-item__icon">🎫</div>
+              </div>
               <div className="cart-item__info">
                 <h3 className="cart-item__title">{item.couponTitle}</h3>
                 <p className="cart-item__option">{item.optionTitle}</p>
                 {item.gift && (
-                  <p className="cart-item__gift">
-                    🎁 Подарок: {item.giftRecipientName}
-                  </p>
+                  <span className="cart-item__gift badge">
+                    🎁 В подарок (Кому: {item.giftRecipientName})
+                  </span>
                 )}
                 <div className="cart-item__qty">
                   <span>Кол-во: {item.quantity}</span>
@@ -51,29 +64,30 @@ export default function CartPage() {
                   {formatPrice(item.unitPrice * item.quantity)}
                 </span>
                 <button
-                  className="cart-item__remove"
+                  className="icon-button cart-item__remove"
                   onClick={() => removeFromCart(item.id)}
+                  aria-label="Удалить"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={18} />
                 </button>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="cart-summary glass">
+        <div className="cart-summary glass-card">
           <h2>Итого</h2>
           <div className="cart-summary__row">
             <span>Товары ({totalItems})</span>
-            <span>{formatPrice(totalPrice)}</span>
+            <span className="cart-summary__value">{formatPrice(totalPrice)}</span>
           </div>
           <div className="cart-summary__total">
             <span>К оплате</span>
             <span className="cart-summary__price">{formatPrice(totalPrice)}</span>
           </div>
-          <Link to="/checkout" className="cart-summary__btn">
+          <button onClick={handleCheckout} className="primary-button cart-summary__btn">
             Оформить заказ <ArrowRight size={18} />
-          </Link>
+          </button>
         </div>
       </div>
     </div>

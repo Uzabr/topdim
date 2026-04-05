@@ -1,75 +1,156 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search as SearchIcon, MapPin, Tag } from 'lucide-react';
+import { Search as SearchIcon, MapPin, Tag, X, Flame } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { bazaarsApi } from '../api/bazaars';
 import type { Shop } from '../api/bazaars';
+import CouponCard from '../components/coupon/CouponCard';
+// We'll import a mock coupon array since search API isn't fully ready for coupons yet
+import { DEMO_COUPONS } from './CouponCatalogPage';
 import './SearchPage.css';
+
+const POPULAR_QUERIES = ['SPA', 'Пицца', 'Фитнес', 'Sushi', 'Картинг'];
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
 
-  const { data: shops = [], isLoading } = useQuery({
+  // Shop search (existing API)
+  const { data: shops = [], isLoading: isLoadingShops } = useQuery({
     queryKey: ['shop-search', searchTerm],
     queryFn: () => bazaarsApi.searchShops(searchTerm),
     select: (res) => res.data.data,
     enabled: searchTerm.length >= 2,
   });
 
+  // Mock coupon search (until backend is ready)
+  const filteredCoupons = searchTerm.length >= 2 
+    ? DEMO_COUPONS.filter((c: any) => 
+        c.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        c.merchant.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : [];
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setSearchTerm(query);
+    if (query.trim()) {
+      setSearchTerm(query.trim());
+    }
   };
+
+  const handleClear = () => {
+    setQuery('');
+    setSearchTerm('');
+  };
+
+  const applyPopular = (req: string) => {
+    setQuery(req);
+    setSearchTerm(req);
+  };
+
+  const isLoading = isLoadingShops && searchTerm.length >= 2;
+  const isTyping = query !== searchTerm;
 
   return (
     <div className="search-page container">
-      <h1 className="search-page__title">🔍 Поиск</h1>
-      <p className="search-page__subtitle">Найдите магазины, товары и купоны</p>
+      <div className="search-header">
+        <h1>Поиск</h1>
+        <form className="search-box" onSubmit={handleSearch}>
+          <SearchIcon size={20} className="search-box__icon" />
+          <input
+            type="text"
+            placeholder="Искать скидки, магазины или услуги..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="search-box__input"
+            autoFocus
+          />
+          {query && (
+            <button type="button" className="icon-button search-box__clear" onClick={handleClear}>
+              <X size={18} />
+            </button>
+          )}
+          <button type="submit" className="primary-button search-box__btn">
+            Найти
+          </button>
+        </form>
+      </div>
 
-      <form className="search-form" onSubmit={handleSearch}>
-        <SearchIcon size={20} className="search-form__icon" />
-        <input
-          type="text"
-          placeholder="Поиск по магазинам и товарам..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="search-form__input"
-          autoFocus
-        />
-      </form>
+      {!searchTerm && !isTyping && (
+        <div className="search-suggestions glass-card">
+          <h3 className="search-suggestions__title">
+            <Flame size={18} color="var(--primary)" />
+            Популярные запросы
+          </h3>
+          <div className="search-tags">
+            {POPULAR_QUERIES.map(q => (
+              <button key={q} className="search-tag-btn" onClick={() => applyPopular(q)}>
+                {q}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {searchTerm && (
         <div className="search-results">
-          <h2 className="search-results__title">
-            {isLoading ? 'Ищем...' : `Результаты (${shops.length})`}
-          </h2>
-          {shops.length === 0 && !isLoading && (
-            <div className="search-empty">
-              <p>Ничего не найдено по запросу "{searchTerm}"</p>
-            </div>
-          )}
-          <div className="search-results__list">
-            {shops.map((shop: Shop) => (
-              <div key={shop.id} className="search-shop-card">
-                <h3>{shop.name}</h3>
-                {shop.bazaar && (
-                  <p className="search-shop__bazaar">
-                    <MapPin size={14} /> {shop.bazaar.name}
-                  </p>
-                )}
-                {shop.productTags.length > 0 && (
-                  <div className="search-shop__tags">
-                    {shop.productTags.slice(0, 5).map((t, i) => (
-                      <span key={i} className="search-tag">
-                        <Tag size={12} /> {t.tag}
-                      </span>
+          {isLoading ? (
+            <div className="search-loading">Поиск лучших предложений...</div>
+          ) : (
+            <>
+              {/* Coupons Results */}
+              {filteredCoupons.length > 0 && (
+                <div className="search-section">
+                  <h2 className="search-section__title">Акции и купоны <span className="badge">{filteredCoupons.length}</span></h2>
+                  <div className="search-grid">
+                    {filteredCoupons.map((coupon: any) => (
+                      <CouponCard key={coupon.id} coupon={coupon} layout="card" />
                     ))}
                   </div>
-                )}
-                {shop.hasCoupon && <span className="search-coupon-badge">🎫 Есть купон</span>}
-              </div>
-            ))}
-          </div>
+                </div>
+              )}
+
+              {/* Shops Results */}
+              {shops.length > 0 && (
+                <div className="search-section">
+                  <h2 className="search-section__title">Магазины на базарах <span className="badge">{shops.length}</span></h2>
+                  <div className="search-shops-list">
+                    {shops.map((shop: Shop) => (
+                      <div key={shop.id} className="search-shop-card glass-card" onClick={() => navigate(`/shop/${shop.id}`)}>
+                        <div className="search-shop-card__main">
+                          <h3>{shop.name}</h3>
+                          {shop.bazaar && (
+                            <p className="search-shop__bazaar">
+                              <MapPin size={14} /> {shop.bazaar.name}  {shop.shopNumber ? `· № ${shop.shopNumber}` : ''}
+                            </p>
+                          )}
+                        </div>
+                        <div className="search-shop-card__meta">
+                          {shop.hasCoupon && <span className="search-coupon-badge">🎫 Скидки</span>}
+                          {shop.productTags.length > 0 && (
+                            <p className="search-shop__tags-text">
+                              {shop.productTags.slice(0, 3).map(t => t.tag).join(', ')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!isLoading && filteredCoupons.length === 0 && shops.length === 0 && (
+                <div className="search-empty glass-card">
+                  <span className="search-empty-icon">🕵️</span>
+                  <h3>Упс, мы ничего не нашли</h3>
+                  <p>По запросу «{searchTerm}» нет результатов. Попробуйте изменить запрос или поискать в других категориях.</p>
+                  <button className="text-button" onClick={handleClear}>Сбросить поиск</button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>
