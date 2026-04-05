@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Gift, ShoppingCart, TrendingUp, Calendar, Clock, AlertCircle, Info, Users, CreditCard } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
 import { couponsApi } from '../api/coupons';
 import type { CouponOffer, CouponOption } from '../api/coupons';
 import { useCartStore } from '../store/cartStore';
@@ -288,17 +288,23 @@ export default function CouponDetailPage() {
                 {c.address && (
                   <div className="detail-map-section">
                     <div className="detail-map-container">
-                      <MapContainer
-                        center={[41.2995, 69.2401]}
-                        zoom={15}
-                        style={{ height: '260px', width: '100%', borderRadius: '16px' }}
-                        scrollWheelZoom={false}
-                      >
-                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        <Marker position={[41.2995, 69.2401]}>
-                          <Popup>{c.merchant?.name} — {c.address}</Popup>
-                        </Marker>
-                      </MapContainer>
+                      <YMaps query={{ lang: 'ru_RU', apikey: 'REMOVED_MAP_API_KEY' }}>
+                        <Map 
+                          defaultState={{ center: [41.2995, 69.2401], zoom: 15 }} 
+                          style={{ height: '260px', width: '100%', borderRadius: '16px', overflow: 'hidden' }}
+                        >
+                          <Placemark 
+                            geometry={[41.2995, 69.2401]} 
+                            properties={{
+                              balloonContentHeader: c.merchant?.name,
+                              balloonContentBody: c.address,
+                            }}
+                            options={{
+                              preset: 'islands#redDotIcon'
+                            }}
+                          />
+                        </Map>
+                      </YMaps>
                     </div>
                     <div className="detail-address">
                       <strong>📍 Адрес</strong>
