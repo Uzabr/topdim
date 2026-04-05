@@ -86,7 +86,7 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            toggleFavorite(coupon as any);
+            toggleFavorite(coupon.id);
           }}
           aria-label="В избранное"
         >

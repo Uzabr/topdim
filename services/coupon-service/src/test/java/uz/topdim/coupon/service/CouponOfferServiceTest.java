@@ -31,6 +31,7 @@ class CouponOfferServiceTest {
     @Mock private CouponOptionRepository couponOptionRepository;
     @Mock private MerchantRepository merchantRepository;
     @Mock private CategoryRepository categoryRepository;
+    @Mock private ReviewRepository reviewRepository;
 
     @InjectMocks
     private CouponOfferService couponOfferService;

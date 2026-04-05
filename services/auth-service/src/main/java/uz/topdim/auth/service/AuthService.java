@@ -216,6 +216,41 @@ public class AuthService {
     }
 
     /**
+     * Гостевая аутентификация (Silent Registration).
+     * Создаёт пользователя с ролью GUEST если ещё не существует.
+     * Если пользователь с таким телефоном уже есть — возвращает его токены.
+     *
+     * @param request телефон и имя гостя
+     * @return AuthResponse с access и refresh токенами
+     */
+    @Transactional
+    public AuthResponse guestAuth(GuestAuthRequest request) {
+        // Проверяем: есть ли пользователь с таким телефоном
+        User user = userRepository.findByPhone(request.getPhone()).orElse(null);
+
+        if (user == null) {
+            // Создаём гостевого пользователя (без email, без пароля)
+            String guestEmail = "guest_" + request.getPhone() + "@topdim.uz";
+            user = User.builder()
+                    .email(guestEmail)
+                    .phone(request.getPhone())
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .firstName(request.getName())
+                    .role(Role.GUEST)
+                    .enabled(true)
+                    .emailVerified(false)
+                    .phoneVerified(false)
+                    .build();
+            user = userRepository.save(user);
+            log.info("SECURITY: Guest user created: phone={}", maskPhone(request.getPhone()));
+        } else {
+            log.info("SECURITY: Guest auth for existing user: phone={}", maskPhone(request.getPhone()));
+        }
+
+        return buildAuthResponse(user);
+    }
+
+    /**
      * Формирует ответ аутентификации.
      * Генерирует access token, создаёт refresh token, собирает UserDto.
      */
@@ -265,5 +300,13 @@ public class AuthService {
         int at = email.indexOf('@');
         if (at <= 1) return "***" + email.substring(at);
         return email.charAt(0) + "***" + email.substring(at);
+    }
+
+    /**
+     * Маскирует номер телефона для логов.
+     */
+    private String maskPhone(String phone) {
+        if (phone == null || phone.length() < 4) return "***";
+        return "***" + phone.substring(phone.length() - 4);
     }
 }

@@ -87,4 +87,17 @@ public class AuthController {
         authService.changePassword(userId, request);
         return ResponseEntity.ok(ApiResponse.success("Пароль успешно изменён", null));
     }
+
+    /**
+     * POST /api/v1/auth/guest — Гостевая аутентификация (Silent Registration).
+     * Создаёт GUEST-пользователя по телефону и возвращает JWT.
+     *
+     * @param request телефон и имя
+     * @return 200 OK с токенами
+     */
+    @PostMapping("/guest")
+    public ResponseEntity<ApiResponse<AuthResponse>> guestAuth(@Valid @RequestBody GuestAuthRequest request) {
+        AuthResponse response = authService.guestAuth(request);
+        return ResponseEntity.ok(ApiResponse.success("Гостевой доступ предоставлен", response));
+    }
 }

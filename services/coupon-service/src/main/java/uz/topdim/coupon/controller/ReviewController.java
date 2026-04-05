@@ -21,11 +21,12 @@ public class ReviewController {
     @PostMapping
     public ResponseEntity<ApiResponse<Long>> createReview(
             @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = "X-User-Name", required = false, defaultValue = "Пользователь") String userName,
             @Valid @RequestBody CreateReviewRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Отзыв отправлен на модерацию",
-                reviewService.createReview(userId, request)
+                reviewService.createReview(userId, userName, request)
         ));
     }
 

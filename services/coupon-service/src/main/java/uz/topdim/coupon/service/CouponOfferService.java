@@ -31,6 +31,7 @@ public class CouponOfferService {
     private final CouponOptionRepository couponOptionRepository;
     private final MerchantRepository merchantRepository;
     private final CategoryRepository categoryRepository;
+    private final ReviewRepository reviewRepository;
 
     // ==================== Public API ====================
 
@@ -349,6 +350,8 @@ public class CouponOfferService {
                 .status(offer.getStatus().name())
                 .totalSold(offer.getTotalSold())
                 .viewCount(offer.getViewCount())
+                .averageRating(reviewRepository.getAverageRatingByCouponId(offer.getId()))
+                .reviewCount(reviewRepository.countApprovedByCouponId(offer.getId()))
                 .options(offer.getOptions().stream()
                         .map(opt -> CouponOptionResponse.builder()
                                 .id(opt.getId())

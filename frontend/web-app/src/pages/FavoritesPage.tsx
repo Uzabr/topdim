@@ -3,28 +3,37 @@ import { Link } from 'react-router-dom';
 import { useFavoritesStore } from '../store/favoritesStore';
 import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
+import { topdimDeals } from '../data/topdim';
 import './FavoritesPage.css';
 
 export default function FavoritesPage() {
-  const { favorites } = useFavoritesStore();
+  const { favoriteIds } = useFavoritesStore();
 
-  const mapped: CouponCardData[] = favorites.map((d: any) => ({
-    id: d.id,
-    title: d.title,
-    shortDescription: d.shortDescription,
-    merchant: d.merchant || { id: 0, name: 'TopDim' },
-    category: d.category,
-    oldPrice: d.oldPrice,
-    fromPrice: d.fromPrice,
-    discountPercent: d.discountPercent,
-    coverImageUrl: d.coverImageUrl || d.image,
-    totalSold: d.totalSold,
-    rating: d.rating,
-    reviewCount: d.reviewCount || d.reviews,
-    location: d.location || d.address,
-    isHot: d.isHot,
-    giftAvailable: d.giftAvailable,
-  }));
+  // Map favorite IDs to actual coupon data
+  // TODO: Replace with API call when backend is fully integrated
+  const mapped: CouponCardData[] = favoriteIds
+    .map((id) => {
+      const deal = topdimDeals.find((d) => d.id === id);
+      if (!deal) return null;
+      return {
+        id: deal.id,
+        title: deal.title,
+        shortDescription: deal.shortDescription,
+        merchant: deal.merchant || { id: 0, name: 'TopDim' },
+        category: deal.category,
+        oldPrice: deal.oldPrice,
+        fromPrice: deal.fromPrice,
+        discountPercent: deal.discountPercent,
+        coverImageUrl: deal.coverImageUrl || deal.image,
+        totalSold: deal.totalSold,
+        rating: deal.rating,
+        reviewCount: deal.reviews,
+        location: deal.location,
+        isHot: deal.isHot,
+        giftAvailable: deal.giftAvailable,
+      } as CouponCardData;
+    })
+    .filter(Boolean) as CouponCardData[];
 
   return (
     <div className="favorites-page container">

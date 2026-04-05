@@ -15,10 +15,17 @@ allprojects {
 
 subprojects {
     apply plugin: 'java'
+    apply plugin: 'jacoco'
 
     java {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    dependencies {
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.testcontainers:junit-jupiter'
+        testImplementation 'org.testcontainers:postgresql'
     }
 
     tasks.withType(JavaCompile).configureEach {
@@ -27,5 +34,53 @@ subprojects {
 
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
+        finalizedBy jacocoTestReport
+    }
+
+    jacocoTestReport {
+        dependsOn test
+        reports {
+            xml.required = true
+            html.required = true
+        }
+        afterEvaluate {
+            classDirectories.setFrom(files(classDirectories.files.collect {
+                fileTree(dir: it, exclude: [
+                        '**/*Dto*',
+                        '**/*Request*',
+                        '**/*Response*',
+                        '**/*Entity*',
+                        '**/entity/**',
+                        '**/dto/**',
+                        '**/config/**',
+                        '**/exception/**'
+                ])
+            }))
+        }
+        finalizedBy jacocoTestCoverageVerification
+    }
+
+    jacocoTestCoverageVerification {
+        afterEvaluate {
+            classDirectories.setFrom(files(classDirectories.files.collect {
+                fileTree(dir: it, exclude: [
+                        '**/*Dto*',
+                        '**/*Request*',
+                        '**/*Response*',
+                        '**/*Entity*',
+                        '**/entity/**',
+                        '**/dto/**',
+                        '**/config/**',
+                        '**/exception/**'
+                ])
+            }))
+        }
+        violationRules {
+            rule {
+                limit {
+                    minimum = 0.10
+                }
+            }
+        }
     }
 }

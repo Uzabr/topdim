@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: payment-service
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    generator:
+      write-bigdecimal-as-plain: true
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/topdim_payment?sslmode=disable
     username: ${DB_USERNAME:topdim}

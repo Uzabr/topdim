@@ -303,4 +303,65 @@ class AuthServiceTest {
 
         verify(userRepository, never()).save(any());
     }
+
+    // ==================== Guest Auth ====================
+
+    @Test
+    @DisplayName("Гость: новый телефон → создаёт GUEST пользователя и возвращает токены")
+    void guestAuth_newPhone_createsGuestUserAndReturnsTokens() {
+        GuestAuthRequest request = new GuestAuthRequest();
+        request.setPhone("+998901234567");
+        request.setName("Гость Иван");
+
+        when(userRepository.findByPhone("+998901234567")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(any())).thenReturn("random_hash");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+            User u = inv.getArgument(0);
+            u.setId(100L);
+            return u;
+        });
+        when(jwtService.generateAccessToken(any(User.class))).thenReturn("guest_access_token");
+        when(jwtService.getAccessTokenExpiration()).thenReturn(900000L);
+        when(jwtService.getRefreshTokenExpiration()).thenReturn(604800000L);
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AuthResponse response = authService.guestAuth(request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getAccessToken()).isEqualTo("guest_access_token");
+        assertThat(response.getUser().getRole()).isEqualTo("GUEST");
+        assertThat(response.getUser().getFirstName()).isEqualTo("Гость Иван");
+
+        verify(userRepository).save(argThat(user ->
+                user.getRole() == Role.GUEST &&
+                user.getPhone().equals("+998901234567") &&
+                user.getEmail().contains("guest_")
+        ));
+    }
+
+    @Test
+    @DisplayName("Гость: существующий телефон → возвращает токены без создания нового пользователя")
+    void guestAuth_existingPhone_returnsTokensWithoutCreatingNewUser() {
+        User existingUser = User.builder()
+                .id(50L).email("guest_+998901234567@topdim.uz")
+                .phone("+998901234567").firstName("Существующий")
+                .role(Role.GUEST).build();
+
+        GuestAuthRequest request = new GuestAuthRequest();
+        request.setPhone("+998901234567");
+        request.setName("Другое имя");
+
+        when(userRepository.findByPhone("+998901234567")).thenReturn(Optional.of(existingUser));
+        when(jwtService.generateAccessToken(existingUser)).thenReturn("existing_access_token");
+        when(jwtService.getAccessTokenExpiration()).thenReturn(900000L);
+        when(jwtService.getRefreshTokenExpiration()).thenReturn(604800000L);
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AuthResponse response = authService.guestAuth(request);
+
+        assertThat(response.getAccessToken()).isEqualTo("existing_access_token");
+        assertThat(response.getUser().getFirstName()).isEqualTo("Существующий"); // не меняет имя
+
+        verify(userRepository, never()).save(any()); // не создаёт нового
+    }
 }

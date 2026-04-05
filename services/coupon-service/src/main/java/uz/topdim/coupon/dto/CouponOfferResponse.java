@@ -40,6 +40,8 @@ public class CouponOfferResponse {
     private String status;
     private int totalSold;
     private int viewCount;
+    private Double averageRating;
+    private int reviewCount;
     private List<CouponOptionResponse> options;
     private List<String> images;
     private LocalDateTime createdAt;

@@ -160,7 +160,7 @@ export default function CouponDetailPage() {
               <div className="detail-actions">
                 <button
                   className={`detail-fav-btn ${fav ? 'detail-fav-btn--active' : ''}`}
-                  onClick={() => toggleFavorite(c as any)}
+                  onClick={() => toggleFavorite(c.id)}
                   aria-label="В избранное"
                 >
                   <Heart size={20} fill={fav ? 'currentColor' : 'none'} />
