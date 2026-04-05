@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search as SearchIcon, MapPin, Tag, X, Flame } from 'lucide-react';
+import { MapPin, Flame } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { bazaarsApi } from '../api/bazaars';
 import type { Shop } from '../api/bazaars';
 import CouponCard from '../components/coupon/CouponCard';
-// We'll import a mock coupon array since search API isn't fully ready for coupons yet
+import SearchBar from '../components/ui/SearchBar';
+import { topdimCategories } from '../data/topdim';
 import { DEMO_COUPONS } from './CouponCatalogPage';
 import './SearchPage.css';
 
@@ -16,7 +17,6 @@ export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
-  // Shop search (existing API)
   const { data: shops = [], isLoading: isLoadingShops } = useQuery({
     queryKey: ['shop-search', searchTerm],
     queryFn: () => bazaarsApi.searchShops(searchTerm),
@@ -31,13 +31,6 @@ export default function SearchPage() {
         c.merchant.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : [];
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      setSearchTerm(query.trim());
-    }
-  };
 
   const handleClear = () => {
     setQuery('');
@@ -56,30 +49,33 @@ export default function SearchPage() {
     <div className="search-page container">
       <div className="search-header">
         <h1>Поиск</h1>
-        <form className="search-box" onSubmit={handleSearch}>
-          <SearchIcon size={20} className="search-box__icon" />
-          <input
-            type="text"
-            placeholder="Искать скидки, магазины или услуги..."
+        <div className="search-page-bar-container">
+          <SearchBar
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="search-box__input"
+            onChange={setQuery}
+            onSubmit={(val) => {
+              if (val.trim()) setSearchTerm(val.trim());
+            }}
+            placeholder="Искать скидки, магазины или услуги..."
             autoFocus
           />
-          {query && (
-            <button type="button" className="icon-button search-box__clear" onClick={handleClear}>
-              <X size={18} />
-            </button>
-          )}
-          <button type="submit" className="primary-button search-box__btn">
-            Найти
-          </button>
-        </form>
+        </div>
       </div>
 
       {!searchTerm && !isTyping && (
         <div className="search-suggestions glass-card">
-          <h3 className="search-suggestions__title">
+          <div className="search-categories">
+            <h3 className="search-suggestions__title">Популярные категории</h3>
+            <div className="categories-grid">
+              {topdimCategories.map((c) => (
+                <div key={c.id} className="category-card" onClick={() => applyPopular(c.name)}>
+                  <span className="category-card__icon">{c.iconUrl}</span>
+                  <span className="category-card__name">{c.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <h3 className="search-suggestions__title" style={{ marginTop: '24px' }}>
             <Flame size={18} color="var(--primary)" />
             Популярные запросы
           </h3>

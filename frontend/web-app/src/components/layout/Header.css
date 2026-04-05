@@ -100,7 +100,18 @@
   gap: 10px;
 }
 
-.icon-button,
+.icon-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--text-secondary);
+}
+
 .mobile-menu-btn {
   position: relative;
   display: inline-flex;
@@ -114,10 +125,15 @@
 }
 
 .icon-button:hover,
-.account-pill:hover,
 .mobile-menu-btn:hover {
   transform: translateY(-1px);
   color: var(--primary-strong);
+}
+
+.account-pill:hover {
+  transform: translateY(-1px);
+  color: white; /* Fix: text was illegible on hover */
+  background: var(--gradient-primary-hover);
 }
 
 .cart-badge {

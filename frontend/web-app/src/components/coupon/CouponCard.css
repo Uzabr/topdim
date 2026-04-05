@@ -10,15 +10,18 @@
   overflow: hidden;
   background: var(--gradient-card);
   border: 1px solid var(--border);
-  transition: all var(--transition-normal);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
   text-decoration: none;
   color: inherit;
+  position: relative;
+  z-index: 1;
 }
 
 .coupon-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
   border-color: var(--border-strong);
+  z-index: 10;
 }
 
 /* === Media === */
@@ -96,51 +99,7 @@
   z-index: 2;
 }
 
-/* Hot flame */
-.coupon-card__hot {
-  position: absolute;
-  top: 10px;
-  right: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--danger);
-  color: #fff;
-  z-index: 2;
-  animation: pulseDeal 2s ease-in-out infinite;
-}
-
-/* Favorite bookmark */
-.coupon-card__fav {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(8px);
-  color: var(--text-muted);
-  z-index: 3;
-  transition: all var(--transition-fast);
-  padding: 0;
-}
-
-.coupon-card__fav:hover {
-  background: #fff;
-  transform: scale(1.1);
-}
-
-.coupon-card__fav--active {
-  color: var(--danger);
-  background: rgba(255, 77, 79, 0.12);
-}
+/* Hot flame and Favorite logic moved to FavoriteButton component */
 
 /* Timer */
 .coupon-card__timer {

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Heart, MapPinned, Menu, Search, ShoppingBag, Ticket, User, X, Globe } from 'lucide-react';
+import { Heart, MapPinned, Menu, Search, ShoppingBag, Ticket, User, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import CitySelector from '../ui/CitySelector';
+import LanguageSelector from '../ui/LanguageSelector';
 import './Header.css';
 
 export default function Header() {
@@ -12,13 +13,7 @@ export default function Header() {
   const location = useLocation();
   const { totalItems, toggleCart } = useCartStore();
   const { isAuthenticated, user } = useAuthStore();
-  const { t, i18n } = useTranslation();
-
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'ru' ? 'uz' : 'ru';
-    i18n.changeLanguage(newLang);
-    localStorage.setItem('language', newLang);
-  };
+  const { t } = useTranslation();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -53,10 +48,7 @@ export default function Header() {
         </nav>
 
         <div className="header-actions">
-          <button type="button" className="icon-button" onClick={toggleLanguage} aria-label="Смена языка" title={t('header.language')}>
-            <Globe size={19} />
-            <span style={{fontSize: '11px', fontWeight: 'bold'}}>{i18n.language.toUpperCase()}</span>
-          </button>
+          <LanguageSelector />
           <Link to="/search" className="icon-button" aria-label="Поиск">
             <Search size={19} />
           </Link>

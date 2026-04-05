@@ -47,7 +47,7 @@ export const topdimCategories: Category[] = [
   { id: 6, name: 'Kids', slug: 'kids', sortOrder: 6, iconUrl: '🧸' },
 ];
 
-export const topdimDeals: TopdimDeal[] = [
+const baseDeals: TopdimDeal[] = [
   {
     id: 101,
     title: 'Бранч и десерт на rooftop Terrace 360',
@@ -223,6 +223,13 @@ export const topdimDeals: TopdimDeal[] = [
     image: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=1200&q=80',
   },
 ];
+
+export const topdimDeals: TopdimDeal[] = Array.from({ length: 15 }).flatMap((_, i) =>
+  baseDeals.map(deal => ({
+    ...deal,
+    id: parseInt(`${deal.id}${i}`),
+  }))
+);
 
 export const bazaarSpots: BazaarSpot[] = [
   {

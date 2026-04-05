@@ -1,16 +1,12 @@
 import { useMemo } from 'react';
-import { Compass, Grid2X2, List, LocateFixed, MapPinned, Route, Sparkles, Star } from 'lucide-react';
-import { MapContainer, TileLayer } from 'react-leaflet';
-import SearchBar from '../components/marketplace/SearchBar';
+import { Compass, LocateFixed, MapPinned, Route, Sparkles, Star } from 'lucide-react';
+import { YMaps, Map, Clusterer, Placemark } from '@pbe/react-yandex-maps';
+import SearchBar from '../components/ui/SearchBar';
 import FilterBar from '../components/marketplace/FilterBar';
 import BazaarCard from '../components/marketplace/BazaarCard';
-import MapPin from '../components/marketplace/MapPin';
 import { bazaarItems, bazaarSpots } from '../data/topdim';
 import { useMarketplaceStore } from '../store/marketplaceStore';
-import 'leaflet/dist/leaflet.css';
 import './BazaarMapPage.css';
-
-const suggestions = ['Фрукты рядом', 'Beauty bazaar', 'Кроссовки', 'Подарки домой'];
 
 export default function BazaarMapPage() {
   const {
@@ -25,7 +21,6 @@ export default function BazaarMapPage() {
     setCategory,
     setPriceRange,
     setDistance,
-    setViewMode,
     toggleNearMe,
     selectBazaar,
   } = useMarketplaceStore();
@@ -90,12 +85,9 @@ export default function BazaarMapPage() {
 
         <div className="bazaar-tools">
           <SearchBar
-            sticky
             value={search}
             onChange={setSearch}
             placeholder="Что хочешь найти на базаре?"
-            suggestions={suggestions}
-            onSuggestionSelect={setSearch}
           />
 
           <FilterBar
@@ -112,25 +104,6 @@ export default function BazaarMapPage() {
               <LocateFixed size={16} />
               Показать рядом со мной
             </button>
-
-            <div className="toolbar-toggle">
-              <button
-                type="button"
-                className={viewMode === 'grid' ? 'is-active' : ''}
-                onClick={() => setViewMode('grid')}
-              >
-                <Grid2X2 size={16} />
-                Grid
-              </button>
-              <button
-                type="button"
-                className={viewMode === 'list' ? 'is-active' : ''}
-                onClick={() => setViewMode('list')}
-              >
-                <List size={16} />
-                List
-              </button>
-            </div>
           </div>
         </div>
 
@@ -141,28 +114,40 @@ export default function BazaarMapPage() {
                 <p className="section-label">Map</p>
                 <h2 className="section-title">Смотри, где сейчас самые вкусные скидки</h2>
               </div>
-              <div className="bazaar-map__clusters">
-                <span>Cluster 12</span>
-                <span>Cluster 8</span>
-                <span>Cluster 5</span>
-              </div>
             </div>
 
             <div className="bazaar-map__frame">
-              <MapContainer center={[41.3111, 69.2797]} zoom={12} scrollWheelZoom className="topdim-map">
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                {bazaarSpots.map((spot) => (
-                  <MapPin
-                    key={spot.id}
-                    spot={spot}
-                    active={spot.id === selectedSpot.id}
-                    onSelect={selectBazaar}
-                  />
-                ))}
-              </MapContainer>
+              <YMaps query={{ lang: 'ru_RU', apikey: 'd0b8ac1e-25ba-4ac0-aeec-4a7bcaeb0883' }}>
+                <Map 
+                  defaultState={{ center: [41.3111, 69.2797], zoom: 12 }} 
+                  className="topdim-map"
+                >
+                  <Clusterer
+                    options={{
+                      preset: 'islands#invertedNightClusterIcons',
+                      groupByCoordinates: false,
+                      clusterDisableClickZoom: false,
+                      minClusterSize: 2, // убрать метки 1 в кластере
+                    }}
+                  >
+                    {bazaarSpots.map((spot) => (
+                      <Placemark
+                        key={spot.id}
+                        geometry={[spot.latitude ?? 41.3111, spot.longitude ?? 69.2797]}
+                        properties={{
+                          iconContent: spot.discountLabel,
+                          balloonContentHeader: spot.name,
+                          balloonContentBody: spot.spotlight,
+                        }}
+                        options={{
+                          preset: spot.id === selectedSpot.id ? 'islands#redStretchyIcon' : 'islands#blackStretchyIcon',
+                        }}
+                        onClick={() => selectBazaar(spot.id)}
+                      />
+                    ))}
+                  </Clusterer>
+                </Map>
+              </YMaps>
 
               <article className="map-preview surface-card">
                 <img src={selectedSpot.image} alt={selectedSpot.name} />
