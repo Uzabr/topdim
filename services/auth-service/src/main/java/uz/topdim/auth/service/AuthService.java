@@ -45,6 +45,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final TokenBlacklistService tokenBlacklistService;
     private final LoginAttemptService loginAttemptService;
+    private final OutboxService outboxService;
 
     /** Generic сообщение — одинаковое для wrong password, user not found, locked (OWASP). */
     private static final String GENERIC_AUTH_ERROR = "Неверный email или пароль";
@@ -81,7 +82,11 @@ public class AuthService {
 
         user = userRepository.save(user);
 
-        log.info("SECURITY: New user registered: {}", maskEmail(request.getEmail()));
+        // Outbox: создаём событие UserRegistered в той же транзакции
+        String correlationId = java.util.UUID.randomUUID().toString();
+        outboxService.createUserRegisteredEvent(user, correlationId);
+
+        log.info("SECURITY: New user registered: {} [correlationId={}]", maskEmail(request.getEmail()), correlationId);
 
         return buildAuthResponse(user);
     }
@@ -242,7 +247,12 @@ public class AuthService {
                     .phoneVerified(false)
                     .build();
             user = userRepository.save(user);
-            log.info("SECURITY: Guest user created: phone={}", maskPhone(request.getPhone()));
+
+            // Outbox: создаём событие UserRegistered для нового гостя
+            String correlationId = java.util.UUID.randomUUID().toString();
+            outboxService.createUserRegisteredEvent(user, correlationId);
+
+            log.info("SECURITY: Guest user created: phone={} [correlationId={}]", maskPhone(request.getPhone()), correlationId);
         } else {
             log.info("SECURITY: Guest auth for existing user: phone={}", maskPhone(request.getPhone()));
         }

@@ -36,6 +36,7 @@ class AuthServiceTest {
     @Mock private AuthenticationManager authenticationManager;
     @Mock private TokenBlacklistService tokenBlacklistService;
     @Mock private LoginAttemptService loginAttemptService;
+    @Mock private OutboxService outboxService;
 
     @InjectMocks
     private AuthService authService;
@@ -76,6 +77,7 @@ class AuthServiceTest {
 
         verify(userRepository).save(any(User.class));
         verify(passwordEncoder).encode("password123");
+        verify(outboxService).createUserRegisteredEvent(any(User.class), anyString());
     }
 
     @Test
@@ -92,6 +94,7 @@ class AuthServiceTest {
                 .hasMessageContaining("email уже существует");
 
         verify(userRepository, never()).save(any());
+        verify(outboxService, never()).createUserRegisteredEvent(any(), anyString());
     }
 
     @Test
@@ -337,6 +340,7 @@ class AuthServiceTest {
                 user.getPhone().equals("+998901234567") &&
                 user.getEmail().contains("guest_")
         ));
+        verify(outboxService).createUserRegisteredEvent(any(User.class), anyString());
     }
 
     @Test
@@ -363,5 +367,6 @@ class AuthServiceTest {
         assertThat(response.getUser().getFirstName()).isEqualTo("Существующий"); // не меняет имя
 
         verify(userRepository, never()).save(any()); // не создаёт нового
+        verify(outboxService, never()).createUserRegisteredEvent(any(), anyString()); // не создаёт событие
     }
 }
