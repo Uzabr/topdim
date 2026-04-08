@@ -26,7 +26,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'CLICK' | 'PAYME'>('CARD');
 
   const displayItems = items.length > 0 ? items : (
-    couponId && optionId ? [{ id: 'mock', couponTitle: 'Скидка на пиццу', optionTitle: 'Пицца 33см + напиток', unitPrice: 45000, quantity: 1 }] : []
+    couponId && optionId ? [{ key: 'quick-buy', couponOfferId: Number(couponId), couponOptionId: Number(optionId), couponTitle: 'Купон', optionTitle: 'Выбранный вариант', unitPrice: 45000, quantity: 1, addedAt: Date.now() }] : []
   );
   
   const displayTotal = items.length > 0 ? totalPrice : 45000;
@@ -203,7 +203,7 @@ export default function CheckoutPage() {
             <h3>Ваш заказ</h3>
             <div className="checkout-items">
               {displayItems.map((item) => (
-               <div key={item.id} className="checkout-item">
+               <div key={item.key} className="checkout-item">
                  <div className="checkout-item__info">
                    <span className="checkout-item__title">{item.couponTitle}</span>
                    <span className="checkout-item__option">{item.optionTitle}</span>

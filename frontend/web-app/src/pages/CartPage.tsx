@@ -1,21 +1,15 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowRight, Plus, Minus } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
-import { useAuthStore } from '../store/authStore';
 import { formatPrice } from '../utils/format';
 import './CartPage.css';
 
 export default function CartPage() {
-  const { items, totalItems, totalPrice, removeFromCart } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
+  const { items, totalItems, totalPrice, removeFromCart, updateQuantity } = useCartStore();
   const navigate = useNavigate();
 
   const handleCheckout = () => {
-    if (isAuthenticated) {
-      navigate('/checkout');
-    } else {
-      navigate('/checkout?guest=true');
-    }
+    navigate('/checkout');
   };
 
   if (items.length === 0) {
@@ -43,20 +37,36 @@ export default function CartPage() {
       <div className="cart-content container">
         <div className="cart-items glass-card">
           {items.map((item) => (
-            <div key={item.id} className="cart-item">
+            <div key={item.key} className="cart-item">
               <div className="cart-item__icon-wrapper">
-                <div className="cart-item__icon">🎫</div>
+                {item.coverImageUrl ? (
+                  <img src={item.coverImageUrl} alt="" className="cart-item__img" />
+                ) : (
+                  <div className="cart-item__icon">🎫</div>
+                )}
               </div>
               <div className="cart-item__info">
                 <h3 className="cart-item__title">{item.couponTitle}</h3>
                 <p className="cart-item__option">{item.optionTitle}</p>
-                {item.gift && (
+                {item.isGift && (
                   <span className="cart-item__gift badge">
-                    🎁 В подарок (Кому: {item.giftRecipientName})
+                    🎁 В подарок {item.giftRecipientName ? `(Кому: ${item.giftRecipientName})` : ''}
                   </span>
                 )}
                 <div className="cart-item__qty">
-                  <span>Кол-во: {item.quantity}</span>
+                  <button
+                    className="cart-item__qty-btn"
+                    onClick={() => updateQuantity(item.key, item.quantity - 1)}
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <span>{item.quantity}</span>
+                  <button
+                    className="cart-item__qty-btn"
+                    onClick={() => updateQuantity(item.key, item.quantity + 1)}
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
               </div>
               <div className="cart-item__right">
@@ -65,7 +75,7 @@ export default function CartPage() {
                 </span>
                 <button
                   className="icon-button cart-item__remove"
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => removeFromCart(item.key)}
                   aria-label="Удалить"
                 >
                   <Trash2 size={18} />

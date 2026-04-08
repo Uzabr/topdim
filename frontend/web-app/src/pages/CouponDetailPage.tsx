@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Heart, Gift, ShoppingCart, TrendingUp, Calendar, Clock, AlertCircle, Info, Users, CreditCard } from 'lucide-react';
+import { Heart, Gift, ShoppingCart, TrendingUp, Calendar, Clock, AlertCircle, Info, Users, CreditCard, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
 import { couponsApi } from '../api/coupons';
@@ -64,7 +64,9 @@ export default function CouponDetailPage() {
   const { isAuthenticated } = useAuthStore();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
   const [activeTab, setActiveTab] = useState('info');
+  const [toastMessage, setToastMessage] = useState('');
   const optionsRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const { data: coupon } = useQuery({
     queryKey: ['coupon', id],
@@ -79,6 +81,11 @@ export default function CouponDetailPage() {
   const fav = isFavorite(c.id);
   const images = c.images?.length > 0 ? c.images : (c.coverImageUrl ? [c.coverImageUrl] : []);
 
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
   const handleAddToCart = (option: CouponOption) => {
     addToCart({
       couponOfferId: c.id,
@@ -87,21 +94,26 @@ export default function CouponDetailPage() {
       optionTitle: option.title,
       unitPrice: option.couponPrice,
       quantity: 1,
-    }).then(() => openCart()).catch(() => {});
+      coverImageUrl: c.coverImageUrl,
+    });
+    showToast(`«${option.title}» добавлен в корзину!`);
   };
 
   const handleBuyNow = (option: CouponOption) => {
-    if (isAuthenticated) {
-      handleAddToCart(option);
-      // TODO: navigate to checkout
-    } else {
-      // 1-click buy for guests
-      window.location.href = `/checkout?couponId=${c.id}&optionId=${option.id}`;
-    }
+    addToCart({
+      couponOfferId: c.id,
+      couponOptionId: option.id,
+      couponTitle: c.title,
+      optionTitle: option.title,
+      unitPrice: option.couponPrice,
+      quantity: 1,
+      coverImageUrl: c.coverImageUrl,
+    });
+    navigate('/checkout');
   };
 
   const scrollToOptions = () => {
-    optionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    optionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
   // Related deals
@@ -416,6 +428,14 @@ export default function CouponDetailPage() {
       <button className="detail-sticky-cta" onClick={scrollToOptions}>
         Выбрать сертификат
       </button>
+
+      {/* Toast notification */}
+      {toastMessage && (
+        <div className="detail-toast">
+          <Check size={18} />
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 }
