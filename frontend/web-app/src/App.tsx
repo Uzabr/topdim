@@ -39,7 +39,7 @@ function AppContent() {
   }, [loadFromStorage]);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <div className="app-shell">
         <Header />
         <main className="app-main">

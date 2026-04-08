@@ -1,29 +1,18 @@
-import { useState } from 'react';
-import { X, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { X, Trash2, ShoppingBag, ArrowRight, Plus, Minus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '../../store/cartStore';
 import { formatPrice } from '../../utils/format';
-import { useAuthStore } from '../../store/authStore';
 import './CartDrawer.css';
 
 export default function CartDrawer() {
-  const [cartTab, setCartTab] = useState<'COUPONS' | 'GOODS'>('COUPONS');
-  const { items, isOpen, closeCart, removeFromCart, totalItems, totalPrice } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
+  const { items, isOpen, closeCart, removeFromCart, updateQuantity, totalItems, totalPrice } = useCartStore();
   const navigate = useNavigate();
-
-  const filteredItems = items.filter(item => cartTab === 'COUPONS' ? item.couponTitle : !item.couponTitle);
 
   if (!isOpen) return null;
 
   const handleCheckout = () => {
     closeCart();
-    if (isAuthenticated) {
-      navigate('/checkout');
-    } else {
-      // 1-click checkout for guests
-      navigate('/checkout?guest=true');
-    }
+    navigate('/checkout');
   };
 
   return (
@@ -45,61 +34,59 @@ export default function CartDrawer() {
           <div className="cart-drawer__empty">
             <span className="cart-drawer__empty-icon">🛒</span>
             <h3>Корзина пуста</h3>
-            <p>Добавьте купоны или товары из каталога, чтобы начать покупки</p>
-            <button className="primary-button cart-drawer__empty-btn" onClick={closeCart}>
+            <p>Добавьте купоны из каталога, чтобы начать покупки</p>
+            <button className="primary-button cart-drawer__empty-btn" onClick={() => { closeCart(); navigate('/coupons'); }}>
               Начать покупки
             </button>
           </div>
         ) : (
           <>
-            <div className="cart-drawer__tabs">
-              <button 
-                className={`cart-drawer__tab ${cartTab === 'COUPONS' ? 'cart-drawer__tab--active' : ''}`}
-                onClick={() => setCartTab('COUPONS')}
-              >
-                Купоны
-              </button>
-              <button 
-                className={`cart-drawer__tab ${cartTab === 'GOODS' ? 'cart-drawer__tab--active' : ''}`}
-                onClick={() => setCartTab('GOODS')}
-              >
-                Товары
-              </button>
-            </div>
-          
             <div className="cart-drawer__items">
-              {filteredItems.length === 0 ? (
-                <div className="cart-drawer__empty-tab">
-                  В этой категории пока ничего нет
-                </div>
-              ) : (
-                filteredItems.map((item) => (
-                  <div key={item.id} className="cart-drawer__item">
-                    <div className="cart-drawer__item-info">
-                      <h4 className="cart-drawer__item-title">{item.couponTitle || item.optionTitle}</h4>
-                      {item.couponTitle && <p className="cart-drawer__item-option">{item.optionTitle}</p>}
-                      {item.gift && (
-                        <span className="cart-drawer__item-badge">🎁 В подарок</span>
-                      )}
+              {items.map((item) => (
+                <div key={item.key} className="cart-drawer__item">
+                  {item.coverImageUrl && (
+                    <div className="cart-drawer__item-img">
+                      <img src={item.coverImageUrl} alt="" />
                     </div>
-                    <div className="cart-drawer__item-meta">
-                      <div className="cart-drawer__item-price-block">
-                        <span className="cart-drawer__item-price">
-                          {formatPrice(item.unitPrice * item.quantity)}
-                        </span>
-                        <span className="cart-drawer__item-qty">{item.quantity} шт.</span>
-                      </div>
+                  )}
+                  <div className="cart-drawer__item-info">
+                    <h4 className="cart-drawer__item-title">{item.couponTitle}</h4>
+                    <p className="cart-drawer__item-option">{item.optionTitle}</p>
+                    {item.isGift && (
+                      <span className="cart-drawer__item-badge">🎁 В подарок</span>
+                    )}
+                  </div>
+                  <div className="cart-drawer__item-meta">
+                    <span className="cart-drawer__item-price">
+                      {formatPrice(item.unitPrice * item.quantity)}
+                    </span>
+                    <div className="cart-drawer__item-qty-controls">
                       <button
-                        className="cart-drawer__item-remove"
-                        onClick={() => removeFromCart(item.id)}
-                        aria-label="Удалить"
+                        className="cart-drawer__qty-btn"
+                        onClick={() => updateQuantity(item.key, item.quantity - 1)}
+                        aria-label="Уменьшить"
                       >
-                        <Trash2 size={16} />
+                        <Minus size={14} />
+                      </button>
+                      <span className="cart-drawer__qty-value">{item.quantity}</span>
+                      <button
+                        className="cart-drawer__qty-btn"
+                        onClick={() => updateQuantity(item.key, item.quantity + 1)}
+                        aria-label="Увеличить"
+                      >
+                        <Plus size={14} />
                       </button>
                     </div>
+                    <button
+                      className="cart-drawer__item-remove"
+                      onClick={() => removeFromCart(item.key)}
+                      aria-label="Удалить"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
 
             <div className="cart-drawer__footer">

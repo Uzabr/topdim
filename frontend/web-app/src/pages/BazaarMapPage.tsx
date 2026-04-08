@@ -1,216 +1,291 @@
-import { useMemo } from 'react';
-import { Compass, LocateFixed, MapPinned, Route, Sparkles, Star } from 'lucide-react';
-import { YMaps, Map, Clusterer, Placemark } from '@pbe/react-yandex-maps';
-import SearchBar from '../components/ui/SearchBar';
-import FilterBar from '../components/marketplace/FilterBar';
-import BazaarCard from '../components/marketplace/BazaarCard';
-import { bazaarItems, bazaarSpots } from '../data/topdim';
-import { useMarketplaceStore } from '../store/marketplaceStore';
+import { useMemo, useCallback } from 'react';
+import { Search, Crosshair, MapPin, Store } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { directoryApi } from '../api/bazaars';
+import type { Bazaar, Shop } from '../api/bazaars';
+import TwoGisMap from '../components/map/TwoGisMap';
+import DirectoryBazaarCard from '../components/directory/DirectoryBazaarCard';
+import DirectoryShopCard from '../components/directory/DirectoryShopCard';
+import ResultsPanel from '../components/directory/ResultsPanel';
+import { useDirectoryStore } from '../store/directoryStore';
+import { bazaarSpots } from '../data/topdim';
 import './BazaarMapPage.css';
+
+/** Map BazaarSpot demo data to Bazaar type for fallback */
+const DEMO_BAZAARS: Bazaar[] = bazaarSpots.map((s) => ({
+  id: s.id,
+  name: s.name,
+  nameUz: undefined,
+  type: s.type,
+  address: s.address,
+  city: s.city,
+  latitude: s.latitude ?? 41.3111,
+  longitude: s.longitude ?? 69.2797,
+  description: s.description,
+  coverImageUrl: s.image,
+  workingHours: s.workingHours,
+  phone: s.phone,
+  status: 'ACTIVE',
+  shopCount: s.itemsCount,
+}));
+
+const DEMO_SHOPS: Shop[] = [
+  { id: 1, name: 'Специи от Мехмона', category: 'Специи', goodsDescription: 'Зира, куркума, паприка, шафран', locationType: 'BAZAAR', bazaar: { id: 1, name: 'Chorsu Select' }, rowNumber: '3', shopNumber: '25', latitude: 41.3265, longitude: 69.2289, photos: [], status: 'ACTIVE' },
+  { id: 2, name: 'Korzinka Go', category: 'Продукты', goodsDescription: 'Продукты, товары для дома', locationType: 'STANDALONE', address: 'ул. Амира Темура, 48', latitude: 41.3111, longitude: 69.2797, photos: [], status: 'ACTIVE' },
+  { id: 3, name: 'Samsung Brand Store', category: 'Электроника', goodsDescription: 'Смартфоны, ТВ, бытовая техника', locationType: 'BAZAAR', bazaar: { id: 2, name: 'Eco Mall Bazaar' }, shopNumber: '118', latitude: 41.3112, longitude: 69.2792, photos: [], status: 'ACTIVE' },
+];
+
+const TYPE_OPTIONS = ['Все', 'BAZAAR_MARKET', 'SHOPPING_CENTER', 'TRADE_COMPLEX'];
+const TYPE_LABELS: Record<string, string> = {
+  Все: 'Все',
+  BAZAAR_MARKET: 'Базар / Рынок',
+  SHOPPING_CENTER: 'ТЦ',
+  TRADE_COMPLEX: 'Т. Комплекс',
+};
+
+/** BAZAAR_MARKET filter matches both BAZAAR and MARKET backend types */
+const TYPE_FILTER_MAP: Record<string, string[]> = {
+  BAZAAR_MARKET: ['BAZAAR', 'MARKET'],
+  SHOPPING_CENTER: ['SHOPPING_CENTER'],
+  TRADE_COMPLEX: ['TRADE_COMPLEX'],
+};
 
 export default function BazaarMapPage() {
   const {
-    search,
-    category,
-    priceRange,
-    distance,
-    viewMode,
-    nearMeOnly,
-    selectedBazaarId,
-    setSearch,
-    setCategory,
-    setPriceRange,
-    setDistance,
-    toggleNearMe,
-    selectBazaar,
-  } = useMarketplaceStore();
+    search, activeTab, bazaarTypeFilter, isAreaSelecting,
+    areaBazaars, areaShops, showResultsPanel, selectedBazaarId,
+    setSearch, setActiveTab, setBazaarTypeFilter,
+    toggleAreaSelecting, setAreaResults, clearAreaResults, selectBazaar,
+  } = useDirectoryStore();
 
-  const visibleItems = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
+  // Fetch bazaars from API (fallback to demo)
+  const { data: bazaarsData } = useQuery({
+    queryKey: ['directory-bazaars', search],
+    queryFn: () => directoryApi.getBazaars({
+      search: search || undefined,
+    }),
+    select: (res) => res.data.data,
+  });
 
-    return bazaarItems.filter((item) => {
-      const matchesSearch =
-        normalizedSearch.length === 0 ||
-        `${item.title} ${item.bazaarName} ${item.category}`.toLowerCase().includes(normalizedSearch);
-      const matchesCategory = category === 'Все' || item.category === category;
-      const matchesDistance =
-        distance === 'До 1 км' ? item.distanceKm <= 1 :
-        distance === 'До 5 км' ? item.distanceKm <= 5 :
-        item.distanceKm <= 10;
-      const matchesPrice =
-        priceRange === 'Любая цена' ||
-        (priceRange === 'До 100k' && item.price <= 100000) ||
-        (priceRange === '100k–250k' && item.price > 100000 && item.price <= 250000) ||
-        (priceRange === '250k+' && item.price > 250000);
-      const matchesNearMe = !nearMeOnly || item.distanceKm <= 3.5;
+  // Fetch standalone shops (only when showing "Все" or for search)
+  const { data: standaloneShopsData } = useQuery({
+    queryKey: ['directory-shops-standalone', search],
+    queryFn: () => directoryApi.getShops({
+      search: search || undefined,
+      size: 50,
+    }),
+    select: (res) => res.data.data,
+  });
 
-      return matchesSearch && matchesCategory && matchesDistance && matchesPrice && matchesNearMe;
-    });
-  }, [category, distance, nearMeOnly, priceRange, search]);
+  const allBazaars = bazaarsData ?? DEMO_BAZAARS;
+  const allShops = standaloneShopsData ?? DEMO_SHOPS;
 
-  const selectedSpot =
-    bazaarSpots.find((spot) => spot.id === selectedBazaarId) ?? bazaarSpots[0];
+  // Filter standalone shops (not inside bazaars)
+  const standaloneShops = useMemo(() =>
+    allShops.filter((s) => s.locationType === 'STANDALONE'),
+  [allShops]);
+
+  // Filter bazaars by type filter + search
+  const filteredBazaars = useMemo(() => {
+    let result = allBazaars;
+
+    // Type filter
+    if (bazaarTypeFilter !== 'Все') {
+      const allowedTypes = TYPE_FILTER_MAP[bazaarTypeFilter] || [];
+      result = result.filter((b) => allowedTypes.includes(b.type));
+    }
+
+    // Search filter (client-side supplement)
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((b) =>
+        b.name.toLowerCase().includes(q) ||
+        b.address?.toLowerCase().includes(q) ||
+        b.description?.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [allBazaars, search, bazaarTypeFilter]);
+
+  // Filter standalone shops by search
+  const filteredShops = useMemo(() => {
+    if (!search.trim()) return standaloneShops;
+    const q = search.toLowerCase();
+    return standaloneShops.filter((s) =>
+      s.name.toLowerCase().includes(q) ||
+      s.category?.toLowerCase().includes(q) ||
+      s.goodsDescription?.toLowerCase().includes(q)
+    );
+  }, [standaloneShops, search]);
+
+  // Show standalone shops only when "Все" is selected
+  const showStandaloneSection = bazaarTypeFilter === 'Все';
+
+  // Handle area select from map
+  const handleAreaSelect = useCallback(async (bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number }) => {
+    let localBazaars: any[] = [];
+    let localShops: any[] = [];
+
+    try {
+      const res = await directoryApi.searchInArea(bounds);
+      localBazaars = res.data.data.bazaars;
+      localShops = res.data.data.shops;
+    } catch {
+      // Fallback: filter demo data by bounds
+      localBazaars = allBazaars.filter((b) =>
+        b.latitude >= bounds.minLat && b.latitude <= bounds.maxLat &&
+        b.longitude >= bounds.minLon && b.longitude <= bounds.maxLon
+      );
+      localShops = DEMO_SHOPS.filter((s) =>
+        s.latitude >= bounds.minLat && s.latitude <= bounds.maxLat &&
+        s.longitude >= bounds.minLon && s.longitude <= bounds.maxLon
+      );
+    }
+
+    // 2GIS Catalog API Fetch
+    let externalShops: any[] = [];
+    try {
+      const point1 = `${bounds.minLon},${bounds.maxLat}`; // Top-left
+      const point2 = `${bounds.maxLon},${bounds.minLat}`; // Bottom-right
+      const q = encodeURIComponent('магазин,базар,тц,рынок');
+      const apikey = 'REMOVED_MAP_API_KEY';
+      const url = `https://catalog.api.2gis.com/3.0/items?q=${q}&point1=${point1}&point2=${point2}&key=${apikey}&fields=items.point&page_size=50`;
+      
+      const resp = await fetch(url);
+      const json = await resp.json();
+      
+      if (json.result && json.result.items) {
+        externalShops = json.result.items.map((it: any, idx: number) => ({
+          id: -(Date.now() + idx), // Fake negative ID for external
+          name: it.name,
+          type: 'STANDALONE',
+          locationType: 'STANDALONE',
+          category: it.rubrics?.[0]?.name || (it.type === 'branch' ? 'Магазин' : 'Базар'),
+          address: it.address_name || it.address_comment || '',
+          latitude: it.point?.lat || 0,
+          longitude: it.point?.lon || 0,
+          workingHours: it.schedule?.name || 'Внешний источник 2ГИС',
+          photos: [],
+          bazaarId: -1,
+          isExternal: true
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch from 2GIS', err);
+    }
+
+    setAreaResults(localBazaars, [...localShops, ...externalShops], bounds);
+  }, [allBazaars, setAreaResults]);
 
   return (
     <div className="bazaar-page">
       <section className="container bazaar-shell">
-        <div className="bazaar-intro surface-card">
+        {/* Title */}
+        <div className="dir-header">
           <div>
-            <div className="pill bazaar-intro__pill">
-              <Sparkles size={16} />
-              Online bazaar discovery
-            </div>
-            <h1 className="page-title">Карта скидок и живой базар в одном экране</h1>
+            <h1 className="page-title">Справочник базаров и магазинов</h1>
             <p className="section-copy">
-              Ищи товары по расстоянию, смотри пины с дисконтом, переключайся между grid и list,
-              и забирай лучшие находки рядом с собой.
+              Ищите базары и магазины на карте, выделяйте область для поиска, или выберите из списка.
             </p>
           </div>
-
-          <div className="bazaar-intro__stats">
-            <div>
-              <strong>86</strong>
-              <span>активных drop-точек</span>
-            </div>
-            <div>
-              <strong>4.8</strong>
-              <span>средний рейтинг базара</span>
-            </div>
-            <div>
-              <strong>15 мин</strong>
-              <span>до новой волны скидок</span>
-            </div>
-          </div>
         </div>
 
-        <div className="bazaar-tools">
-          <SearchBar
-            value={search}
-            onChange={setSearch}
-            placeholder="Что хочешь найти на базаре?"
-          />
-
-          <FilterBar
-            category={category}
-            priceRange={priceRange}
-            distance={distance}
-            onCategoryChange={setCategory}
-            onPriceRangeChange={setPriceRange}
-            onDistanceChange={setDistance}
-          />
-
-          <div className="bazaar-toolbar surface-card">
-            <button type="button" className={`toolbar-pill ${nearMeOnly ? 'toolbar-pill--active' : ''}`} onClick={toggleNearMe}>
-              <LocateFixed size={16} />
-              Показать рядом со мной
-            </button>
-          </div>
-        </div>
-
-        <div className="bazaar-layout">
-          <div className="bazaar-map surface-card">
-            <div className="bazaar-map__topline">
-              <div>
-                <p className="section-label">Map</p>
-                <h2 className="section-title">Смотри, где сейчас самые вкусные скидки</h2>
-              </div>
-            </div>
-
-            <div className="bazaar-map__frame">
-              <YMaps query={{ lang: 'ru_RU', apikey: 'REMOVED_MAP_API_KEY' }}>
-                <Map 
-                  defaultState={{ center: [41.3111, 69.2797], zoom: 12 }} 
-                  className="topdim-map"
-                >
-                  <Clusterer
-                    options={{
-                      preset: 'islands#invertedNightClusterIcons',
-                      groupByCoordinates: false,
-                      clusterDisableClickZoom: false,
-                      minClusterSize: 2, // убрать метки 1 в кластере
-                    }}
-                  >
-                    {bazaarSpots.map((spot) => (
-                      <Placemark
-                        key={spot.id}
-                        geometry={[spot.latitude ?? 41.3111, spot.longitude ?? 69.2797]}
-                        properties={{
-                          iconContent: spot.discountLabel,
-                          balloonContentHeader: spot.name,
-                          balloonContentBody: spot.spotlight,
-                        }}
-                        options={{
-                          preset: spot.id === selectedSpot.id ? 'islands#redStretchyIcon' : 'islands#blackStretchyIcon',
-                        }}
-                        onClick={() => selectBazaar(spot.id)}
-                      />
-                    ))}
-                  </Clusterer>
-                </Map>
-              </YMaps>
-
-              <article className="map-preview surface-card">
-                <img src={selectedSpot.image} alt={selectedSpot.name} />
-                <div className="map-preview__content">
-                  <div className="map-preview__badge">
-                    <MapPinned size={14} />
-                    {selectedSpot.discountLabel}
-                  </div>
-                  <h3>{selectedSpot.name}</h3>
-                  <p>{selectedSpot.description}</p>
-                  <div className="map-preview__meta">
-                    <span>
-                      <Star size={14} fill="currentColor" />
-                      {selectedSpot.rating}
-                    </span>
-                    <span>
-                      <Route size={14} />
-                      {selectedSpot.distanceKm} км
-                    </span>
-                    <span>
-                      <Compass size={14} />
-                      {selectedSpot.itemsCount} товаров
-                    </span>
-                  </div>
-                </div>
-              </article>
-            </div>
+        {/* Search + Filters */}
+        <div className="dir-tools">
+          <div className="dir-search">
+            <Search size={20} />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Поиск по базарам и магазинам…"
+              aria-label="Поиск"
+            />
           </div>
 
-          <aside className="bazaar-sidebar">
-            {bazaarSpots.map((spot) => (
+          <div className="dir-filters">
+            {TYPE_OPTIONS.map((t) => (
               <button
-                key={spot.id}
-                type="button"
-                className={`spot-card surface-card ${spot.id === selectedSpot.id ? 'spot-card--active' : ''}`}
-                onClick={() => selectBazaar(spot.id)}
+                key={t}
+                className={`dir-filter-chip ${bazaarTypeFilter === t ? 'dir-filter-chip--active' : ''}`}
+                onClick={() => setBazaarTypeFilter(t)}
               >
-                <img src={spot.image} alt={spot.name} />
-                <div>
-                  <span>{spot.discountLabel}</span>
-                  <strong>{spot.name}</strong>
-                  <p>{spot.spotlight}</p>
-                </div>
+                {TYPE_LABELS[t]}
               </button>
             ))}
-          </aside>
+          </div>
         </div>
 
-        <section className="bazaar-products">
-          <div className="section-heading">
-            <div>
-              <p className="section-label">Products / bazaar items</p>
-              <h2 className="section-title">Находки, которые хочется открыть прямо сейчас</h2>
+        {/* Main layout: sidebar + map */}
+        <div className="dir-layout">
+          {/* Sidebar — bazaar + shop list */}
+          <aside className="dir-sidebar">
+            <h2 className="dir-sidebar__title">
+              <MapPin size={18} />
+              Базары ({filteredBazaars.length})
+            </h2>
+            <div className="dir-sidebar__list">
+              {filteredBazaars.map((b) => (
+                <DirectoryBazaarCard key={b.id} bazaar={b} compact />
+              ))}
+              {filteredBazaars.length === 0 && (
+                <p className="dir-sidebar__empty">Базары не найдены</p>
+              )}
             </div>
-            <div className="bazaar-products__meta">{visibleItems.length} товаров найдено</div>
-          </div>
 
-          <div className={`bazaar-products__grid bazaar-products__grid--${viewMode}`}>
-            {visibleItems.map((item) => (
-              <BazaarCard key={item.id} item={item} viewMode={viewMode} />
-            ))}
+            {/* Standalone shops section — only visible when "Все" */}
+            {showStandaloneSection && filteredShops.length > 0 && (
+              <>
+                <h2 className="dir-sidebar__title dir-sidebar__title--shops">
+                  <Store size={18} />
+                  Магазины ({filteredShops.length})
+                </h2>
+                <div className="dir-sidebar__list">
+                  {filteredShops.map((s) => (
+                    <DirectoryShopCard key={s.id} shop={s} compact />
+                  ))}
+                </div>
+              </>
+            )}
+          </aside>
+
+          {/* Map */}
+          <div className="dir-map-area">
+            <div className="dir-map-toolbar">
+              <button
+                className={`dir-draw-btn ${isAreaSelecting ? 'dir-draw-btn--active' : ''}`}
+                onClick={toggleAreaSelecting}
+              >
+                <Crosshair size={18} />
+                {isAreaSelecting ? 'Отменить выделение' : 'Выделить область'}
+              </button>
+              {isAreaSelecting && (
+                <span className="dir-draw-hint">
+                  Зажмите кнопку мыши и обведите нужную область на карте.
+                </span>
+              )}
+            </div>
+
+            <TwoGisMap
+              bazaars={filteredBazaars}
+              selectedBazaarId={selectedBazaarId}
+              onBazaarClick={(id) => selectBazaar(id)}
+              isDrawing={isAreaSelecting}
+              onAreaSelect={handleAreaSelect}
+            />
           </div>
-        </section>
+        </div>
+
+        {/* Results panel (after area selection) */}
+        {showResultsPanel && (
+          <ResultsPanel
+            bazaars={areaBazaars}
+            shops={areaShops}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onClose={clearAreaResults}
+          />
+        )}
       </section>
     </div>
   );

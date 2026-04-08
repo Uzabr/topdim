@@ -10,9 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@2gis/mapgl": "^1.72.0",
     "@hookform/resolvers": "^5.2.2",
     "@pbe/react-yandex-maps": "^1.2.5",
     "@tanstack/react-query": "^5.94.5",
+    "@turf/boolean-point-in-polygon": "^7.3.4",
+    "@turf/helpers": "^7.3.4",
     "axios": "^1.13.6",
     "i18next": "^25.10.10",
     "i18next-browser-languagedetector": "^8.2.1",
