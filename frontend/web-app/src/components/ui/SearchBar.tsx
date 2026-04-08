@@ -96,7 +96,7 @@ export default function SearchBar({
             ))
           ) : (
             <div className="search-dropdown__empty">
-              ОТСУТСТВУЕТ
+              КАТЕГОРИЯ ОТСУТСТВУЕТ
             </div>
           )}
         </div>

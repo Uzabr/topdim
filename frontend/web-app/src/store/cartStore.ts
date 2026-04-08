@@ -79,13 +79,25 @@ export const useCartStore = create<CartState>((set, get) => ({
     const key = makeKey(request.couponOfferId, request.couponOptionId);
     const existing = get().items.find((item) => item.key === key);
 
+    // Check total item count limit (30)
+    const currentTotal = get().items.reduce((sum, item) => sum + item.quantity, 0);
+    const addQty = request.quantity || 1;
+    if (currentTotal + addQty > 30 && !existing) {
+      alert('Максимум 30 позиций в корзине. Удалите лишние, чтобы добавить новые.');
+      return;
+    }
+
     let newItems: LocalCartItem[];
 
     if (existing) {
+      if (existing.quantity + addQty > 30) {
+        alert('Максимум 30 позиций в корзине.');
+        return;
+      }
       // Increment quantity
       newItems = get().items.map((item) =>
         item.key === key
-          ? { ...item, quantity: item.quantity + (request.quantity || 1) }
+          ? { ...item, quantity: item.quantity + addQty }
           : item
       );
     } else {
@@ -97,7 +109,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         couponTitle: request.couponTitle,
         optionTitle: request.optionTitle,
         unitPrice: request.unitPrice,
-        quantity: request.quantity || 1,
+        quantity: addQty,
         coverImageUrl: request.coverImageUrl,
         isGift: request.isGift,
         giftRecipientName: request.giftRecipientName,

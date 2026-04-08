@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock3, MapPin, Star, Users } from 'lucide-react';
+import { Clock3, Star, Users } from 'lucide-react';
 import FavoriteButton from '../ui/FavoriteButton';
 import './CouponCard.css';
 
@@ -63,8 +63,6 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
     (coupon.oldPrice
       ? Math.round((1 - coupon.fromPrice / coupon.oldPrice) * 100)
       : 0);
-
-  const locationText = coupon.location || coupon.address || '';
 
   return (
     <Link to={`/coupons/${coupon.id}`} className={`coupon-card coupon-card--${layout}`}>
