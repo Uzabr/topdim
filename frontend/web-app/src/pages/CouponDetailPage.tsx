@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Gift, ShoppingCart, TrendingUp, Calendar, Clock, AlertCircle, Info, Users, CreditCard, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
+import TwoGisMap from '../components/map/TwoGisMap';
 import { couponsApi } from '../api/coupons';
 import type { CouponOffer, CouponOption } from '../api/coupons';
 import { useCartStore } from '../store/cartStore';
@@ -299,24 +299,12 @@ export default function CouponDetailPage() {
               <div className="detail-contacts-tab">
                 {c.address && (
                   <div className="detail-map-section">
-                    <div className="detail-map-container">
-                      <YMaps query={{ lang: 'ru_RU', apikey: 'REMOVED_MAP_API_KEY' }}>
-                        <Map 
-                          defaultState={{ center: [41.2995, 69.2401], zoom: 15 }} 
-                          style={{ height: '260px', width: '100%', borderRadius: '16px', overflow: 'hidden' }}
-                        >
-                          <Placemark 
-                            geometry={[41.2995, 69.2401]} 
-                            properties={{
-                              balloonContentHeader: c.merchant?.name,
-                              balloonContentBody: c.address,
-                            }}
-                            options={{
-                              preset: 'islands#redDotIcon'
-                            }}
-                          />
-                        </Map>
-                      </YMaps>
+                    <div className="detail-map-container" style={{ height: '260px', width: '100%', borderRadius: '16px', overflow: 'hidden', position: 'relative' }}>
+                      <TwoGisMap 
+                        center={[69.2401, 41.2995]} 
+                        zoom={15}
+                        staticMarker={{ lat: 41.2995, lon: 69.2401, title: c.merchant?.name }}
+                      />
                     </div>
                     <div className="detail-address">
                       <strong>📍 Адрес</strong>
