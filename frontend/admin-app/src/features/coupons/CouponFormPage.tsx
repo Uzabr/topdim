@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card, Form, Input, InputNumber, Button, Typography, App, Row, Col, DatePicker, Select, Tag, Modal, Space, Upload, Alert, Spin } from 'antd';
-import { ExclamationCircleOutlined, PlusOutlined, UploadOutlined, MinusCircleOutlined, InfoCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { Card, Form, Input, InputNumber, Button, Typography, App, Row, Col, DatePicker, Select, Tag, Modal, Space, Upload, Alert, Spin, Switch } from 'antd';
+import { ExclamationCircleOutlined, PlusOutlined, UploadOutlined, MinusCircleOutlined, InfoCircleOutlined, ArrowLeftOutlined, DeleteOutlined, GiftOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -36,6 +36,8 @@ interface CouponFormData {
   address: string;
   contactPhone: string;
   workingHours: string;
+  giftAvailable: boolean;
+  images: string[];
 }
 
 export const CouponFormPage = () => {
@@ -46,6 +48,7 @@ export const CouponFormPage = () => {
   const [merchantForm] = Form.useForm();
   const [isMerchantModalOpen, setIsMerchantModalOpen] = useState(false);
   const [coverImageUrl, setCoverImageUrl] = useState<string>('');
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
   
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -82,6 +85,8 @@ export const CouponFormPage = () => {
         address: existingCoupon.address,
         contactPhone: existingCoupon.contactPhone,
         workingHours: existingCoupon.workingHours,
+        giftAvailable: existingCoupon.giftAvailable || false,
+        images: existingCoupon.images || [],
         options: existingCoupon.options
           ?.filter((o: any) => o.status === 'ACTIVE')
           ?.map((o: any) => ({
@@ -93,6 +98,9 @@ export const CouponFormPage = () => {
       });
       if (existingCoupon.coverImageUrl) {
         setCoverImageUrl(existingCoupon.coverImageUrl);
+      }
+      if (existingCoupon.images?.length > 0) {
+        setGalleryImages(existingCoupon.images);
       }
     }
   }, [existingCoupon, form]);
@@ -140,6 +148,7 @@ export const CouponFormPage = () => {
         ...values,
         buyUntil: values.buyUntil.format('YYYY-MM-DDTHH:mm:ss'),
         useUntil: values.useUntil.format('YYYY-MM-DDTHH:mm:ss'),
+        images: galleryImages,
       };
       const { data } = await api.post('/api/v1/admin/coupons', payload);
       return data;
@@ -161,6 +170,7 @@ export const CouponFormPage = () => {
         ...values,
         buyUntil: values.buyUntil.format('YYYY-MM-DDTHH:mm:ss'),
         useUntil: values.useUntil.format('YYYY-MM-DDTHH:mm:ss'),
+        images: galleryImages,
       };
       const { data } = await api.put(`/api/v1/admin/coupons/${id}`, payload);
       return data;
@@ -227,7 +237,7 @@ export const CouponFormPage = () => {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ discountPercent: 0, oldPrice: 0, options: [] }}
+          initialValues={{ discountPercent: 0, oldPrice: 0, options: [], giftAvailable: false, images: [] }}
         >
           <Row gutter={24}>
             {/* Левая колонка */}
@@ -344,6 +354,58 @@ export const CouponFormPage = () => {
                 </Upload>
               </Form.Item>
 
+              {/* Галерея дополнительных изображений */}
+              <Card type="inner" title="Галерея изображений" style={{ marginBottom: 24 }}
+                extra={<Text type="secondary">{galleryImages.length} фото</Text>}
+              >
+                <Alert
+                  message="Дополнительные фото"
+                  description="Эти изображения отображаются в слайдере на детальной странице купона. Главное фото (миниатюра) загружается выше."
+                  type="info" showIcon style={{ marginBottom: 16 }}
+                />
+                <Upload
+                  name="file"
+                  action="http://localhost:8080/api/v1/media/upload"
+                  headers={{ Authorization: `Bearer ${useAuthStore.getState().accessToken}` }}
+                  listType="picture-card"
+                  showUploadList={false}
+                  multiple
+                  onChange={(info) => {
+                    if (info.file.status === 'done') {
+                      const urlPath = info.file.response?.data?.url;
+                      const fullUrl = `http://localhost:8080${urlPath}`;
+                      setGalleryImages(prev => [...prev, fullUrl]);
+                      message.success('Фото добавлено в галерею');
+                    } else if (info.file.status === 'error') {
+                      message.error('Ошибка загрузки фото');
+                    }
+                  }}
+                >
+                  <div>
+                    <PlusOutlined />
+                    <div style={{ marginTop: 8 }}>Добавить фото</div>
+                  </div>
+                </Upload>
+                {galleryImages.length > 0 && (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+                    {galleryImages.map((url, idx) => (
+                      <div key={idx} style={{ position: 'relative', width: 104, height: 104 }}>
+                        <img src={url} alt={`gallery-${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid #d9d9d9' }} />
+                        <Button
+                          type="primary" danger size="small"
+                          icon={<DeleteOutlined />}
+                          style={{ position: 'absolute', top: 4, right: 4, minWidth: 24, width: 24, height: 24, padding: 0 }}
+                          onClick={() => {
+                            setGalleryImages(prev => prev.filter((_, i) => i !== idx));
+                            message.info('Фото удалено из галереи');
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+
               <Form.Item name="shortDescription" label="Краткое описание" extra="Пара слов об акции. Отображается прямо на плитке купона в общей ленте.">
                 <TextArea rows={2} placeholder="Пара слов об акции..." />
               </Form.Item>
@@ -458,7 +520,7 @@ export const CouponFormPage = () => {
                 </Form.Item>
               </Card>
 
-              <Card type="inner" title="Контакты заведения">
+              <Card type="inner" title="Контакты заведения" style={{ marginBottom: 16 }}>
                 <Form.Item name="address" label="Адрес проведения">
                   <Input placeholder="г. Ташкент, ул. Амира Темура" />
                 </Form.Item>
@@ -467,6 +529,14 @@ export const CouponFormPage = () => {
                 </Form.Item>
                 <Form.Item name="workingHours" label="Часы работы">
                   <Input placeholder="Пн-Вс: 09:00 - 22:00" />
+                </Form.Item>
+              </Card>
+
+              <Card type="inner" title="Дополнительно">
+                <Form.Item name="giftAvailable" label="Доступен как подарок" valuePropName="checked"
+                  tooltip="Если включено, у купона появится бейдж '🎁 Подарок' на клиентском сайте"
+                >
+                  <Switch checkedChildren={<GiftOutlined />} unCheckedChildren="Нет" />
                 </Form.Item>
               </Card>
 
