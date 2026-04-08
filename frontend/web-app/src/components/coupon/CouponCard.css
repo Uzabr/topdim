@@ -62,26 +62,44 @@
   color: var(--text-muted);
 }
 
-/* Location badge — on image */
-.coupon-card__location {
+/* Top-left wrapper */
+.coupon-card__top-left {
   position: absolute;
   top: 10px;
   left: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  z-index: 2;
+  max-width: 75%;
+}
+
+
+
+/* Hot badge — inside wrapper */
+.coupon-card__hot {
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
+  background: linear-gradient(135deg, #ff416c, #ff4b2b);
+  box-shadow: 0 4px 10px rgba(255, 75, 43, 0.4);
   color: #fff;
   font-size: 11px;
-  font-weight: 600;
-  z-index: 2;
-  max-width: 70%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.coupon-card__hot span {
+  font-size: 14px;
+  animation: pulse-fire 2s infinite ease-in-out;
+}
+
+@keyframes pulse-fire {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
 }
 
 /* Discount badge */
