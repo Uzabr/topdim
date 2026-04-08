@@ -258,8 +258,7 @@
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scroll-padding: var(--space-md);
-  padding-bottom: var(--space-xs);
-  padding-right: var(--space-md); /* Added for end padding */
+  padding: 12px var(--space-md) 12px 0; /* top/bottom 12px for breathing room */
   scrollbar-width: none;
   -ms-overflow-style: none;
   cursor: grab;
@@ -332,11 +331,31 @@
 }
 
 /* ═══ Responsive ═══ */
+@media (max-width: 1100px) {
+  .home-hero {
+    gap: var(--space-xl);
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .home-hero__content {
+    max-width: 460px;
+  }
+
+  .home-hero__visual-inner {
+    max-width: 340px;
+  }
+}
+
 @media (max-width: 960px) {
   .home-hero {
     flex-direction: column;
     text-align: center;
     padding-top: var(--space-xl);
+  }
+
+  .home-hero__content {
+    max-width: 100%;
   }
 
   .home-hero__visual {

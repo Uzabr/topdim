@@ -5,8 +5,13 @@ import { favoritesApi } from '../api/favorites';
 interface FavoritesState {
   /** Массив ID купонов в избранном */
   favoriteIds: number[];
+  /** Показана ли модалка лимита */
+  showLimitModal: boolean;
+  /** Текст модалки */
+  limitMessage: string;
   toggleFavorite: (couponOfferId: number) => void;
   isFavorite: (id: number) => boolean;
+  closeLimitModal: () => void;
   /** Синхронизировать избранное с бэкендом (при логине) */
   syncWithBackend: () => Promise<void>;
 }
@@ -17,6 +22,8 @@ export const useFavoritesStore = create<FavoritesState>()(
   persist(
     (set, get) => ({
       favoriteIds: [],
+      showLimitModal: false,
+      limitMessage: '',
 
       toggleFavorite: (couponOfferId) => {
         const ids = get().favoriteIds;
@@ -29,8 +36,12 @@ export const useFavoritesStore = create<FavoritesState>()(
             favoritesApi.remove(couponOfferId).catch(() => {});
           }
         } else {
-          if (ids.length >= 20) {
-            alert('Максимальное количество элементов в избранном — 20.');
+          const maxItems = isAuthenticated() ? 50 : 10;
+          if (ids.length >= maxItems) {
+            const msg = isAuthenticated()
+              ? 'Вы достигли лимита — 50 купонов в избранном. Удалите ненужные, чтобы добавить новые.'
+              : 'Для неавторизованных пользователей лимит — 10 купонов. Войдите в аккаунт, чтобы сохранить до 50!';
+            set({ showLimitModal: true, limitMessage: msg });
             return;
           }
           set({ favoriteIds: [...ids, couponOfferId] });
@@ -41,6 +52,7 @@ export const useFavoritesStore = create<FavoritesState>()(
       },
 
       isFavorite: (id) => get().favoriteIds.includes(id),
+      closeLimitModal: () => set({ showLimitModal: false, limitMessage: '' }),
 
       syncWithBackend: async () => {
         if (!isAuthenticated()) return;
@@ -63,6 +75,9 @@ export const useFavoritesStore = create<FavoritesState>()(
         }
       },
     }),
-    { name: 'favorites-storage' }
+    { 
+      name: 'favorites-storage',
+      partialize: (state) => ({ favoriteIds: state.favoriteIds }),
+    }
   )
 );

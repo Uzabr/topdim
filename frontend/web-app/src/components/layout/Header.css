@@ -132,8 +132,7 @@
 
 .account-pill:hover {
   transform: translateY(-1px);
-  color: white; /* Fix: text was illegible on hover */
-  background: var(--gradient-primary-hover);
+  box-shadow: 0 22px 40px rgba(255, 102, 96, 0.34);
 }
 
 .cart-badge {
