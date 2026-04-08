@@ -196,34 +196,9 @@
   display: none;
 }
 
-.category-bubble {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  border-radius: var(--radius-pill);
-  font-size: var(--font-sm);
-  font-weight: 600;
-  white-space: nowrap;
-  background: var(--bg-surface-strong);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  transition: all var(--transition-fast);
-}
+/* Old .category-bubble styles removed — now using global .filter-chip from index.css */
 
-.category-bubble:hover {
-  border-color: var(--border-strong);
-  transform: translateY(-1px);
-}
-
-.category-bubble--active {
-  background: var(--gradient-primary);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 6px 18px rgba(255, 102, 96, 0.25);
-}
-
-.category-bubble span {
+.filter-chip span {
   display: flex;
 }
 

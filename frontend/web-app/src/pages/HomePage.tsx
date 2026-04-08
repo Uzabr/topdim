@@ -206,7 +206,7 @@ export default function HomePage() {
         <div className="categories-row">
           <button
             type="button"
-            className={`category-bubble ${activeCategory === null ? 'category-bubble--active' : ''}`}
+            className={`filter-chip ${activeCategory === null ? 'filter-chip--active' : ''}`}
             onClick={() => setActiveCategory(null)}
           >
             <span><Sparkles size={18} /></span>
@@ -216,7 +216,7 @@ export default function HomePage() {
             <button
               key={category.id}
               type="button"
-              className={`category-bubble ${activeCategory === category.id ? 'category-bubble--active' : ''}`}
+              className={`filter-chip ${activeCategory === category.id ? 'filter-chip--active' : ''}`}
               onClick={() => setActiveCategory(category.id)}
             >
               <span><CategoryIcon slug={category.slug} /></span>
