@@ -46,6 +46,13 @@ export default function HomePage() {
   const categories: Category[] = categoriesData || topdimCategories;
   const apiDeals = couponsData || [];
 
+  const searchSuggestions = useMemo(() => {
+    return categories.map((c) => ({
+      id: c.id,
+      label: i18n.language === 'uz' ? (c.nameUz || c.name) : c.name,
+    }));
+  }, [categories, i18n.language]);
+
   const mappedDeals: CouponCardData[] = useMemo(() => {
     if (apiDeals.length > 0) {
       return apiDeals.map((deal: any) => ({
@@ -104,11 +111,37 @@ export default function HomePage() {
   const newDeals = filteredDeals.slice(0, 8); // Grab first 8 as "new"
 
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   const scrollCarousel = (dir: number) => {
     if (carouselRef.current) {
       carouselRef.current.scrollBy({ left: dir * 320, behavior: 'smooth' });
     }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!carouselRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - carouselRef.current.offsetLeft);
+    setScrollLeft(carouselRef.current.scrollLeft);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !carouselRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - carouselRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // scroll-fast
+    carouselRef.current.scrollLeft = scrollLeft - walk;
   };
 
   return (
@@ -123,6 +156,18 @@ export default function HomePage() {
           <p className="home-hero__subtitle">
             Каждый день уникальные предложения на кафе, рестораны, SPA, развлечения и спорт. Покупай эмоции выгодно.
           </p>
+          <div className="home-hero__search">
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder={t('home.searchPlaceholder') || 'Поиск по категориям и заведениям...'}
+              suggestions={searchSuggestions}
+              onSuggestionClick={(id) => {
+                setActiveCategory(id);
+                setSearch('');
+              }}
+            />
+          </div>
           <div className="home-hero__actions">
             <Link to="/coupons" className="primary-button home-hero__btn">
               Смотреть предложения
@@ -130,34 +175,24 @@ export default function HomePage() {
           </div>
         </div>
         <div className="home-hero__visual">
+          <div className="home-hero__badge">
+            <span className="home-hero__badge-icon">🔥</span>
+            <div>
+              <span className="home-hero__badge-title">Самый популярный</span>
+              <span className="home-hero__badge-desc">Справка купон - самый сочный !!!</span>
+            </div>
+          </div>
           <div className="home-hero__visual-inner">
             <img 
               src="https://images.unsplash.com/photo-1555529771-835f59bfc50c?auto=format&fit=crop&w=800&q=80" 
               alt="Скидки" 
               className="home-hero__img" 
             />
-            <div className="home-hero__badge">
-              <span className="home-hero__badge-icon">🔥</span>
-              <div>
-                <span className="home-hero__badge-title">TopDim Choice</span>
-                <span className="home-hero__badge-desc">Сэкономлено 1M+ сум</span>
-              </div>
-            </div>
             <div className="home-hero__glow"></div>
           </div>
         </div>
       </section>
 
-      {/* ═══ Search ═══ */}
-      <section className="home-search container">
-        <div className="home-search-wrapper">
-          <SearchBar
-            value={search}
-            onChange={setSearch}
-            placeholder={t('home.searchPlaceholder') || 'Поиск скидок и заведений...'}
-          />
-        </div>
-      </section>
 
       {/* ═══ Categories ═══ */}
       <section className="section container">
@@ -207,9 +242,37 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-          <div className="deals-carousel" ref={carouselRef}>
+          <div 
+            className={`deals-carousel ${isDragging ? 'deals-carousel--dragging' : ''}`}
+            ref={carouselRef}
+            onMouseDown={handleMouseDown}
+            onMouseLeave={handleMouseLeave}
+            onMouseUp={handleMouseUp}
+            onMouseMove={handleMouseMove}
+          >
             {topDeals.map((deal) => (
               <CouponCard key={deal.id} coupon={deal} layout="carousel" />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ═══ New Deals ═══ */}
+      {newDeals.length > 0 && (
+        <section className="section container">
+          <div className="section-heading">
+            <div>
+              <p className="section-label">✨ Новые</p>
+              <h2 className="section-title">Только что добавлены</h2>
+            </div>
+            <Link to="/coupons?sortBy=new" className="section-link">
+              Все новые
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+          <div className="deals-mosaic">
+            {newDeals.map((deal) => (
+              <CouponCard key={deal.id} coupon={deal} layout="card" />
             ))}
           </div>
         </section>
@@ -233,27 +296,6 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-
-      {/* ═══ New Deals ═══ */}
-      {newDeals.length > 0 && (
-        <section className="section container">
-          <div className="section-heading">
-            <div>
-              <p className="section-label">✨ Новые</p>
-              <h2 className="section-title">Только что добавлены</h2>
-            </div>
-            <Link to="/coupons?sortBy=new" className="section-link">
-              Все новые
-              <ArrowRight size={16} />
-            </Link>
-          </div>
-          <div className="deals-mosaic">
-            {newDeals.map((deal) => (
-              <CouponCard key={deal.id} coupon={deal} layout="card" />
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* ═══ Bazaar CTA ═══ */}
       <section className="section container">

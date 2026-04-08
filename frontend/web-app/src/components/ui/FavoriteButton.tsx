@@ -22,7 +22,7 @@ export default function FavoriteButton({ couponId, isTop = false }: FavoriteButt
       aria-label="В избранное"
     >
       <Heart size={16} fill={fav ? 'currentColor' : 'none'} />
-      {isTop && <span className="favorite-button__dot" title="Топ акция"></span>}
+      {isTop && <span className="favorite-button__fire" title="Топ акция">🔥</span>}
     </button>
   );
 }

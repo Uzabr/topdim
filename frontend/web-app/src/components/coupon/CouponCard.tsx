@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock3, MapPin, Star, Users } from 'lucide-react';
 import FavoriteButton from '../ui/FavoriteButton';
@@ -29,6 +30,33 @@ interface CouponCardProps {
 }
 
 export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps) {
+  const [timeLeft, setTimeLeft] = useState<string | null>(coupon.countdownText || null);
+
+  useEffect(() => {
+    if (!coupon.countdownText || !coupon.countdownText.includes(':')) return;
+
+    let parts = coupon.countdownText.split(':').map(Number);
+    if (parts.length !== 3 || parts.some(isNaN)) return;
+
+    let [hours, minutes, seconds] = parts;
+    let totalSeconds = hours * 3600 + minutes * 60 + seconds;
+
+    const timer = setInterval(() => {
+      totalSeconds -= 1;
+      if (totalSeconds < 0) {
+        clearInterval(timer);
+        setTimeLeft('00:00:00');
+        return;
+      }
+      
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      setTimeLeft(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [coupon.countdownText]);
 
   const discount =
     coupon.discountPercent ||
@@ -69,10 +97,10 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
         <FavoriteButton couponId={coupon.id} isTop={coupon.isHot} />
 
         {/* Countdown */}
-        {coupon.countdownText && (
+        {timeLeft && (
           <span className="coupon-card__timer">
             <Clock3 size={12} />
-            {coupon.countdownText}
+            {timeLeft}
           </span>
         )}
       </div>

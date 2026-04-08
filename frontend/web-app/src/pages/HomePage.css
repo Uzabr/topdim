@@ -44,6 +44,10 @@
   line-height: 1.5;
 }
 
+.home-hero__search {
+  margin-bottom: var(--space-lg);
+}
+
 .home-hero__btn {
   padding: 16px 32px;
   font-size: var(--font-md);
@@ -255,8 +259,15 @@
   scroll-snap-type: x mandatory;
   scroll-padding: var(--space-md);
   padding-bottom: var(--space-xs);
+  padding-right: var(--space-md); /* Added for end padding */
   scrollbar-width: none;
   -ms-overflow-style: none;
+  cursor: grab;
+}
+
+.deals-carousel--dragging {
+  cursor: grabbing;
+  scroll-snap-type: none; /* Disable snapping while dragging */
 }
 
 .deals-carousel::-webkit-scrollbar {
@@ -265,6 +276,11 @@
 
 .deals-carousel > * {
   scroll-snap-align: start;
+  pointer-events: auto;
+}
+
+.deals-carousel--dragging > * {
+  pointer-events: none; /* Prevent accidentally clicking cards while dragging */
 }
 
 /* ═══ Grid/Mosaic ═══ */

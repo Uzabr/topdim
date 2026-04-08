@@ -150,7 +150,7 @@ export default function BazaarMapPage() {
       const point2 = `${bounds.maxLon},${bounds.minLat}`; // Bottom-right
       const q = encodeURIComponent('магазин,базар,тц,рынок');
       const apikey = '3b3d04f2-7dc0-46bc-899b-2c8652fd4813';
-      const url = `https://catalog.api.2gis.com/3.0/items?q=${q}&point1=${point1}&point2=${point2}&key=${apikey}&fields=items.point&page_size=50`;
+      const url = `https://catalog.api.2gis.com/3.0/items?q=${q}&point1=${point1}&point2=${point2}&key=${apikey}&fields=items.point&page_size=10`;
       
       const resp = await fetch(url);
       const json = await resp.json();
