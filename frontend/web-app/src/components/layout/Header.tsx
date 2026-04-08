@@ -4,6 +4,7 @@ import { Heart, MapPinned, Menu, Search, ShoppingBag, Ticket, User, X } from 'lu
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
+import { useFavoritesStore } from '../../store/favoritesStore';
 import CitySelector from '../ui/CitySelector';
 import LanguageSelector from '../ui/LanguageSelector';
 import './Header.css';
@@ -12,6 +13,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { totalItems, toggleCart } = useCartStore();
+  const { favoriteIds } = useFavoritesStore();
   const { isAuthenticated, user } = useAuthStore();
   const { t } = useTranslation();
 
@@ -42,7 +44,12 @@ export default function Header() {
             {t('nav.bazaar')}
           </Link>
           <Link to="/favorites" className={`nav-link ${isActive('/favorites') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
-            <Heart size={18} />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <Heart size={18} />
+              {favoriteIds.length > 0 && (
+                <span className="cart-badge" style={{ position: 'absolute', top: '-8px', right: '-12px' }}>{favoriteIds.length}</span>
+              )}
+            </div>
             {t('nav.favorites')}
           </Link>
         </nav>

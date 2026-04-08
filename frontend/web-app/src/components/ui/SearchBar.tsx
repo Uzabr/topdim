@@ -9,6 +9,8 @@ interface SearchBarProps {
   onSubmit?: (val: string) => void;
   placeholder?: string;
   autoFocus?: boolean;
+  suggestions?: { id: number; label: string }[];
+  onSuggestionClick?: (id: number, label: string) => void;
 }
 
 export default function SearchBar({
@@ -17,9 +19,12 @@ export default function SearchBar({
   onSubmit,
   placeholder,
   autoFocus = false,
+  suggestions = [],
+  onSuggestionClick,
 }: SearchBarProps) {
   const { t } = useTranslation();
   const [internalVal, setInternalVal] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
 
   const displayVal = value !== undefined ? value : internalVal;
   const defaultPlaceholder = t('search.placeholder', { defaultValue: 'Поиск...' });
@@ -39,27 +44,63 @@ export default function SearchBar({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onSubmit) onSubmit(displayVal);
+    setIsFocused(false);
   };
 
+  const normalizedInput = displayVal.trim().toLowerCase();
+  const filteredSuggestions = suggestions.filter((s) => s.label.toLowerCase().includes(normalizedInput));
+
+  const showDropdown = isFocused && normalizedInput.length > 0;
+
   return (
-    <form className="search-bar" onSubmit={handleSubmit}>
-      <Search size={18} className="search-bar__icon" />
-      <input
-        type="text"
-        className="search-bar__input"
-        placeholder={placeholder || defaultPlaceholder}
-        value={displayVal}
-        onChange={handleChange}
-        autoFocus={autoFocus}
-      />
-      {displayVal.length > 0 && (
-        <button type="button" className="search-bar__clear" onClick={handleClear} aria-label="Очистить">
-          <X size={16} />
+    <div className="search-bar-container" style={{ position: 'relative', width: '100%', maxWidth: '600px' }}>
+      <form className={`search-bar ${isFocused ? 'search-bar--focused' : ''}`} onSubmit={handleSubmit}>
+        <Search size={18} className="search-bar__icon" />
+        <input
+          type="text"
+          className="search-bar__input"
+          placeholder={placeholder || defaultPlaceholder}
+          value={displayVal}
+          onChange={handleChange}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setTimeout(() => setIsFocused(false), 200)} // delay to allow clicks on dropdown
+          autoFocus={autoFocus}
+        />
+        {displayVal.length > 0 && (
+          <button type="button" className="search-bar__clear" onClick={handleClear} aria-label="Очистить">
+            <X size={16} />
+          </button>
+        )}
+        <button type="submit" className="search-bar__submit">
+          {t('search.button', { defaultValue: 'Найти' })}
         </button>
+      </form>
+
+      {showDropdown && (
+        <div className="search-dropdown">
+          {filteredSuggestions.length > 0 ? (
+            filteredSuggestions.map((suggestion) => (
+              <div
+                key={suggestion.id}
+                className="search-dropdown__item"
+                onClick={() => {
+                  if (onSuggestionClick) onSuggestionClick(suggestion.id, suggestion.label);
+                  if (value === undefined) setInternalVal(suggestion.label);
+                  if (onChange) onChange(suggestion.label);
+                  setIsFocused(false);
+                }}
+              >
+                <Search size={14} className="search-dropdown__icon" />
+                <span>{suggestion.label}</span>
+              </div>
+            ))
+          ) : (
+            <div className="search-dropdown__empty">
+              ОТСУТСТВУЕТ
+            </div>
+          )}
+        </div>
       )}
-      <button type="submit" className="search-bar__submit">
-        {t('search.button', { defaultValue: 'Найти' })}
-      </button>
-    </form>
+    </div>
   );
 }

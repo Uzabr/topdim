@@ -31,7 +31,7 @@ export default function CitySelector() {
       }}
       triggerIcon={<MapPin size={15} />}
       headerTitle={t('header.city')}
-      minWidth="140px"
+      minWidth="180px"
     />
   );
 }

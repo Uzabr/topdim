@@ -29,6 +29,10 @@ export const useFavoritesStore = create<FavoritesState>()(
             favoritesApi.remove(couponOfferId).catch(() => {});
           }
         } else {
+          if (ids.length >= 20) {
+            alert('Максимальное количество элементов в избранном — 20.');
+            return;
+          }
           set({ favoriteIds: [...ids, couponOfferId] });
           if (isAuthenticated()) {
             favoritesApi.add(couponOfferId).catch(() => {});

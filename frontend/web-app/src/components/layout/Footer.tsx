@@ -29,7 +29,7 @@ export default function Footer() {
             <li><Link to="/coupons">Каталог купонов</Link></li>
             <li><Link to="/favorites">Избранное</Link></li>
             <li><Link to="/bazaar">Онлайн базар</Link></li>
-            <li><Link to="/profile">Мои купоны</Link></li>
+            <li><Link to="/favorites">Мои купоны</Link></li>
           </ul>
         </div>
 
@@ -37,10 +37,10 @@ export default function Footer() {
         <div className="footer-column">
           <h3>Партнёрам</h3>
           <ul>
-            <li><a href="#">{t('footer.business')}</a></li>
-            <li><a href="#">{t('footer.faq')}</a></li>
-            <li><a href="#">{t('footer.terms')}</a></li>
-            <li><a href="#">Политика конфиденциальности</a></li>
+            <li><Link to="/partners">{t('footer.business')}</Link></li>
+            <li><Link to="/faq">{t('footer.faq')}</Link></li>
+            <li><Link to="/terms">{t('footer.terms')}</Link></li>
+            <li><Link to="/privacy">Политика конфиденциальности</Link></li>
           </ul>
         </div>
 
