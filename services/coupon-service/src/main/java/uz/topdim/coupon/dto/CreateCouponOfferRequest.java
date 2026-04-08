@@ -52,4 +52,7 @@ public class CreateCouponOfferRequest {
     private boolean giftAvailable;
 
     private List<CreateCouponOptionRequest> options;
+
+    /** Дополнительные фотографии для галереи (URL-адреса). */
+    private List<String> images;
 }

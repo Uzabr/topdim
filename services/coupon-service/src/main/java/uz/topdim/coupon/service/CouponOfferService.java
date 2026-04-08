@@ -29,6 +29,7 @@ public class CouponOfferService {
 
     private final CouponOfferRepository couponOfferRepository;
     private final CouponOptionRepository couponOptionRepository;
+    private final CouponImageRepository couponImageRepository;
     private final MerchantRepository merchantRepository;
     private final CategoryRepository categoryRepository;
     private final ReviewRepository reviewRepository;
@@ -167,6 +168,18 @@ public class CouponOfferService {
             }
         }
 
+        // Create gallery images
+        if (request.getImages() != null) {
+            for (int i = 0; i < request.getImages().size(); i++) {
+                CouponImage image = CouponImage.builder()
+                        .couponOffer(offer)
+                        .imageUrl(request.getImages().get(i))
+                        .sortOrder(i)
+                        .build();
+                couponImageRepository.save(image);
+            }
+        }
+
         return mapToResponse(couponOfferRepository.findById(offer.getId()).orElseThrow());
     }
 
@@ -260,6 +273,20 @@ public class CouponOfferService {
                             .build();
                     couponOptionRepository.save(newOpt);
                 }
+            }
+        }
+
+        // Обновляем галерею изображений: удаляем старые, добавляем новые
+        couponImageRepository.deleteAllByCouponOfferId(offer.getId());
+        offer.getImages().clear();
+        if (request.getImages() != null) {
+            for (int i = 0; i < request.getImages().size(); i++) {
+                CouponImage image = CouponImage.builder()
+                        .couponOffer(offer)
+                        .imageUrl(request.getImages().get(i))
+                        .sortOrder(i)
+                        .build();
+                couponImageRepository.save(image);
             }
         }
 
