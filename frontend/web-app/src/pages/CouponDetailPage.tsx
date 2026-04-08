@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Gift, ShoppingCart, TrendingUp, Calendar, Clock, AlertCircle, Info, Users, CreditCard, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
+// import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
 import { couponsApi } from '../api/coupons';
 import type { CouponOffer, CouponOption } from '../api/coupons';
 import { useCartStore } from '../store/cartStore';
