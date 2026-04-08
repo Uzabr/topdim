@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { LogOut, Settings, Clock, CheckCircle, Ticket, Wallet, AlertCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { ordersApi } from '../api/orders';
 import type { PurchasedCoupon } from '../api/orders';
@@ -10,6 +11,7 @@ import './ProfilePage.css';
 
 export default function ProfilePage() {
   const { user, logout, isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('ACTIVE');
 
   // Fetch coupons from backend
@@ -33,7 +35,7 @@ export default function ProfilePage() {
           <Ticket size={48} className="profile-empty-icon" />
           <h2>Привет!</h2>
           <p>Войдите или зарегистрируйтесь, чтобы видеть свои купоны и историю возвратов.</p>
-          <button className="primary-button">Войти в профиль</button>
+          <Link to="/login" className="primary-button">Войти в профиль</Link>
         </div>
       </div>
     );
@@ -108,7 +110,7 @@ export default function ProfilePage() {
               <span className="profile-empty-icon">😢</span>
               <h3>У вас пока нет {activeTab === 'ACTIVE' ? 'активных' : activeTab === 'USED' ? 'использованных' : 'истёкших'} купонов</h3>
               <p>Самое время порадовать себя отличной скидкой!</p>
-              <button className="primary-button" onClick={() => window.location.href = '/coupons'}>
+              <button className="primary-button" onClick={() => navigate('/coupons')}>
                 Перейти в каталог
               </button>
             </div>

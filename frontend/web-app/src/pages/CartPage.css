@@ -165,8 +165,14 @@
 }
 
 .cart-item__qty-btn:hover {
+  transform: translateY(-1px);
   background: var(--bg-muted);
-  color: var(--text-primary);
+  color: var(--primary);
+  border-color: var(--border-strong);
+}
+
+.cart-item__qty-btn:active {
+  transform: translateY(0) scale(0.95);
 }
 
 .cart-item__right {
