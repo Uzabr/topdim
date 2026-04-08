@@ -80,21 +80,22 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
 
         <div className="coupon-card__overlay" />
 
-        {/* Location badge on image */}
-        {locationText && (
-          <span className="coupon-card__location">
-            <MapPin size={12} />
-            {locationText}
-          </span>
-        )}
+        {/* Top-left badges wrapper (Hot) */}
+        <div className="coupon-card__top-left">
+          {coupon.isHot && (
+            <span className="coupon-card__hot">
+              <span>🔥</span> Топ
+            </span>
+          )}
+        </div>
 
         {/* Discount badge */}
         {discount > 0 && (
           <span className="coupon-card__discount">до -{discount}%</span>
         )}
 
-        {/* Favorite button (includes Hot marker if isTop=true) */}
-        <FavoriteButton couponId={coupon.id} isTop={coupon.isHot} />
+        {/* Favorite button */}
+        <FavoriteButton couponId={coupon.id} />
 
         {/* Countdown */}
         {timeLeft && (

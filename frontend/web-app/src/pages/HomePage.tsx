@@ -2,6 +2,7 @@ import { useMemo, useState, useRef } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, MapPinned, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import heroImage from '../assets/images/hero-banner.png';
 import { useQuery } from '@tanstack/react-query';
 import { couponsApi } from '../api/coupons';
 import type { Category } from '../api/coupons';
@@ -184,7 +185,7 @@ export default function HomePage() {
           </div>
           <div className="home-hero__visual-inner">
             <img 
-              src="https://images.unsplash.com/photo-1555529771-835f59bfc50c?auto=format&fit=crop&w=800&q=80" 
+              src={heroImage} 
               alt="Скидки" 
               className="home-hero__img" 
             />
