@@ -18,6 +18,7 @@ import RevealPhone from '../components/ui/RevealPhone';
 import ShareButton from '../components/ui/ShareButton';
 import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
+import { useLocalePath } from '../hooks/useLocalePath';
 import { topdimDeals } from '../data/topdim';
 import './CouponDetailPage.css';
 
@@ -52,10 +53,9 @@ const MOCK_REVIEWS = [
   { id: 3, author: 'Дмитрий К.', rating: 5, text: 'Уже третий раз покупаем купон, каждый раз всё отлично!', date: '2026-03-10' },
 ];
 
-const DETAIL_TABS = [
+const BASE_TABS = [
   { key: 'info', label: 'Информация' },
   { key: 'reviews', label: 'Отзывы', badge: MOCK_REVIEWS.length },
-  { key: 'contacts', label: 'Контакты' },
 ];
 
 export default function CouponDetailPage() {
@@ -67,6 +67,7 @@ export default function CouponDetailPage() {
   const [toastMessage, setToastMessage] = useState('');
   const optionsRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const lp = useLocalePath();
 
   const { data: coupon } = useQuery({
     queryKey: ['coupon', id],
@@ -80,6 +81,11 @@ export default function CouponDetailPage() {
   const discount = c.discountPercent || (c.oldPrice ? Math.round((1 - c.fromPrice / c.oldPrice) * 100) : 0);
   const fav = isFavorite(c.id);
   const images = c.images?.length > 0 ? c.images : (c.coverImageUrl ? [c.coverImageUrl] : []);
+
+  const detailTabs = [
+    ...BASE_TABS,
+    ...(isAuthenticated ? [{ key: 'contacts', label: 'Контакты' }] : []),
+  ];
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -109,7 +115,7 @@ export default function CouponDetailPage() {
       quantity: 1,
       coverImageUrl: c.coverImageUrl,
     });
-    navigate('/checkout');
+    navigate(lp('/checkout'));
   };
 
   const scrollToOptions = () => {
@@ -197,7 +203,7 @@ export default function CouponDetailPage() {
           </div>
 
           {/* Tabs */}
-          <Tabs tabs={DETAIL_TABS} activeKey={activeTab} onChange={setActiveTab} sticky />
+          <Tabs tabs={detailTabs} activeKey={activeTab} onChange={setActiveTab} sticky />
 
           {/* Tab content */}
           <div className="detail-tab-content">

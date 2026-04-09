@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock3, Star, Users } from 'lucide-react';
 import FavoriteButton from '../ui/FavoriteButton';
+import { useLocalePath } from '../../hooks/useLocalePath';
 import './CouponCard.css';
 
 export interface CouponCardData {
@@ -31,6 +32,7 @@ interface CouponCardProps {
 
 export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps) {
   const [timeLeft, setTimeLeft] = useState<string | null>(coupon.countdownText || null);
+  const lp = useLocalePath();
 
   useEffect(() => {
     if (!coupon.countdownText || !coupon.countdownText.includes(':')) return;
@@ -65,7 +67,7 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
       : 0);
 
   return (
-    <Link to={`/coupons/${coupon.id}`} className={`coupon-card coupon-card--${layout}`}>
+    <Link to={lp(`/coupons/${coupon.id}`)} className={`coupon-card coupon-card--${layout}`}>
       {/* Image */}
       <div className="coupon-card__media">
         {coupon.coverImageUrl ? (

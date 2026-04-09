@@ -2,14 +2,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, ShoppingBag, ArrowRight, Plus, Minus } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { formatPrice } from '../utils/format';
+import { useLocalePath } from '../hooks/useLocalePath';
 import './CartPage.css';
 
 export default function CartPage() {
   const { items, totalItems, totalPrice, removeFromCart, updateQuantity } = useCartStore();
   const navigate = useNavigate();
+  const lp = useLocalePath();
 
   const handleCheckout = () => {
-    navigate('/checkout');
+    navigate(lp('/checkout'));
   };
 
   if (items.length === 0) {
@@ -19,7 +21,7 @@ export default function CartPage() {
           <div className="cart-empty__icon">🛒</div>
           <h2>Корзина пуста</h2>
           <p>Добавьте купоны из каталога, чтобы начать покупки</p>
-          <Link to="/coupons" className="primary-button cart-empty__btn">
+          <Link to={lp('/coupons')} className="primary-button cart-empty__btn">
             <ShoppingBag size={18} /> К купонам
           </Link>
         </div>

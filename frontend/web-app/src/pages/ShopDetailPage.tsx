@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin, Clock, Phone, Tag, Store, Image } from 'lucide-react
 import { directoryApi } from '../api/bazaars';
 import type { Shop } from '../api/bazaars';
 import TwoGisMap from '../components/map/TwoGisMap';
+import { useLocalePath } from '../hooks/useLocalePath';
 import './ShopDetailPage.css';
 
 const DEMO_SHOP: Shop = {
@@ -20,6 +21,7 @@ const DEMO_SHOP: Shop = {
 
 export default function ShopDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const lp = useLocalePath();
 
   const { data: shop } = useQuery({
     queryKey: ['shop', id],
@@ -35,11 +37,11 @@ export default function ShopDetailPage() {
     <div className="shop-detail">
       <div className="shop-detail__topbar container">
         {isBazaar && s.bazaar ? (
-          <Link to={`/bazaar/${s.bazaar.id}`} className="detail-back">
+          <Link to={lp(`/bazaar/${s.bazaar.id}`)} className="detail-back">
             <ArrowLeft size={20} /> {s.bazaar.name}
           </Link>
         ) : (
-          <Link to="/bazaar" className="detail-back">
+          <Link to={lp('/bazaar')} className="detail-back">
             <ArrowLeft size={20} /> Справочник
           </Link>
         )}

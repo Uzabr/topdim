@@ -5,6 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import { useFavoritesStore } from '../../store/favoritesStore';
+import { useLocalePath } from '../../hooks/useLocalePath';
 import CitySelector from '../ui/CitySelector';
 import LanguageSelector from '../ui/LanguageSelector';
 import './Header.css';
@@ -16,13 +17,14 @@ export default function Header() {
   const { favoriteIds } = useFavoritesStore();
   const { isAuthenticated, user } = useAuthStore();
   const { t } = useTranslation();
+  const lp = useLocalePath();
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => location.pathname.endsWith(path) || location.pathname === lp(path);
 
   return (
     <header className="header glass">
       <div className="header-inner container">
-        <Link to="/" className="logo" onClick={() => setMobileMenuOpen(false)}>
+        <Link to={lp('/')} className="logo" onClick={() => setMobileMenuOpen(false)}>
           <span className="logo-mark" aria-hidden="true">
             <span className="logo-mark__diamond" />
             <span className="logo-mark__pin" />
@@ -35,15 +37,15 @@ export default function Header() {
         <CitySelector />
 
         <nav className={`nav ${mobileMenuOpen ? 'nav--open' : ''}`}>
-          <Link to="/" className={`nav-link ${isActive('/') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
+          <Link to={lp('/')} className={`nav-link ${isActive('/') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
             <Ticket size={18} />
             {t('nav.coupons')}
           </Link>
-          <Link to="/bazaar" className={`nav-link ${isActive('/bazaar') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
+          <Link to={lp('/bazaar')} className={`nav-link ${isActive('/bazaar') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
             <MapPinned size={18} />
             {t('nav.bazaar')}
           </Link>
-          <Link to="/favorites" className={`nav-link ${isActive('/favorites') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
+          <Link to={lp('/favorites')} className={`nav-link ${isActive('/favorites') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <Heart size={18} />
               {favoriteIds.length > 0 && (
@@ -56,14 +58,14 @@ export default function Header() {
 
         <div className="header-actions">
           <LanguageSelector />
-          <Link to="/search" className="icon-button" aria-label="Поиск">
+          <Link to={lp('/search')} className="icon-button" aria-label="Поиск">
             <Search size={19} />
           </Link>
           <button type="button" className="icon-button" onClick={toggleCart} aria-label="Корзина">
             <ShoppingBag size={19} />
             {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
           </button>
-          <Link to={isAuthenticated ? '/profile' : '/login'} className="account-pill">
+          <Link to={lp(isAuthenticated ? '/profile' : '/login')} className="account-pill">
             <User size={18} />
             <span>{isAuthenticated ? user?.firstName ?? t('header.profile') : t('header.login')}</span>
           </Link>

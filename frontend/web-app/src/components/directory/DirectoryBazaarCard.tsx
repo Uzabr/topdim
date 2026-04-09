@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Store, Clock } from 'lucide-react';
 import type { Bazaar } from '../../api/bazaars';
+import { useLocalePath } from '../../hooks/useLocalePath';
 import './DirectoryCards.css';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -16,8 +17,9 @@ interface Props {
 }
 
 export default function DirectoryBazaarCard({ bazaar, compact = false }: Props) {
+  const lp = useLocalePath();
   return (
-    <Link to={`/bazaar/${bazaar.id}`} className={`dir-card dir-card--bazaar ${compact ? 'dir-card--compact' : ''}`}>
+    <Link to={lp(`/bazaar/${bazaar.id}`)} className={`dir-card dir-card--bazaar ${compact ? 'dir-card--compact' : ''}`}>
       {bazaar.coverImageUrl && !compact && (
         <div className="dir-card__img">
           <img src={bazaar.coverImageUrl} alt={bazaar.name} loading="lazy" />
