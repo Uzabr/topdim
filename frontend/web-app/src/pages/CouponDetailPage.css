@@ -9,6 +9,9 @@
 /* ═══ Gallery ═══ */
 .detail-gallery {
   margin-bottom: var(--space-lg);
+  max-height: 320px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
 }
 
 /* ═══ Content layout ═══ */
@@ -26,6 +29,7 @@
 /* ═══ Title block ═══ */
 .detail-title-block {
   margin-bottom: var(--space-lg);
+  margin-top: var(--space-sm);
 }
 
 .detail-title-row {

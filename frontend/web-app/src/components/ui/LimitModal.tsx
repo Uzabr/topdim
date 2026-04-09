@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useAuthStore } from '../../store/authStore';
+import { useLocalePath } from '../../hooks/useLocalePath';
 import './LimitModal.css';
 
 export default function LimitModal() {
   const { showLimitModal, limitMessage, closeLimitModal } = useFavoritesStore();
   const { isAuthenticated } = useAuthStore();
+  const lp = useLocalePath();
 
   if (!showLimitModal) return null;
 
@@ -19,7 +21,7 @@ export default function LimitModal() {
           Понятно
         </button>
         {!isAuthenticated && (
-          <Link to="/login" className="limit-modal__login-link" onClick={closeLimitModal}>
+          <Link to={lp('/login')} className="limit-modal__login-link" onClick={closeLimitModal}>
             Войти в аккаунт →
           </Link>
         )}

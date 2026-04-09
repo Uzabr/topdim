@@ -1,5 +1,6 @@
 import { ChevronRight, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useLocalePath } from '../../hooks/useLocalePath';
 import './Breadcrumbs.css';
 
 export interface BreadcrumbItem {
@@ -12,6 +13,7 @@ interface BreadcrumbsProps {
 }
 
 export default function Breadcrumbs({ items }: BreadcrumbsProps) {
+  const lp = useLocalePath();
   return (
     <nav className="breadcrumbs" aria-label="Навигация">
       <ol className="breadcrumbs__list" itemScope itemType="https://schema.org/BreadcrumbList">
@@ -21,7 +23,7 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
           itemScope
           itemType="https://schema.org/ListItem"
         >
-          <Link to="/" className="breadcrumbs__link" itemProp="item">
+          <Link to={lp('/')} className="breadcrumbs__link" itemProp="item">
             <Home size={14} />
             <span itemProp="name">Главная</span>
           </Link>

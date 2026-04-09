@@ -2,6 +2,7 @@ import { useMemo, useState, useRef } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, MapPinned, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useLocalePath } from '../hooks/useLocalePath';
 import heroImage from '../assets/images/hero-banner.png';
 import { useQuery } from '@tanstack/react-query';
 import { couponsApi } from '../api/coupons';
@@ -28,6 +29,7 @@ const CategoryIcon = ({ slug }: { slug?: string }) => {
 
 export default function HomePage() {
   const { t, i18n } = useTranslation();
+  const lp = useLocalePath();
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [search, setSearch] = useState('');
   // Removed banner automatic sliding logic
@@ -178,7 +180,7 @@ export default function HomePage() {
             />
           </div>
           <div className="home-hero__actions">
-            <Link to="/coupons" className="primary-button home-hero__btn">
+            <Link to={lp('/coupons')} className="primary-button home-hero__btn">
               Смотреть предложения
             </Link>
           </div>
@@ -274,7 +276,7 @@ export default function HomePage() {
               <p className="section-label">✨ Новые</p>
               <h2 className="section-title">Только что добавлены</h2>
             </div>
-            <Link to="/coupons?sortBy=new" className="section-link">
+            <Link to={lp('/coupons?sortBy=new')} className="section-link">
               Все новые
               <ArrowRight size={16} />
             </Link>
@@ -294,7 +296,7 @@ export default function HomePage() {
             <p className="section-label">{t('home.trendingLabel')}</p>
             <h2 className="section-title">{t('home.trendingTitle')}</h2>
           </div>
-          <Link to="/coupons" className="section-link">
+          <Link to={lp('/coupons')} className="section-link">
             Показать все
             <ArrowRight size={16} />
           </Link>
@@ -315,7 +317,7 @@ export default function HomePage() {
             <p className="section-copy">
               Переключайся между пинами, товарами и расстоянием. Найди лучшие скидки на карте Ташкента.
             </p>
-            <Link to="/bazaar" className="primary-button">
+            <Link to={lp('/bazaar')} className="primary-button">
               Открыть базар
               <MapPinned size={18} />
             </Link>

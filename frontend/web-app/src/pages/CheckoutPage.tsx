@@ -6,6 +6,7 @@ import { formatPrice } from '../utils/format';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../api/auth';
 import { ordersApi } from '../api/orders';
+import { useLocalePath } from '../hooks/useLocalePath';
 import './CheckoutPage.css';
 
 export default function CheckoutPage() {
@@ -17,6 +18,7 @@ export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+  const lp = useLocalePath();
 
   const [step, setStep] = useState(isGuest && !isAuthenticated ? 1 : 2);
   const [phone, setPhone] = useState('');
@@ -36,7 +38,7 @@ export default function CheckoutPage() {
       <div className="checkout-empty container">
         <AlertCircle size={48} className="checkout-empty__icon" />
         <h2>Нет товаров для оформления</h2>
-        <button className="primary-button" onClick={() => navigate('/coupons')}>Вернуться в каталог</button>
+        <button className="primary-button" onClick={() => navigate(lp('/coupons'))}>Вернуться в каталог</button>
       </div>
     );
   }
@@ -69,7 +71,7 @@ export default function CheckoutPage() {
       const fullPhone = phone ? '+998' + phone : '';
       await ordersApi.createOrder('', fullPhone);
       clearCart();
-      navigate('/profile');
+      navigate(lp('/profile'));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Ошибка оформления заказа');
     } finally {

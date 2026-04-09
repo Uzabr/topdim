@@ -19,9 +19,10 @@ i18n
       escapeValue: false, // React strictly prevents XSS
     },
     detection: {
-      order: ['localStorage', 'navigator'],
+      order: ['path', 'localStorage', 'navigator'],
       caches: ['localStorage'],
       lookupLocalStorage: 'language',
+      lookupFromPathIndex: 0,
     }
   });
 

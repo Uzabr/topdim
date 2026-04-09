@@ -1,73 +1,98 @@
-# React + TypeScript + Vite
+# TopDim Frontend (Web App)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+TopDim — это агрегатор скидок и купонов, совмещенный с онлайн-базаром, предоставляющий пользователям быстрый интерфейс для поиска лучших предложений.
 
-Currently, two official plugins are available:
+## 🛠 Технологический стек
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Фреймворк:** React 19 + TypeScript + Vite
+- **Роутинг:** React Router v6 (настроен с локализацией в URL `/:lang/`)
+- **Управление состоянием:** 
+  - **Zustand** (глобальные сторы: `authStore`, `cartStore`, `favoritesStore`, `cityStore`)
+  - **TanStack React Query v5** (управление серверным стейтом, кеширование, запросы)
+- **REST API:** Axios (с автоматическими интерцепторами для аутентификации)
+- **Формы и Валидация:** React Hook Form + Zod + React IMask
+- **Карты:** 2GIS MapGL (`@2gis/mapgl` + Turf для гео-вычислений)
+- **Интернационализация (i18n):** react-i18next (Русский, Узбекский)
+- **Иконки:** Lucide React
+- **Стилизация:** CSS Modules / Vanilla CSS (с настроенными дизайн-токенами, CSS переменными)
 
-## React Compiler
+## 📁 Структура проекта
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+src/
+├── api/             # API клиенты, Axios инстансы и типы запросов/ответов (auth, coupons, orders, bazaars)
+├── assets/          # Статика (картинки, шрифты)
+├── components/      # Переиспользуемые компоненты
+│   ├── cart/        # Корзина
+│   ├── coupon/      # Карточки купонов
+│   ├── directory/   # Базары и магазины
+│   ├── layout/      # Header, Footer, BottomNav
+│   ├── map/         # Интеграция 2GIS MapGL
+│   └── ui/          # Базовый UI Kit (Кнопки, Инпуты, Модалки, Breadcrumbs и т.д.)
+├── data/            # Моковые данные для разработки и демо-режима
+├── hooks/           # Кастомные хуки (например, useLocalePath)
+├── locales/         # JSON Файлы переводов (ru.json, uz.json)
+├── pages/           # Компоненты страниц маршрутизации (HomePage, Catalog, Profile и т.д.)
+├── store/           # Zustand сторы
+│   ├── authStore.ts
+│   ├── cartStore.ts
+│   ├── cityStore.ts
+│   └── favoritesStore.ts
+└── utils/           # Утилиты (форматирование дат, цен, токенов)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🚀 Настройка и запуск локально
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. **Установка зависимостей:**
+   ```bash
+   npm install
+   ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+2. **Запуск сервера разработки:**
+   ```bash
+   npm run dev
+   ```
+   Приложение будет доступно по адресу `http://localhost:5173`.
+
+3. **Сборка для продакшена:**
+   ```bash
+   npm run build
+   ```
+
+## 🌐 Архитектурные особенности
+
+### 1. Маршрутизация с локализацией
+Все страницы приложения обернуты в языковой префикс (например: `/ru/coupons` или `/uz/cart`). 
+За это отвечает компонент `LocaleLayout` и хук `useLocalePath`, который необходимо использовать во всех `<Link to={lp(...)}}>` и вызовах `navigate(lp(...))`. Если пользователь заходит в корень `/`, скрипт `RootRedirect` (App.tsx) и настройки `i18next` автоматически перенаправляют его на префикс сохраненного языка или локаль браузера.
+
+### 2. Кэширование API
+Для API запросов используется `React Query` со стандартным таймаутом `staleTime: 5 минут`. Это позволяет мгновенно рендерить интерфейс, если пользователь переключается между каталогом и страницей купона, экономя запросы к бекенду и поддерживая быструю отзывчивость (UI/UX).
+
+### 3. State Management (Zustand)
+Состояние делится на 2 типа:
+- Серверное состояние (каталог, детали, отзывы) — *React Query*.
+- Клиентское состояние: 
+  - Корзина (`cartStore`) — сохраняется в `localStorage`.
+  - Избранное (`favoritesStore`) — сохраняется в `localStorage`, синхронизация с сервером при логине.
+  - Аутентификация (`authStore`) — JWT (access) в памяти; рефреш токены (в будущем) в HTTP-only cookies.
+  - Город (`cityStore`) — локальные настройки пользователя.
+
+### 4. Доступ к формам
+Для работы с формами используется подход Controlled Components с помощью `react-hook-form` + `zodResolver`. Все ошибки извлекаются из схемы валидации и передаются в UI Kit компоненты с использованием абсолютного позиционирования для ошибок (что предотвращает "прыжки" верстки интерфейса `layout shift`).
+
+### 5. Интерактивная карта (2GIS)
+Используется MapGL API от 2ГИС. Инкапсулировано внутри компонента `TwoGisMap`. 
+Маркеры базаров, магазинов и функция определения геопозиции реализованы через единый API клиента.
+
+## 🎨 Дизайн система и CSS
+Для обеспечения уникального и динамичного стиля не используется Tailwind. 
+Вместо него применяется классический CSS с глобальными переменными (Design Tokens) для обеспечения гибкости (Темная/Светлая темы, скругления, акцентные градиенты).  
+Цветовая палитра "Chocolife": градиенты `var(--gradient-primary)`.
+
+### Основные CSS Переменные (index.css)
+- `var(--bg-default)` / `var(--bg-surface)`
+- `var(--text-primary)` / `var(--text-secondary)`
+- `var(--space-md)`, `var(--space-lg)`
+- `var(--radius-md)`, `var(--radius-pill)`
+
+Все компоненты пишутся по принципу изоляции (BEM-style или Component.css) для поддержки высокой производительности.

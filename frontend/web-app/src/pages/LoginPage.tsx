@@ -6,6 +6,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { IMaskInput } from 'react-imask';
+import { useLocalePath } from '../hooks/useLocalePath';
 import './LoginPage.css';
 
 const loginSchema = z.object({
@@ -31,6 +32,7 @@ export default function LoginPage() {
   
   const { login, register, isLoading } = useAuthStore();
   const navigate = useNavigate();
+  const lp = useLocalePath();
 
   const {
     register: formRegister,
@@ -56,7 +58,7 @@ export default function LoginPage() {
           phone: data.phone,
         });
       }
-      navigate('/');
+      navigate(lp('/'));
     } catch (err: any) {
       setServerError(err.response?.data?.message || 'Ошибка. Попробуйте ещё раз.');
     }
@@ -72,7 +74,7 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-card glass">
         <div className="login-header">
-          <Link to="/" className="login-logo">💎 TopDim</Link>
+          <Link to={lp('/')} className="login-logo">💎 TopDim</Link>
           <h1>{isLogin ? 'Вход' : 'Регистрация'}</h1>
           <p className="login-subtitle">
             {isLogin ? 'Войдите, чтобы покупать купоны' : 'Создайте аккаунт за минуту'}

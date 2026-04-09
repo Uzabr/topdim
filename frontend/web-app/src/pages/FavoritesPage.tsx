@@ -6,10 +6,12 @@ import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
 import { couponsApi } from '../api/coupons';
 import { topdimDeals } from '../data/topdim';
+import { useLocalePath } from '../hooks/useLocalePath';
 import './FavoritesPage.css';
 
 export default function FavoritesPage() {
   const { favoriteIds } = useFavoritesStore();
+  const lp = useLocalePath();
 
   const { data: couponsData } = useQuery({
     queryKey: ['coupons-favorites'],
@@ -74,7 +76,7 @@ export default function FavoritesPage() {
           <span className="favorites-empty__icon">💛</span>
           <h3>Пока пусто</h3>
           <p>Добавляйте понравившиеся купоны, нажимая на ❤️ на карточке</p>
-          <Link to="/coupons" className="primary-button">
+          <Link to={lp('/coupons')} className="primary-button">
             Перейти в каталог
             <ArrowRight size={16} />
           </Link>

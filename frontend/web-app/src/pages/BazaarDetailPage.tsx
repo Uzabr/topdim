@@ -6,6 +6,7 @@ import { directoryApi } from '../api/bazaars';
 import type { Bazaar, Shop } from '../api/bazaars';
 import TwoGisMap from '../components/map/TwoGisMap';
 import DirectoryShopCard from '../components/directory/DirectoryShopCard';
+import { useLocalePath } from '../hooks/useLocalePath';
 import './BazaarDetailPage.css';
 
 const DEMO_BAZAAR: Bazaar = {
@@ -30,6 +31,7 @@ const TYPE_LABELS: Record<string, string> = {
 export default function BazaarDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [shopSearch, setShopSearch] = useState('');
+  const lp = useLocalePath();
 
   const { data: bazaar } = useQuery({
     queryKey: ['bazaar', id],
@@ -59,7 +61,7 @@ export default function BazaarDetailPage() {
   return (
     <div className="bazaar-detail">
       <div className="bazaar-detail__topbar container">
-        <Link to="/bazaar" className="detail-back">
+        <Link to={lp('/bazaar')} className="detail-back">
           <ArrowLeft size={20} /> Справочник
         </Link>
       </div>

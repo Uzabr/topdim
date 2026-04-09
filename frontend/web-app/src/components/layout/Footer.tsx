@@ -1,10 +1,12 @@
 import { Instagram, Send, Mail, MapPin, Phone, Smartphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useLocalePath } from '../../hooks/useLocalePath';
 import './Footer.css';
 
 export default function Footer() {
   const { t } = useTranslation();
+  const lp = useLocalePath();
   return (
     <footer className="app-footer">
       <div className="container footer-content">
@@ -26,10 +28,10 @@ export default function Footer() {
         <div className="footer-column">
           <h3>Пользователям</h3>
           <ul>
-            <li><Link to="/coupons">Каталог купонов</Link></li>
-            <li><Link to="/favorites">Избранное</Link></li>
-            <li><Link to="/bazaar">Онлайн базар</Link></li>
-            <li><Link to="/profile">Мои купоны</Link></li>
+            <li><Link to={lp('/coupons')}>Каталог купонов</Link></li>
+            <li><Link to={lp('/favorites')}>Избранное</Link></li>
+            <li><Link to={lp('/bazaar')}>Онлайн базар</Link></li>
+            <li><Link to={lp('/profile')}>Мои купоны</Link></li>
           </ul>
         </div>
 
@@ -37,10 +39,10 @@ export default function Footer() {
         <div className="footer-column">
           <h3>Партнёрам</h3>
           <ul>
-            <li><Link to="/partners">{t('footer.business')}</Link></li>
-            <li><Link to="/faq">{t('footer.faq')}</Link></li>
-            <li><Link to="/terms">{t('footer.terms')}</Link></li>
-            <li><Link to="/privacy">Политика конфиденциальности</Link></li>
+            <li><Link to={lp('/partners')}>{t('footer.business')}</Link></li>
+            <li><Link to={lp('/faq')}>{t('footer.faq')}</Link></li>
+            <li><Link to={lp('/terms')}>{t('footer.terms')}</Link></li>
+            <li><Link to={lp('/privacy')}>Политика конфиденциальности</Link></li>
           </ul>
         </div>
 

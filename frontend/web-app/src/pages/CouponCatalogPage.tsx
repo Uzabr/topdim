@@ -1,12 +1,24 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, SlidersHorizontal, X, LayoutGrid, List, Sparkles } from 'lucide-react';
+import { Search, SlidersHorizontal, X, LayoutGrid, List, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
 import { couponsApi } from '../api/coupons';
 import type { Category, CouponOffer } from '../api/coupons';
 import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
 import Select from '../components/ui/Select';
 import './CouponCatalogPage.css';
+
+const CategoryIcon = ({ slug }: { slug?: string }) => {
+  switch (slug) {
+    case 'food': return <Coffee size={16} />;
+    case 'beauty': return <Scissors size={16} />;
+    case 'sport': case 'health-sport': return <Dumbbell size={16} />;
+    case 'entertainment': return <Gamepad2 size={16} />;
+    case 'travel': return <Plane size={16} />;
+    case 'kids': return <Baby size={16} />;
+    default: return <Sparkles size={16} />;
+  }
+};
 
 const DEMO_CATEGORIES: Category[] = [
   { id: 1, name: 'Еда и напитки', slug: 'food', sortOrder: 1, iconUrl: '🍕' },
@@ -161,7 +173,7 @@ export default function CouponCatalogPage() {
             className={`filter-chip ${activeCategory === cat.id ? 'filter-chip--active' : ''}`}
             onClick={() => { setActiveCategory(cat.id); setPage(0); }}
           >
-            {cat.iconUrl || '📁'} {cat.name}
+            <CategoryIcon slug={cat.slug} /> {cat.name}
           </button>
         ))}
       </div>

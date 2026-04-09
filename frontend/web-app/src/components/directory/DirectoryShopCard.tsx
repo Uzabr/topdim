@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Store, Tag } from 'lucide-react';
 import type { Shop } from '../../api/bazaars';
+import { useLocalePath } from '../../hooks/useLocalePath';
 import './DirectoryCards.css';
 
 interface Props {
@@ -9,10 +10,11 @@ interface Props {
 }
 
 export default function DirectoryShopCard({ shop, compact = false }: Props) {
+  const lp = useLocalePath();
   const CardWrapper: any = shop.isExternal ? 'a' : Link;
   const linkProps = shop.isExternal
     ? { href: `https://2gis.uz/search/${encodeURIComponent(shop.name)}`, target: '_blank', rel: 'noreferrer' }
-    : { to: `/shops/${shop.id}` };
+    : { to: lp(`/shops/${shop.id}`) };
 
   return (
     <CardWrapper {...linkProps} className={`dir-card dir-card--shop ${compact ? 'dir-card--compact' : ''}`}>
