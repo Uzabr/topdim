@@ -6,7 +6,8 @@
 .select-trigger {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
   padding: 6px 14px;
   border-radius: var(--radius-pill);
   font-size: var(--font-sm);
@@ -17,6 +18,12 @@
   white-space: nowrap;
   border: none;
   cursor: pointer;
+}
+
+.select-trigger-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .select-trigger:hover {
