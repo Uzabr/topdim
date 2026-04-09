@@ -115,6 +115,7 @@ export default function HomePage() {
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
+  const isMouseDown = useRef(false);
 
   const scrollCarousel = (dir: number) => {
     if (carouselRef.current) {
@@ -124,25 +125,32 @@ export default function HomePage() {
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!carouselRef.current) return;
-    setIsDragging(true);
+    isMouseDown.current = true;
+    setIsDragging(false);
     setStartX(e.pageX - carouselRef.current.offsetLeft);
     setScrollLeft(carouselRef.current.scrollLeft);
   };
 
   const handleMouseLeave = () => {
+    isMouseDown.current = false;
     setIsDragging(false);
   };
 
   const handleMouseUp = () => {
+    isMouseDown.current = false;
     setIsDragging(false);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !carouselRef.current) return;
-    e.preventDefault();
+    if (!isMouseDown.current || !carouselRef.current) return;
     const x = e.pageX - carouselRef.current.offsetLeft;
-    const walk = (x - startX) * 2; // scroll-fast
-    carouselRef.current.scrollLeft = scrollLeft - walk;
+    const diff = Math.abs(x - startX);
+    if (diff > 5) {
+      setIsDragging(true);
+      e.preventDefault();
+      const walk = (x - startX) * 2;
+      carouselRef.current.scrollLeft = scrollLeft - walk;
+    }
   };
 
   return (
