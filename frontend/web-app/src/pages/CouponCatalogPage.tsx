@@ -9,7 +9,7 @@ import './CouponCatalogPage.css';
 
 const DEMO_CATEGORIES: Category[] = [
   { id: 1, name: 'Еда и напитки', slug: 'food', sortOrder: 1, iconUrl: '🍕' },
-  { id: 2, name: 'Beauty', slug: 'beauty', sortOrder: 2, iconUrl: '💄' },
+  { id: 2, name: 'Красота', slug: 'beauty', sortOrder: 2, iconUrl: '💄' },
   { id: 3, name: 'Развлечения', slug: 'entertainment', sortOrder: 3, iconUrl: '🎮' },
   { id: 4, name: 'Здоровье и спорт', slug: 'health-sport', sortOrder: 4, iconUrl: '💪' },
   { id: 5, name: 'Услуги', slug: 'services', sortOrder: 5, iconUrl: '🔧' },
@@ -147,7 +147,7 @@ export default function CouponCatalogPage() {
       {/* Categories */}
       <div className="catalog-categories container">
         <button
-          className={`category-chip ${activeCategory === null ? 'category-chip--active' : ''}`}
+          className={`filter-chip ${activeCategory === null ? 'filter-chip--active' : ''}`}
           onClick={() => { setActiveCategory(null); setPage(0); }}
         >
           🔥 Все
@@ -155,7 +155,7 @@ export default function CouponCatalogPage() {
         {categories.map((cat) => (
           <button
             key={cat.id}
-            className={`category-chip ${activeCategory === cat.id ? 'category-chip--active' : ''}`}
+            className={`filter-chip ${activeCategory === cat.id ? 'filter-chip--active' : ''}`}
             onClick={() => { setActiveCategory(cat.id); setPage(0); }}
           >
             {cat.iconUrl || '📁'} {cat.name}

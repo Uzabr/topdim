@@ -7,6 +7,7 @@ import BottomNav from './components/layout/BottomNav';
 import Footer from './components/layout/Footer';
 import CartDrawer from './components/cart/CartDrawer';
 import CookieConsent from './components/ui/CookieConsent';
+import LimitModal from './components/ui/LimitModal';
 import HomePage from './pages/HomePage';
 import CouponCatalogPage from './pages/CouponCatalogPage';
 import CouponDetailPage from './pages/CouponDetailPage';
@@ -70,6 +71,7 @@ function AppContent() {
         <Footer />
         <BottomNav />
         <CartDrawer />
+        <LimitModal />
         <CookieConsent />
       </div>
     </BrowserRouter>

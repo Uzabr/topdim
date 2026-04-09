@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock3, MapPin, Star, Users } from 'lucide-react';
+import { Clock3, Star, Users } from 'lucide-react';
 import FavoriteButton from '../ui/FavoriteButton';
 import './CouponCard.css';
 
@@ -64,8 +64,6 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
       ? Math.round((1 - coupon.fromPrice / coupon.oldPrice) * 100)
       : 0);
 
-  const locationText = coupon.location || coupon.address || '';
-
   return (
     <Link to={`/coupons/${coupon.id}`} className={`coupon-card coupon-card--${layout}`}>
       {/* Image */}
@@ -80,21 +78,22 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
 
         <div className="coupon-card__overlay" />
 
-        {/* Location badge on image */}
-        {locationText && (
-          <span className="coupon-card__location">
-            <MapPin size={12} />
-            {locationText}
-          </span>
-        )}
+        {/* Top-left badges wrapper (Hot) */}
+        <div className="coupon-card__top-left">
+          {coupon.isHot && (
+            <span className="coupon-card__hot">
+              <span>🔥</span> Топ
+            </span>
+          )}
+        </div>
 
         {/* Discount badge */}
         {discount > 0 && (
           <span className="coupon-card__discount">до -{discount}%</span>
         )}
 
-        {/* Favorite button (includes Hot marker if isTop=true) */}
-        <FavoriteButton couponId={coupon.id} isTop={coupon.isHot} />
+        {/* Favorite button */}
+        <FavoriteButton couponId={coupon.id} />
 
         {/* Countdown */}
         {timeLeft && (

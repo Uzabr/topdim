@@ -29,7 +29,7 @@ export default function Footer() {
             <li><Link to="/coupons">Каталог купонов</Link></li>
             <li><Link to="/favorites">Избранное</Link></li>
             <li><Link to="/bazaar">Онлайн базар</Link></li>
-            <li><Link to="/favorites">Мои купоны</Link></li>
+            <li><Link to="/profile">Мои купоны</Link></li>
           </ul>
         </div>
 
