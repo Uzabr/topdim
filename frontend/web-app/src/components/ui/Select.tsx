@@ -53,8 +53,10 @@ export default function Select({
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        {triggerIcon}
-        <span>{selectedOption?.label}</span>
+        <span className="select-trigger-left">
+          {triggerIcon}
+          <span>{selectedOption?.label}</span>
+        </span>
         <ChevronDown
           size={14}
           className={`select-chevron ${open ? 'select-chevron--open' : ''}`}

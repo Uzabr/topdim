@@ -6,7 +6,7 @@ import Select from './Select';
 
 export default function CitySelector() {
   const { selectedCity, setCity, detectCity } = useCityStore();
-  const { i18n, t } = useTranslation();
+  const { i18n } = useTranslation();
 
   useEffect(() => {
     detectCity();
@@ -30,7 +30,6 @@ export default function CitySelector() {
         if (city) setCity(city);
       }}
       triggerIcon={<MapPin size={15} />}
-      headerTitle={t('header.city')}
       minWidth="180px"
     />
   );

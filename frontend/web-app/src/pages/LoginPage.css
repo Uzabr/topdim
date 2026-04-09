@@ -140,14 +140,19 @@
 }
 
 .input-wrapper {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  padding-bottom: 18px;
 }
 
 .invalid-feedback {
+  position: absolute;
+  bottom: 0;
+  left: 4px;
   color: var(--error-light, #ef4444);
   font-size: 12px;
   text-align: left;
-  margin-left: 4px;
+  line-height: 1;
+  white-space: nowrap;
 }

@@ -53,7 +53,7 @@ export default function SearchBar({
   const showDropdown = isFocused && normalizedInput.length > 0;
 
   return (
-    <div className="search-bar-container" style={{ position: 'relative', width: '100%', maxWidth: '600px' }}>
+    <div className="search-bar-container">
       <form className={`search-bar ${isFocused ? 'search-bar--focused' : ''}`} onSubmit={handleSubmit}>
         <Search size={18} className="search-bar__icon" />
         <input

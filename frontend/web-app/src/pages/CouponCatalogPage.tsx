@@ -5,6 +5,7 @@ import { couponsApi } from '../api/coupons';
 import type { Category, CouponOffer } from '../api/coupons';
 import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
+import Select from '../components/ui/Select';
 import './CouponCatalogPage.css';
 
 const DEMO_CATEGORIES: Category[] = [
@@ -26,11 +27,11 @@ export const DEMO_COUPONS: CouponOffer[] = [
 ];
 
 const SORT_OPTIONS = [
-  { value: 'popular', label: 'Популярные' },
-  { value: 'new', label: 'Новые' },
-  { value: 'price_asc', label: 'Сначала дешёвые' },
-  { value: 'price_desc', label: 'Сначала дорогие' },
-  { value: 'discount', label: 'По скидке' },
+  { id: 'popular', label: 'Популярные' },
+  { id: 'new', label: 'Новые' },
+  { id: 'price_asc', label: 'Сначала дешёвые' },
+  { id: 'price_desc', label: 'Сначала дорогие' },
+  { id: 'discount', label: 'По скидке' },
 ];
 
 function mapToCardData(coupon: CouponOffer): CouponCardData {
@@ -118,12 +119,14 @@ export default function CouponCatalogPage() {
         </div>
         <div className="catalog-toolbar">
           <div className="catalog-sort">
-            <SlidersHorizontal size={15} />
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+            <Select
+              options={SORT_OPTIONS}
+              value={sortBy}
+              onChange={(val) => setSortBy(val as string)}
+              triggerIcon={<SlidersHorizontal size={15} />}
+              minWidth="190px"
+              align="right"
+            />
           </div>
           <div className="catalog-view-toggle">
             <button
