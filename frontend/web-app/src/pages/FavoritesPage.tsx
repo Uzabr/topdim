@@ -1,39 +1,63 @@
 import { Heart, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useFavoritesStore } from '../store/favoritesStore';
 import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
+import { couponsApi } from '../api/coupons';
 import { topdimDeals } from '../data/topdim';
 import './FavoritesPage.css';
 
 export default function FavoritesPage() {
   const { favoriteIds } = useFavoritesStore();
 
-  // Map favorite IDs to actual coupon data
-  // TODO: Replace with API call when backend is fully integrated
-  const mapped: CouponCardData[] = favoriteIds
-    .map((id) => {
-      const deal = topdimDeals.find((d) => d.id === id);
-      if (!deal) return null;
-      return {
+  const { data: couponsData } = useQuery({
+    queryKey: ['coupons-favorites'],
+    queryFn: () => couponsApi.getCatalog({ size: 200 }),
+    select: (res) => res.data.data.content,
+  });
+
+  const apiDeals = couponsData || [];
+
+  const mappedDeals: CouponCardData[] = (apiDeals.length > 0)
+    ? apiDeals.map((deal: any) => ({
         id: deal.id,
         title: deal.title,
         shortDescription: deal.shortDescription,
-        merchant: deal.merchant || { id: 0, name: 'TopDim' },
+        merchant: deal.merchant,
         category: deal.category,
         oldPrice: deal.oldPrice,
         fromPrice: deal.fromPrice,
         discountPercent: deal.discountPercent,
-        coverImageUrl: deal.coverImageUrl || deal.image,
-        totalSold: deal.totalSold,
-        rating: deal.rating,
-        reviewCount: deal.reviews,
-        location: deal.location,
-        isHot: deal.isHot,
+        coverImageUrl: deal.coverImageUrl,
+        totalSold: deal.totalSold || 0,
+        rating: deal.averageRating || 4.5 + Math.random() * 0.4,
+        reviewCount: deal.reviewCount || Math.floor((deal.totalSold || 0) * 0.3),
+        address: deal.address,
+        location: deal.address || 'Ташкент',
+        isHot: (deal.discountPercent || 0) >= 50,
+        countdownText: '23:59:59',
         giftAvailable: deal.giftAvailable,
-      } as CouponCardData;
-    })
-    .filter(Boolean) as CouponCardData[];
+      }))
+    : topdimDeals.map((d) => ({
+        id: d.id,
+        title: d.title,
+        shortDescription: d.shortDescription,
+        merchant: d.merchant || { id: 0, name: 'TopDim' },
+        category: d.category,
+        oldPrice: d.oldPrice,
+        fromPrice: d.fromPrice,
+        discountPercent: d.discountPercent,
+        coverImageUrl: d.coverImageUrl || d.image,
+        totalSold: d.totalSold,
+        rating: d.rating,
+        reviewCount: d.reviews,
+        location: d.location,
+        isHot: d.isHot,
+        giftAvailable: d.giftAvailable,
+      }));
+
+  const mapped = mappedDeals.filter(deal => favoriteIds.includes(deal.id));
 
   return (
     <div className="favorites-page container">

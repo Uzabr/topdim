@@ -199,6 +199,7 @@ export default function BazaarMapPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Поиск по базарам и магазинам…"
+              className="input-field"
               aria-label="Поиск"
             />
           </div>
@@ -207,7 +208,7 @@ export default function BazaarMapPage() {
             {TYPE_OPTIONS.map((t) => (
               <button
                 key={t}
-                className={`dir-filter-chip ${bazaarTypeFilter === t ? 'dir-filter-chip--active' : ''}`}
+                className={`filter-chip ${bazaarTypeFilter === t ? 'filter-chip--active' : ''}`}
                 onClick={() => setBazaarTypeFilter(t)}
               >
                 {TYPE_LABELS[t]}
