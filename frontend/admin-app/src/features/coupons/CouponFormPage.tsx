@@ -53,6 +53,7 @@ export const CouponFormPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { message, modal } = App.useApp();
+  const userRole = useAuthStore((s) => s.user?.role) || 'MODERATOR';
 
   // Загружаем существующий купон (только в режиме редактирования)
   const { data: existingCoupon, isLoading: isCouponLoading } = useQuery({
@@ -154,9 +155,9 @@ export const CouponFormPage = () => {
       return data;
     },
     onSuccess: () => {
-      message.success('Купон успешно создан и опубликован!');
+      message.success('Купон создан как LEAD и ожидает обработки');
       queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
-      navigate('/moderation/coupons');
+      navigate('/moderation/coupons/kanban');
     },
     onError: (err: any) => {
       message.error(err.response?.data?.message || 'Ошибка создания купона');
@@ -190,15 +191,15 @@ export const CouponFormPage = () => {
 
   const onFinish = (values: CouponFormData) => {
     modal.confirm({
-      title: isEditMode ? 'Подтверждение сохранения' : 'Подтверждение публикации',
+      title: isEditMode ? 'Подтверждение сохранения' : 'Подтверждение создания',
       icon: <ExclamationCircleOutlined />,
       content: (
         <div>
           <p>Внимательно проверьте все данные. У купона должна быть картинка и правильные цены.</p>
-          <Text type="danger">{isEditMode ? 'Сохранить изменения?' : 'Публикуем купон?'}</Text>
+          <Text type="danger">{isEditMode ? 'Сохранить изменения?' : 'Создать купон?'}</Text>
         </div>
       ),
-      okText: isEditMode ? 'Да, сохранить' : 'Да, опубликовать',
+      okText: isEditMode ? 'Да, сохранить' : 'Да, создать',
       cancelText: 'Отмена',
       onOk: () => {
         if (isEditMode) {
@@ -227,8 +228,8 @@ export const CouponFormPage = () => {
             {isEditMode ? `Редактировать купон #${id}` : 'Создать купон'}
           </Title>
         </Space>
-        <Tag color={isEditMode ? 'blue' : 'green'}>
-          {isEditMode ? 'Редактирование' : 'Публикуется активно'}
+        <Tag color={isEditMode ? 'blue' : 'default'}>
+          {isEditMode ? 'Редактирование' : 'Новый купон → LEAD'}
         </Tag>
       </div>
 
@@ -262,22 +263,37 @@ export const CouponFormPage = () => {
                   <Form.Item
                     name="merchantId"
                     label="Партнер (Мерчант)"
+                    rules={[{ required: true, message: 'Партнёр обязателен' }]}
                   >
-                    <Space.Compact style={{ width: '100%' }}>
+                    {userRole === 'MODERATOR' ? (
                       <Select 
-                        placeholder="Выберите партнера или оставьте пустым" 
+                        placeholder="Выберите партнера" 
                         loading={isMerchantsLoading}
                         allowClear
                         showSearch
                         optionFilterProp="children"
-                        style={{ width: 'calc(100% - 40px)' }}
                       >
                         {merchants?.map((m: any) => (
                           <Select.Option key={m.id} value={m.id}>{m.name}</Select.Option>
                         ))}
                       </Select>
-                      <Button icon={<PlusOutlined />} onClick={() => setIsMerchantModalOpen(true)} title="Добавить нового партнера" />
-                    </Space.Compact>
+                    ) : (
+                      <Space.Compact style={{ width: '100%' }}>
+                        <Select 
+                          placeholder="Выберите партнера" 
+                          loading={isMerchantsLoading}
+                          allowClear
+                          showSearch
+                          optionFilterProp="children"
+                          style={{ width: 'calc(100% - 40px)' }}
+                        >
+                          {merchants?.map((m: any) => (
+                            <Select.Option key={m.id} value={m.id}>{m.name}</Select.Option>
+                          ))}
+                        </Select>
+                        <Button icon={<PlusOutlined />} onClick={() => setIsMerchantModalOpen(true)} title="Добавить нового партнера" />
+                      </Space.Compact>
+                    )}
                   </Form.Item>
                 </Col>
                 <Col span={12}>
@@ -549,7 +565,7 @@ export const CouponFormPage = () => {
                   loading={isSaving}
                   style={{ marginTop: 24 }}
                 >
-                  {isEditMode ? 'Сохранить изменения' : 'Опубликовать купон'}
+                  {isEditMode ? 'Сохранить изменения' : 'Создать купон'}
                 </Button>
               </Form.Item>
             </Col>

@@ -38,6 +38,9 @@ public class CouponOfferResponse {
     private String workingHours;
     private boolean giftAvailable;
     private String status;
+    private Long assignedModeratorId;
+    private String assignedModeratorName;
+    private String revisionComment;
     private int totalSold;
     private int viewCount;
     private Double averageRating;

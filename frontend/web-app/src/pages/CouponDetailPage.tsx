@@ -339,44 +339,61 @@ export default function CouponDetailPage() {
           {/* Options */}
           <div className="detail-options" ref={optionsRef}>
             <h2 className="detail-section-title">Выберите сертификат</h2>
-            {c.options.map((opt) => {
-              const remaining = opt.quantityLimit ? opt.quantityLimit - opt.quantitySold : null;
-              const soldPct = opt.quantityLimit ? (opt.quantitySold / opt.quantityLimit) * 100 : 0;
+            {(() => {
+              // Если нет вариантов, создаём fallback из базовых цен купона
+              const displayOptions: CouponOption[] = c.options && c.options.length > 0
+                ? c.options
+                : [{
+                    id: 0,
+                    title: c.title,
+                    regularPrice: c.oldPrice || c.fromPrice,
+                    couponPrice: c.fromPrice,
+                    quantityLimit: 0,
+                    quantitySold: c.totalSold || 0,
+                    status: 'ACTIVE',
+                  }];
 
-              return (
-                <div key={opt.id} className="detail-option">
-                  <div className="detail-option__info">
-                    <h3>{opt.title}</h3>
-                    <span className="detail-option__bought">
-                      <Users size={14} />
-                      Купили {opt.quantitySold.toLocaleString('ru-RU')} человек
-                    </span>
-                    <div className="detail-option__pricing">
-                      <span className="detail-option__price">{formatPrice(opt.couponPrice)}</span>
-                      <span className="detail-option__old">{formatPrice(opt.regularPrice)}</span>
-                    </div>
-                    {remaining !== null && (
-                      <div className="detail-option__stock">
-                        <div className="detail-option__progress">
-                          <div className="detail-option__progress-fill" style={{ width: `${soldPct}%` }} />
-                        </div>
-                        <span>Осталось {remaining} шт.</span>
+              return displayOptions.map((opt) => {
+                const remaining = opt.quantityLimit ? opt.quantityLimit - opt.quantitySold : null;
+                const soldPct = opt.quantityLimit ? (opt.quantitySold / opt.quantityLimit) * 100 : 0;
+
+                return (
+                  <div key={opt.id} className="detail-option">
+                    <div className="detail-option__info">
+                      <h3>{opt.title}</h3>
+                      <span className="detail-option__bought">
+                        <Users size={14} />
+                        Купили {opt.quantitySold.toLocaleString('ru-RU')} человек
+                      </span>
+                      <div className="detail-option__pricing">
+                        <span className="detail-option__price">{formatPrice(opt.couponPrice)}</span>
+                        {opt.regularPrice !== opt.couponPrice && (
+                          <span className="detail-option__old">{formatPrice(opt.regularPrice)}</span>
+                        )}
                       </div>
-                    )}
+                      {remaining !== null && (
+                        <div className="detail-option__stock">
+                          <div className="detail-option__progress">
+                            <div className="detail-option__progress-fill" style={{ width: `${soldPct}%` }} />
+                          </div>
+                          <span>Осталось {remaining} шт.</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="detail-option__buttons">
+                      <button className="detail-option__btn detail-option__btn--buy" onClick={() => handleBuyNow(opt)}>
+                        <CreditCard size={15} />
+                        Купить
+                      </button>
+                      <button className="detail-option__btn detail-option__btn--cart" onClick={() => handleAddToCart(opt)}>
+                        <ShoppingCart size={15} />
+                        В корзину
+                      </button>
+                    </div>
                   </div>
-                  <div className="detail-option__buttons">
-                    <button className="detail-option__btn detail-option__btn--buy" onClick={() => handleBuyNow(opt)}>
-                      <CreditCard size={15} />
-                      Купить
-                    </button>
-                    <button className="detail-option__btn detail-option__btn--cart" onClick={() => handleAddToCart(opt)}>
-                      <ShoppingCart size={15} />
-                      В корзину
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
 
           {/* Related deals */}

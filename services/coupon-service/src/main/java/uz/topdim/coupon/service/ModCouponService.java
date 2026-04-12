@@ -29,28 +29,31 @@ public class ModCouponService {
 
     @Transactional(readOnly = true)
     public Page<CouponOfferResponse> getPendingCoupons(Pageable pageable) {
-        return couponOfferRepository.findAllByStatus(CouponStatus.PENDING_REVIEW, pageable)
+        return couponOfferRepository.findAllByStatus(CouponStatus.WAITING_FOR_MERCHANT, pageable)
                 .map(couponOfferService::mapToResponse);
     }
 
     @Transactional
     public void reviewCoupon(Long modId, Long couponId, String decision, String reason) {
-        CouponOffer coupon = couponOfferRepository.findById(couponId)
-                .orElseThrow(() -> new RuntimeException("Купон не найден"));
-
         if ("APPROVE".equalsIgnoreCase(decision)) {
-            coupon.setStatus(CouponStatus.ACTIVE);
-            sendNotification(coupon.getMerchant().getUserId(), "Купон одобрен", 
-                    "Ваш купон '" + coupon.getTitle() + "' был успешно промодерирован и опубликован.", "SUCCESS");
+            // Делегируем — валидация State Machine (WAITING_FOR_MERCHANT → ACTIVE) внутри
+            couponOfferService.approveByMerchant(couponId);
         } else if ("REJECT".equalsIgnoreCase(decision)) {
-            coupon.setStatus(CouponStatus.REJECTED);
-            sendNotification(coupon.getMerchant().getUserId(), "Купон отклонен", 
-                    "Ваш купон '" + coupon.getTitle() + "' был отклонен. Причина: " + reason, "ALERT");
+            // Делегируем — валидация + сохранение revisionComment внутри
+            couponOfferService.requestRevisionByMerchant(couponId, reason);
         } else {
             throw new IllegalArgumentException("Unknown decision: " + decision);
         }
-        
-        couponOfferRepository.save(coupon);
+
+        // Отправляем уведомление после успешного перехода
+        CouponOffer coupon = couponOfferRepository.findById(couponId).orElseThrow();
+        if ("APPROVE".equalsIgnoreCase(decision)) {
+            sendNotification(coupon.getMerchant().getUserId(), "Купон одобрен",
+                    "Ваш купон '" + coupon.getTitle() + "' был успешно промодерирован и опубликован.", "SUCCESS");
+        } else {
+            sendNotification(coupon.getMerchant().getUserId(), "Купон отклонен",
+                    "Ваш купон '" + coupon.getTitle() + "' был отклонен. Причина: " + reason, "ALERT");
+        }
     }
 
     @Transactional(readOnly = true)

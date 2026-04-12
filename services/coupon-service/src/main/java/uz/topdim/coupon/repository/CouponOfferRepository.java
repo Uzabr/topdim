@@ -3,6 +3,7 @@ package uz.topdim.coupon.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import uz.topdim.coupon.entity.CouponOffer;
@@ -40,4 +41,8 @@ public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> 
     Page<CouponOffer> findByMerchantId(Long merchantId, Pageable pageable);
 
     Page<CouponOffer> findByMerchantIdAndStatus(Long merchantId, CouponStatus status, Pageable pageable);
+
+    @Modifying
+    @Query("UPDATE CouponOffer c SET c.viewCount = c.viewCount + 1 WHERE c.id = :id")
+    void incrementViewCount(@Param("id") Long id);
 }

@@ -37,8 +37,8 @@ public class CouponOffer {
     @Column(name = "full_description", columnDefinition = "TEXT")
     private String fullDescription;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "merchant_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "merchant_id", nullable = false)
     private Merchant merchant;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -82,6 +82,15 @@ public class CouponOffer {
 
     @Column(name = "is_gift_available")
     private boolean giftAvailable;
+
+    @Column(name = "assigned_moderator_id")
+    private Long assignedModeratorId;
+
+    @Column(name = "assigned_moderator_name")
+    private String assignedModeratorName;
+
+    @Column(name = "revision_comment", columnDefinition = "TEXT")
+    private String revisionComment;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
