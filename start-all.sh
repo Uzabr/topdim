@@ -24,8 +24,7 @@ INFRA_SERVICES=(
 )
 
 BACKEND_SERVICES=(
-  "services:auth-service:8081"
-  "services:user-service:8082"
+  "services:identity-service:8081"
   "services:coupon-service:8083"
   "services:order-service:8084"
   "services:payment-service:8085"

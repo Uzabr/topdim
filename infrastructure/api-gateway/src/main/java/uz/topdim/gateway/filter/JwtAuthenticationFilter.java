@@ -16,6 +16,7 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import uz.topdim.gateway.service.ReactiveTokenValidationService;
 
 import javax.crypto.SecretKey;
 import java.util.List;
@@ -23,15 +24,16 @@ import java.util.Set;
 
 /**
  * Фильтр JWT аутентификации в API Gateway.
- * Извлекает токен из Authorization header, валидирует
+ * Извлекает токен из Authorization header, валидирует подпись и срок действия,
+ * проверяет jti blacklist и securityVersion через Redis,
  * и пробрасывает X-User-Id, X-User-Email, X-User-Role в downstream сервисы.
  *
- * <p>Строгая безопасность:
+ * <p>JWT контракт:
  * <ul>
- *   <li>Проверяет подпись и срок действия JWT</li>
- *   <li>Валидирует что роль из whitelist допустимых значений</li>
- *   <li>Проверяет права доступа к /api/v1/admin/** (только ADMIN, SUPER_ADMIN)</li>
- *   <li>Очищает X-User-* заголовки из внешних запросов (защита от подделки)</li>
+ *   <li>sub = userId (строка)</li>
+ *   <li>jti = UUID (для blacklist при logout)</li>
+ *   <li>email, role — информационные claims</li>
+ *   <li>securityVersion — для массовой инвалидации при block/change-role/change-password</li>
  * </ul>
  */
 @Component
@@ -40,10 +42,22 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    private final ReactiveTokenValidationService tokenValidationService;
+
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
+    private static final Set<String> OPEN_AUTH_ENDPOINTS = Set.of(
+            "/api/v1/auth/login",
+            "/api/v1/auth/register",
+            "/api/v1/auth/refresh",
+            "/api/v1/auth/logout",
+            "/api/v1/auth/guest",
+            "/api/v1/auth/password-reset/request",
+            "/api/v1/auth/password-reset/confirm",
+            "/api/v1/auth/confirm/email"
+    );
+
     private static final List<String> OPEN_ENDPOINTS = List.of(
-            "/api/v1/auth/",
             "/api/v1/coupons",
             "/api/v1/categories",
             "/api/v1/bazaars",
@@ -61,6 +75,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     /** Роли, которым разрешён доступ к /api/v1/admin/**. */
     private static final Set<String> ADMIN_ROLES = Set.of("ADMIN", "SUPER_ADMIN", "MODERATOR");
+
+    public JwtAuthenticationFilter(ReactiveTokenValidationService tokenValidationService) {
+        this.tokenValidationService = tokenValidationService;
+    }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -89,47 +107,62 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         String token = authHeader.substring(7);
+        Claims claims;
         try {
-            Claims claims = validateToken(token);
-
-            String userId = claims.getSubject();
-            String email = claims.get("email", String.class);
-            String role = claims.get("role", String.class);
-
-            // Строгая валидация роли из JWT
-            if (role == null || !VALID_ROLES.contains(role)) {
-                log.warn("Invalid role '{}' in JWT for userId: {}", role, userId);
-                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
-                return exchange.getResponse().setComplete();
-            }
-
-            // Проверка доступа к admin endpoints
-            if (path.startsWith("/api/v1/admin/") && !ADMIN_ROLES.contains(role)) {
-                log.warn("Access denied to {} for userId: {} with role: {}", path, userId, role);
-                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
-                return exchange.getResponse().setComplete();
-            }
-
-            // Проверка доступа к super admin endpoints (только SUPER_ADMIN)
-            if (path.startsWith("/api/v1/super/") && !"SUPER_ADMIN".equals(role)) {
-                log.warn("Access denied to super admin endpoint {} for userId: {} with role: {}", path, userId, role);
-                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
-                return exchange.getResponse().setComplete();
-            }
-
-            // Forward user info to downstream services (заголовки теперь только от Gateway)
-            ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
-                    .header("X-User-Id", userId)
-                    .header("X-User-Email", email)
-                    .header("X-User-Role", role)
-                    .build();
-
-            return chain.filter(exchange.mutate().request(modifiedRequest).build());
+            claims = validateToken(token);
         } catch (Exception e) {
             log.warn("JWT validation failed for path {}: {}", path, e.getMessage());
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
+
+        // JWT контракт: sub = userId
+        String userId = claims.getSubject();
+        String email = claims.get("email", String.class);
+        String role = claims.get("role", String.class);
+        String jti = claims.getId();
+        Long securityVersion = claims.get("securityVersion", Long.class);
+
+        // Строгая валидация роли из JWT
+        if (role == null || !VALID_ROLES.contains(role)) {
+            log.warn("Invalid role '{}' in JWT for userId: {}", role, userId);
+            exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+            return exchange.getResponse().setComplete();
+        }
+
+        // Проверка доступа к admin endpoints
+        if (path.startsWith("/api/v1/admin/") && !ADMIN_ROLES.contains(role)) {
+            log.warn("Access denied to {} for userId: {} with role: {}", path, userId, role);
+            exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+            return exchange.getResponse().setComplete();
+        }
+
+        // Проверка доступа к super admin endpoints (только SUPER_ADMIN)
+        if (path.startsWith("/api/v1/super/") && !"SUPER_ADMIN".equals(role)) {
+            log.warn("Access denied to super admin endpoint {} for userId: {} with role: {}", path, userId, role);
+            exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+            return exchange.getResponse().setComplete();
+        }
+
+        // Реактивная проверка через Redis: jti blacklist + securityVersion
+        ServerWebExchange finalExchange = exchange;
+        return tokenValidationService.isTokenInvalid(jti, userId, securityVersion)
+                .flatMap(invalid -> {
+                    if (invalid) {
+                        log.warn("Token invalidated via Redis for userId: {}, jti: {}", userId, jti);
+                        finalExchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                        return finalExchange.getResponse().setComplete();
+                    }
+
+                    // Forward user info to downstream services
+                    ServerHttpRequest modifiedRequest = finalExchange.getRequest().mutate()
+                            .header("X-User-Id", userId)
+                            .header("X-User-Email", email)
+                            .header("X-User-Role", role)
+                            .build();
+
+                    return chain.filter(finalExchange.mutate().request(modifiedRequest).build());
+                });
     }
 
     private Claims validateToken(String token) {
@@ -144,6 +177,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private boolean isOpenEndpoint(ServerWebExchange exchange) {
         String path = exchange.getRequest().getURI().getPath();
         String method = exchange.getRequest().getMethod().name();
+
+        if (OPEN_AUTH_ENDPOINTS.contains(path)) {
+            return true;
+        }
 
         // Специфичное правило для медиа:
         // Скачивание (GET) открыто для всех, Upload (POST) и Delete (DELETE) требуют токен

@@ -10,8 +10,7 @@ include 'shared:common-dto'
 include 'shared:common-events'
 
 // Microservices
-include 'services:auth-service'
-include 'services:user-service'
+include 'services:identity-service'
 include 'services:coupon-service'
 include 'services:order-service'
 include 'services:payment-service'

@@ -1,0 +1,91 @@
+package uz.topdim.identity.service;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import uz.topdim.identity.dto.UpdateProfileRequest;
+import uz.topdim.identity.dto.UserProfileResponse;
+import uz.topdim.identity.entity.Role;
+import uz.topdim.identity.entity.User;
+import uz.topdim.identity.exception.UserNotFoundException;
+import uz.topdim.identity.repository.FavoriteRepository;
+import uz.topdim.identity.repository.UserRepository;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class UserServiceTest {
+
+    @Mock private UserRepository userRepository;
+    @Mock private FavoriteRepository favoriteRepository;
+
+    @InjectMocks
+    private UserService userService;
+
+    private User createUser() {
+        return User.builder()
+                .id(1L)
+                .email("user@topdim.uz")
+                .phone("+998901234567")
+                .firstName("Ali")
+                .lastName("Valiyev")
+                .role(Role.USER)
+                .enabled(true)
+                .emailVerified(true)
+                .phoneVerified(false)
+                .build();
+    }
+
+    @Test
+    @DisplayName("updateProfile: не даёт установить телефон, уже занятый другим пользователем")
+    void updateProfile_duplicatePhone_throws() {
+        User user = createUser();
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setPhone("+998909999999");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByPhone("+998909999999")).thenReturn(true);
+
+        assertThatThrownBy(() -> userService.updateProfile(1L, request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Телефон уже зарегистрирован");
+
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("updateProfile: нормализует телефон перед сохранением")
+    void updateProfile_normalizesPhoneBeforeSave() {
+        User user = createUser();
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setPhone(" +998901112233 ");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByPhone("+998901112233")).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserProfileResponse response = userService.updateProfile(1L, request);
+
+        assertThat(response.getPhone()).isEqualTo("+998901112233");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("getProfile: несуществующий пользователь -> UserNotFoundException")
+    void getProfile_notFound_throws() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.getProfile(999L))
+                .isInstanceOf(UserNotFoundException.class);
+    }
+}

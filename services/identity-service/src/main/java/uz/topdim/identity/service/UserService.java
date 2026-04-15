@@ -1,0 +1,193 @@
+package uz.topdim.identity.service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import uz.topdim.identity.dto.*;
+import uz.topdim.identity.entity.Favorite;
+import uz.topdim.identity.entity.Role;
+import uz.topdim.identity.entity.User;
+import uz.topdim.identity.exception.UserNotFoundException;
+import uz.topdim.identity.repository.FavoriteRepository;
+import uz.topdim.identity.repository.RefreshTokenRepository;
+import uz.topdim.identity.repository.UserRepository;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Сервис управления пользователями.
+ * Получение/обновление профиля, управление избранным.
+ * Admin: список пользователей, блокировка.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class UserService {
+
+    private final UserRepository userRepository;
+    private final FavoriteRepository favoriteRepository;
+    private final SecurityVersionService securityVersionService;
+    private final RefreshTokenRepository refreshTokenRepository;
+
+    // ==================== Profile ====================
+
+    @Transactional(readOnly = true)
+    public UserProfileResponse getProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
+        return mapToProfile(user);
+    }
+
+    @Transactional
+    public UserProfileResponse updateProfile(Long userId, UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
+
+        if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) user.setLastName(request.getLastName());
+        if (request.getPhone() != null) {
+            String normalizedPhone = normalizePhone(request.getPhone());
+            if (normalizedPhone != null
+                    && !normalizedPhone.equals(user.getPhone())
+                    && userRepository.existsByPhone(normalizedPhone)) {
+                throw new IllegalStateException("Телефон уже зарегистрирован");
+            }
+            user.setPhone(normalizedPhone);
+        }
+        if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
+
+        user = userRepository.save(user);
+        return mapToProfile(user);
+    }
+
+    // ==================== Favorites ====================
+
+    @Transactional(readOnly = true)
+    public List<FavoriteResponse> getFavorites(Long userId) {
+        return favoriteRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::mapToFavorite)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public FavoriteResponse addFavorite(Long userId, Long couponOfferId) {
+        if (favoriteRepository.existsByUserIdAndCouponOfferId(userId, couponOfferId)) {
+            throw new IllegalStateException("Купон уже в избранном");
+        }
+        Favorite favorite = Favorite.builder().userId(userId).couponOfferId(couponOfferId).build();
+        favorite = favoriteRepository.save(favorite);
+        return mapToFavorite(favorite);
+    }
+
+    @Transactional
+    public void removeFavorite(Long userId, Long couponOfferId) {
+        favoriteRepository.deleteByUserIdAndCouponOfferId(userId, couponOfferId);
+    }
+
+    // ==================== Admin ====================
+
+    @Transactional(readOnly = true)
+    public Page<AdminUserResponse> getAllUsers(String role, String search, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        Page<User> users;
+        if (search != null && !search.isBlank()) {
+            users = userRepository.searchByEmailOrName(search.trim(), pageable);
+        } else if (role != null && !role.isBlank()) {
+            users = userRepository.findByRole(Role.valueOf(role.toUpperCase()), pageable);
+        } else {
+            users = userRepository.findAll(pageable);
+        }
+
+        return users.map(this::mapToAdminUser);
+    }
+
+    @Transactional
+    public AdminUserResponse blockUser(Long userId, boolean blocked) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
+
+        // Защита: нельзя блокировать админов
+        if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN) {
+            throw new IllegalStateException("Невозможно заблокировать администратора");
+        }
+
+        user.setEnabled(!blocked);
+
+        // Bump securityVersion — мгновенная инвалидация всех access tokens
+        user.setSecurityVersion(user.getSecurityVersion() + 1);
+        user = userRepository.save(user);
+
+        // Publish to Redis for gateway
+        securityVersionService.publishSecurityVersion(user.getId(), user.getSecurityVersion());
+
+        // При блокировке — revoke все refresh tokens
+        if (blocked) {
+            refreshTokenRepository.revokeAllByUser(user);
+        }
+
+        log.info("ADMIN: Пользователь {} (email: {}) {}, securityVersion={}",
+                userId, user.getEmail(),
+                blocked ? "заблокирован" : "разблокирован",
+                user.getSecurityVersion());
+
+        return mapToAdminUser(user);
+    }
+
+    @Transactional(readOnly = true)
+    public AdminUserResponse getUserByIdAdmin(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
+        return mapToAdminUser(user);
+    }
+
+    // ==================== Mapping ====================
+
+    private UserProfileResponse mapToProfile(User user) {
+        return UserProfileResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .role(user.getRole().name())
+                .avatarUrl(user.getAvatarUrl())
+                .emailVerified(user.isEmailVerified())
+                .phoneVerified(user.isPhoneVerified())
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+
+    private AdminUserResponse mapToAdminUser(User user) {
+        return AdminUserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .role(user.getRole().name())
+                .enabled(user.isEnabled())
+                .emailVerified(user.isEmailVerified())
+                .phoneVerified(user.isPhoneVerified())
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+
+    private FavoriteResponse mapToFavorite(Favorite favorite) {
+        return FavoriteResponse.builder()
+                .id(favorite.getId())
+                .couponOfferId(favorite.getCouponOfferId())
+                .createdAt(favorite.getCreatedAt())
+                .build();
+    }
+
+    private String normalizePhone(String phone) {
+        String normalized = phone.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+}

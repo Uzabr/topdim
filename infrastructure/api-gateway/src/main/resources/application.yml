@@ -11,7 +11,7 @@ spring:
       routes:
         # Auth Service — login (строгий rate limit: 2 req/sec, burst 3)
         - id: auth-login
-          uri: lb://auth-service
+          uri: lb://identity-service
           predicates:
             - Path=/api/v1/auth/login
           filters:
@@ -25,7 +25,7 @@ spring:
 
         # Auth Service — register (строже: 1 req/sec, burst 2)
         - id: auth-register
-          uri: lb://auth-service
+          uri: lb://identity-service
           predicates:
             - Path=/api/v1/auth/register
           filters:
@@ -37,22 +37,22 @@ spring:
                 key-resolver: "#{@ipKeyResolver}"
                 deny-empty-key: false
 
-        # Auth Service — остальные endpoints (refresh, logout, change-password, super admin)
-        - id: auth-service
-          uri: lb://auth-service
+        # Identity Service — остальные endpoints (refresh, logout, change-password, super admin)
+        - id: identity-service-auth
+          uri: lb://identity-service
           predicates:
             - Path=/api/v1/auth/**, /api/v1/super/**
 
-        # User Service — заявки партнёров (публичный, без JWT)
-        - id: user-service-partner-applications
-          uri: lb://user-service
+        # Identity Service — заявки партнёров (публичный, без JWT)
+        - id: identity-service-partner-applications
+          uri: lb://identity-service
           predicates:
             - Path=/api/v1/partners/applications
             - Method=POST
 
-        # User Service
-        - id: user-service
-          uri: lb://user-service
+        # Identity Service — users, admin, partner staff
+        - id: identity-service-users
+          uri: lb://identity-service
           predicates:
             - Path=/api/v1/users/**, /api/v1/admin/users/**, /api/v1/partner/staff/**, /api/v1/admin/partner-applications/**
 

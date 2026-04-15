@@ -1,4 +1,5 @@
 -- Create databases for each service
+CREATE DATABASE topdim_identity;
 CREATE DATABASE topdim_coupon;
 CREATE DATABASE topdim_order;
 CREATE DATABASE topdim_bazaar;
@@ -8,6 +9,7 @@ CREATE DATABASE topdim_notification;
 
 -- Grant privileges
 GRANT ALL PRIVILEGES ON DATABASE topdim_auth TO topdim;
+GRANT ALL PRIVILEGES ON DATABASE topdim_identity TO topdim;
 GRANT ALL PRIVILEGES ON DATABASE topdim_coupon TO topdim;
 GRANT ALL PRIVILEGES ON DATABASE topdim_order TO topdim;
 GRANT ALL PRIVILEGES ON DATABASE topdim_bazaar TO topdim;
