@@ -42,7 +42,7 @@ public class CouponOffer {
     private Merchant merchant;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(name = "category_id")
     private Category category;
 
     @Column(name = "old_price", precision = 12, scale = 2)

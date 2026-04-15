@@ -36,6 +36,7 @@ class CouponOfferServiceTest {
     @Mock private ReviewRepository reviewRepository;
     @Mock private CouponImageRepository couponImageRepository;
     @Mock private EntityManager entityManager;
+    @Mock private TelegramPreviewService telegramPreviewService;
 
     @InjectMocks
     private CouponOfferService couponOfferService;

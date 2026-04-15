@@ -54,7 +54,7 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/v1/users/**, /api/v1/admin/users/**, /api/v1/partner/staff/**
+            - Path=/api/v1/users/**, /api/v1/admin/users/**, /api/v1/partner/staff/**, /api/v1/admin/partner-applications/**
 
         # Coupon Service — bot webhook (approve/reject, защищён X-Bot-Api-Key)
         - id: coupon-service-bot

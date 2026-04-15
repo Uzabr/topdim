@@ -37,6 +37,7 @@ public class CouponOfferService {
     private final CategoryRepository categoryRepository;
     private final ReviewRepository reviewRepository;
     private final EntityManager entityManager;
+    private final TelegramPreviewService telegramPreviewService;
 
     // ==================== Public API ====================
 
@@ -234,7 +235,8 @@ public class CouponOfferService {
 
         log.info("Купон #{} отправлен на согласование мерчанту #{}", id, offer.getMerchant().getId());
 
-        // TODO: Здесь будет вызов сервиса отправки сообщения в Telegram
+        // Отправляем превью в Telegram мерчанту
+        telegramPreviewService.sendPreview(offer);
 
         return mapToResponse(offer);
     }
@@ -556,12 +558,12 @@ public class CouponOfferService {
                         .name(offer.getMerchant().getName())
                         .logoUrl(offer.getMerchant().getLogoUrl())
                         .build() : null)
-                .category(CouponOfferResponse.CategorySummary.builder()
+                .category(offer.getCategory() != null ? CouponOfferResponse.CategorySummary.builder()
                         .id(offer.getCategory().getId())
                         .name(offer.getCategory().getName())
                         .slug(offer.getCategory().getSlug())
                         .iconUrl(offer.getCategory().getIconUrl())
-                        .build())
+                        .build() : null)
                 .oldPrice(offer.getOldPrice())
                 .fromPrice(offer.getFromPrice())
                 .discountPercent(offer.getDiscountPercent())
@@ -610,5 +612,44 @@ public class CouponOfferService {
             default -> Sort.by("totalSold").descending();
         };
         return PageRequest.of(page, size, sort);
+    }
+
+    @Transactional
+    public void createLeadFromBot(BotLeadRequest request) {
+        Merchant merchant = null;
+        if (request.getTelegramChatId() != null && !request.getTelegramChatId().isEmpty()) {
+            merchant = merchantRepository.findByTelegramChatId(request.getTelegramChatId()).orElse(null);
+        }
+        if (merchant == null && request.getPhone() != null && !request.getPhone().isEmpty()) {
+            merchant = merchantRepository.findByPhone(request.getPhone()).orElse(null);
+        }
+
+        if (merchant == null) {
+            merchant = Merchant.builder()
+                    .name(request.getCompanyName() != null ? request.getCompanyName() : "Unknown Lead")
+                    .phone(request.getPhone())
+                    .contactPerson((request.getFirstName() != null ? request.getFirstName() : "") + " " + 
+                                   (request.getLastName() != null ? request.getLastName() : ""))
+                    .telegramChatId(request.getTelegramChatId())
+                    .website(request.getSourceLink())
+                    .active(false)
+                    .build();
+            merchant = merchantRepository.save(merchant);
+        }
+
+        String fullDesc = request.getPromoDescription() != null ? request.getPromoDescription() : "";
+        if (request.getVoiceFileId() != null && !request.getVoiceFileId().isEmpty()) {
+            fullDesc = fullDesc + "\n\n[TG Voice File ID]: " + request.getVoiceFileId();
+        }
+
+        CouponOffer lead = CouponOffer.builder()
+                .title("Лид от: " + merchant.getName())
+                .fullDescription(fullDesc)
+                .merchant(merchant)
+                .status(CouponStatus.LEAD)
+                .contactPhone(request.getPhone())
+                .build();
+        
+        couponOfferRepository.save(lead);
     }
 }

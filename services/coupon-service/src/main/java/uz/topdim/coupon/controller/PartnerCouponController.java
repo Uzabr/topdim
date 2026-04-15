@@ -46,7 +46,7 @@ public class PartnerCouponController {
                 partnerCouponService.getMyCouponById(userId, id)));
     }
 
-    /** Создать купон → статус DRAFT. */
+    /** Создать купон → статус LEAD. */
     @PostMapping
     public ResponseEntity<ApiResponse<CouponOfferResponse>> createCoupon(
             @RequestHeader("X-User-Id") Long userId,
@@ -54,7 +54,7 @@ public class PartnerCouponController {
     ) {
         CouponOfferResponse response = partnerCouponService.createCouponOffer(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Купон сохранён как черновик", response));
+                .body(ApiResponse.success("Заявка на купон принята", response));
     }
 
     /** Обновить купон (только DRAFT/REVISION_REQUESTED). */

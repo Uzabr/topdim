@@ -20,7 +20,7 @@ import java.util.Set;
 /**
  * Сервис для партнёров — управление купонами.
  * Партнёр видит только СВОИ купоны (через Merchant.userId).
- * Новые купоны создаются со статусом DRAFT.
+ * Новые купоны создаются как лиды (LEAD) для дальнейшей обработки менеджером.
  */
 @Slf4j
 @Service
@@ -79,8 +79,8 @@ public class PartnerCouponService {
     }
 
     /**
-     * Создать купон (статус = DRAFT).
-     * Партнёр не может создать ACTIVE купон напрямую.
+     * Создать купон (статус = LEAD).
+     * Партнёр не может опубликовать купон напрямую.
      */
     @Transactional
     public CouponOfferResponse createCouponOffer(Long userId, CreateCouponOfferRequest request) {

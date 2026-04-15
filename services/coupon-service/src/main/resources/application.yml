@@ -74,3 +74,5 @@ management:
 app:
   bot:
     api-key: ${BOT_API_KEY:c37cb277f78152b4ecc670efb331b8b0947fe689ac5f9eb82f1ca3da7a7057ab}
+    preview-url: ${BOT_PREVIEW_URL:http://localhost:3002/webhook/preview}
+    preview-token: ${BOT_PREVIEW_TOKEN:9ffd46963030b7b9d53c1a6d82d14b782502aec6e2807252d1d96b2487c10c55}

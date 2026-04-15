@@ -70,4 +70,16 @@ public class BotWebhookController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Купон возвращён на доработку", couponOfferService.requestRevisionByMerchant(id, request.getComment())));
     }
+
+    /**
+     * Создает новый купон (LEAD) на основе заявки из Telegram-бота.
+     */
+    @PostMapping("/leads")
+    public ResponseEntity<ApiResponse<Void>> createLead(
+            @RequestHeader(value = "X-Bot-Api-Key", required = false) String apiKey,
+            @Valid @RequestBody uz.topdim.coupon.dto.BotLeadRequest request) {
+        validateBotApiKey(apiKey);
+        couponOfferService.createLeadFromBot(request);
+        return ResponseEntity.ok(ApiResponse.success("Заявка успешно принята", null));
+    }
 }
