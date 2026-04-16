@@ -17,5 +17,7 @@ public enum CouponStatus {
     /** Партнёр запросил правки, купон возвращён менеджеру. */
     REVISION_REQUESTED,
     /** Партнёр одобрил — купон опубликован в каталоге. */
-    ACTIVE
+    ACTIVE,
+    /** Все сертификаты распроданы (Total Sold >= Limit). */
+    SOLD_OUT
 }

@@ -99,8 +99,15 @@ public class CouponOffer {
     @Column(name = "total_sold")
     private int totalSold;
 
+    @Column(name = "redeemed_count")
+    private int redeemedCount;
+
     @Column(name = "view_count")
     private int viewCount;
+
+    @Column(name = "total_turnover", precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal totalTurnover = BigDecimal.ZERO;
 
     @OneToMany(mappedBy = "couponOffer", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

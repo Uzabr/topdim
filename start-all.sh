@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================================
 # TopDim — Запуск всех сервисов одной командой
-# Использование: ./start-all.sh [start|stop|status]
+# Использование: ./start-all.sh [start|stop|restart|status]
 # ============================================================
 
 set -e
@@ -196,13 +196,21 @@ start_all() {
   echo ""
 }
 
+restart_all() {
+  echo -e "\n${YELLOW}🔄 Перезапуск всей платформы...${NC}\n"
+  stop_all
+  sleep 2
+  start_all
+}
+
 # Main
 case "${1:-start}" in
-  start)  start_all ;;
-  stop)   stop_all ;;
-  status) show_status ;;
+  start)   start_all ;;
+  stop)    stop_all ;;
+  restart) restart_all ;;
+  status)  show_status ;;
   *)
-    echo "Использование: $0 [start|stop|status]"
+    echo "Использование: $0 [start|stop|restart|status]"
     exit 1
     ;;
 esac

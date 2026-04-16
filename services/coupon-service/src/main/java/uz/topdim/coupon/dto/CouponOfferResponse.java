@@ -42,6 +42,8 @@ public class CouponOfferResponse {
     private String assignedModeratorName;
     private String revisionComment;
     private int totalSold;
+    private int redeemedCount;
+    private BigDecimal totalTurnover;
     private int viewCount;
     private Double averageRating;
     private int reviewCount;

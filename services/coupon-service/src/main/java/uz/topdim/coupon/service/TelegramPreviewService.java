@@ -72,4 +72,33 @@ public class TelegramPreviewService {
             // Не бросаем исключение — статус купона уже изменён, превью — best-effort
         }
     }
+
+    /**
+     * Отправить обычное push-сообщение в Telegram-бот.
+     *
+     * @param chatId Telegram chat ID
+     * @param text текст сообщения
+     */
+    public void sendPushMessage(String chatId, String text) {
+        if (chatId == null || chatId.isBlank()) return;
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("chatId", chatId);
+        payload.put("text", text);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        if (previewWebhookToken != null && !previewWebhookToken.isBlank()) {
+            headers.set("X-Webhook-Token", previewWebhookToken);
+        }
+
+        try {
+            // Отправляем на новый эндпоинт бота для простых сообщений
+            String pushUrl = previewWebhookUrl.replace("/webhook/preview", "/webhook/push");
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+            restTemplate.exchange(pushUrl, HttpMethod.POST, entity, String.class);
+        } catch (Exception e) {
+            log.error("Не удалось отправить сообщение в Telegram (chatId={}): {}", chatId, e.getMessage());
+        }
+    }
 }

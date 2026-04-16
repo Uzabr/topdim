@@ -82,4 +82,28 @@ public class BotWebhookController {
         couponOfferService.createLeadFromBot(request);
         return ResponseEntity.ok(ApiResponse.success("Заявка успешно принята", null));
     }
+
+    /**
+     * Получить все купоны мерчанта по его telegramChatId.
+     */
+    @GetMapping("/merchants/{chatId}")
+    public ResponseEntity<ApiResponse<java.util.List<CouponOfferResponse>>> getMyCoupons(
+            @PathVariable String chatId,
+            @RequestHeader(value = "X-Bot-Api-Key", required = false) String apiKey) {
+        validateBotApiKey(apiKey);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Купоны партнёра", couponOfferService.getMyCouponsByTelegramId(chatId)));
+    }
+
+    /**
+     * Получить статистику купона.
+     */
+    @GetMapping("/{id}/stats")
+    public ResponseEntity<ApiResponse<uz.topdim.coupon.dto.CouponStatsResponse>> getStats(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Bot-Api-Key", required = false) String apiKey) {
+        validateBotApiKey(apiKey);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Статистика купона", couponOfferService.getCouponStats(id)));
+    }
 }
