@@ -56,6 +56,7 @@ export default function FavoritesPage() {
         reviewCount: d.reviews,
         location: d.location,
         isHot: d.isHot,
+        countdownText: d.countdownText || '23:59:59',
         giftAvailable: d.giftAvailable,
       }));
 

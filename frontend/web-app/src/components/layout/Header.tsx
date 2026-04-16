@@ -34,7 +34,10 @@ export default function Header() {
           </span>
         </Link>
 
-        <CitySelector />
+        <div className="header-selectors">
+          <CitySelector />
+          <LanguageSelector />
+        </div>
 
         <nav className={`nav ${mobileMenuOpen ? 'nav--open' : ''}`}>
           <Link to={lp('/')} className={`nav-link ${isActive('/') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
@@ -57,7 +60,6 @@ export default function Header() {
         </nav>
 
         <div className="header-actions">
-          <LanguageSelector />
           <Link to={lp('/search')} className="icon-button" aria-label="Поиск">
             <Search size={19} />
           </Link>

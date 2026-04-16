@@ -168,6 +168,26 @@
 @media (max-width: 640px) {
   .footer-content {
     grid-template-columns: 1fr;
-    gap: var(--space-lg);
+    gap: var(--space-md);
+    padding: var(--space-lg) var(--space-md);
+  }
+
+  /* На мобилке оставляем только бренд + ссылки для пользователей */
+  .footer-column:nth-child(3),
+  .footer-column:nth-child(4) {
+    display: none;
+  }
+
+  .footer-brand .footer-logo {
+    font-size: var(--font-lg);
+  }
+
+  .footer-desc {
+    max-width: 100%;
+    font-size: var(--font-xs);
+  }
+
+  .footer-apps {
+    display: none;
   }
 }

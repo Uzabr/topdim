@@ -64,6 +64,7 @@ function mapToCardData(coupon: CouponOffer): CouponCardData {
     location: coupon.address,
     giftAvailable: coupon.giftAvailable,
     isHot: (coupon.discountPercent || 0) >= 50,
+    countdownText: '23:59:59',
   };
 }
 
@@ -121,10 +122,25 @@ export default function CouponCatalogPage() {
             type="text"
             placeholder="Поиск купонов..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearch(val);
+              setPage(0);
+              // Авто-выбор категории по названию
+              if (val.trim()) {
+                const match = categories.find((c) => c.name.toLowerCase().includes(val.trim().toLowerCase()));
+                if (match) {
+                  setActiveCategory(match.id);
+                } else {
+                  setActiveCategory(null);
+                }
+              } else {
+                setActiveCategory(null);
+              }
+            }}
           />
           {search && (
-            <button onClick={() => setSearch('')} className="catalog-search__clear">
+            <button onClick={() => { setSearch(''); setActiveCategory(null); }} className="catalog-search__clear">
               <X size={16} />
             </button>
           )}
