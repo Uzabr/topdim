@@ -123,10 +123,10 @@ export default function SearchPage() {
                           )}
                         </div>
                         <div className="search-shop-card__meta">
-                          {shop.hasCoupon && <span className="search-coupon-badge">🎫 Скидки</span>}
-                          {shop.productTags.length > 0 && (
+                          {(shop as any).hasCoupon && <span className="search-coupon-badge">🎫 Скидки</span>}
+                          {((shop as any).productTags || []).length > 0 && (
                             <p className="search-shop__tags-text">
-                              {shop.productTags.slice(0, 3).map(t => t.tag).join(', ')}
+                              {(shop as any).productTags.slice(0, 3).map((t: any) => t.tag).join(', ')}
                             </p>
                           )}
                         </div>
