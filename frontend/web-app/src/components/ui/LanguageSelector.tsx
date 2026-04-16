@@ -9,8 +9,8 @@ export default function LanguageSelector() {
   const location = useLocation();
 
   const options = [
-    { id: 'ru', label: 'Русский' },
-    { id: 'uz', label: "O'zbekcha" },
+    { id: 'ru', label: 'Ру' },
+    { id: 'uz', label: 'Узб' },
   ];
 
   return (
