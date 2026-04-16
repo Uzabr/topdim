@@ -37,6 +37,16 @@ get_name() { echo "$1" | cut -d: -f2; }
 get_port() { echo "$1" | cut -d: -f3; }
 get_gradle() { echo ":$(echo "$1" | cut -d: -f1):$(echo "$1" | cut -d: -f2)"; }
 
+# Проверка порта: ss для Linux (не требует sudo), lsof для Mac
+check_port() {
+  local port=$1
+  if command -v ss &>/dev/null; then
+    ss -tlnp 2>/dev/null | grep -q ":${port} "
+  else
+    lsof -i ":$port" &>/dev/null
+  fi
+}
+
 start_service() {
   local svc="$1"
   local name=$(get_name "$svc")
@@ -45,7 +55,7 @@ start_service() {
   local log_file="$LOG_DIR/$name.log"
 
   # Проверяем, не запущен ли уже
-  if lsof -i ":$port" &>/dev/null; then
+  if check_port "$port"; then
     echo -e "  ${YELLOW}⚡ $name${NC} уже запущен (порт $port)"
     return
   fi
@@ -62,7 +72,7 @@ wait_for_port() {
   local max_wait=60
   local waited=0
 
-  while ! lsof -i ":$port" &>/dev/null; do
+  while ! check_port "$port"; do
     sleep 2
     waited=$((waited + 2))
     if [ $waited -ge $max_wait ]; then
@@ -116,7 +126,7 @@ show_status() {
     local name=$(get_name "$svc")
     local port=$(get_port "$svc")
     
-    if lsof -i ":$port" &>/dev/null; then
+    if check_port "$port"; then
       printf "  ${GREEN}%-25s %-8s ✓ Работает${NC}\n" "$name" "$port"
     else
       printf "  ${RED}%-25s %-8s ✗ Не запущен${NC}\n" "$name" "$port"
