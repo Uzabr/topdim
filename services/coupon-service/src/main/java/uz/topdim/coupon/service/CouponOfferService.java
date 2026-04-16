@@ -1,6 +1,8 @@
 package uz.topdim.coupon.service;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -15,6 +17,7 @@ import uz.topdim.coupon.entity.*;
 import uz.topdim.coupon.exception.ResourceNotFoundException;
 import uz.topdim.coupon.repository.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,14 +26,19 @@ import java.util.stream.Collectors;
  * CRUD операции, каталог с фильтрами и пагинацией.
  * Кэширование через Redis (@Cacheable).
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CouponOfferService {
 
     private final CouponOfferRepository couponOfferRepository;
     private final CouponOptionRepository couponOptionRepository;
+    private final CouponImageRepository couponImageRepository;
     private final MerchantRepository merchantRepository;
     private final CategoryRepository categoryRepository;
+    private final ReviewRepository reviewRepository;
+    private final EntityManager entityManager;
+    private final TelegramPreviewService telegramPreviewService;
 
     // ==================== Public API ====================
 
@@ -45,7 +53,8 @@ public class CouponOfferService {
      * @param size размер страницы
      * @return страница купонов
      */
-    @Cacheable(value = "catalog", key = "#categoryId + '-' + #search + '-' + #sortBy + '-' + #page + '-' + #size")
+    // TODO: восстановить кэширование после настройки Redis serializer
+    // @Cacheable(value = "catalog", key = "#categoryId + '-' + #search + '-' + #sortBy + '-' + #page + '-' + #size")
     @Transactional(readOnly = true)
     public Page<CouponOfferResponse> getCatalog(Long categoryId, String search, String sortBy, int page, int size) {
         Pageable pageable = createPageable(sortBy, page, size);
@@ -64,21 +73,36 @@ public class CouponOfferService {
     }
 
     /**
-     * Получает детальную информацию о купоне.
+     * Получает детальную информацию о купоне (публичный).
+     * Инкрементит viewCount для аналитики.
+     *
+     * @param id идентификатор купона
+     * @return полная информация с опциями и изображениями
+     * @throws ResourceNotFoundException если купон не найден
+     */
+    @Transactional
+    public CouponOfferResponse getById(Long id) {
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        // Атомарный инкремент view count (без race condition)
+        couponOfferRepository.incrementViewCount(id);
+
+        return mapToResponse(offer);
+    }
+
+    /**
+     * Получает детальную информацию о купоне (Admin).
+     * НЕ инкрементит viewCount — для внутреннего просмотра/редактирования.
      *
      * @param id идентификатор купона
      * @return полная информация с опциями и изображениями
      * @throws ResourceNotFoundException если купон не найден
      */
     @Transactional(readOnly = true)
-    public CouponOfferResponse getById(Long id) {
+    public CouponOfferResponse getByIdAdmin(Long id) {
         CouponOffer offer = couponOfferRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
-
-        // Increment view count
-        offer.setViewCount(offer.getViewCount() + 1);
-        couponOfferRepository.save(offer);
-
         return mapToResponse(offer);
     }
 
@@ -89,7 +113,8 @@ public class CouponOfferService {
      * @param limit максимальное количество результатов
      * @return список топ купонов
      */
-    @Cacheable(value = "topSelling", key = "#limit")
+    // TODO: восстановить кэширование после настройки Redis serializer
+    // @Cacheable(value = "topSelling", key = "#limit")
     @Transactional(readOnly = true)
     public List<CouponOfferResponse> getTopSelling(int limit) {
         return couponOfferRepository.findTopSelling(PageRequest.of(0, limit))
@@ -100,24 +125,21 @@ public class CouponOfferService {
 
     // ==================== Admin API ====================
 
-    @Caching(evict = {
-            @CacheEvict(value = "catalog", allEntries = true),
-            @CacheEvict(value = "topSelling", allEntries = true)
-    })
     /**
-     * Создаёт новый купон (Admin).
+     * Создаёт новый купон (Admin) со статусом LEAD.
      * Сбрасывает Redis кэш каталога.
      *
      * @param request данные купона (title, описание, merchantId, опции)
      * @return созданный купон
      */
+    @Caching(evict = {
+            @CacheEvict(value = "catalog", allEntries = true),
+            @CacheEvict(value = "topSelling", allEntries = true)
+    })
     @Transactional
     public CouponOfferResponse create(CreateCouponOfferRequest request) {
-        Merchant merchant = null;
-        if (request.getMerchantId() != null) {
-            merchant = merchantRepository.findById(request.getMerchantId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Партнёр не найден"));
-        }
+        Merchant merchant = merchantRepository.findById(request.getMerchantId())
+                .orElseThrow(() -> new ResourceNotFoundException("Партнёр не найден"));
 
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
@@ -141,7 +163,7 @@ public class CouponOfferService {
                 .contactPhone(request.getContactPhone())
                 .workingHours(request.getWorkingHours())
                 .giftAvailable(request.isGiftAvailable())
-                .status(CouponStatus.ACTIVE)
+                .status(CouponStatus.LEAD)
                 .totalSold(0)
                 .viewCount(0)
                 .build();
@@ -164,55 +186,384 @@ public class CouponOfferService {
             }
         }
 
+        // Create gallery images
+        if (request.getImages() != null) {
+            for (int i = 0; i < request.getImages().size(); i++) {
+                CouponImage image = CouponImage.builder()
+                        .couponOffer(offer)
+                        .imageUrl(request.getImages().get(i))
+                        .sortOrder(i)
+                        .build();
+                couponImageRepository.save(image);
+            }
+        }
+
+        // Flush + clear чтобы re-fetch вернул актуальные options/images
+        entityManager.flush();
+        entityManager.clear();
+
         return mapToResponse(couponOfferRepository.findById(offer.getId()).orElseThrow());
     }
 
-    @Caching(evict = {
-            @CacheEvict(value = "catalog", allEntries = true),
-            @CacheEvict(value = "topSelling", allEntries = true),
-            @CacheEvict(value = "couponDetail", key = "#id")
-    })
+    // ==================== State Machine ====================
+
     /**
-     * Обновляет статус купона (Admin).
-     * Сбрасывает Redis кэш.
+     * Отправляет купон на согласование партнёру.
+     * Допустимые текущие статусы: DRAFT, REVISION_REQUESTED.
+     * Результат: статус → WAITING_FOR_MERCHANT.
      *
      * @param id идентификатор купона
-     * @param status новый статус (ACTIVE, PAUSED, ENDED)
+     * @return обновлённый купон
+     */
+    @Caching(evict = {
+            @CacheEvict(value = "catalog", allEntries = true),
+            @CacheEvict(value = "couponDetail", key = "#id")
+    })
+    @Transactional
+    public CouponOfferResponse sendToApproval(Long id) {
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        if (offer.getStatus() != CouponStatus.DRAFT && offer.getStatus() != CouponStatus.REVISION_REQUESTED) {
+            throw new IllegalStateException(
+                    "Нельзя отправить на согласование из статуса " + offer.getStatus()
+                    + ". Допустимые: DRAFT, REVISION_REQUESTED");
+        }
+
+        offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
+        offer.setRevisionComment(null);
+        couponOfferRepository.save(offer);
+
+        log.info("Купон #{} отправлен на согласование мерчанту #{}", id, offer.getMerchant().getId());
+
+        // Отправляем превью в Telegram мерчанту
+        telegramPreviewService.sendPreview(offer);
+
+        return mapToResponse(offer);
+    }
+
+    /**
+     * Модератор берёт лид в работу.
+     * Текущий статус должен быть LEAD.
+     * Результат: статус → DRAFT, assignedModeratorId/Name записывается.
+     *
+     * @param id идентификатор купона
+     * @param moderatorId ID модератора из X-User-Id
+     * @param moderatorName имя/email модератора
      * @return обновлённый купон
      */
     @Transactional
-    public CouponOfferResponse updateStatus(Long id, CouponStatus status) {
+    public CouponOfferResponse takeToWork(Long id, Long moderatorId, String moderatorName) {
         CouponOffer offer = couponOfferRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
-        offer.setStatus(status);
-        return mapToResponse(couponOfferRepository.save(offer));
+
+        if (offer.getStatus() != CouponStatus.LEAD) {
+            throw new IllegalStateException(
+                    "Взять в работу можно только из статуса LEAD. Текущий: " + offer.getStatus());
+        }
+
+        offer.setStatus(CouponStatus.DRAFT);
+        offer.setAssignedModeratorId(moderatorId);
+        offer.setAssignedModeratorName(moderatorName);
+        couponOfferRepository.save(offer);
+
+        log.info("Купон #{} взят в работу модератором {} ({})", id, moderatorName, moderatorId);
+
+        // Отправляем пуш мерчанту
+        if (offer.getMerchant() != null && offer.getMerchant().getTelegramChatId() != null) {
+            telegramPreviewService.sendPushMessage(
+                    offer.getMerchant().getTelegramChatId(),
+                    "⚡️ Модератор взял вашу заявку в работу. Ожидайте звонка!"
+            );
+        }
+
+        return mapToResponse(offer);
     }
 
+    /**
+     * Партнёр одобряет купон → публикация.
+     * Текущий статус должен быть WAITING_FOR_MERCHANT.
+     * Результат: статус → ACTIVE.
+     *
+     * @param id идентификатор купона
+     * @return обновлённый купон
+     */
     @Caching(evict = {
             @CacheEvict(value = "catalog", allEntries = true),
             @CacheEvict(value = "topSelling", allEntries = true),
             @CacheEvict(value = "couponDetail", key = "#id")
     })
+    @Transactional
+    public CouponOfferResponse approveByMerchant(Long id) {
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        if (offer.getStatus() != CouponStatus.WAITING_FOR_MERCHANT) {
+            throw new IllegalStateException(
+                    "Нельзя одобрить купон из статуса " + offer.getStatus()
+                    + ". Допустимый: WAITING_FOR_MERCHANT");
+        }
+
+        offer.setStatus(CouponStatus.ACTIVE);
+        couponOfferRepository.save(offer);
+
+        log.info("Купон #{} одобрен мерчантом #{} и опубликован", id, offer.getMerchant().getId());
+
+        // Отправляем пуш мерчанту
+        if (offer.getMerchant() != null && offer.getMerchant().getTelegramChatId() != null) {
+            // Считаем общий лимит по опциям
+            int limit = offer.getOptions().stream()
+                    .mapToInt(opt -> opt.getQuantityLimit() != null ? opt.getQuantityLimit() : 0)
+                    .sum();
+            telegramPreviewService.sendPushMessage(
+                    offer.getMerchant().getTelegramChatId(),
+                    "🎉 Ура! Акция запущена. Установлен лимит: " + limit + " сертификатов. Следить за продажами можно в разделе «📊 Статистика»."
+            );
+        }
+
+        return mapToResponse(offer);
+    }
+
+    /**
+     * Партнёр запрашивает правки → возврат менеджеру.
+     * Текущий статус должен быть WAITING_FOR_MERCHANT.
+     * Результат: статус → REVISION_REQUESTED, записывается комментарий.
+     *
+     * @param id идентификатор купона
+     * @param comment комментарий партнёра с описанием правок
+     * @return обновлённый купон
+     */
+    @Caching(evict = {
+            @CacheEvict(value = "couponDetail", key = "#id")
+    })
+    @Transactional
+    public CouponOfferResponse requestRevisionByMerchant(Long id, String comment) {
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        if (offer.getStatus() != CouponStatus.WAITING_FOR_MERCHANT) {
+            throw new IllegalStateException(
+                    "Нельзя запросить правки из статуса " + offer.getStatus()
+                    + ". Допустимый: WAITING_FOR_MERCHANT");
+        }
+
+        offer.setStatus(CouponStatus.REVISION_REQUESTED);
+        offer.setRevisionComment(comment);
+        couponOfferRepository.save(offer);
+
+        log.info("Купон #{} возвращён на доработку мерчантом #{}. Причина: {}",
+                id, offer.getMerchant().getId(), comment);
+
+        return mapToResponse(offer);
+    }
+
+    /**
+     * Обновляет существующий купон (Admin).
+     * Разрешено из статусов DRAFT, REVISION_REQUESTED, ACTIVE.
+     * Модераторы могут редактировать только свои купоны (assignedModeratorId).
+     * ADMIN/SUPER_ADMIN могут редактировать любые.
+     *
+     * @param id идентификатор купона
+     * @param request обновлённые данные
+     * @param currentUserId ID текущего пользователя (для ownership check)
+     * @param currentUserRole роль текущего пользователя
+     * @return обновлённый купон
+     * @throws IllegalStateException если купон в неред. статусе или чужой
+     */
+    @Caching(evict = {
+            @CacheEvict(value = "catalog", allEntries = true),
+            @CacheEvict(value = "topSelling", allEntries = true),
+            @CacheEvict(value = "couponDetail", key = "#id")
+    })
+    @Transactional
+    public CouponOfferResponse update(Long id, CreateCouponOfferRequest request, Long currentUserId, String currentUserRole) {
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        // State Machine: редактирование из DRAFT, REVISION_REQUESTED, ACTIVE
+        if (offer.getStatus() != CouponStatus.DRAFT
+                && offer.getStatus() != CouponStatus.REVISION_REQUESTED
+                && offer.getStatus() != CouponStatus.ACTIVE) {
+            throw new IllegalStateException(
+                    "Редактирование запрещено из статуса " + offer.getStatus()
+                    + ". Допустимые: DRAFT, REVISION_REQUESTED, ACTIVE");
+        }
+
+        // Ownership check: MODERATOR может редактировать только свои
+        if ("MODERATOR".equals(currentUserRole)
+                && offer.getAssignedModeratorId() != null
+                && !offer.getAssignedModeratorId().equals(currentUserId)) {
+            throw new IllegalStateException(
+                    "Купон закреплён за другим модератором (" + offer.getAssignedModeratorName() + ")");
+        }
+
+        // Обновляем мерчанта
+        // merchant_id обязательно (NOT NULL) — обновляем если передан, иначе оставляем текущего
+        if (request.getMerchantId() != null) {
+            Merchant merchant = merchantRepository.findById(request.getMerchantId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Партнёр не найден"));
+            offer.setMerchant(merchant);
+        }
+
+        // Обновляем категорию
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
+        offer.setCategory(category);
+
+        // Обновляем скалярные поля
+        offer.setTitle(request.getTitle());
+        offer.setShortDescription(request.getShortDescription());
+        offer.setFullDescription(request.getFullDescription());
+        offer.setOldPrice(request.getOldPrice());
+        offer.setFromPrice(request.getFromPrice());
+        offer.setDiscountPercent(request.getDiscountPercent());
+        offer.setCoverImageUrl(request.getCoverImageUrl());
+        offer.setBuyUntil(request.getBuyUntil());
+        offer.setUseUntil(request.getUseUntil());
+        offer.setTerms(request.getTerms());
+        offer.setUsageRules(request.getUsageRules());
+        offer.setHowToUse(request.getHowToUse());
+        offer.setAddress(request.getAddress());
+        offer.setContactPhone(request.getContactPhone());
+        offer.setWorkingHours(request.getWorkingHours());
+        offer.setGiftAvailable(request.isGiftAvailable());
+
+        // Мержим Options
+        if (request.getOptions() != null) {
+            var requestTitles = request.getOptions().stream()
+                    .map(CreateCouponOptionRequest::getTitle)
+                    .collect(Collectors.toSet());
+
+            // Деактивируем варианты, которых нет в запросе
+            for (CouponOption existing : offer.getOptions()) {
+                if (!requestTitles.contains(existing.getTitle())) {
+                    existing.setStatus(CouponOptionStatus.DISABLED);
+                    couponOptionRepository.save(existing);
+                }
+            }
+
+            // Обновляем существующие / добавляем новые
+            for (CreateCouponOptionRequest optReq : request.getOptions()) {
+                CouponOption existingOpt = offer.getOptions().stream()
+                        .filter(o -> o.getTitle().equals(optReq.getTitle()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (existingOpt != null) {
+                    existingOpt.setRegularPrice(optReq.getRegularPrice());
+                    existingOpt.setCouponPrice(optReq.getCouponPrice());
+                    existingOpt.setQuantityLimit(optReq.getQuantityLimit());
+                    existingOpt.setStatus(CouponOptionStatus.ACTIVE);
+                    couponOptionRepository.save(existingOpt);
+                } else {
+                    CouponOption newOpt = CouponOption.builder()
+                            .couponOffer(offer)
+                            .title(optReq.getTitle())
+                            .regularPrice(optReq.getRegularPrice())
+                            .couponPrice(optReq.getCouponPrice())
+                            .quantityLimit(optReq.getQuantityLimit())
+                            .quantitySold(0)
+                            .status(CouponOptionStatus.ACTIVE)
+                            .build();
+                    couponOptionRepository.save(newOpt);
+                }
+            }
+        }
+
+        // Обновляем галерею изображений: удаляем старые, добавляем новые
+        couponImageRepository.deleteAllByCouponOfferId(offer.getId());
+        offer.getImages().clear();
+        if (request.getImages() != null) {
+            for (int i = 0; i < request.getImages().size(); i++) {
+                CouponImage image = CouponImage.builder()
+                        .couponOffer(offer)
+                        .imageUrl(request.getImages().get(i))
+                        .sortOrder(i)
+                        .build();
+                couponImageRepository.save(image);
+            }
+        }
+
+        return mapToResponse(couponOfferRepository.findById(offer.getId()).orElseThrow());
+    }
+
+    /**
+     * Обновляет статус купона (Admin) — только разрешённые переходы State Machine.
+     * Допустимые: LEAD→DRAFT, DRAFT/REVISION→WAITING, WAITING→ACTIVE/REVISION.
+     *
+     * @param id идентификатор купона
+     * @param newStatus новый статус
+     * @return обновлённый купон
+     * @throws IllegalStateException если переход запрещён
+     */
+    @Caching(evict = {
+            @CacheEvict(value = "catalog", allEntries = true),
+            @CacheEvict(value = "topSelling", allEntries = true),
+            @CacheEvict(value = "couponDetail", key = "#id")
+    })
+    @Transactional
+    public CouponOfferResponse updateStatus(Long id, CouponStatus newStatus) {
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        CouponStatus current = offer.getStatus();
+        boolean allowed = switch (newStatus) {
+            case DRAFT -> current == CouponStatus.LEAD;
+            case WAITING_FOR_MERCHANT -> current == CouponStatus.DRAFT
+                    || current == CouponStatus.REVISION_REQUESTED;
+            case ACTIVE -> current == CouponStatus.WAITING_FOR_MERCHANT;
+            case REVISION_REQUESTED -> current == CouponStatus.WAITING_FOR_MERCHANT;
+            case LEAD -> false;
+            case SOLD_OUT -> false; // Устанавливается автоматически через registerSale
+        };
+
+        if (!allowed) {
+            throw new IllegalStateException(
+                    "Переход " + current + " → " + newStatus + " запрещён. "
+                    + "Допустимые: LEAD→DRAFT, DRAFT/REVISION→WAITING, WAITING→ACTIVE/REVISION");
+        }
+
+        offer.setStatus(newStatus);
+        return mapToResponse(couponOfferRepository.save(offer));
+    }
+
     /**
      * Удаляет купон (Admin).
+     * Разрешено только из статусов LEAD, DRAFT, REVISION_REQUESTED.
+     * ACTIVE и WAITING_FOR_MERCHANT защищены от удаления.
      * Сбрасывает Redis кэш.
      *
      * @param id идентификатор купона
      * @throws ResourceNotFoundException если купон не найден
+     * @throws IllegalStateException если купон в защищённом статусе
      */
+    @Caching(evict = {
+            @CacheEvict(value = "catalog", allEntries = true),
+            @CacheEvict(value = "topSelling", allEntries = true),
+            @CacheEvict(value = "couponDetail", key = "#id")
+    })
     @Transactional
     public void delete(Long id) {
-        if (!couponOfferRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Купон не найден");
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        if (offer.getStatus() == CouponStatus.ACTIVE || offer.getStatus() == CouponStatus.WAITING_FOR_MERCHANT) {
+            throw new IllegalStateException(
+                    "Удаление запрещено из статуса " + offer.getStatus()
+                    + ". Допустимые для удаления: LEAD, DRAFT, REVISION_REQUESTED");
         }
+
         couponOfferRepository.deleteById(id);
     }
 
     // ==================== Admin: All offers ====================
 
     @Transactional(readOnly = true)
-    public Page<CouponOfferResponse> getAllForAdmin(int page, int size) {
+    public Page<CouponOfferResponse> getAllForAdmin(CouponStatus status, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        if (status != null) {
+            return couponOfferRepository.findAllByStatus(status, pageable).map(this::mapToResponse);
+        }
         return couponOfferRepository.findAll(pageable).map(this::mapToResponse);
     }
 
@@ -229,12 +580,12 @@ public class CouponOfferService {
                         .name(offer.getMerchant().getName())
                         .logoUrl(offer.getMerchant().getLogoUrl())
                         .build() : null)
-                .category(CouponOfferResponse.CategorySummary.builder()
+                .category(offer.getCategory() != null ? CouponOfferResponse.CategorySummary.builder()
                         .id(offer.getCategory().getId())
                         .name(offer.getCategory().getName())
                         .slug(offer.getCategory().getSlug())
                         .iconUrl(offer.getCategory().getIconUrl())
-                        .build())
+                        .build() : null)
                 .oldPrice(offer.getOldPrice())
                 .fromPrice(offer.getFromPrice())
                 .discountPercent(offer.getDiscountPercent())
@@ -249,8 +600,15 @@ public class CouponOfferService {
                 .workingHours(offer.getWorkingHours())
                 .giftAvailable(offer.isGiftAvailable())
                 .status(offer.getStatus().name())
+                .assignedModeratorId(offer.getAssignedModeratorId())
+                .assignedModeratorName(offer.getAssignedModeratorName())
+                .revisionComment(offer.getRevisionComment())
                 .totalSold(offer.getTotalSold())
+                .redeemedCount(offer.getRedeemedCount())
+                .totalTurnover(offer.getTotalTurnover())
                 .viewCount(offer.getViewCount())
+                .averageRating(reviewRepository.getAverageRatingByCouponId(offer.getId()))
+                .reviewCount(reviewRepository.countApprovedByCouponId(offer.getId()))
                 .options(offer.getOptions().stream()
                         .map(opt -> CouponOptionResponse.builder()
                                 .id(opt.getId())
@@ -278,5 +636,128 @@ public class CouponOfferService {
             default -> Sort.by("totalSold").descending();
         };
         return PageRequest.of(page, size, sort);
+    }
+
+    @Transactional
+    public void createLeadFromBot(BotLeadRequest request) {
+        Merchant merchant = null;
+        if (request.getTelegramChatId() != null && !request.getTelegramChatId().isEmpty()) {
+            merchant = merchantRepository.findByTelegramChatId(request.getTelegramChatId()).orElse(null);
+        }
+        if (merchant == null && request.getPhone() != null && !request.getPhone().isEmpty()) {
+            merchant = merchantRepository.findByPhone(request.getPhone()).orElse(null);
+        }
+
+        if (merchant == null) {
+            merchant = Merchant.builder()
+                    .name(request.getCompanyName() != null ? request.getCompanyName() : "Unknown Lead")
+                    .phone(request.getPhone())
+                    .contactPerson((request.getFirstName() != null ? request.getFirstName() : "") + " " + 
+                                   (request.getLastName() != null ? request.getLastName() : ""))
+                    .telegramChatId(request.getTelegramChatId())
+                    .website(request.getSourceLink())
+                    .active(false)
+                    .build();
+            merchant = merchantRepository.save(merchant);
+        }
+
+        String fullDesc = request.getPromoDescription() != null ? request.getPromoDescription() : "";
+        if (request.getVoiceFileId() != null && !request.getVoiceFileId().isEmpty()) {
+            fullDesc = fullDesc + "\n\n[TG Voice File ID]: " + request.getVoiceFileId();
+        }
+
+        CouponOffer lead = CouponOffer.builder()
+                .title("Лид от: " + merchant.getName())
+                .fullDescription(fullDesc)
+                .merchant(merchant)
+                .status(CouponStatus.LEAD)
+                .contactPhone(request.getPhone())
+                .build();
+        
+        couponOfferRepository.save(lead);
+    }
+
+    // ==================== Bot API (Stat & List) ====================
+
+    @Transactional(readOnly = true)
+    public List<CouponOfferResponse> getMyCouponsByTelegramId(String chatId) {
+        return merchantRepository.findByTelegramChatId(chatId)
+                .map(merchant -> couponOfferRepository.findByMerchantId(
+                        merchant.getId(),
+                        PageRequest.of(0, 50, Sort.by("createdAt").descending()))
+                        .stream()
+                        .map(this::mapToResponse)
+                        .collect(Collectors.toList()))
+                .orElse(List.of());
+    }
+
+    @Transactional(readOnly = true)
+    public CouponStatsResponse getCouponStats(Long id) {
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        int totalLimit = offer.getOptions().stream()
+                .mapToInt(opt -> opt.getQuantityLimit() != null ? opt.getQuantityLimit() : 0)
+                .sum();
+
+        return CouponStatsResponse.builder()
+                .id(offer.getId())
+                .title(offer.getTitle())
+                .status(offer.getStatus().name())
+                .quantityLimit(totalLimit)
+                .viewCount(offer.getViewCount())
+                .totalSold(offer.getTotalSold())
+                .redeemedCount(offer.getRedeemedCount())
+                .totalTurnover(offer.getTotalTurnover())
+                .averageRating(reviewRepository.getAverageRatingByCouponId(offer.getId()))
+                .reviewCount(reviewRepository.countApprovedByCouponId(offer.getId()))
+                .build();
+    }
+
+    /**
+     * Регистрирует продажу купона.
+     * Если лимит распродан, автоматически останавливает публикацию.
+     */
+    @Caching(evict = {
+            @CacheEvict(value = "catalog", allEntries = true),
+            @CacheEvict(value = "topSelling", allEntries = true),
+            @CacheEvict(value = "couponDetail", key = "#id")
+    })
+    @Transactional
+    public void registerSale(Long id, Long optionId, int quantity, BigDecimal amount) {
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        CouponOption option = offer.getOptions().stream()
+                .filter(opt -> opt.getId().equals(optionId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Опция купона не найдена"));
+
+        // Обновляем статистику
+        option.setQuantitySold(option.getQuantitySold() + quantity);
+        offer.setTotalSold(offer.getTotalSold() + quantity);
+        offer.setTotalTurnover(offer.getTotalTurnover().add(amount != null ? amount : BigDecimal.ZERO));
+
+        // Проверяем общий лимит
+        int totalSold = offer.getTotalSold();
+        int totalLimit = offer.getOptions().stream()
+                .mapToInt(opt -> opt.getQuantityLimit() != null ? opt.getQuantityLimit() : 0)
+                .sum();
+
+        if (totalLimit > 0 && totalSold >= totalLimit && offer.getStatus() == CouponStatus.ACTIVE) {
+            offer.setStatus(CouponStatus.SOLD_OUT);
+            log.info("Купон #{} автоматически переведен в SOLD_OUT", id);
+
+            // Пуш мерчанту
+            if (offer.getMerchant() != null && offer.getMerchant().getTelegramChatId() != null) {
+                telegramPreviewService.sendPushMessage(
+                        offer.getMerchant().getTelegramChatId(),
+                        "🛑 Сертификаты по акции распроданы! Публикация автоматически приостановлена. " +
+                        "Чтобы запустить новую, нажмите [➕ Создать купон]."
+                );
+            }
+        }
+
+        couponOfferRepository.save(offer);
     }
 }

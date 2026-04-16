@@ -1,5 +1,6 @@
 .login-page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -136,4 +137,22 @@
 
 .login-switch button:hover {
   text-decoration: underline;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 18px;
+}
+
+.invalid-feedback {
+  position: absolute;
+  bottom: 0;
+  left: 4px;
+  color: var(--error-light, #ef4444);
+  font-size: 12px;
+  text-align: left;
+  line-height: 1;
+  white-space: nowrap;
 }

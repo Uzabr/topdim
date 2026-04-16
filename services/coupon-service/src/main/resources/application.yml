@@ -4,8 +4,13 @@ server:
 spring:
   application:
     name: coupon-service
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    generator:
+      write-bigdecimal-as-plain: true
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/topdim_coupon?sslmode=disable
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/topdim_coupon?sslmode=disable
     username: ${DB_USERNAME:topdim}
     password: ${DB_PASSWORD:topdim_secret}
     driver-class-name: org.postgresql.Driver
@@ -29,13 +34,13 @@ spring:
     locations: classpath:db/migration
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
+    port: ${RABBITMQ_PORT:5673}
     username: ${RABBITMQ_USERNAME:topdim}
     password: ${RABBITMQ_PASSWORD:topdim_secret}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      port: ${REDIS_PORT:6380}
 
 eureka:
   client:
@@ -65,3 +70,9 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+
+app:
+  bot:
+    api-key: ${BOT_API_KEY:c37cb277f78152b4ecc670efb331b8b0947fe689ac5f9eb82f1ca3da7a7057ab}
+    preview-url: ${BOT_PREVIEW_URL:http://localhost:3002/webhook/preview}
+    preview-token: ${BOT_PREVIEW_TOKEN:9ffd46963030b7b9d53c1a6d82d14b782502aec6e2807252d1d96b2487c10c55}

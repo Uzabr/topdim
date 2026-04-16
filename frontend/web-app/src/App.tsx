@@ -1,10 +1,16 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from './store/authStore';
+import ScrollToTop from './components/ScrollToTop';
+import LocaleLayout from './components/LocaleLayout';
 import Header from './components/layout/Header';
 import BottomNav from './components/layout/BottomNav';
+import Footer from './components/layout/Footer';
 import CartDrawer from './components/cart/CartDrawer';
+import CookieConsent from './components/ui/CookieConsent';
+import LimitModal from './components/ui/LimitModal';
 import HomePage from './pages/HomePage';
 import CouponCatalogPage from './pages/CouponCatalogPage';
 import CouponDetailPage from './pages/CouponDetailPage';
@@ -16,6 +22,12 @@ import ShopDetailPage from './pages/ShopDetailPage';
 import LoginPage from './pages/LoginPage';
 import ProfilePage from './pages/ProfilePage';
 import SearchPage from './pages/SearchPage';
+import FavoritesPage from './pages/FavoritesPage';
+import NotFoundPage from './pages/NotFoundPage';
+import PartnersPage from './pages/legal/PartnersPage';
+import FAQPage from './pages/legal/FAQPage';
+import TermsPage from './pages/legal/TermsPage';
+import PrivacyPage from './pages/legal/PrivacyPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,6 +39,13 @@ const queryClient = new QueryClient({
   },
 });
 
+/** Redirect bare "/" to "/:lang/" */
+function RootRedirect() {
+  const { i18n } = useTranslation();
+  const lang = i18n.language?.substring(0, 2) || 'ru';
+  return <Navigate to={`/${lang}`} replace />;
+}
+
 function AppContent() {
   const { loadFromStorage } = useAuthStore();
 
@@ -35,25 +54,44 @@ function AppContent() {
   }, [loadFromStorage]);
 
   return (
-    <BrowserRouter>
-      <Header />
-      <main style={{ paddingBottom: 'var(--bottom-nav-height)' }}>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <ScrollToTop />
+      <div className="app-shell">
+        <Header />
+        <main className="app-main">
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/coupons" element={<CouponCatalogPage />} />
-          <Route path="/coupons/:id" element={<CouponDetailPage />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/bazaar" element={<BazaarMapPage />} />
-          <Route path="/bazaar/:id" element={<BazaarDetailPage />} />
-          <Route path="/shops/:id" element={<ShopDetailPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/search" element={<SearchPage />} />
+          {/* Bare root → redirect to /ru or /uz */}
+          <Route path="/" element={<RootRedirect />} />
+
+          {/* All pages under /:lang */}
+          <Route path="/:lang" element={<LocaleLayout />}>
+            <Route index element={<HomePage />} />
+            <Route path="coupons" element={<CouponCatalogPage />} />
+            <Route path="coupons/:id" element={<CouponDetailPage />} />
+            <Route path="cart" element={<CartPage />} />
+            <Route path="checkout" element={<CheckoutPage />} />
+            <Route path="bazaar" element={<BazaarMapPage />} />
+            <Route path="bazaar/:id" element={<BazaarDetailPage />} />
+            <Route path="shops/:id" element={<ShopDetailPage />} />
+            <Route path="login" element={<LoginPage />} />
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="search" element={<SearchPage />} />
+            <Route path="favorites" element={<FavoritesPage />} />
+            <Route path="partners" element={<PartnersPage />} />
+            <Route path="faq" element={<FAQPage />} />
+            <Route path="terms" element={<TermsPage />} />
+            <Route path="privacy" element={<PrivacyPage />} />
+          </Route>
+
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      </main>
-      <BottomNav />
-      <CartDrawer />
+        </main>
+        <Footer />
+        <BottomNav />
+        <CartDrawer />
+        <LimitModal />
+        <CookieConsent />
+      </div>
     </BrowserRouter>
   );
 }

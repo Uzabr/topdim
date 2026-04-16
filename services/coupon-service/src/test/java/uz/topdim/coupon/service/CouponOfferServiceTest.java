@@ -15,6 +15,8 @@ import uz.topdim.coupon.entity.*;
 import uz.topdim.coupon.exception.ResourceNotFoundException;
 import uz.topdim.coupon.repository.*;
 
+import jakarta.persistence.EntityManager;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +33,10 @@ class CouponOfferServiceTest {
     @Mock private CouponOptionRepository couponOptionRepository;
     @Mock private MerchantRepository merchantRepository;
     @Mock private CategoryRepository categoryRepository;
+    @Mock private ReviewRepository reviewRepository;
+    @Mock private CouponImageRepository couponImageRepository;
+    @Mock private EntityManager entityManager;
+    @Mock private TelegramPreviewService telegramPreviewService;
 
     @InjectMocks
     private CouponOfferService couponOfferService;
@@ -80,16 +86,15 @@ class CouponOfferServiceTest {
     // ==================== GetById ====================
 
     @Test
-    @DisplayName("Получение по ID: существующий — возвращает и увеличивает viewCount")
+    @DisplayName("Получение по ID: существующий — возвращает и вызывает incrementViewCount")
     void getById_existingId_returnsOfferAndIncrementsViewCount() {
         CouponOffer offer = createTestOffer();
         when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
-        when(couponOfferRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         CouponOfferResponse result = couponOfferService.getById(1L);
 
         assertThat(result.getTitle()).isEqualTo("SPA массаж 50%");
-        assertThat(offer.getViewCount()).isEqualTo(101); // was 100, incremented
+        verify(couponOfferRepository).incrementViewCount(1L);
     }
 
     @Test
@@ -105,8 +110,8 @@ class CouponOfferServiceTest {
     // ==================== Admin ====================
 
     @Test
-    @DisplayName("Создание купона: успешное → статус DRAFT")
-    void create_success_statusDraft() {
+    @DisplayName("Создание купона: успешное → статус LEAD")
+    void create_success_statusLead() {
         Merchant merchant = Merchant.builder().id(1L).name("SPA").logoUrl("/l.jpg").build();
         Category category = Category.builder().id(1L).name("Красота").slug("beauty").iconUrl("/i.svg").build();
 
@@ -124,7 +129,7 @@ class CouponOfferServiceTest {
 
         CouponOffer savedOffer = CouponOffer.builder()
                 .id(10L).title("Новый купон").merchant(merchant).category(category)
-                .status(CouponStatus.DRAFT).options(new ArrayList<>()).images(new ArrayList<>())
+                .status(CouponStatus.LEAD).options(new ArrayList<>()).images(new ArrayList<>())
                 .oldPrice(BigDecimal.valueOf(200000)).fromPrice(BigDecimal.valueOf(100000))
                 .discountPercent(50).totalSold(0).viewCount(0).giftAvailable(false).build();
 
@@ -133,14 +138,18 @@ class CouponOfferServiceTest {
 
         CouponOfferResponse result = couponOfferService.create(request);
 
-        assertThat(result.getStatus()).isEqualTo("DRAFT");
+        assertThat(result.getStatus()).isEqualTo("LEAD");
         verify(couponOfferRepository, atLeastOnce()).save(any());
+        verify(entityManager).flush();
+        verify(entityManager).clear();
     }
 
     @Test
-    @DisplayName("Удаление: существующий — удаляет")
-    void delete_existingCoupon_deletes() {
-        when(couponOfferRepository.existsById(1L)).thenReturn(true);
+    @DisplayName("Удаление: существующий DRAFT — удаляет")
+    void delete_existingDraft_deletes() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
 
         couponOfferService.delete(1L);
 
@@ -148,11 +157,200 @@ class CouponOfferServiceTest {
     }
 
     @Test
+    @DisplayName("Удаление: ACTIVE — запрещено")
+    void delete_activeCoupon_throwsException() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.ACTIVE);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.delete(1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Удаление запрещено");
+    }
+
+    @Test
     @DisplayName("Удаление: несуществующий → ResourceNotFoundException")
     void delete_nonExistent_throwsException() {
-        when(couponOfferRepository.existsById(999L)).thenReturn(false);
+        when(couponOfferRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> couponOfferService.delete(999L))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // ==================== State Machine ====================
+
+    @Test
+    @DisplayName("State Machine: takeToWork LEAD → DRAFT")
+    void takeToWork_fromLead_setsDraft() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.LEAD);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.save(any())).thenReturn(offer);
+
+        CouponOfferResponse result = couponOfferService.takeToWork(1L, 100L, "mod@test.uz");
+
+        assertThat(result.getStatus()).isEqualTo("DRAFT");
+        assertThat(result.getAssignedModeratorId()).isEqualTo(100L);
+        assertThat(result.getAssignedModeratorName()).isEqualTo("mod@test.uz");
+    }
+
+    @Test
+    @DisplayName("State Machine: takeToWork из DRAFT → IllegalStateException")
+    void takeToWork_fromDraft_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.takeToWork(1L, 100L, "mod@test.uz"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("State Machine: sendToApproval DRAFT → WAITING_FOR_MERCHANT")
+    void sendToApproval_fromDraft_setsWaiting() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.save(any())).thenReturn(offer);
+
+        CouponOfferResponse result = couponOfferService.sendToApproval(1L);
+
+        assertThat(result.getStatus()).isEqualTo("WAITING_FOR_MERCHANT");
+    }
+
+    @Test
+    @DisplayName("State Machine: sendToApproval из ACTIVE → IllegalStateException")
+    void sendToApproval_fromActive_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.ACTIVE);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.sendToApproval(1L))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("State Machine: approveByMerchant WAITING → ACTIVE")
+    void approve_fromWaiting_setsActive() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.save(any())).thenReturn(offer);
+
+        CouponOfferResponse result = couponOfferService.approveByMerchant(1L);
+
+        assertThat(result.getStatus()).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    @DisplayName("State Machine: approveByMerchant из DRAFT → IllegalStateException")
+    void approve_fromDraft_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.approveByMerchant(1L))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("State Machine: requestRevisionByMerchant WAITING → REVISION_REQUESTED")
+    void reject_fromWaiting_setsRevision() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.save(any())).thenReturn(offer);
+
+        CouponOfferResponse result = couponOfferService.requestRevisionByMerchant(1L, "Цена неверна");
+
+        assertThat(result.getStatus()).isEqualTo("REVISION_REQUESTED");
+        assertThat(result.getRevisionComment()).isEqualTo("Цена неверна");
+    }
+
+    // ==================== Update restrictions ====================
+
+    @Test
+    @DisplayName("Update: из DRAFT — разрешено (не бросает)")
+    void update_fromDraft_allowed() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        Merchant merchant = offer.getMerchant();
+        Category category = offer.getCategory();
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(categoryRepository.findById(anyLong())).thenReturn(Optional.of(category));
+        when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+
+        CreateCouponOfferRequest req = new CreateCouponOfferRequest();
+        req.setTitle("Updated");
+        req.setMerchantId(1L);
+        req.setCategoryId(1L);
+        req.setFromPrice(offer.getFromPrice());
+
+        assertThatCode(() -> couponOfferService.update(1L, req, 100L, "ADMIN"))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("Update: из ACTIVE — разрешено (Variant B)")
+    void update_fromActive_allowed() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.ACTIVE);
+        Merchant merchant = offer.getMerchant();
+        Category category = offer.getCategory();
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(categoryRepository.findById(anyLong())).thenReturn(Optional.of(category));
+        when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+
+        CreateCouponOfferRequest req = new CreateCouponOfferRequest();
+        req.setTitle("Updated");
+        req.setMerchantId(1L);
+        req.setCategoryId(1L);
+        req.setFromPrice(offer.getFromPrice());
+
+        assertThatCode(() -> couponOfferService.update(1L, req, 100L, "ADMIN"))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("Update: из WAITING_FOR_MERCHANT — запрещено")
+    void update_fromWaiting_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        CreateCouponOfferRequest req = new CreateCouponOfferRequest();
+
+        assertThatThrownBy(() -> couponOfferService.update(1L, req, 100L, "ADMIN"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Редактирование запрещено");
+    }
+
+    @Test
+    @DisplayName("Update: MODERATOR редактирует чужой купон — запрещено")
+    void update_otherModeratorCoupon_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        offer.setAssignedModeratorId(100L);
+        offer.setAssignedModeratorName("mod1@test.uz");
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        CreateCouponOfferRequest req = new CreateCouponOfferRequest();
+
+        // Другой MODERATOR (другой userId) пытается редактировать
+        assertThatThrownBy(() -> couponOfferService.update(1L, req, 200L, "MODERATOR"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("закреплён за другим");
+    }
+
+    @Test
+    @DisplayName("Delete: WAITING_FOR_MERCHANT — запрещено")
+    void delete_waitingForMerchant_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.delete(1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Удаление запрещено");
     }
 }

@@ -1,76 +1,83 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Heart, MapPinned, Menu, Search, ShoppingBag, Ticket, User, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { Ticket, Map, ShoppingCart, User, Search, Menu, X } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
+import { useFavoritesStore } from '../../store/favoritesStore';
+import { useLocalePath } from '../../hooks/useLocalePath';
+import CitySelector from '../ui/CitySelector';
+import LanguageSelector from '../ui/LanguageSelector';
 import './Header.css';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { isAuthenticated, user } = useAuthStore();
   const { totalItems, toggleCart } = useCartStore();
+  const { favoriteIds } = useFavoritesStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const { t } = useTranslation();
+  const lp = useLocalePath();
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => location.pathname.endsWith(path) || location.pathname === lp(path);
 
   return (
     <header className="header glass">
       <div className="header-inner container">
-        <Link to="/" className="logo">
-          <span className="logo-icon">💎</span>
-          <span className="logo-text">Top<span className="text-gradient">Dim</span></span>
+        <Link to={lp('/')} className="logo" onClick={() => setMobileMenuOpen(false)}>
+          <span className="logo-mark" aria-hidden="true">
+            <span className="logo-mark__diamond" />
+            <span className="logo-mark__pin" />
+          </span>
+          <span className="logo-text">
+            Top<span>dim</span>
+          </span>
         </Link>
 
+        <div className="header-selectors">
+          <CitySelector />
+          <LanguageSelector />
+        </div>
+
         <nav className={`nav ${mobileMenuOpen ? 'nav--open' : ''}`}>
-          <Link
-            to="/"
-            className={`nav-link ${isActive('/') ? 'nav-link--active' : ''}`}
-            onClick={() => setMobileMenuOpen(false)}
-          >
+          <Link to={lp('/')} className={`nav-link ${isActive('/') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
             <Ticket size={18} />
-            <span>Купоны</span>
+            {t('nav.coupons')}
           </Link>
-          <Link
-            to="/bazaar"
-            className={`nav-link ${isActive('/bazaar') ? 'nav-link--active' : ''}`}
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <Map size={18} />
-            <span>Базар</span>
+          <Link to={lp('/bazaar')} className={`nav-link ${isActive('/bazaar') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
+            <MapPinned size={18} />
+            {t('nav.bazaar')}
           </Link>
-          <Link
-            to="/search"
-            className={`nav-link ${isActive('/search') ? 'nav-link--active' : ''}`}
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <Search size={18} />
-            <span>Поиск</span>
+          <Link to={lp('/favorites')} className={`nav-link ${isActive('/favorites') ? 'nav-link--active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <Heart size={18} />
+              {favoriteIds.length > 0 && (
+                <span className="cart-badge" style={{ position: 'absolute', top: '-8px', right: '-12px' }}>{favoriteIds.length}</span>
+              )}
+            </div>
+            {t('nav.favorites')}
           </Link>
         </nav>
 
         <div className="header-actions">
-          <button className="cart-btn" onClick={toggleCart} aria-label="Корзина">
-            <ShoppingCart size={20} />
+          <Link to={lp('/search')} className="icon-button" aria-label="Поиск">
+            <Search size={19} />
+          </Link>
+          <button type="button" className="icon-button" onClick={toggleCart} aria-label="Корзина">
+            <ShoppingBag size={19} />
             {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
           </button>
-
-          {isAuthenticated ? (
-            <Link to="/profile" className="profile-btn">
-              <User size={20} />
-              <span className="profile-name">{user?.firstName}</span>
-            </Link>
-          ) : (
-            <Link to="/login" className="login-btn">
-              Войти
-            </Link>
-          )}
-
+          <Link to={lp(isAuthenticated ? '/profile' : '/login')} className="account-pill">
+            <User size={18} />
+            <span>{isAuthenticated ? user?.firstName ?? t('header.profile') : t('header.login')}</span>
+          </Link>
           <button
+            type="button"
             className="mobile-menu-btn"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Меню"
+            onClick={() => setMobileMenuOpen((value) => !value)}
           >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>

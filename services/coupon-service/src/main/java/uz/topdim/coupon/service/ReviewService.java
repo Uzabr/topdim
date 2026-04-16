@@ -21,12 +21,13 @@ public class ReviewService {
     private final CouponOfferRepository couponOfferRepository;
 
     @Transactional
-    public Long createReview(Long userId, CreateReviewRequest request) {
+    public Long createReview(Long userId, String userName, CreateReviewRequest request) {
         CouponOffer coupon = couponOfferRepository.findById(request.getCouponOfferId())
                 .orElseThrow(() -> new RuntimeException("Купон не найден"));
 
         Review review = Review.builder()
                 .userId(userId)
+                .userName(userName)
                 .couponOffer(coupon)
                 .rating(request.getRating())
                 .comment(request.getComment())
@@ -53,6 +54,7 @@ public class ReviewService {
         return ReviewResponse.builder()
                 .id(review.getId())
                 .userId(review.getUserId())
+                .userName(review.getUserName())
                 .couponOfferId(review.getCouponOffer().getId())
                 .rating(review.getRating())
                 .comment(review.getComment())

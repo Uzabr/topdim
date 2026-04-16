@@ -20,7 +20,7 @@ import java.util.Set;
 /**
  * Сервис для партнёров — управление купонами.
  * Партнёр видит только СВОИ купоны (через Merchant.userId).
- * Новые купоны создаются со статусом PENDING_REVIEW.
+ * Новые купоны создаются как лиды (LEAD) для дальнейшей обработки менеджером.
  */
 @Slf4j
 @Service
@@ -32,7 +32,7 @@ public class PartnerCouponService {
     private final CategoryRepository categoryRepository;
 
     private static final Set<CouponStatus> EDITABLE_STATUSES = Set.of(
-            CouponStatus.DRAFT, CouponStatus.PENDING_REVIEW, CouponStatus.REJECTED
+            CouponStatus.DRAFT, CouponStatus.REVISION_REQUESTED
     );
 
     /**
@@ -79,8 +79,8 @@ public class PartnerCouponService {
     }
 
     /**
-     * Создать купон (статус = PENDING_REVIEW).
-     * Партнёр не может создать ACTIVE купон напрямую.
+     * Создать купон (статус = LEAD).
+     * Партнёр не может опубликовать купон напрямую.
      */
     @Transactional
     public CouponOfferResponse createCouponOffer(Long userId, CreateCouponOfferRequest request) {
@@ -108,17 +108,17 @@ public class PartnerCouponService {
                 .contactPhone(request.getContactPhone())
                 .workingHours(request.getWorkingHours())
                 .giftAvailable(request.isGiftAvailable())
-                .status(CouponStatus.PENDING_REVIEW)
+                .status(CouponStatus.LEAD)
                 .build();
 
         offer = couponOfferRepository.save(offer);
-        log.info("PARTNER: Пользователь {} создал купон {} (PENDING_REVIEW)", userId, offer.getId());
+        log.info("PARTNER: Пользователь {} создал купон {} (LEAD)", userId, offer.getId());
 
         return mapToResponse(offer);
     }
 
     /**
-     * Обновить свой купон (только если DRAFT / PENDING_REVIEW / REJECTED).
+     * Обновить свой купон (только если DRAFT / REVISION_REQUESTED).
      */
     @Transactional
     public CouponOfferResponse updateMyCoupon(Long userId, Long couponId, CreateCouponOfferRequest request) {
@@ -155,8 +155,8 @@ public class PartnerCouponService {
         offer.setWorkingHours(request.getWorkingHours());
         offer.setGiftAvailable(request.isGiftAvailable());
         // После редактирования отклонённого — снова на модерацию
-        if (offer.getStatus() == CouponStatus.REJECTED) {
-            offer.setStatus(CouponStatus.PENDING_REVIEW);
+        if (offer.getStatus() == CouponStatus.REVISION_REQUESTED) {
+            offer.setStatus(CouponStatus.DRAFT);
         }
 
         offer = couponOfferRepository.save(offer);

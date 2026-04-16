@@ -1,148 +1,276 @@
+/* ═══════════════════════════════════════════
+   CouponCard — Unified card component
+   Supports: card | carousel | featured layouts
+   ═══════════════════════════════════════════ */
+
 .coupon-card {
   display: flex;
   flex-direction: column;
-  background: var(--gradient-card);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
   overflow: hidden;
-  transition: all var(--transition-normal);
-  animation: fadeIn 0.4s ease-out;
+  background: var(--gradient-card);
+  border: 1px solid var(--border);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  z-index: 1;
 }
 
 .coupon-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(99, 102, 241, 0.3);
-  box-shadow: var(--shadow-lg), 0 0 30px rgba(99, 102, 241, 0.1);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-strong);
+  z-index: 10;
 }
 
-.coupon-card__image {
+/* === Media === */
+.coupon-card__media {
   position: relative;
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  background: var(--bg-elevated);
+  background: var(--bg-muted);
 }
 
-.coupon-card__image img {
+.coupon-card__media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform var(--transition-slow);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.coupon-card:hover .coupon-card__image img {
+.coupon-card:hover .coupon-card__media img {
   transform: scale(1.05);
 }
 
-.coupon-card__placeholder {
+.coupon-card__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.35) 100%);
+  pointer-events: none;
+}
+
+.coupon-card__img-placeholder {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 48px;
   background: var(--gradient-hero);
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--text-muted);
 }
 
-.coupon-card__discount {
+/* Top-left wrapper */
+.coupon-card__top-left {
   position: absolute;
-  top: var(--space-sm);
-  left: var(--space-sm);
-  padding: 4px 10px;
-  background: var(--error);
-  color: white;
-  font-size: var(--font-xs);
-  font-weight: 700;
-  border-radius: var(--radius-sm);
-  letter-spacing: 0.5px;
-}
-
-.coupon-card__gift {
-  position: absolute;
-  top: var(--space-sm);
-  right: var(--space-sm);
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent);
-  color: white;
-  border-radius: var(--radius-full);
-}
-
-.coupon-card__body {
-  padding: var(--space-md);
+  top: 10px;
+  left: 10px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
-  flex: 1;
+  align-items: flex-start;
+  gap: 6px;
+  z-index: 2;
+  max-width: 75%;
+}
+
+
+
+/* Hot badge — inside wrapper */
+.coupon-card__hot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, #ff416c, #ff4b2b);
+  box-shadow: 0 4px 10px rgba(255, 75, 43, 0.4);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.coupon-card__hot span {
+  font-size: 14px;
+  animation: pulse-fire 2s infinite ease-in-out;
+}
+
+@keyframes pulse-fire {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* Discount badge */
+.coupon-card__discount {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 2;
+}
+
+/* Hot flame and Favorite logic moved to FavoriteButton component */
+
+/* Timer */
+.coupon-card__timer {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  z-index: 2;
+}
+
+/* === Body === */
+.coupon-card__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* allow body to grow */
+  gap: 6px;
+  padding: 14px 16px 16px;
+}
+
+.coupon-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .coupon-card__merchant {
   font-size: var(--font-xs);
-  color: var(--primary-light);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.coupon-card__sold {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .coupon-card__title {
-  font-size: var(--font-md);
-  font-weight: 600;
+  margin: 0;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--text-primary);
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: 2.6em; /* ensure fixed space for 2 lines */
 }
 
 .coupon-card__desc {
-  font-size: var(--font-sm);
+  margin: 0;
+  font-size: var(--font-xs);
   color: var(--text-secondary);
+  line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.coupon-card__pricing {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-top: auto;
-  padding-top: var(--space-sm);
-}
-
-.coupon-card__old-price {
-  font-size: var(--font-sm);
-  color: var(--text-muted);
-  text-decoration: line-through;
-}
-
-.coupon-card__price {
-  font-size: var(--font-lg);
-  font-weight: 700;
-  color: var(--success-light);
-}
-
-.coupon-card__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: var(--space-sm);
-  border-top: 1px solid var(--border);
-  margin-top: var(--space-sm);
-}
-
-.coupon-card__sold,
-.coupon-card__time {
+/* Rating */
+.coupon-card__rating {
   display: flex;
   align-items: center;
   gap: 4px;
   font-size: var(--font-xs);
+}
+
+.coupon-card__star {
+  color: #FFB800;
+}
+
+.coupon-card__rating-value {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.coupon-card__review-count {
   color: var(--text-muted);
 }
 
-.coupon-card__time {
-  color: var(--accent);
+/* Pricing */
+.coupon-card__pricing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto; /* push down to align perfectly at the bottom */
+  padding-top: 4px;
+}
+
+.coupon-card__price-pill {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-muted);
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.coupon-card__old-price {
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+/* ═══════ LAYOUT VARIANTS ═══════ */
+
+/* Carousel — horizontal card for scrollable rows */
+.coupon-card--carousel {
+  min-width: 280px;
+  max-width: 300px;
+  flex-shrink: 0;
+}
+
+.coupon-card--carousel .coupon-card__media {
+  aspect-ratio: 16 / 9;
+}
+
+/* Featured — larger card for hero spotlight */
+.coupon-card--featured {
+  grid-column: span 2;
+}
+
+.coupon-card--featured .coupon-card__media {
+  aspect-ratio: 2 / 1;
+}
+
+.coupon-card--featured .coupon-card__title {
+  font-size: var(--font-lg);
+  -webkit-line-clamp: 3;
+}
+
+/* ═══════ RESPONSIVE ═══════ */
+@media (max-width: 768px) {
+  .coupon-card--featured {
+    grid-column: span 1;
+  }
+
+  .coupon-card__body {
+    padding: 12px 16px 16px;
+  }
 }

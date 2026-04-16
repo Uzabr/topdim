@@ -24,6 +24,8 @@ export interface CouponOffer {
   status: string;
   totalSold: number;
   viewCount: number;
+  averageRating?: number;
+  reviewCount?: number;
   options: CouponOption[];
   images: string[];
   createdAt: string;

@@ -1,0 +1,218 @@
+.deal-card {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 160, 110, 0.24);
+  box-shadow: var(--shadow-md);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast);
+  overflow: hidden;
+}
+
+.deal-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(255, 90, 70, 0.32);
+  box-shadow: var(--shadow-lg);
+}
+
+.deal-card--featured {
+  grid-column: span 2;
+}
+
+.deal-card__media {
+  position: relative;
+  height: 220px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.deal-card--compact .deal-card__media {
+  height: 180px;
+}
+
+.deal-card--featured .deal-card__media {
+  height: 280px;
+}
+
+.deal-card__media img,
+.deal-card__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.deal-card__media img {
+  object-fit: cover;
+}
+
+.deal-card__overlay {
+  background: linear-gradient(180deg, rgba(47, 27, 18, 0.04) 35%, rgba(47, 27, 18, 0.6) 100%);
+}
+
+.deal-card__discount,
+.deal-card__hot,
+.deal-card__timer {
+  position: absolute;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.deal-card__discount {
+  top: 12px;
+  left: 12px;
+  padding: 10px 12px;
+  color: white;
+  background: linear-gradient(135deg, #ff533d, #ff4f8b);
+  animation: pulseDeal 1.8s ease-in-out infinite;
+}
+
+.deal-card__favorite {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(4px);
+  color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.deal-card__favorite:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: scale(1.1);
+}
+
+.deal-card__favorite--active {
+  color: var(--secondary);
+}
+
+.deal-card__hot {
+  top: 12px;
+  right: 56px;
+  padding: 8px 12px;
+  color: #8a2f00;
+  background: rgba(255, 227, 143, 0.95);
+}
+
+.deal-card__timer {
+  bottom: 12px;
+  left: 12px;
+  padding: 8px 12px;
+  color: white;
+  background: rgba(47, 27, 18, 0.7);
+  backdrop-filter: blur(8px);
+}
+
+.deal-card__body {
+  display: grid;
+  gap: 12px;
+}
+
+.deal-card__body h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.1;
+}
+
+.deal-card__body p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.94rem;
+}
+
+.deal-card__meta,
+.deal-card__tags,
+.deal-card__proof {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.deal-card__meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.deal-card__tags span,
+.deal-card__proof span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.deal-card__tags span:first-child {
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--primary-strong);
+  font-weight: 700;
+}
+
+.deal-card__pricing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.deal-card__pricing div {
+  display: grid;
+  gap: 2px;
+}
+
+.deal-card__pricing strong {
+  font-size: 1.18rem;
+}
+
+.deal-card__pricing span {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-decoration: line-through;
+}
+
+.deal-card__pricing button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 16px;
+  background: var(--gradient-primary);
+  color: white;
+  font-weight: 700;
+}
+
+.deal-card__proof {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 170, 126, 0.25);
+}
+
+@media (max-width: 900px) {
+  .deal-card--featured {
+    grid-column: span 1;
+  }
+}

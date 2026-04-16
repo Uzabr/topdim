@@ -37,12 +37,12 @@ public class CouponOffer {
     @Column(name = "full_description", columnDefinition = "TEXT")
     private String fullDescription;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "merchant_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "merchant_id", nullable = false)
     private Merchant merchant;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(name = "category_id")
     private Category category;
 
     @Column(name = "old_price", precision = 12, scale = 2)
@@ -83,6 +83,15 @@ public class CouponOffer {
     @Column(name = "is_gift_available")
     private boolean giftAvailable;
 
+    @Column(name = "assigned_moderator_id")
+    private Long assignedModeratorId;
+
+    @Column(name = "assigned_moderator_name")
+    private String assignedModeratorName;
+
+    @Column(name = "revision_comment", columnDefinition = "TEXT")
+    private String revisionComment;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CouponStatus status;
@@ -90,8 +99,15 @@ public class CouponOffer {
     @Column(name = "total_sold")
     private int totalSold;
 
+    @Column(name = "redeemed_count")
+    private int redeemedCount;
+
     @Column(name = "view_count")
     private int viewCount;
+
+    @Column(name = "total_turnover", precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal totalTurnover = BigDecimal.ZERO;
 
     @OneToMany(mappedBy = "couponOffer", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

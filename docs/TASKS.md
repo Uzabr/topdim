@@ -26,10 +26,10 @@
 
 ### Оставшиеся backend задачи (из аудита v2):
 - [x] **2.7 Complaint entity** (user жалобы — из ER-диаграммы)
-- [ ] **2.8 BazaarMap entity** (внутренняя карта базара)
+- [x] **2.8 BazaarMap entity** (внутренняя карта базара)
 - [ ] **2.9 GET /auth/verify** (подтверждение email/phone)
 - [ ] **2.10 Payme/Click реальная интеграция**
-- [ ] **2.11 Rate Limiting на Gateway** (Redis-based)
+- [x] **2.11 Rate Limiting на Gateway** (Redis-based)
 
 ---
 

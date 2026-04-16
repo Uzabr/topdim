@@ -38,8 +38,15 @@ public class CouponOfferResponse {
     private String workingHours;
     private boolean giftAvailable;
     private String status;
+    private Long assignedModeratorId;
+    private String assignedModeratorName;
+    private String revisionComment;
     private int totalSold;
+    private int redeemedCount;
+    private BigDecimal totalTurnover;
     private int viewCount;
+    private Double averageRating;
+    private int reviewCount;
     private List<CouponOptionResponse> options;
     private List<String> images;
     private LocalDateTime createdAt;

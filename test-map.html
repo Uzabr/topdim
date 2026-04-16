@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html><head>
+<script src="https://mapgl.2gis.com/api/js/v1"></script>
+</head><body>
+<div id="map" style="width: 500px; height: 500px"></div>
+<script>
+    const map = new mapgl.Map('map', { key: '3b3d04f2-7dc0-46bc-899b-2c8652fd4813', center: [37, 55], zoom: 13 });
+    setTimeout(() => { console.log(typeof map.unproject); }, 1000);
+</script>
+</body></html>

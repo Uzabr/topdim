@@ -107,23 +107,29 @@ public class OrderController {
 
     /** Все купленные купоны пользователя (фильтр по статусу). */
     @GetMapping("/api/v1/orders/my-coupons")
-    public ResponseEntity<ApiResponse<List<PurchasedCoupon>>> getMyCoupons(
+    public ResponseEntity<ApiResponse<List<PurchasedCouponResponse>>> getMyCoupons(
             @RequestHeader("X-User-Id") Long userId,
             @RequestParam(required = false) PurchasedCouponStatus status
     ) {
         List<PurchasedCoupon> coupons = status != null
                 ? orderService.getUserCouponsByStatus(userId, status)
                 : orderService.getUserCoupons(userId);
-        return ResponseEntity.ok(ApiResponse.success(coupons));
+        List<PurchasedCouponResponse> response = coupons.stream()
+                .map(orderService::mapToCouponResponse)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /** Купоны конкретного заказа (с проверкой владельца). */
     @GetMapping("/api/v1/orders/{orderId}/coupons")
-    public ResponseEntity<ApiResponse<List<PurchasedCoupon>>> getOrderCoupons(
+    public ResponseEntity<ApiResponse<List<PurchasedCouponResponse>>> getOrderCoupons(
             @RequestHeader("X-User-Id") Long userId,
             @PathVariable Long orderId
     ) {
-        return ResponseEntity.ok(ApiResponse.success(orderService.getOrderCoupons(orderId, userId)));
+        List<PurchasedCouponResponse> response = orderService.getOrderCoupons(orderId, userId).stream()
+                .map(orderService::mapToCouponResponse)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // ==================== Redemption ====================

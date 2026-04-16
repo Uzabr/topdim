@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.common.events.OrderCreatedEvent;
 import uz.topdim.common.events.CouponPurchasedEvent;
+import uz.topdim.order.dto.PurchasedCouponResponse;
 import uz.topdim.order.entity.*;
 import uz.topdim.order.repository.*;
 
@@ -436,5 +437,25 @@ public class OrderService {
 
     private String generateCouponCode() {
         return "CP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
+    // ==================== Mapping ====================
+
+    /**
+     * Маппит PurchasedCoupon entity в PurchasedCouponResponse DTO.
+     * Исключает JPA-связи (Order) из сериализации.
+     */
+    public PurchasedCouponResponse mapToCouponResponse(PurchasedCoupon coupon) {
+        return PurchasedCouponResponse.builder()
+                .id(coupon.getId())
+                .couponTitle(coupon.getCouponTitle())
+                .optionTitle(coupon.getOptionTitle())
+                .couponCode(coupon.getCouponCode())
+                .qrToken(coupon.getQrToken())
+                .status(coupon.getStatus().name())
+                .purchasedAt(coupon.getPurchasedAt())
+                .expiresAt(coupon.getExpiresAt())
+                .usedAt(coupon.getUsedAt())
+                .build();
     }
 }

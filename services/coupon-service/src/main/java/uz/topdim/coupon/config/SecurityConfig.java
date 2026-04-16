@@ -47,6 +47,9 @@ public class SecurityConfig {
                         // Admin/Moderator endpoints (модаратору теперь тоже можно работать с контентом)
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "MODERATOR")
 
+                        // Bot webhook — внутренний вызов от Telegram-сервиса (без JWT)
+                        .requestMatchers("/api/v1/bot/**").permitAll()
+
                         // Partner endpoints — PARTNER, ADMIN, SUPER_ADMIN
                         .requestMatchers("/api/v1/partner/**").hasAnyRole("PARTNER", "ADMIN", "SUPER_ADMIN")
 

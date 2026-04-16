@@ -8,7 +8,9 @@ import java.util.List;
  * CORS настройки из конфигурации (application.yml).
  * Типобезопасный подход через @ConfigurationProperties вместо raw env strings.
  *
- * <p>Пример в application.yml:
+ * <p>
+ * Пример в application.yml:
+ * 
  * <pre>
  * app:
  *   cors:
@@ -20,7 +22,7 @@ import java.util.List;
 @ConfigurationProperties(prefix = "app.cors")
 public class CorsProperties {
 
-    private List<String> allowedOrigins = List.of("http://localhost:3000", "http://localhost:5173");
+    private List<String> allowedOrigins = List.of("http://localhost:3001", "http://localhost:5173");
     private List<String> allowedMethods = List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS");
     private List<String> allowedHeaders = List.of("*");
     private boolean allowCredentials = true;

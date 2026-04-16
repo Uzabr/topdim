@@ -6,11 +6,11 @@ spring:
     name: notification-service
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
+    port: ${RABBITMQ_PORT:5673}
     username: ${RABBITMQ_USERNAME:topdim}
     password: ${RABBITMQ_PASSWORD:topdim_secret}
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/topdim_notification?sslmode=disable
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/topdim_notification?sslmode=disable
     username: ${DB_USERNAME:topdim}
     password: ${DB_PASSWORD:topdim_secret}
     driver-class-name: org.postgresql.Driver

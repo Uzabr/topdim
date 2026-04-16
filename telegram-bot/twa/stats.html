@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>TopDim — Статистика акции</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    /* ─── Telegram Native Colors ─── */
+    :root {
+      --bg: var(--tg-theme-bg-color, #1c1c1e);
+      --text: var(--tg-theme-text-color, #ffffff);
+      --hint: var(--tg-theme-hint-color, #8e8e93);
+      --link: var(--tg-theme-link-color, #007aff);
+      --btn: var(--tg-theme-button-color, #007aff);
+      --btn-text: var(--tg-theme-button-text-color, #ffffff);
+      --secondary-bg: var(--tg-theme-secondary-bg-color, #2c2c2e);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Header ─── */
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .header .subtitle {
+      font-size: 13px;
+      color: var(--hint);
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .status-active {
+      background: rgba(52, 199, 89, 0.15);
+      color: #34c759;
+    }
+    .status-soldout {
+      background: rgba(255, 69, 58, 0.15);
+      color: #ff453a;
+    }
+
+    /* ─── Glass Card ─── */
+    .glass {
+      background: var(--secondary-bg);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    /* ─── Progress Bar ─── */
+    .progress-section { margin-bottom: 16px; }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--hint);
+      margin-bottom: 8px;
+    }
+    .progress-label span:last-child {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .progress-bar {
+      height: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 5px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 5px;
+      background: linear-gradient(90deg, #34c759, #30d158);
+      transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+      animation: shimmer 2s infinite;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* ─── Bento Box Grid ─── */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .bento-card {
+      background: var(--secondary-bg);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: transform 0.2s ease;
+    }
+    .bento-card:active { transform: scale(0.97); }
+    .bento-icon {
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+    .bento-value {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .bento-label {
+      font-size: 12px;
+      color: var(--hint);
+      margin-top: 4px;
+    }
+
+    /* ─── Rating ─── */
+    .rating-section {
+      text-align: center;
+      margin-top: 12px;
+    }
+    .stars { font-size: 22px; letter-spacing: 2px; }
+    .rating-text {
+      font-size: 13px;
+      color: var(--hint);
+      margin-top: 4px;
+    }
+
+    /* ─── Animation ─── */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(12px);
+      animation: fadeUp 0.5s ease forwards;
+    }
+    .fade-in:nth-child(2) { animation-delay: 0.1s; }
+    .fade-in:nth-child(3) { animation-delay: 0.2s; }
+    .fade-in:nth-child(4) { animation-delay: 0.3s; }
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header fade-in">
+    <h1 id="couponTitle">Загрузка...</h1>
+    <div class="subtitle" id="couponSubtitle"></div>
+    <div class="status-badge status-active" id="statusBadge">ACTIVE</div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="glass fade-in">
+    <div class="progress-section">
+      <div class="progress-label">
+        <span>Продано</span>
+        <span id="progressText">0 из 0</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bento Box 2x2 -->
+  <div class="bento-grid">
+    <div class="bento-card fade-in">
+      <div class="bento-icon">👁</div>
+      <div class="bento-value" id="viewCount">—</div>
+      <div class="bento-label">Просмотры</div>
+    </div>
+    <div class="bento-card fade-in">
+      <div class="bento-icon">🛒</div>
+      <div class="bento-value" id="totalSold">—</div>
+      <div class="bento-label">Куплено</div>
+    </div>
+    <div class="bento-card fade-in">
+      <div class="bento-icon">✅</div>
+      <div class="bento-value" id="redeemed">—</div>
+      <div class="bento-label">Активировано</div>
+    </div>
+    <div class="bento-card fade-in">
+      <div class="bento-icon">💰</div>
+      <div class="bento-value" id="turnover">—</div>
+      <div class="bento-label">Оборот (сум)</div>
+    </div>
+  </div>
+
+  <!-- Rating -->
+  <div class="glass rating-section fade-in" id="ratingSection">
+    <div class="stars" id="stars">☆☆☆☆☆</div>
+    <div class="rating-text" id="ratingText">Ещё нет отзывов</div>
+  </div>
+
+<script>
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+  }
+
+  // ─── Mock Data (заменить на реальный API-вызов) ───
+  const mockStats = {
+    title: "Массаж спины — скидка 50%",
+    status: "ACTIVE",
+    quantityLimit: 100,
+    totalSold: 42,
+    viewCount: 1340,
+    redeemedCount: 28,
+    totalTurnover: 2_940_000,
+    averageRating: 4.6,
+    reviewCount: 15,
+  };
+
+  // ─── Render ───
+  function render(stats) {
+    document.getElementById("couponTitle").textContent = stats.title;
+    document.getElementById("couponSubtitle").textContent = `Лимит: ${stats.quantityLimit} шт.`;
+
+    // Status badge
+    const badge = document.getElementById("statusBadge");
+    badge.textContent = stats.status === "ACTIVE" ? "🟢 Активна" : "🔴 Распродано";
+    badge.className = `status-badge ${stats.status === "ACTIVE" ? "status-active" : "status-soldout"}`;
+
+    // Progress
+    const percent = stats.quantityLimit > 0
+      ? Math.min(100, Math.round((stats.totalSold / stats.quantityLimit) * 100))
+      : 0;
+    document.getElementById("progressText").textContent = `${stats.totalSold} из ${stats.quantityLimit}`;
+    setTimeout(() => {
+      document.getElementById("progressFill").style.width = `${percent}%`;
+    }, 300);
+
+    // Bento
+    document.getElementById("viewCount").textContent = stats.viewCount.toLocaleString("ru");
+    document.getElementById("totalSold").textContent = stats.totalSold.toLocaleString("ru");
+    document.getElementById("redeemed").textContent = stats.redeemedCount.toLocaleString("ru");
+    document.getElementById("turnover").textContent = formatPrice(stats.totalTurnover);
+
+    // Rating
+    renderStars(stats.averageRating, stats.reviewCount);
+  }
+
+  function formatPrice(value) {
+    if (value >= 1_000_000) return (value / 1_000_000).toFixed(1) + "M";
+    if (value >= 1_000) return Math.round(value / 1_000) + "K";
+    return value.toLocaleString("ru");
+  }
+
+  function renderStars(rating, count) {
+    const full = Math.floor(rating);
+    const half = rating - full >= 0.3;
+    let stars = "★".repeat(full) + (half ? "★" : "") + "☆".repeat(5 - full - (half ? 1 : 0));
+    document.getElementById("stars").textContent = stars;
+    document.getElementById("ratingText").textContent =
+      count > 0 ? `${rating.toFixed(1)} — ${count} отзывов` : "Ещё нет отзывов";
+  }
+
+  // TODO: Заменить на реальный вызов API
+  // const chatId = tg?.initDataUnsafe?.user?.id;
+  // fetch(`/api/v1/bot/coupons/merchants/${chatId}`)
+  //   .then(r => r.json())
+  //   .then(data => { ... });
+
+  render(mockStats);
+</script>
+
+</body>
+</html>

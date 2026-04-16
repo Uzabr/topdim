@@ -13,4 +13,6 @@ public interface MerchantRepository extends JpaRepository<Merchant, Long> {
     List<Merchant> findByActiveTrue();
 
     java.util.Optional<Merchant> findByUserId(Long userId);
+    java.util.Optional<Merchant> findByTelegramChatId(String telegramChatId);
+    java.util.Optional<Merchant> findByPhone(String phone);
 }

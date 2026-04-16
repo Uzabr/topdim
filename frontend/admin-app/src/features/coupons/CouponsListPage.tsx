@@ -35,10 +35,11 @@ export const CouponsListPage = () => {
   });
 
   const statusColors: Record<string, string> = {
-    ACTIVE: 'green',
+    LEAD: 'blue',
     DRAFT: 'default',
-    PAUSED: 'orange',
-    ENDED: 'red',
+    WAITING_FOR_MERCHANT: 'purple',
+    REVISION_REQUESTED: 'orange',
+    ACTIVE: 'green',
   };
 
   const columns: ColumnsType<any> = [
@@ -59,21 +60,33 @@ export const CouponsListPage = () => {
     },
     {
       title: 'Действия',
-      width: 120,
-      render: (_, record) => (
-        <Space>
-          <Button type="text" icon={<EditOutlined />} onClick={() => message.info('Редактирование пока не реализовано')} />
-          <Popconfirm
-            title="Удалить купон?"
-            description="Это действие необратимо."
-            onConfirm={() => deleteMutation.mutate(record.id)}
-            okText="Да"
-            cancelText="Нет"
-          >
-            <Button type="text" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
-          </Popconfirm>
-        </Space>
-      ),
+      width: 140,
+      render: (_, record) => {
+        const isEditable = record.status === 'LEAD' || record.status === 'DRAFT' || record.status === 'REVISION_REQUESTED' || record.status === 'ACTIVE';
+        const isDeletable = record.status === 'LEAD' || record.status === 'DRAFT' || record.status === 'REVISION_REQUESTED';
+        return (
+          <Space>
+            {isEditable ? (
+              <Button type="text" icon={<EditOutlined />} onClick={() => navigate(`/moderation/coupons/edit/${record.id}`)} />
+            ) : (
+              <Button type="text" icon={<EditOutlined />} disabled title="Редактирование заблокировано" />
+            )}
+            {isDeletable ? (
+              <Popconfirm
+                title="Удалить купон?"
+                description="Это действие необратимо."
+                onConfirm={() => deleteMutation.mutate(record.id)}
+                okText="Да"
+                cancelText="Нет"
+              >
+                <Button type="text" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
+              </Popconfirm>
+            ) : (
+              <Button type="text" danger icon={<DeleteOutlined />} disabled title="Удаление заблокировано" />
+            )}
+          </Space>
+        );
+      },
     },
   ];
 

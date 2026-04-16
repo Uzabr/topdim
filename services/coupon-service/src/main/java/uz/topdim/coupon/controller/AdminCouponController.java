@@ -32,10 +32,11 @@ public class AdminCouponController {
     @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/coupons")
     public ResponseEntity<ApiResponse<Page<CouponOfferResponse>>> getAllCoupons(
+            @RequestParam(required = false) CouponStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(ApiResponse.success(couponOfferService.getAllForAdmin(page, size)));
+        return ResponseEntity.ok(ApiResponse.success(couponOfferService.getAllForAdmin(status, page, size)));
     }
 
     @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
@@ -45,6 +46,23 @@ public class AdminCouponController {
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Купон создан", couponOfferService.create(request)));
+    }
+
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @GetMapping("/coupons/{id}")
+    public ResponseEntity<ApiResponse<CouponOfferResponse>> getCouponById(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(couponOfferService.getByIdAdmin(id)));
+    }
+
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PutMapping("/coupons/{id}")
+    public ResponseEntity<ApiResponse<CouponOfferResponse>> updateCoupon(
+            @PathVariable Long id,
+            @Valid @RequestBody CreateCouponOfferRequest request,
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader("X-User-Role") String userRole
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Купон обновлён", couponOfferService.update(id, request, userId, userRole)));
     }
 
     @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
@@ -63,9 +81,29 @@ public class AdminCouponController {
         return ResponseEntity.ok(ApiResponse.success("Купон удалён", null));
     }
 
+    /** Отправить купон на согласование мерчанту (DRAFT/REVISION_REQUESTED → WAITING_FOR_MERCHANT). */
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PostMapping("/coupons/{id}/send-to-approval")
+    public ResponseEntity<ApiResponse<CouponOfferResponse>> sendToApproval(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Купон отправлен на согласование", couponOfferService.sendToApproval(id)));
+    }
+
+    /** Модератор берёт лид в работу (LEAD → DRAFT). */
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PatchMapping("/coupons/{id}/take-to-work")
+    public ResponseEntity<ApiResponse<CouponOfferResponse>> takeToWork(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long moderatorId,
+            @RequestHeader("X-User-Email") String moderatorEmail
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Купон взят в работу", couponOfferService.takeToWork(id, moderatorId, moderatorEmail)));
+    }
+
     // ==================== Merchants ====================
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/merchants")
     public ResponseEntity<ApiResponse<List<MerchantResponse>>> getAllMerchants() {
         return ResponseEntity.ok(ApiResponse.success(merchantService.getAllMerchants()));
@@ -95,36 +133,4 @@ public class AdminCouponController {
         return ResponseEntity.ok(ApiResponse.success("Партнёр обновлён", merchantService.updateMerchant(id, request)));
     }
 
-    // ==================== Categories ====================
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    @GetMapping("/categories/{id}")
-    public ResponseEntity<ApiResponse<CategoryResponse>> getCategory(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success(merchantService.getCategoryById(id)));
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    @PostMapping("/categories")
-    public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(
-            @Valid @RequestBody CreateCategoryRequest request
-    ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Категория создана", merchantService.createCategory(request)));
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    @PutMapping("/categories/{id}")
-    public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(
-            @PathVariable Long id,
-            @Valid @RequestBody CreateCategoryRequest request
-    ) {
-        return ResponseEntity.ok(ApiResponse.success("Категория обновлена", merchantService.updateCategory(id, request)));
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    @DeleteMapping("/categories/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable Long id) {
-        merchantService.deleteCategory(id);
-        return ResponseEntity.ok(ApiResponse.success("Категория удалена", null));
-    }
 }

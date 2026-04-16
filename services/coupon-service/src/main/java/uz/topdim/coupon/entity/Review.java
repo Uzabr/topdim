@@ -39,6 +39,9 @@ public class Review {
     @Column(name = "reject_reason")
     private String rejectReason;
 
+    @Column(name = "user_name")
+    private String userName;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

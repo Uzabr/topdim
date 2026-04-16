@@ -8,157 +8,158 @@
 |---|---|---|
 | Framework | React | 19.2 |
 | Build Tool | Vite | 6.x |
-| Routing | React Router | 7.x |
+| Routing | React Router DOM | 6.30 |
 | State | Zustand | 5.0 |
+| Server State | TanStack React Query | 5.94 |
 | HTTP Client | Axios | 1.13 |
-| Map | Leaflet + React-Leaflet | 1.9 |
-| Validation | Zod | 4.3 |
-| Icons | Lucide React | — |
+| Map | 2GIS MapGL | 1.72 |
+| Validation | React Hook Form + Zod | 7.72 / 4.3 |
+| Icons | Lucide React | 0.577 |
+| i18n | react-i18next | 16.6 |
 
 ## Запуск
 
 ```bash
 cd frontend/web-app
 npm install
-npm run dev     # http://localhost:5173
+npm run dev     # Автоматически запустит сервер на http://localhost:5173
 ```
 
 ## Структура проекта
 
-```
+```text
 frontend/web-app/src/
-├── api/                  # API клиенты (Axios)
-│   ├── client.ts         # Axios instance (baseURL, interceptors)
-│   ├── auth.ts           # register, login, refresh, logout
-│   ├── coupons.ts        # getCatalog, getCouponById, getCategories
-│   ├── orders.ts         # cart, checkout, orders, coupons
-│   └── bazaars.ts        # getBazaars, getShops
+├── api/             # API клиенты (Axios)
+│   ├── _client.ts   # Axios instance (baseURL, interceptors). Обрабатывает JWT.
+│   ├── auth.ts      # Авторизация: register, login
+│   ├── bazaars.ts   # Работа со справочником (базары, магазины)
+│   ├── coupons.ts   # Запросы к купонам и категориям
+│   └── orders.ts    # Заказы, корзина
 │
 ├── components/
-│   ├── layout/           # Header, Footer, TabSwitcher
-│   ├── coupon/           # CouponCard, CouponGrid, CouponFilters
-│   └── cart/             # CartDrawer, CartItem
-│
-├── pages/                # Route pages
-│   ├── HomePage.tsx      # Hero, категории, табы (Купоны/Базар)
-│   ├── CouponCatalogPage.tsx  # Каталог с фильтрами и пагинацией
-│   ├── CouponDetailPage.tsx   # Карточка купона
-│   ├── CartPage.tsx      # Корзина
-│   ├── CheckoutPage.tsx  # Оформление заказа
-│   ├── ProfilePage.tsx   # Мои купоны (активные/использованные)
-│   ├── BazaarMapPage.tsx # Карта базаров (Leaflet)
-│   ├── BazaarDetailPage.tsx   # Детали базара + магазины
-│   ├── ShopDetailPage.tsx     # Карточка магазина
-│   ├── SearchPage.tsx    # Поиск купонов
-│   └── LoginPage.tsx     # Вход / Регистрация
-│
-├── store/                # Zustand stores
-│   ├── authStore.ts      # user, token, login/logout actions
-│   └── cartStore.ts      # items, addToCart, removeFromCart
+│   ├── cart/        # Корзина
+│   ├── coupon/      # Карточки купонов (CouponCard)
+│   ├── directory/   # Карточки базаров и магазинов
+│   ├── layout/      # Header, Footer, BottomNav, LocaleLayout
+│   ├── map/         # TwoGisMap (Инкапсуляция карты 2GIS)
+│   └── ui/          # UI Kit: кнопки, модалки, селекторы (Breadcrumbs, LanguageSelector)
 │
 ├── hooks/
-│   └── useFormatPrice.ts # Форматирование цен (UZS)
+│   └── useLocalePath.ts # Хук для локализации параметров роутинга
 │
-├── utils/
-│   └── format.ts         # Утилиты форматирования
+├── locales/         # JSON-файлы с переводами 
+│   ├── ru.json
+│   └── uz.json
 │
-├── styles/
-│   └── index.css         # Глобальные стили + CSS variables
+├── pages/           # Страницы Маршрутизатора
+│   ├── HomePage.tsx      # Главная страница
+│   ├── CouponCatalogPage.tsx  # Каталог с фильтрацией
+│   ├── CouponDetailPage.tsx   # Детальная страница купона
+│   ├── CartPage.tsx      # Корзина покупок
+│   ├── CheckoutPage.tsx  # Оформление заказа
+│   ├── ProfilePage.tsx   # Профиль и мои приобретенные купоны
+│   ├── FavoritesPage.tsx # Избранные купоны
+│   ├── BazaarDetailPage.tsx   # Детали базара и список магазинов
+│   ├── ShopDetailPage.tsx     # Детали магазина (на базаре или отдельно стоящего)
+│   ├── SearchPage.tsx    # Экран поиска (разрабатывается)
+│   ├── LoginPage.tsx     # Вход / Регистрация 
+│   └── NotFoundPage.tsx  # 404
 │
-├── assets/               # Изображения (hero, логотипы)
-├── App.tsx               # Router + Layout
-├── main.tsx              # Entry point
-└── index.css             # Root CSS
+├── store/           # Zustand stores
+│   ├── authStore.ts      # user, login, register, logout
+│   ├── cartStore.ts      # корзина, добавление, удаление, оформление
+│   ├── cityStore.ts      # выбор города
+│   └── favoritesStore.ts # логика избранного (с лимитом для гостя)
+│
+├── utils/           # formatPrice, parseDate и прочие утилиты
+├── App.tsx          # Главный роутер + <LocaleLayout>
+├── index.css        # Глобальные CSS-токены дизайн-системы Chocolife
+└── main.tsx         # Рендер-корневой узел, QueryClientProvider, Store Init
 ```
 
 ## API Layer (`api/`)
 
-### client.ts — Axios Instance
+### _client.ts — Axios Instance
 ```typescript
-// Base URL: http://localhost:8080 (через API Gateway)
+// Base URL: извлекается из import.meta.env, либо fallback на "http://localhost:8080/api/v1"
 // Interceptors:
-//   - Request: добавляет Authorization: Bearer {token}
-//   - Response: при 401 → refresh token или redirect to login
+//   - Request: Добавляет `Authorization: Bearer {token}` если юзер залогинен из localStorage
+//   - Response: Перехватчик ошибок для обработки Token Expiration и логики рефреша
 ```
 
-### Endpoints используемые из backend
+## State Management
 
-| Модуль | Метод | URL | Описание |
-|---|---|---|---|
-| auth | POST | `/api/v1/auth/login` | Вход |
-| auth | POST | `/api/v1/auth/register` | Регистрация |
-| auth | POST | `/api/v1/auth/refresh` | Обновить токен |
-| coupons | GET | `/api/v1/coupons` | Каталог (page, categoryId, search) |
-| coupons | GET | `/api/v1/coupons/{id}` | Детали купона |
-| coupons | GET | `/api/v1/categories` | Категории |
-| coupons | GET | `/api/v1/coupons/top-selling` | Топ продаж |
-| orders | GET | `/api/v1/cart` | Корзина |
-| orders | POST | `/api/v1/cart/items` | Добавить в корзину |
-| orders | DELETE | `/api/v1/cart/items/{id}` | Удалить из корзины |
-| orders | POST | `/api/v1/orders` | Оформить заказ |
-| orders | GET | `/api/v1/orders/my-coupons` | Мои купоны |
-| bazaars | GET | `/api/v1/bazaars` | Список базаров |
-| bazaars | GET | `/api/v1/bazaars/{id}` | Детали базара |
-| bazaars | GET | `/api/v1/bazaars/{id}/shops` | Магазины базара |
+В проекте используется два слоя State Management:
 
-## State Management (Zustand)
+### 1. Серверное состояние (TanStack React Query v5)
+Данные, которые мы получаем с API (каталоги, детали, локации), контролируются через React Query (`useQuery`, `useMutation`). 
+- Кэширование на стороне клиента.
+- Мгновенная загрузка страниц из кеша.
 
-### authStore
-```typescript
-// state: user, accessToken, refreshToken, isAuthenticated
-// actions: login(email, password), register(...), logout(), refreshAuth()
-```
+### 2. Клиентское состояние (Zustand)
+Состояние UI, которое не связано с кэшированием API:
+- **`authStore`**: токен аутентификации, статус `isLoading`, пользовательские данные.
+- **`cartStore`**: товары в корзине, общая стоимость, сохраняется в localStorage.
+- **`favoritesStore`**: список избранного, ограничение 5 товаров для неавторизованных пользователей.
+- **`cityStore`**: выбор города (Ташкент).
 
-### cartStore
-```typescript
-// state: items[], totalAmount
-// actions: addToCart(item), removeItem(id), clearCart(), checkout()
-```
+## Роутинг (React Router v6)
 
-## Роутинг (React Router)
+Маршрутизация локализована — все запросы проходят через структуру `:lang/*`. 
+Написание навигации требует оборачивания пути в `useLocalePath()`!
 
-| URL | Страница | Auth |
+| Локализованный Путь | Страница | Требует Auth |
 |---|---|---|
-| `/` | HomePage | ❌ |
-| `/coupons` | CouponCatalogPage | ❌ |
-| `/coupons/:id` | CouponDetailPage | ❌ |
-| `/cart` | CartPage | ✅ |
-| `/checkout` | CheckoutPage | ✅ |
-| `/profile` | ProfilePage | ✅ |
-| `/bazaar` | BazaarMapPage | ❌ |
-| `/bazaar/:id` | BazaarDetailPage | ❌ |
-| `/shop/:id` | ShopDetailPage | ❌ |
-| `/search` | SearchPage | ❌ |
-| `/login` | LoginPage | ❌ |
+| `/:lang/` | HomePage | ❌ |
+| `/:lang/coupons` | CouponCatalogPage | ❌ |
+| `/:lang/coupons/:id` | CouponDetailPage | ❌ |
+| `/:lang/cart` | CartPage | ❌ (Оформление гостем разрешено) |
+| `/:lang/checkout` | CheckoutPage | ❌ (Оформление гостем разрешено) |
+| `/:lang/profile` | ProfilePage | ✅ |
+| `/:lang/favorites` | FavoritesPage | ❌ |
+| `/:lang/bazaar` | BazaarMapPage | ❌ |
+| `/:lang/bazaar/:id` | BazaarDetailPage | ❌ |
+| `/:lang/shops/:id` | ShopDetailPage | ❌ |
+| `/:lang/login` | LoginPage | ❌ |
+| `/:lang/search` | SearchPage | ❌ |
+| `/:lang/partners` | PartnersPage | ❌ |
+| `/:lang/faq` | FAQPage | ❌ |
+| `/:lang/terms` | TermsPage | ❌ |
+| `/:lang/privacy` | PrivacyPage | ❌ |
 
-## Стили
+*(При переходе в корень `/` происходит редирект на сохраненный язык локали)*
 
-- **Подход:** Vanilla CSS + CSS Variables (дизайн-токены)
-- **Mobile-first:** Все страницы адаптированы под мобильные устройства
-- **Каждая страница** имеет свой `.css` файл (HomePage.css, CartPage.css и т.д.)
+## Стили (Дизайн-система)
 
-### CSS Variables (из index.css)
+- **Подход:** Vanilla CSS + Глобальные переменные (CSS Variables). Разработка по BEM-подобной методологии (Component-level isolation). 
+- **Адаптивность:** Mobile-first (Сначала оптимизация под экраны телефонов, затем под десктоп).
+- Tailwind **не используется**, чтобы обеспечить максимальную кастомизацию анимаций, градиентов (например Chocolife style) и чистоту DOM.
+
+### Пример CSS Variables (из index.css)
 ```css
 :root {
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
-  --secondary: #f59e0b;
-  --success: #10b981;
-  --danger: #ef4444;
-  --bg: #f8fafc;
-  --text: #1e293b;
-  --text-light: #64748b;
-  --border: #e2e8f0;
-  --radius: 12px;
-  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  /* Палитра */
+  --bg-default: #f3f4f6;
+  --bg-surface: #ffffff;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+
+  /* Градиенты акцентные */
+  --gradient-primary: linear-gradient(135deg, #FF6660 0%, #FF3D33 100%);
+  --gradient-secondary: linear-gradient(135deg, #1A1A1A 0%, #333333 100%);
+
+  /* Скругления и пространство */
+  --space-md: 16px;
+  --radius-md: 12px;
+  --radius-pill: 100px;
 }
 ```
 
-## TODO (из аудита)
+## Работа с Формами
 
-- [ ] UI Kit (`components/ui/` — Button, Card, Modal, Input, Toast)
-- [ ] Bazaar components (InteriorMap SVG)
-- [ ] i18n (react-i18next, ru/uz)
-- [ ] React Hook Form + Zod (формы)
-- [ ] CSS Modules
-- [ ] Admin Panel (`frontend/admin-app/`)
+Для работы с формами используется подход **Controlled Components** + валидация.
+- Провайдер: `react-hook-form`
+- Валидатор: `zodResolver(zodSchema)`
+- Маска для телефонов: `react-imask`
+
+Показ ошибок реализован через абсолютное позиционирование подсказок (`.form-group`), чтобы скрыть/показать ошибку без прыжка всего контента под формой.

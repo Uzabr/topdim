@@ -1,0 +1,118 @@
+package uz.topdim.gateway.filter;
+
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
+import org.springframework.mock.web.server.MockServerWebExchange;
+import org.springframework.test.util.ReflectionTestUtils;
+import reactor.core.publisher.Mono;
+import uz.topdim.gateway.service.ReactiveTokenValidationService;
+
+import javax.crypto.SecretKey;
+import java.util.Date;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class JwtAuthenticationFilterTest {
+
+    private static final String SECRET = "dG9wZGltLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1zaWduaW5nLTI1Ni1iaXQ=";
+
+    @Mock
+    private ReactiveTokenValidationService tokenValidationService;
+
+    @Mock
+    private GatewayFilterChain gatewayFilterChain;
+
+    @InjectMocks
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Test
+    @DisplayName("confirm/request: без токена gateway больше не считает endpoint публичным")
+    void confirmRequest_withoutToken_returnsUnauthorized() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/auth/confirm/request").build()
+        );
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(gatewayFilterChain, never()).filter(any());
+    }
+
+    @Test
+    @DisplayName("защищённый запрос: валидный JWT прокидывает X-User-* headers downstream")
+    void protectedRequest_withValidJwt_forwardsGatewayHeaders() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        String token = createToken("7", "USER", "user@topdim.uz", "jti-123", 2L);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/api/v1/users/profile")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header("X-User-Id", "attacker-value")
+                        .build()
+        );
+
+        when(tokenValidationService.isTokenInvalid("jti-123", "7", 2L)).thenReturn(Mono.just(false));
+        when(gatewayFilterChain.filter(any())).thenReturn(Mono.empty());
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        ArgumentCaptor<org.springframework.web.server.ServerWebExchange> exchangeCaptor =
+                ArgumentCaptor.forClass(org.springframework.web.server.ServerWebExchange.class);
+        verify(gatewayFilterChain).filter(exchangeCaptor.capture());
+
+        HttpHeaders forwardedHeaders = exchangeCaptor.getValue().getRequest().getHeaders();
+        assertThat(forwardedHeaders.getFirst("X-User-Id")).isEqualTo("7");
+        assertThat(forwardedHeaders.getFirst("X-User-Email")).isEqualTo("user@topdim.uz");
+        assertThat(forwardedHeaders.getFirst("X-User-Role")).isEqualTo("USER");
+    }
+
+    @Test
+    @DisplayName("защищённый запрос: invalidated token отклоняется до downstream")
+    void protectedRequest_withInvalidatedToken_returnsUnauthorized() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        String token = createToken("7", "USER", "user@topdim.uz", "jti-123", 2L);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/api/v1/users/profile")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .build()
+        );
+
+        when(tokenValidationService.isTokenInvalid("jti-123", "7", 2L)).thenReturn(Mono.just(true));
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(gatewayFilterChain, never()).filter(any());
+    }
+
+    private String createToken(String subject, String role, String email, String jti, long securityVersion) {
+        SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET));
+        return Jwts.builder()
+                .subject(subject)
+                .id(jti)
+                .claim("email", email)
+                .claim("role", role)
+                .claim("securityVersion", securityVersion)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(key)
+                .compact();
+    }
+}

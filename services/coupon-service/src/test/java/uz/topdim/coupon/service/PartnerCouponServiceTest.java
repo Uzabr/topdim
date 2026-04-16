@@ -83,10 +83,10 @@ class PartnerCouponServiceTest {
     void getMyCoupons_filterByStatus() {
         Merchant merchant = createMerchant();
         when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
-        when(couponOfferRepository.findByMerchantIdAndStatus(eq(1L), eq(CouponStatus.PENDING_REVIEW), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(createOffer(merchant, CouponStatus.PENDING_REVIEW))));
+        when(couponOfferRepository.findByMerchantIdAndStatus(eq(1L), eq(CouponStatus.DRAFT), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(createOffer(merchant, CouponStatus.DRAFT))));
 
-        Page<CouponOfferResponse> result = partnerCouponService.getMyCoupons(10L, "PENDING_REVIEW", 0, 20);
+        Page<CouponOfferResponse> result = partnerCouponService.getMyCoupons(10L, "DRAFT", 0, 20);
 
         assertThat(result.getContent()).hasSize(1);
     }
@@ -130,8 +130,8 @@ class PartnerCouponServiceTest {
     // ==================== createCouponOffer ====================
 
     @Test
-    @DisplayName("createCouponOffer: статус = PENDING_REVIEW")
-    void createCouponOffer_setsPendingReview() {
+    @DisplayName("createCouponOffer: статус = LEAD")
+    void createCouponOffer_setsLead() {
         Merchant merchant = createMerchant();
         when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(createCategory()));
@@ -143,16 +143,16 @@ class PartnerCouponServiceTest {
 
         CouponOfferResponse result = partnerCouponService.createCouponOffer(10L, createRequest());
 
-        assertThat(result.getStatus()).isEqualTo("PENDING_REVIEW");
+        assertThat(result.getStatus()).isEqualTo("LEAD");
     }
 
     // ==================== updateMyCoupon ====================
 
     @Test
-    @DisplayName("updateMyCoupon: PENDING_REVIEW → обновляется")
-    void updateMyCoupon_pendingReview_updates() {
+    @DisplayName("updateMyCoupon: DRAFT → обновляется")
+    void updateMyCoupon_draft_updates() {
         Merchant merchant = createMerchant();
-        CouponOffer offer = createOffer(merchant, CouponStatus.PENDING_REVIEW);
+        CouponOffer offer = createOffer(merchant, CouponStatus.DRAFT);
         when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
         when(couponOfferRepository.findById(100L)).thenReturn(Optional.of(offer));
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(createCategory()));
@@ -167,10 +167,10 @@ class PartnerCouponServiceTest {
     }
 
     @Test
-    @DisplayName("updateMyCoupon: REJECTED → ставит PENDING_REVIEW")
-    void updateMyCoupon_rejected_resubmits() {
+    @DisplayName("updateMyCoupon: REVISION_REQUESTED → ставит DRAFT")
+    void updateMyCoupon_revisionRequested_resubmits() {
         Merchant merchant = createMerchant();
-        CouponOffer offer = createOffer(merchant, CouponStatus.REJECTED);
+        CouponOffer offer = createOffer(merchant, CouponStatus.REVISION_REQUESTED);
         when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
         when(couponOfferRepository.findById(100L)).thenReturn(Optional.of(offer));
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(createCategory()));
@@ -178,7 +178,7 @@ class PartnerCouponServiceTest {
 
         CouponOfferResponse result = partnerCouponService.updateMyCoupon(10L, 100L, createRequest());
 
-        assertThat(result.getStatus()).isEqualTo("PENDING_REVIEW");
+        assertThat(result.getStatus()).isEqualTo("DRAFT");
     }
 
     @Test

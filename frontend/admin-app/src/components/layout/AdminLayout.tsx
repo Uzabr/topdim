@@ -16,6 +16,7 @@ import {
   AppstoreOutlined,
   TagOutlined,
   FileTextOutlined,
+  ProjectOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store/authStore';
 import type { UserRole } from '../../types';
@@ -45,6 +46,8 @@ const allMenuItems: MenuItem[] = [
     roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'],
     children: [
       { key: '/moderation/coupons', icon: <TagOutlined />, label: 'Все купоны', roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'] },
+      { key: '/moderation/coupons/kanban', icon: <ProjectOutlined />, label: 'Канбан-доска', roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'] },
+      { key: '/moderation/coupons/review', icon: <SafetyCertificateOutlined />, label: 'Решения мерчанта', roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'] },
       { key: '/moderation/coupons/create', icon: <FileTextOutlined />, label: 'Создать купон', roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'] },
     ],
   },

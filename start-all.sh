@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================================
 # TopDim — Запуск всех сервисов одной командой
-# Использование: ./start-all.sh [start|stop|status]
+# Использование: ./start-all.sh [start|stop|restart|status]
 # ============================================================
 
 set -e
@@ -24,8 +24,7 @@ INFRA_SERVICES=(
 )
 
 BACKEND_SERVICES=(
-  "services:auth-service:8081"
-  "services:user-service:8082"
+  "services:identity-service:8081"
   "services:coupon-service:8083"
   "services:order-service:8084"
   "services:payment-service:8085"
@@ -77,6 +76,7 @@ wait_for_port() {
 stop_all() {
   echo -e "\n${RED}🛑 Остановка всех сервисов...${NC}\n"
   
+  # Останавливаем Java-сервисы
   for svc in "${BACKEND_SERVICES[@]}" "${INFRA_SERVICES[@]}"; do
     local name=$(get_name "$svc")
     local port=$(get_port "$svc")
@@ -98,7 +98,12 @@ stop_all() {
     fi
   done
 
-  echo -e "\n${GREEN}Все сервисы остановлены.${NC}"
+  # Останавливаем Docker-контейнеры (НЕ удаляем, НЕ закрываем Docker Desktop)
+  echo -e "\n${CYAN}🐳 Остановка Docker-контейнеров...${NC}"
+  cd "$PROJECT_DIR"
+  docker compose stop 2>/dev/null && echo -e "  ${GREEN}✓ Контейнеры остановлены${NC}" || echo -e "  ${YELLOW}⚠ Docker не отвечает или контейнеры уже остановлены${NC}"
+
+  echo -e "\n${GREEN}Все сервисы остановлены. Docker Desktop продолжает работать.${NC}"
 }
 
 show_status() {
@@ -145,9 +150,9 @@ start_all() {
   sleep 2
 
   # Ждём готовности инфраструктуры (чтобы Flyway/AMQP не падали на старте)
-  wait_for_port 5432 "postgres"
-  wait_for_port 6379 "redis"
-  wait_for_port 5672 "rabbitmq"
+  wait_for_port 5433 "postgres"
+  wait_for_port 6380 "redis"
+  wait_for_port 5673 "rabbitmq"
   wait_for_port 9000 "minio"
 
   # 2. Infrastructure
@@ -183,7 +188,7 @@ start_all() {
   echo -e "  📊 Eureka:    ${CYAN}http://localhost:8761${NC}"
   echo -e "  🌐 Gateway:   ${CYAN}http://localhost:8080${NC}"
   echo -e "  🖥️  Frontend:  ${CYAN}http://localhost:5173${NC}"
-  echo -e "  🐰 RabbitMQ:  ${CYAN}http://localhost:15672${NC}"
+  echo -e "  🐰 RabbitMQ:  ${CYAN}http://localhost:15673${NC}"
   echo -e "  📦 MinIO:     ${CYAN}http://localhost:9001${NC}"
   echo ""
   echo -e "  Логи: ${YELLOW}$LOG_DIR/<service>.log${NC}"
@@ -191,13 +196,21 @@ start_all() {
   echo ""
 }
 
+restart_all() {
+  echo -e "\n${YELLOW}🔄 Перезапуск всей платформы...${NC}\n"
+  stop_all
+  sleep 2
+  start_all
+}
+
 # Main
 case "${1:-start}" in
-  start)  start_all ;;
-  stop)   stop_all ;;
-  status) show_status ;;
+  start)   start_all ;;
+  stop)    stop_all ;;
+  restart) restart_all ;;
+  status)  show_status ;;
   *)
-    echo "Использование: $0 [start|stop|status]"
+    echo "Использование: $0 [start|stop|restart|status]"
     exit 1
     ;;
 esac
