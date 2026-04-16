@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Gift, ShoppingCart, TrendingUp, Calendar, Clock, AlertCircle, Info, Users, CreditCard, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -60,7 +60,7 @@ const BASE_TABS = [
 
 export default function CouponDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { addToCart, openCart } = useCartStore();
+  const { addToCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
   const [activeTab, setActiveTab] = useState('info');
