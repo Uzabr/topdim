@@ -10,6 +10,16 @@ PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_DIR="$PROJECT_DIR/logs"
 mkdir -p "$LOG_DIR"
 
+# Загружаем .env файл, если он существует (чтобы Java-сервисы видели пароли)
+if [ -f "$PROJECT_DIR/.env" ]; then
+  echo "Загрузка переменных окружения из .env..."
+  set -a
+  source <(sed -e '/^\s*$/d' -e '/^\s*#/d' "$PROJECT_DIR/.env")
+  set +a
+else
+  echo "ВНИМАНИЕ: Файл .env не найден. Сервисы могут не запуститься."
+fi
+
 # Цвета
 GREEN='\033[0;32m'
 RED='\033[0;31m'
