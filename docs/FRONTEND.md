@@ -41,8 +41,8 @@ frontend/web-app/src/
 │   ├── coupon/      # Карточки купонов (CouponCard)
 │   ├── directory/   # Карточки базаров и магазинов
 │   ├── layout/      # Header, Footer, BottomNav, LocaleLayout
-│   ├── map/         # TwoGisMap (Инкапсуляция карты 2GIS)
-│   └── ui/          # UI Kit: кнопки, модалки, селекторы (Breadcrumbs, LanguageSelector)
+│   ├── map/         # TwoGisMap (инкапсуляция карты 2GIS)
+│   └── ui/          # UI Kit: кнопки, модалки, селекторы, LanguageSelector
 │
 ├── hooks/
 │   └── useLocalePath.ts # Хук для локализации параметров роутинга
@@ -52,24 +52,32 @@ frontend/web-app/src/
 │   └── uz.json
 │
 ├── pages/           # Страницы Маршрутизатора
-│   ├── HomePage.tsx      # Главная страница
+│   ├── HomePage.tsx           # Главная страница
 │   ├── CouponCatalogPage.tsx  # Каталог с фильтрацией
 │   ├── CouponDetailPage.tsx   # Детальная страница купона
-│   ├── CartPage.tsx      # Корзина покупок
-│   ├── CheckoutPage.tsx  # Оформление заказа
-│   ├── ProfilePage.tsx   # Профиль и мои приобретенные купоны
-│   ├── FavoritesPage.tsx # Избранные купоны
+│   ├── CartPage.tsx           # Корзина покупок
+│   ├── CheckoutPage.tsx       # Оформление заказа
+│   ├── ProfilePage.tsx        # Профиль и мои приобретенные купоны
+│   ├── FavoritesPage.tsx      # Избранные купоны
+│   ├── BazaarMapPage.tsx      # Карта базаров (2GIS) со списком
 │   ├── BazaarDetailPage.tsx   # Детали базара и список магазинов
-│   ├── ShopDetailPage.tsx     # Детали магазина (на базаре или отдельно стоящего)
-│   ├── SearchPage.tsx    # Экран поиска (разрабатывается)
-│   ├── LoginPage.tsx     # Вход / Регистрация 
-│   └── NotFoundPage.tsx  # 404
+│   ├── ShopDetailPage.tsx     # Детали магазина
+│   ├── SearchPage.tsx         # Экран поиска
+│   ├── LoginPage.tsx          # Вход / Регистрация
+│   ├── NotFoundPage.tsx       # 404
+│   └── legal/                 # Информационные страницы
+│       ├── FAQPage.tsx
+│       ├── PartnersPage.tsx
+│       ├── PrivacyPage.tsx
+│       └── TermsPage.tsx
 │
 ├── store/           # Zustand stores
-│   ├── authStore.ts      # user, login, register, logout
-│   ├── cartStore.ts      # корзина, добавление, удаление, оформление
-│   ├── cityStore.ts      # выбор города
-│   └── favoritesStore.ts # логика избранного (с лимитом для гостя)
+│   ├── authStore.ts       # user, login, register, logout
+│   ├── cartStore.ts       # корзина, добавление, удаление, оформление
+│   ├── cityStore.ts       # выбор города
+│   ├── directoryStore.ts  # справочник базаров и магазинов
+│   ├── marketplaceStore.ts # состояние маркетплейс-каталога
+│   └── favoritesStore.ts  # логика избранного (с лимитом для гостя)
 │
 ├── utils/           # formatPrice, parseDate и прочие утилиты
 ├── App.tsx          # Главный роутер + <LocaleLayout>
@@ -102,6 +110,8 @@ frontend/web-app/src/
 - **`cartStore`**: товары в корзине, общая стоимость, сохраняется в localStorage.
 - **`favoritesStore`**: список избранного, ограничение 5 товаров для неавторизованных пользователей.
 - **`cityStore`**: выбор города (Ташкент).
+- **`directoryStore`**: кэш базаров и магазинов для справочника.
+- **`marketplaceStore`**: состояние фильтров и сортировки в каталоге купонов.
 
 ## Роутинг (React Router v6)
 
@@ -113,8 +123,8 @@ frontend/web-app/src/
 | `/:lang/` | HomePage | ❌ |
 | `/:lang/coupons` | CouponCatalogPage | ❌ |
 | `/:lang/coupons/:id` | CouponDetailPage | ❌ |
-| `/:lang/cart` | CartPage | ❌ (Оформление гостем разрешено) |
-| `/:lang/checkout` | CheckoutPage | ❌ (Оформление гостем разрешено) |
+| `/:lang/cart` | CartPage | ❌ |
+| `/:lang/checkout` | CheckoutPage | ❌ |
 | `/:lang/profile` | ProfilePage | ✅ |
 | `/:lang/favorites` | FavoritesPage | ❌ |
 | `/:lang/bazaar` | BazaarMapPage | ❌ |
@@ -122,10 +132,10 @@ frontend/web-app/src/
 | `/:lang/shops/:id` | ShopDetailPage | ❌ |
 | `/:lang/login` | LoginPage | ❌ |
 | `/:lang/search` | SearchPage | ❌ |
-| `/:lang/partners` | PartnersPage | ❌ |
-| `/:lang/faq` | FAQPage | ❌ |
-| `/:lang/terms` | TermsPage | ❌ |
-| `/:lang/privacy` | PrivacyPage | ❌ |
+| `/:lang/partners` | legal/PartnersPage | ❌ |
+| `/:lang/faq` | legal/FAQPage | ❌ |
+| `/:lang/terms` | legal/TermsPage | ❌ |
+| `/:lang/privacy` | legal/PrivacyPage | ❌ |
 
 *(При переходе в корень `/` происходит редирект на сохраненный язык локали)*
 

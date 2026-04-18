@@ -253,7 +253,7 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 | **GUEST** | 10 | 0 | **100%** |
 | **USER** | 25 | 4 | **86%** |
 | **PARTNER** | 10 | 0 | **100%** |
-| **MODERATOR** | 5 | 1 | **83%** |
+| **MODERATOR** | 7 | 0 | **100%** |
 | **ADMIN** | 26 | 1 | **96%** |
 | **SUPER_ADMIN** | 3 | 2 | **60%** |
 
@@ -273,9 +273,9 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 | Приоритет | Что делать |
 |-----------|-----------|
 | ✅ **P0** | Защитить admin/partner endpoints `@PreAuthorize` (Выполнено) |
-| 🔴 **P0** | Добавить `SUPER_ADMIN`, `MODERATOR` в Role enum |
-| 🟡 **P1** | PARTNER: погашения + статистика |
+| ✅ **P0** | Добавить `SUPER_ADMIN`, `MODERATOR` в Role enum (Выполнено) |
+| ✅ **P1** | PARTNER: погашения + статистика (Выполнено) |
+| ✅ **P2** | MODERATOR: модерация купонов и жалоб (Выполнено) |
 | 🟡 **P1** | USER: верификация email/телефон |
-| 🟢 **P2** | MODERATOR: модерация купонов и жалоб |
-| 🟢 **P2** | USER: уведомления, отзывы |
-| ⚪ **P3** | SUPER_ADMIN: аудит, финансы, backup |
+| 🟢 **P2** | USER: QR-код для предъявления купона, отзывы |
+| ⚪ **P3** | SUPER_ADMIN: аудит, финансы, системные настройки |

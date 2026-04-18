@@ -16,12 +16,11 @@
 
 ```
 PostgreSQL Instance
-├── topdim_auth         ← auth-service
+├── topdim_identity     ← identity-service (auth + user профили)
 ├── topdim_coupon       ← coupon-service
 ├── topdim_order        ← order-service
 ├── topdim_payment      ← payment-service
 ├── topdim_bazaar       ← bazaar-service
-├── topdim_user         ← user-service
 └── topdim_notification ← notification-service
 ```
 
@@ -32,7 +31,7 @@ PostgreSQL Instance
 
 ```mermaid
 erDiagram
-    %% Auth Service
+    %% Identity Service (topdim_identity)
     users {
         bigint id PK
         varchar email UK
@@ -48,6 +47,29 @@ erDiagram
         timestamp created_at
         timestamp updated_at
         boolean deleted
+    }
+    partner_applications {
+        bigint id PK
+        varchar company_name
+        varchar contact_name
+        varchar email UK
+        varchar phone
+        varchar status
+        timestamp created_at
+    }
+    staff {
+        bigint id PK
+        bigint partner_user_id
+        varchar name
+        varchar phone
+        varchar role
+        boolean active
+    }
+    favorites {
+        bigint id PK
+        bigint user_id
+        bigint coupon_offer_id
+        timestamp created_at
     }
     refresh_tokens {
         bigint id PK
@@ -94,16 +116,19 @@ erDiagram
         varchar title
         text short_description
         text full_description
-        bigint merchant_id FK "nullable (MVP manual creation)"
-        bigint category_id FK
+        bigint merchant_id FK "nullable"
+        bigint category_id FK "nullable"
         decimal old_price
         decimal from_price
         int discount_percent
-        varchar status
+        varchar status "LEAD|DRAFT|WAITING_FOR_MERCHANT|ACTIVE|SOLD_OUT|EXPIRED"
         varchar cover_image_url
         timestamp buy_until
         timestamp use_until
         int total_sold
+        int redeemed_count "V12: кол-во погашений"
+        decimal total_turnover "V12: общая выручка"
+        bigint assigned_moderator_id "V10"
         tsvector search_vector
         boolean deleted
     }
@@ -291,30 +316,7 @@ erDiagram
     shop_categories ||--o{ shops : "categorizes"
     shops ||--o{ shop_product_tags : "tagged"
 
-    %% User Service
-    users_profile {
-        bigint id PK
-        varchar email UK
-        varchar phone UK
-        varchar first_name
-        varchar last_name
-        varchar role
-        varchar avatar_url
-    }
-    staff {
-        bigint id PK
-        bigint user_id
-        varchar name
-        varchar phone
-        varchar role
-        boolean active
-    }
-    favorites {
-        bigint id PK
-        bigint user_id
-        bigint coupon_offer_id
-        timestamp created_at
-    }
+    %% (User data moved to Identity Service — see above)
 
     %% Notification Service
     notifications {
@@ -332,25 +334,32 @@ erDiagram
 
 ## Таблицы по сервисам
 
-### Auth Service (topdim_auth) — 3 таблицы
+### Identity Service (topdim_identity) — 6 таблиц
 
 | Таблица | Строк (5M юзеров) | Описание |
 |---|---|---|
-| `users` | 5 000 000 | Пользователи |
+| `users` | 5 000 000 | Пользователи (auth + профиль) |
 | `refresh_tokens` | ~10 000 000 | Refresh токены (2 на юзера) |
 | `audit_logs` | ~50 000 000 | Логи действий администраторов |
+| `partner_applications` | ~10 000 | Заявки на партнёрство |
+| `staff` | ~15 000 | Сотрудники партнёров (кассиры) |
+| `favorites` | ~10 000 000 | Избранные купоны пользователей |
 
-### Coupon Service (topdim_coupon) — 7 таблиц
+### Coupon Service (topdim_coupon) — 11 таблиц
 
 | Таблица | Строк | Описание |
 |---|---|---|
 | `categories` | ~20 | Категории купонов |
 | `merchants` | ~500 | Партнёры/продавцы |
-| `coupon_offers` | ~5 000 | Купонные предложения |
+| `coupon_offers` | ~5 000 | Купонные предложения (статусы: LEAD/DRAFT/WAITING_FOR_MERCHANT/ACTIVE/SOLD_OUT/EXPIRED) |
 | `coupon_options` | ~15 000 | Варианты купонов |
 | `coupon_images` | ~20 000 | Изображения купонов |
 | `promo_codes` | ~1 000 | Промокоды от партнёров |
 | `reviews` | ~500 000 | Отзывы на купоны |
+| `bazaars` | ~200 | Базары (справочник, coupon-service) |
+| `shops` | ~50 000 | Магазины базаров (справочник, coupon-service) |
+| `shop_categories` | ~20 | Категории магазинов |
+| `shop_product_tags` | ~200 000 | Теги продуктов |
 
 ### Order Service (topdim_order) — 8 таблиц
 
@@ -380,14 +389,6 @@ erDiagram
 | `bazaar_maps` | ~500 | Карты базаров |
 | `shops` | ~50 000 | Магазины |
 | `shop_product_tags` | ~200 000 | Теги продуктов |
-
-### User Service (topdim_user) — 3 таблицы
-
-| Таблица | Строк | Описание |
-|---|---|---|
-| `users` | 5 000 000 | Профили пользователей (без паролей) |
-| `staff` | ~15 000 | Сотрудники партнёров (кассиры) |
-| `favorites` | ~10 000 000 | Избранные купоны |
 
 ### Notification Service (topdim_notification) — 1 таблица
 
@@ -491,12 +492,11 @@ Shard 3: user_id 4,000,001 — 6,000,000
 
 | Сервис | Миграции |
 |---|---|
-| auth | V1 (tables), V2 (indexes), V3 (staff deleted), V4 (audit logs) |
-| coupon | V1 (tables), V2 (indexes), V3 (reviews & promos), V4 (GIN search), V5 (soft delete) |
+| identity | V1 (tables), V2 (indexes), V3 (staff deleted), V4 (audit logs) |
+| coupon | V1 (tables), V2 (indexes), V3 (reviews & promos), V4 (GIN search), V5 (soft delete), V6 (merchant nullable), V7 (username reviews), V8 (bazaar/shop tables), V9 (merchant telegram + draft logic), V10 (assigned moderator), V11 (category nullable), **V12 (redeemed_count, total_turnover, SOLD_OUT status)** |
 | order | V1 (tables), V2 (redemptions), V3 (refunds), V4 (indexes), V5 (audit), V6 (partitioning), V7 (complaints) |
 | payment | V1 (tables), V2 (indexes), V3 (audit) |
 | bazaar | V1 (tables), V2 (indexes), V3 (audit), V4 (GIN search), V5 (user id to shops) |
-| user | V1 (favorites), V2 (indexes), V3 (create staff), V4 (alter staff), V5 (create users) |
 | notification | V1 (notifications table) |
 
 ## Резервное копирование
