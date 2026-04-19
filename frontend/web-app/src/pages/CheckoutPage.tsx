@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, ChevronLeft, CreditCard, Smartphone, AlertCircle, Loader2, LogIn } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
@@ -15,7 +15,7 @@ import './CheckoutPage.css';
  * Order создаётся из backend cart.
  */
 export default function CheckoutPage() {
-  const { items, totalPrice, clearCart, mode } = useCartStore();
+  const { items, totalPrice, clearCart } = useCartStore();
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
   const lp = useLocalePath();
