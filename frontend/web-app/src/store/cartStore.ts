@@ -1,7 +1,12 @@
 import { create } from 'zustand';
-import type { AddToCartRequest } from '../api/orders';
+import { ordersApi } from '../api/orders';
+import type { AddToCartRequest, CartItem } from '../api/orders';
 
-// ═══ Local Cart Item (localStorage-first, no backend required) ═══
+// ═══ Constants ═══
+/** Максимальное количество позиций в guest-корзине (localStorage). */
+export const GUEST_CART_LIMIT = 5;
+
+// ═══ Local Cart Item (localStorage-first, для guest пользователей) ═══
 export interface LocalCartItem {
   /** Unique key for deduplication: `${couponOfferId}-${couponOptionId}` */
   key: string;
@@ -18,9 +23,20 @@ export interface LocalCartItem {
   addedAt: number; // timestamp
 }
 
+type CartMode = 'guest' | 'auth';
+
 interface CartState {
+  mode: CartMode;
+  // Guest cart (localStorage)
+  localItems: LocalCartItem[];
+  // Auth cart (backend)
+  backendItems: CartItem[];
+  backendCartId: number | null;
+  /** Backward-compatible: returns localItems (guest) or backendItems mapped to LocalCartItem shape (auth). */
   items: LocalCartItem[];
+
   isOpen: boolean;
+  isLoading: boolean;
   totalItems: number;
   totalPrice: number;
 
@@ -28,13 +44,20 @@ interface CartState {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
+  setMode: (mode: CartMode) => void;
   addToCart: (request: AddToCartRequest & { coverImageUrl?: string }) => void;
   updateQuantity: (key: string, quantity: number) => void;
   removeFromCart: (key: string) => void;
   clearCart: () => void;
+
+  // Auth-mode actions
+  fetchBackendCart: () => Promise<void>;
+  addToBackendCart: (request: AddToCartRequest) => Promise<void>;
+  removeFromBackendCart: (itemId: number) => Promise<void>;
+  syncLocalCartToBackend: () => Promise<void>;
 }
 
-// ═══ LocalStorage Persistence ═══
+// ═══ LocalStorage Persistence (guest only) ═══
 const CART_STORAGE_KEY = 'topdim_cart';
 
 function loadFromStorage(): LocalCartItem[] {
@@ -54,11 +77,36 @@ function saveToStorage(items: LocalCartItem[]) {
   }
 }
 
+function clearStorage() {
+  localStorage.removeItem(CART_STORAGE_KEY);
+}
+
 // ═══ Helpers ═══
-const calcTotals = (items: LocalCartItem[]) => ({
+const calcLocalTotals = (items: LocalCartItem[]) => ({
   totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
   totalPrice: items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
 });
+
+const calcBackendTotals = (items: CartItem[]) => ({
+  totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
+  totalPrice: items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
+});
+
+/** Convert backend CartItem[] to LocalCartItem[] for backward-compatible `items` property. */
+const backendToLocal = (items: CartItem[]): LocalCartItem[] =>
+  items.map((item) => ({
+    key: `${item.couponOfferId}-${item.couponOptionId}`,
+    couponOfferId: item.couponOfferId,
+    couponOptionId: item.couponOptionId,
+    couponTitle: item.couponTitle,
+    optionTitle: item.optionTitle,
+    unitPrice: item.unitPrice,
+    quantity: item.quantity,
+    isGift: item.gift,
+    giftRecipientName: item.giftRecipientName,
+    giftRecipientPhone: item.giftRecipientPhone,
+    addedAt: 0,
+  }));
 
 const makeKey = (couponOfferId: number, couponOptionId: number) =>
   `${couponOfferId}-${couponOptionId}`;
@@ -67,41 +115,77 @@ const makeKey = (couponOfferId: number, couponOptionId: number) =>
 const initialItems = loadFromStorage();
 
 export const useCartStore = create<CartState>((set, get) => ({
+  mode: 'guest' as CartMode,
+  localItems: initialItems,
+  backendItems: [],
+  backendCartId: null,
   items: initialItems,
   isOpen: false,
-  ...calcTotals(initialItems),
+  isLoading: false,
+  ...calcLocalTotals(initialItems),
 
   openCart: () => set({ isOpen: true }),
   closeCart: () => set({ isOpen: false }),
   toggleCart: () => set((s) => ({ isOpen: !s.isOpen })),
 
-  addToCart: (request) => {
-    const key = makeKey(request.couponOfferId, request.couponOptionId);
-    const existing = get().items.find((item) => item.key === key);
+  setMode: (mode: CartMode) => {
+    if (mode === 'auth') {
+      const state = get();
+      const mapped = backendToLocal(state.backendItems);
+      set({
+        mode: 'auth',
+        items: mapped,
+        ...calcBackendTotals(state.backendItems),
+      });
+    } else {
+      const localItems = loadFromStorage();
+      set({
+        mode: 'guest',
+        backendItems: [],
+        backendCartId: null,
+        localItems,
+        items: localItems,
+        ...calcLocalTotals(localItems),
+      });
+    }
+  },
 
-    // Check total item count limit (30)
-    const currentTotal = get().items.reduce((sum, item) => sum + item.quantity, 0);
+  // ═══ Guest-mode actions (localStorage) ═══
+
+  addToCart: (request) => {
+    const { mode } = get();
+
+    // Auth mode → delegate to backend
+    if (mode === 'auth') {
+      get().addToBackendCart(request);
+      return;
+    }
+
+    // Guest mode → localStorage with GUEST_CART_LIMIT
+    const key = makeKey(request.couponOfferId, request.couponOptionId);
+    const existing = get().localItems.find((item) => item.key === key);
+
+    const currentTotal = get().localItems.reduce((sum, item) => sum + item.quantity, 0);
     const addQty = request.quantity || 1;
-    if (currentTotal + addQty > 30 && !existing) {
-      alert('Максимум 30 позиций в корзине. Удалите лишние, чтобы добавить новые.');
+
+    if (currentTotal + addQty > GUEST_CART_LIMIT && !existing) {
+      alert(`Максимум ${GUEST_CART_LIMIT} позиций в гостевой корзине. Войдите в аккаунт для большего.`);
       return;
     }
 
     let newItems: LocalCartItem[];
 
     if (existing) {
-      if (existing.quantity + addQty > 30) {
-        alert('Максимум 30 позиций в корзине.');
+      if (existing.quantity + addQty > GUEST_CART_LIMIT) {
+        alert(`Максимум ${GUEST_CART_LIMIT} позиций в гостевой корзине.`);
         return;
       }
-      // Increment quantity
-      newItems = get().items.map((item) =>
+      newItems = get().localItems.map((item) =>
         item.key === key
           ? { ...item, quantity: item.quantity + addQty }
           : item
       );
     } else {
-      // Add new item
       const newItem: LocalCartItem = {
         key,
         couponOfferId: request.couponOfferId,
@@ -116,11 +200,11 @@ export const useCartStore = create<CartState>((set, get) => ({
         giftRecipientPhone: request.giftRecipientPhone,
         addedAt: Date.now(),
       };
-      newItems = [...get().items, newItem];
+      newItems = [...get().localItems, newItem];
     }
 
     saveToStorage(newItems);
-    set({ items: newItems, isOpen: true, ...calcTotals(newItems) });
+    set({ localItems: newItems, items: newItems, isOpen: true, ...calcLocalTotals(newItems) });
   },
 
   updateQuantity: (key, quantity) => {
@@ -128,21 +212,146 @@ export const useCartStore = create<CartState>((set, get) => ({
       get().removeFromCart(key);
       return;
     }
-    const newItems = get().items.map((item) =>
+
+    if (get().mode === 'auth') {
+      // Auth mode: find backendItem by key pattern and update via API
+      // For now, update locally in backendItems (full PATCH API to be added in later stages)
+      const newItems = get().backendItems.map((item) =>
+        makeKey(item.couponOfferId, item.couponOptionId) === key
+          ? { ...item, quantity }
+          : item
+      );
+      set({ backendItems: newItems, items: backendToLocal(newItems), ...calcBackendTotals(newItems) });
+      return;
+    }
+
+    // Guest mode
+    const newItems = get().localItems.map((item) =>
       item.key === key ? { ...item, quantity } : item
     );
     saveToStorage(newItems);
-    set({ items: newItems, ...calcTotals(newItems) });
+    set({ localItems: newItems, items: newItems, ...calcLocalTotals(newItems) });
   },
 
   removeFromCart: (key) => {
-    const newItems = get().items.filter((item) => item.key !== key);
+    if (get().mode === 'auth') {
+      // Auth mode: find backendItem and remove via API
+      const item = get().backendItems.find(
+        (i) => makeKey(i.couponOfferId, i.couponOptionId) === key
+      );
+      if (item) {
+        get().removeFromBackendCart(item.id);
+      }
+      return;
+    }
+
+    // Guest mode
+    const newItems = get().localItems.filter((item) => item.key !== key);
     saveToStorage(newItems);
-    set({ items: newItems, ...calcTotals(newItems) });
+    set({ localItems: newItems, items: newItems, ...calcLocalTotals(newItems) });
   },
 
   clearCart: () => {
-    saveToStorage([]);
-    set({ items: [], totalItems: 0, totalPrice: 0 });
+    if (get().mode === 'auth') {
+      set({ backendItems: [], items: [], totalItems: 0, totalPrice: 0 });
+    } else {
+      clearStorage();
+      set({ localItems: [], items: [], totalItems: 0, totalPrice: 0 });
+    }
+  },
+
+  // ═══ Auth-mode actions (backend API) ═══
+
+  fetchBackendCart: async () => {
+    set({ isLoading: true });
+    try {
+      const response = await ordersApi.getCart();
+      const cart = response.data.data;
+      set({
+        backendItems: cart.items,
+        backendCartId: cart.id,
+        items: backendToLocal(cart.items),
+        isLoading: false,
+        ...calcBackendTotals(cart.items),
+      });
+    } catch (error) {
+      console.error('Failed to fetch backend cart:', error);
+      set({ isLoading: false });
+    }
+  },
+
+  addToBackendCart: async (request: AddToCartRequest) => {
+    set({ isLoading: true });
+    try {
+      const response = await ordersApi.addToCart(request);
+      const cart = response.data.data;
+      set({
+        backendItems: cart.items,
+        backendCartId: cart.id,
+        items: backendToLocal(cart.items),
+        isOpen: true,
+        isLoading: false,
+        ...calcBackendTotals(cart.items),
+      });
+    } catch (error) {
+      console.error('Failed to add to backend cart:', error);
+      set({ isLoading: false });
+    }
+  },
+
+  removeFromBackendCart: async (itemId: number) => {
+    set({ isLoading: true });
+    try {
+      await ordersApi.removeFromCart(itemId);
+      // Re-fetch cart to get updated state
+      await get().fetchBackendCart();
+    } catch (error) {
+      console.error('Failed to remove from backend cart:', error);
+      set({ isLoading: false });
+    }
+  },
+
+  /**
+   * Синхронизация localStorage корзины → backend при авторизации.
+   * Переносит все localItems в backend cart, затем очищает localStorage.
+   * Это гарантирует, что после логина backend — единственный source of truth.
+   */
+  syncLocalCartToBackend: async () => {
+    const { localItems } = get();
+    if (localItems.length === 0) {
+      // Нечего синхронизировать, просто загружаем backend cart
+      await get().fetchBackendCart();
+      set({ mode: 'auth' });
+      return;
+    }
+
+    set({ isLoading: true });
+    try {
+      // Переносим каждый local item в backend
+      for (const item of localItems) {
+        await ordersApi.addToCart({
+          couponOfferId: item.couponOfferId,
+          couponOptionId: item.couponOptionId,
+          couponTitle: item.couponTitle,
+          optionTitle: item.optionTitle,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          isGift: item.isGift,
+          giftRecipientName: item.giftRecipientName,
+          giftRecipientPhone: item.giftRecipientPhone,
+        });
+      }
+
+      // Очищаем localStorage
+      clearStorage();
+      set({ localItems: [] });
+
+      // Загружаем актуальную backend cart
+      await get().fetchBackendCart();
+      set({ mode: 'auth', isLoading: false });
+    } catch (error) {
+      console.error('Failed to sync local cart to backend:', error);
+      set({ isLoading: false });
+    }
   },
 }));

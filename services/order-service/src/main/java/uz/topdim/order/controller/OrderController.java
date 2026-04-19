@@ -30,13 +30,14 @@ public class OrderController {
 
     /** Получить корзину пользователя. */
     @GetMapping("/api/v1/cart")
-    public ResponseEntity<ApiResponse<Cart>> getCart(@RequestHeader("X-User-Id") Long userId) {
-        return ResponseEntity.ok(ApiResponse.success(orderService.getCartByUserId(userId)));
+    public ResponseEntity<ApiResponse<CartResponse>> getCart(@RequestHeader("X-User-Id") Long userId) {
+        Cart cart = orderService.getCartByUserId(userId);
+        return ResponseEntity.ok(ApiResponse.success(orderService.mapToCartResponse(cart)));
     }
 
     /** Добавить товар в корзину. */
     @PostMapping("/api/v1/cart/items")
-    public ResponseEntity<ApiResponse<Cart>> addToCart(
+    public ResponseEntity<ApiResponse<CartResponse>> addToCart(
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody AddToCartRequest request
     ) {
@@ -52,7 +53,7 @@ public class OrderController {
                 request.getGiftRecipientName(),
                 request.getGiftRecipientPhone()
         );
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Добавлено в корзину", cart));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Добавлено в корзину", orderService.mapToCartResponse(cart)));
     }
 
     /** Удалить товар из корзины. */
@@ -76,12 +77,12 @@ public class OrderController {
 
     /** Оформить заказ (checkout). */
     @PostMapping("/api/v1/orders")
-    public ResponseEntity<ApiResponse<Order>> createOrder(
+    public ResponseEntity<ApiResponse<OrderResponse>> createOrder(
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody CreateOrderRequest request
     ) {
         Order order = orderService.createOrder(userId, request.getEmail(), request.getPhone());
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Заказ создан", order));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Заказ создан", orderService.mapToOrderResponse(order)));
     }
 
     /** Список заказов пользователя (с пагинацией). */
@@ -96,11 +97,12 @@ public class OrderController {
 
     /** Получить конкретный заказ по ID (с проверкой владельца). */
     @GetMapping("/api/v1/orders/{id}")
-    public ResponseEntity<ApiResponse<Order>> getOrder(
+    public ResponseEntity<ApiResponse<OrderResponse>> getOrder(
             @RequestHeader("X-User-Id") Long userId,
             @PathVariable Long id
     ) {
-        return ResponseEntity.ok(ApiResponse.success(orderService.getOrderById(id, userId)));
+        Order order = orderService.getOrderById(id, userId);
+        return ResponseEntity.ok(ApiResponse.success(orderService.mapToOrderResponse(order)));
     }
 
     // ==================== My Coupons ====================

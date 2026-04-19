@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.common.events.OrderCreatedEvent;
 import uz.topdim.common.events.CouponPurchasedEvent;
+import uz.topdim.order.dto.CartResponse;
+import uz.topdim.order.dto.OrderResponse;
 import uz.topdim.order.dto.PurchasedCouponResponse;
 import uz.topdim.order.entity.*;
 import uz.topdim.order.repository.*;
@@ -440,6 +442,58 @@ public class OrderService {
     }
 
     // ==================== Mapping ====================
+
+    /**
+     * Маппит Cart entity в storefront-safe CartResponse DTO.
+     * Вычисляет totalAmount и subtotal для каждого item.
+     */
+    public CartResponse mapToCartResponse(Cart cart) {
+        List<CartResponse.CartItemResponse> itemResponses = cart.getItems().stream()
+                .map(item -> CartResponse.CartItemResponse.builder()
+                        .id(item.getId())
+                        .couponOfferId(item.getCouponOfferId())
+                        .couponOptionId(item.getCouponOptionId())
+                        .couponTitle(item.getCouponTitle())
+                        .optionTitle(item.getOptionTitle())
+                        .unitPrice(item.getUnitPrice())
+                        .quantity(item.getQuantity())
+                        .subtotal(item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                        .gift(item.isGift())
+                        .giftRecipientName(item.getGiftRecipientName())
+                        .giftRecipientPhone(item.getGiftRecipientPhone())
+                        .build())
+                .toList();
+
+        BigDecimal totalAmount = itemResponses.stream()
+                .map(CartResponse.CartItemResponse::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return CartResponse.builder()
+                .id(cart.getId())
+                .userId(cart.getUserId())
+                .items(itemResponses)
+                .totalAmount(totalAmount)
+                .totalItems(itemResponses.size())
+                .build();
+    }
+
+    /**
+     * Маппит Order entity в storefront-safe OrderResponse DTO.
+     * Гарантирует наличие id, status, totalAmount.
+     */
+    public OrderResponse mapToOrderResponse(Order order) {
+        return OrderResponse.builder()
+                .id(order.getId())
+                .orderNumber(order.getOrderNumber())
+                .totalAmount(order.getTotalAmount())
+                .status(order.getStatus().name())
+                .userEmail(order.getUserEmail())
+                .userPhone(order.getUserPhone())
+                .itemCount(order.getItems() != null ? order.getItems().size() : 0)
+                .createdAt(order.getCreatedAt())
+                .paidAt(order.getPaidAt())
+                .build();
+    }
 
     /**
      * Маппит PurchasedCoupon entity в PurchasedCouponResponse DTO.

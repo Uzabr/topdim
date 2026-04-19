@@ -11,6 +11,7 @@ import uz.topdim.payment.repository.PaymentRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -87,6 +88,18 @@ public class PaymentService {
     public Payment getPaymentByOrderId(Long orderId) {
         return paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Платёж не найден для заказа " + orderId));
+    }
+
+    /**
+     * Находит платёж по orderId (Optional).
+     * Используется для storefront polling — не бросает исключение если payment ещё не создан.
+     *
+     * @param orderId ID заказа
+     * @return Optional<Payment>
+     */
+    @Transactional(readOnly = true)
+    public Optional<Payment> findPaymentByOrderId(Long orderId) {
+        return paymentRepository.findByOrderId(orderId);
     }
 
     /**
