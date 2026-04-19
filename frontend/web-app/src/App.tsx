@@ -16,6 +16,7 @@ import CouponCatalogPage from './pages/CouponCatalogPage';
 import CouponDetailPage from './pages/CouponDetailPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
+import PaymentPage from './pages/PaymentPage';
 import BazaarMapPage from './pages/BazaarMapPage';
 import BazaarDetailPage from './pages/BazaarDetailPage';
 import ShopDetailPage from './pages/ShopDetailPage';
@@ -70,6 +71,7 @@ function AppContent() {
             <Route path="coupons/:id" element={<CouponDetailPage />} />
             <Route path="cart" element={<CartPage />} />
             <Route path="checkout" element={<CheckoutPage />} />
+            <Route path="payment/:orderId" element={<PaymentPage />} />
             <Route path="bazaar" element={<BazaarMapPage />} />
             <Route path="bazaar/:id" element={<BazaarDetailPage />} />
             <Route path="shops/:id" element={<ShopDetailPage />} />

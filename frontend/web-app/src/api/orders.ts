@@ -9,6 +9,7 @@ export interface CartItem {
   optionTitle: string;
   unitPrice: number;
   quantity: number;
+  subtotal: number;
   gift: boolean;
   giftRecipientName?: string;
   giftRecipientPhone?: string;
@@ -18,6 +19,8 @@ export interface Cart {
   id: number;
   userId: number;
   items: CartItem[];
+  totalAmount: number;
+  totalItems: number;
 }
 
 export interface AddToCartRequest {
@@ -30,6 +33,22 @@ export interface AddToCartRequest {
   isGift?: boolean;
   giftRecipientName?: string;
   giftRecipientPhone?: string;
+}
+
+/**
+ * OrderResponse DTO — aligned with backend OrderResponse.
+ * Гарантированно содержит id, status, totalAmount.
+ */
+export interface OrderResponse {
+  id: number;
+  orderNumber: string;
+  totalAmount: number;
+  status: string;
+  userEmail: string;
+  userPhone: string;
+  itemCount: number;
+  createdAt: string;
+  paidAt?: string;
 }
 
 export interface PurchasedCoupon {
@@ -55,7 +74,10 @@ export const ordersApi = {
     apiClient.delete<ApiResponse<void>>(`/api/v1/cart/items/${itemId}`),
 
   createOrder: (email: string, phone: string) =>
-    apiClient.post<ApiResponse<any>>('/api/v1/orders', { email, phone }),
+    apiClient.post<ApiResponse<OrderResponse>>('/api/v1/orders', { email, phone }),
+
+  getOrder: (orderId: number) =>
+    apiClient.get<ApiResponse<OrderResponse>>(`/api/v1/orders/${orderId}`),
 
   getMyCoupons: (status?: string) =>
     apiClient.get<ApiResponse<PurchasedCoupon[]>>('/api/v1/orders/my-coupons', {

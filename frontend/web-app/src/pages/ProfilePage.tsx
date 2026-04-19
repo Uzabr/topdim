@@ -43,9 +43,9 @@ export default function ProfilePage() {
     );
   }
 
-  // Calculate some mock or derived stats
-  const totalCouponsCount = coupons.length || 15; // mock if 0 for demo
-  const mockSavedAmount = 1450000;
+  const totalCouponsCount = coupons.length;
+  // Сумма экономии будет считаться из реальных данных в будущем
+  const savedAmount = 0;
 
   return (
     <div className="profile-page container">
@@ -58,7 +58,7 @@ export default function ProfilePage() {
             </div>
             <div className="profile-info">
               <h1>{user?.firstName} {user?.lastName}</h1>
-              <p>{user?.email || '+998 90 123 45 67'}</p>
+              <p>{user?.email}{user?.phone ? ` • ${user.phone}` : ''}</p>
             </div>
           </div>
           
@@ -88,7 +88,7 @@ export default function ProfilePage() {
             </div>
             <div className="profile-stat-data">
               <span className="profile-stat-label">Сэкономлено</span>
-              <span className="profile-stat-value">{formatPrice(mockSavedAmount)}</span>
+              <span className="profile-stat-value">{savedAmount > 0 ? formatPrice(savedAmount) : '—'}</span>
             </div>
           </div>
         </div>
@@ -127,7 +127,7 @@ export default function ProfilePage() {
                  <div className="purchased-coupon__details">
                     <div className="purchased-coupon__code">
                       <span className="code-label">ПИН КОД</span>
-                      <span className="code-value">{coupon.couponCode || '1234 5678'}</span>
+                      <span className="code-value">{coupon.couponCode || '—'}</span>
                     </div>
                     
                     <div className="purchased-coupon__meta">
@@ -144,9 +144,15 @@ export default function ProfilePage() {
                     </div>
                  </div>
 
-                 {coupon.status === 'ACTIVE' && (
-                    <button className="primary-button purchased-coupon__btn">
-                      Показать QR-код
+                 {coupon.status === 'ACTIVE' && coupon.couponCode && (
+                    <button 
+                      className="primary-button purchased-coupon__btn"
+                      onClick={() => {
+                        navigator.clipboard.writeText(coupon.couponCode);
+                        alert('ПИН-код скопирован!');
+                      }}
+                    >
+                      Скопировать ПИН-код
                     </button>
                  )}
                </div>
