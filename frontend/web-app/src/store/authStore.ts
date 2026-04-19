@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { authApi } from '../api/auth';
 import type { UserDto, LoginRequest, RegisterRequest } from '../api/auth';
+import { useCartStore } from './cartStore';
 
 interface AuthState {
   user: UserDto | null;
@@ -26,6 +27,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
       set({ user, isAuthenticated: true, isLoading: false });
+      // Sync guest cart → backend and switch to auth mode
+      useCartStore.getState().syncLocalCartToBackend();
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -41,6 +44,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
       set({ user, isAuthenticated: true, isLoading: false });
+      // Sync guest cart → backend and switch to auth mode
+      useCartStore.getState().syncLocalCartToBackend();
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -56,6 +61,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     set({ user: null, isAuthenticated: false });
+    // Switch cart back to guest mode
+    useCartStore.getState().setMode('guest');
   },
 
   loadFromStorage: () => {
@@ -64,6 +71,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       const token = localStorage.getItem('accessToken');
       if (userStr && token) {
         set({ user: JSON.parse(userStr), isAuthenticated: true });
+        // User already authenticated — switch cart to auth mode
+        const cartStore = useCartStore.getState();
+        cartStore.setMode('auth');
+        cartStore.fetchBackendCart();
       }
     } catch {
       // Ignore
