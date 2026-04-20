@@ -26,6 +26,8 @@ public class PaymentResponse {
     private String statusName;
     private String transactionId;
     private String paymentUrl;
+    /** Режим оплаты: "demo" или "provider". Определяет UX на фронтенде. */
+    private String paymentMode;
     private LocalDateTime createdAt;
     private LocalDateTime completedAt;
 }

@@ -9,7 +9,7 @@ export interface CreatePaymentRequest {
 
 /**
  * PaymentResponse DTO — aligned with backend PaymentResponse.
- * Field names match backend: statusName, paymentUrl.
+ * Field names match backend: statusName, paymentUrl, paymentMode.
  */
 export interface PaymentResponse {
   id: number;
@@ -21,6 +21,8 @@ export interface PaymentResponse {
   statusName: string;
   transactionId?: string;
   paymentUrl?: string;
+  /** Режим оплаты: "demo" (без реальной ПС) или "provider" (реальная ПС) */
+  paymentMode?: 'demo' | 'provider';
   createdAt: string;
   completedAt?: string;
 }
@@ -39,4 +41,12 @@ export const paymentsApi = {
    */
   getByOrderId: (orderId: number) =>
     apiClient.get<ApiResponse<PaymentResponse>>(`/api/v1/payments/order/${orderId}`),
+
+  /**
+   * Демо-подтверждение оплаты (только в demo mode).
+   * Завершает payment без реального провайдера.
+   * Идемпотентен: повторные вызовы безопасны.
+   */
+  demoComplete: (orderId: number) =>
+    apiClient.post<ApiResponse<PaymentResponse>>(`/api/v1/payments/order/${orderId}/demo-complete`),
 };
