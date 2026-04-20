@@ -60,6 +60,9 @@ management:
     tags:
       application: ${spring.application.name}
 
+payment:
+  mode: ${PAYMENT_MODE:demo}  # demo | provider
+
 logging:
   level:
     uz.topdim: DEBUG

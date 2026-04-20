@@ -147,4 +147,52 @@ public class PaymentService {
         log.info("Платёж {} завершён для заказа {}", payment.getId(), orderId);
         return payment;
     }
+
+    /**
+     * Завершает платёж в demo-режиме без реального провайдера.
+     * Переиспользует ту же цепочку: Payment(COMPLETED) → PaymentCompletedEvent.
+     * Идемпотентен: если платёж уже COMPLETED — возвращает его без повторной публикации события.
+     *
+     * @param orderId ID заказа
+     * @return обновлённый платёж
+     * @throws IllegalArgumentException если платёж не найден
+     * @throws IllegalStateException если платёж в статусе FAILED/REFUNDED
+     */
+    @Transactional
+    public Payment demoComplete(Long orderId) {
+        Payment payment = paymentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Платёж не найден для заказа " + orderId));
+
+        // Идемпотентность: если уже COMPLETED — вернуть без повторной публикации
+        if (payment.getStatus() == PaymentStatus.COMPLETED) {
+            log.info("Платёж для заказа {} уже завершён, пропускаем demo-completion", orderId);
+            return payment;
+        }
+
+        // Нельзя завершить FAILED/REFUNDED платёж
+        if (payment.getStatus() == PaymentStatus.FAILED || payment.getStatus() == PaymentStatus.REFUNDED) {
+            throw new IllegalStateException(
+                    "Невозможно завершить платёж в статусе " + payment.getStatus() + " для заказа " + orderId);
+        }
+
+        payment.setStatus(PaymentStatus.COMPLETED);
+        payment.setCompletedAt(LocalDateTime.now());
+        payment.setTransactionId("DEMO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        payment = paymentRepository.save(payment);
+
+        // Публикуем то же событие, что и при реальном callback
+        PaymentCompletedEvent event = PaymentCompletedEvent.builder()
+                .paymentId(payment.getId())
+                .orderId(orderId)
+                .userId(payment.getUserId())
+                .amount(payment.getAmount())
+                .paymentProvider("DEMO")
+                .transactionId(payment.getTransactionId())
+                .completedAt(LocalDateTime.now())
+                .build();
+        rabbitTemplate.convertAndSend("payment.exchange", "payment.completed", event);
+
+        log.info("Demo-платёж {} завершён для заказа {}", payment.getId(), orderId);
+        return payment;
+    }
 }
