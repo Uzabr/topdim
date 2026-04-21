@@ -132,7 +132,24 @@ export const CouponFormPage = () => {
   // Быстрое создание мерчанта (с primary location)
   const createMerchantMutation = useMutation({
     mutationFn: async (values: { name: string; address?: string; phone?: string; workingHours?: string }) => {
-      const { data } = await api.post('/api/v1/admin/merchants', values);
+      const payload: any = { name: values.name };
+      // Build locations[] with primary location from form fields
+      const hasLocation = values.address || values.phone || values.workingHours;
+      if (hasLocation) {
+        payload.locations = [{
+          title: 'Основной адрес',
+          address: values.address || '',
+          phone: values.phone || '',
+          workingHours: values.workingHours || '',
+          isPrimary: true,
+        }];
+      }
+      // Also send flat fields for backward compat with server auto-migrate
+      if (values.address) payload.address = values.address;
+      if (values.phone) payload.phone = values.phone;
+      if (values.workingHours) payload.workingHours = values.workingHours;
+
+      const { data } = await api.post('/api/v1/admin/merchants', payload);
       return data.data;
     },
     onSuccess: (newMerchant) => {

@@ -14,4 +14,7 @@ public interface MerchantLocationRepository extends JpaRepository<MerchantLocati
     List<MerchantLocation> findByMerchantId(Long merchantId);
     Optional<MerchantLocation> findByMerchantIdAndPrimaryTrue(Long merchantId);
     void deleteAllByMerchantId(Long merchantId);
+
+    // Bot lead: phone lookup across all active locations
+    Optional<MerchantLocation> findFirstByPhoneAndActiveTrue(String phone);
 }

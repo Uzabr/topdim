@@ -686,24 +686,62 @@ public class CouponOfferService {
     @Transactional
     public void createLeadFromBot(BotLeadRequest request) {
         Merchant merchant = null;
+
+        // Step 1: lookup by telegramChatId
         if (request.getTelegramChatId() != null && !request.getTelegramChatId().isEmpty()) {
             merchant = merchantRepository.findByTelegramChatId(request.getTelegramChatId()).orElse(null);
         }
-        if (merchant == null && request.getPhone() != null && !request.getPhone().isEmpty()) {
-            merchant = merchantRepository.findByPhone(request.getPhone()).orElse(null);
+
+        // Step 2: lookup by phone in merchant_locations (canonical)
+        String normalizedPhone = normalizePhone(request.getPhone());
+        if (merchant == null && normalizedPhone != null) {
+            merchant = merchantLocationRepository.findFirstByPhoneAndActiveTrue(normalizedPhone)
+                    .map(MerchantLocation::getMerchant)
+                    .orElse(null);
+            // Fallback: also check legacy merchant.phone for backward compat
+            if (merchant == null) {
+                merchant = merchantRepository.findByPhone(normalizedPhone).orElse(null);
+            }
         }
 
+        // Step 3: lookup by exact name (only if unique match)
+        if (merchant == null && request.getCompanyName() != null && !request.getCompanyName().isBlank()) {
+            String name = request.getCompanyName().trim();
+            long nameCount = merchantRepository.countByNameIgnoreCase(name);
+            if (nameCount == 1) {
+                merchant = merchantRepository.findFirstByNameIgnoreCase(name).orElse(null);
+            } else if (nameCount > 1) {
+                log.warn("Bot lead: ambiguous name match for '{}' ({} merchants found), creating new merchant lead",
+                        name, nameCount);
+            }
+        }
+
+        // Create new merchant if not found
         if (merchant == null) {
             merchant = Merchant.builder()
                     .name(request.getCompanyName() != null ? request.getCompanyName() : "Unknown Lead")
-                    .phone(request.getPhone())
-                    .contactPerson((request.getFirstName() != null ? request.getFirstName() : "") + " " + 
+                    .phone(normalizedPhone) // Legacy field kept for backward compat
+                    .contactPerson((request.getFirstName() != null ? request.getFirstName() : "") + " " +
                                    (request.getLastName() != null ? request.getLastName() : ""))
                     .telegramChatId(request.getTelegramChatId())
                     .website(request.getSourceLink())
                     .active(false)
                     .build();
             merchant = merchantRepository.save(merchant);
+
+            // Create primary location if contact data is present
+            boolean hasContactData = normalizedPhone != null
+                    || (request.getCompanyName() != null && !request.getCompanyName().isBlank());
+            if (hasContactData) {
+                MerchantLocation primaryLoc = MerchantLocation.builder()
+                        .merchant(merchant)
+                        .title("Основной адрес")
+                        .phone(normalizedPhone)
+                        .primary(true)
+                        .active(true)
+                        .build();
+                merchantLocationRepository.save(primaryLoc);
+            }
         }
 
         String fullDesc = request.getPromoDescription() != null ? request.getPromoDescription() : "";
@@ -717,10 +755,21 @@ public class CouponOfferService {
                 .fullDescription(fullDesc) // Legacy field kept for backward compat
                 .merchant(merchant)
                 .status(CouponStatus.LEAD)
-                .contactPhone(request.getPhone()) // Legacy field kept for backward compat
+                .contactPhone(normalizedPhone) // Legacy field kept for backward compat
                 .build();
         
         couponOfferRepository.save(lead);
+    }
+
+    /**
+     * Normalizes phone number by stripping non-digits and ensuring + prefix.
+     * Returns null if input is null/blank.
+     */
+    private String normalizePhone(String phone) {
+        if (phone == null || phone.isBlank()) return null;
+        String digits = phone.replaceAll("[^\\d+]", "");
+        if (digits.isEmpty()) return null;
+        return digits.startsWith("+") ? digits : "+" + digits;
     }
 
     // ==================== Bot API (Stat & List) ====================

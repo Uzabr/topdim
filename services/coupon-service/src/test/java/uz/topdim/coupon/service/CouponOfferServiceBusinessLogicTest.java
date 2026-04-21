@@ -156,14 +156,17 @@ class CouponOfferServiceBusinessLogicTest {
     }
 
     @Test
-    @DisplayName("createLeadFromBot: если chatId не найден, ищет по телефону")
-    void createLeadFromBot_fallsBackToPhone() {
+    @DisplayName("createLeadFromBot: если chatId не найден, ищет по телефону в merchant_locations")
+    void createLeadFromBot_fallsBackToPhoneViaLocations() {
         Merchant merchant = createMerchant();
         BotLeadRequest request = createLeadRequest();
         request.setTelegramChatId("unknown-chat");
 
+        uz.topdim.coupon.entity.MerchantLocation loc = uz.topdim.coupon.entity.MerchantLocation.builder()
+                .id(1L).merchant(merchant).phone("+998901234567").primary(true).active(true).build();
+
         when(merchantRepository.findByTelegramChatId("unknown-chat")).thenReturn(Optional.empty());
-        when(merchantRepository.findByPhone("+998901234567")).thenReturn(Optional.of(merchant));
+        when(merchantLocationRepository.findFirstByPhoneAndActiveTrue("+998901234567")).thenReturn(Optional.of(loc));
 
         couponOfferService.createLeadFromBot(request);
 
@@ -175,14 +178,72 @@ class CouponOfferServiceBusinessLogicTest {
     }
 
     @Test
-    @DisplayName("createLeadFromBot: без совпадения создаёт нового неактивного мерчанта и лид")
-    void createLeadFromBot_createsInactiveMerchantWhenMissing() {
+    @DisplayName("createLeadFromBot: если locations не нашли, фоллбэк на legacy merchant.phone")
+    void createLeadFromBot_fallsBackToLegacyPhone() {
+        Merchant merchant = createMerchant();
+        BotLeadRequest request = createLeadRequest();
+        request.setTelegramChatId("unknown-chat");
+
+        when(merchantRepository.findByTelegramChatId("unknown-chat")).thenReturn(Optional.empty());
+        when(merchantLocationRepository.findFirstByPhoneAndActiveTrue("+998901234567")).thenReturn(Optional.empty());
+        when(merchantRepository.findByPhone("+998901234567")).thenReturn(Optional.of(merchant));
+
+        couponOfferService.createLeadFromBot(request);
+
+        verify(merchantRepository, never()).save(any(Merchant.class));
+        verify(couponOfferRepository).save(any(CouponOffer.class));
+    }
+
+    @Test
+    @DisplayName("createLeadFromBot: уникальное совпадение по имени — auto-link")
+    void createLeadFromBot_uniqueNameMatch() {
+        Merchant merchant = createMerchant();
+        BotLeadRequest request = createLeadRequest();
+        request.setTelegramChatId(null);
+        request.setPhone(null);
+
+        when(merchantRepository.countByNameIgnoreCase("Lead Company")).thenReturn(1L);
+        when(merchantRepository.findFirstByNameIgnoreCase("Lead Company")).thenReturn(Optional.of(merchant));
+
+        couponOfferService.createLeadFromBot(request);
+
+        verify(merchantRepository, never()).save(any(Merchant.class));
+        ArgumentCaptor<CouponOffer> leadCaptor = ArgumentCaptor.forClass(CouponOffer.class);
+        verify(couponOfferRepository).save(leadCaptor.capture());
+        assertThat(leadCaptor.getValue().getMerchant()).isEqualTo(merchant);
+    }
+
+    @Test
+    @DisplayName("createLeadFromBot: неуникальное совпадение по имени — создаёт нового мерчанта")
+    void createLeadFromBot_ambiguousNameMatch_createsNewMerchant() {
+        BotLeadRequest request = createLeadRequest();
+        request.setTelegramChatId(null);
+        request.setPhone(null);
+
+        when(merchantRepository.countByNameIgnoreCase("Lead Company")).thenReturn(3L);
+        when(merchantRepository.save(any(Merchant.class))).thenAnswer(invocation -> {
+            Merchant m = invocation.getArgument(0);
+            m.setId(99L);
+            return m;
+        });
+
+        couponOfferService.createLeadFromBot(request);
+
+        verify(merchantRepository).save(any(Merchant.class));
+        verify(couponOfferRepository).save(any(CouponOffer.class));
+    }
+
+    @Test
+    @DisplayName("createLeadFromBot: без совпадения создаёт нового мерчанта с primary location")
+    void createLeadFromBot_createsInactiveMerchantWithPrimaryLocation() {
         BotLeadRequest request = createLeadRequest();
         request.setTelegramChatId("new-chat");
         request.setPhone("+998909999999");
 
         when(merchantRepository.findByTelegramChatId("new-chat")).thenReturn(Optional.empty());
+        when(merchantLocationRepository.findFirstByPhoneAndActiveTrue("+998909999999")).thenReturn(Optional.empty());
         when(merchantRepository.findByPhone("+998909999999")).thenReturn(Optional.empty());
+        when(merchantRepository.countByNameIgnoreCase("Lead Company")).thenReturn(0L);
         when(merchantRepository.save(any(Merchant.class))).thenAnswer(invocation -> {
             Merchant merchant = invocation.getArgument(0);
             merchant.setId(77L);
@@ -193,15 +254,20 @@ class CouponOfferServiceBusinessLogicTest {
 
         ArgumentCaptor<Merchant> merchantCaptor = ArgumentCaptor.forClass(Merchant.class);
         ArgumentCaptor<CouponOffer> leadCaptor = ArgumentCaptor.forClass(CouponOffer.class);
+        ArgumentCaptor<uz.topdim.coupon.entity.MerchantLocation> locCaptor =
+                ArgumentCaptor.forClass(uz.topdim.coupon.entity.MerchantLocation.class);
         verify(merchantRepository).save(merchantCaptor.capture());
+        verify(merchantLocationRepository).save(locCaptor.capture());
         verify(couponOfferRepository).save(leadCaptor.capture());
 
         Merchant createdMerchant = merchantCaptor.getValue();
+        uz.topdim.coupon.entity.MerchantLocation createdLoc = locCaptor.getValue();
         CouponOffer createdLead = leadCaptor.getValue();
 
         assertThat(createdMerchant.isActive()).isFalse();
         assertThat(createdMerchant.getTelegramChatId()).isEqualTo("new-chat");
-        assertThat(createdMerchant.getPhone()).isEqualTo("+998909999999");
+        assertThat(createdLoc.isPrimary()).isTrue();
+        assertThat(createdLoc.getPhone()).isEqualTo("+998909999999");
         assertThat(createdLead.getMerchant().getId()).isEqualTo(77L);
         assertThat(createdLead.getStatus()).isEqualTo(CouponStatus.LEAD);
     }
