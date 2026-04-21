@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * DTO ответа купонного предложения.
- * Включает: id, title, prices, discount, status, merchant, images.
+ * Включает: id, title, prices, discount, status, merchant (с primaryLocation), images.
  */
 @Data
 @Builder
@@ -20,8 +20,17 @@ import java.util.List;
 public class CouponOfferResponse {
     private Long id;
     private String title;
+
+    /** Canonical offer text (Release 1+). */
+    private String offerDescription;
+
+    // --- Legacy fields (kept for backward compat during transition) ---
     private String shortDescription;
     private String fullDescription;
+    private String terms;
+    private String usageRules;
+    private String howToUse;
+
     private MerchantSummary merchant;
     private CategorySummary category;
     private BigDecimal oldPrice;
@@ -30,12 +39,6 @@ public class CouponOfferResponse {
     private String coverImageUrl;
     private LocalDateTime buyUntil;
     private LocalDateTime useUntil;
-    private String terms;
-    private String usageRules;
-    private String howToUse;
-    private String address;
-    private String contactPhone;
-    private String workingHours;
     private boolean giftAvailable;
     private String status;
     private Long assignedModeratorId;
@@ -59,6 +62,8 @@ public class CouponOfferResponse {
         private Long id;
         private String name;
         private String logoUrl;
+        private String description;
+        private MerchantLocationResponse primaryLocation;
     }
 
     @Data

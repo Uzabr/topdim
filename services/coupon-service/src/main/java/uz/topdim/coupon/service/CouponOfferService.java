@@ -35,6 +35,7 @@ public class CouponOfferService {
     private final CouponOptionRepository couponOptionRepository;
     private final CouponImageRepository couponImageRepository;
     private final MerchantRepository merchantRepository;
+    private final MerchantLocationRepository merchantLocationRepository;
     private final CategoryRepository categoryRepository;
     private final ReviewRepository reviewRepository;
     private final EntityManager entityManager;
@@ -144,8 +145,18 @@ public class CouponOfferService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
 
+        // Build canonical offerDescription
+        String offerDesc = request.getOfferDescription();
+        if (offerDesc == null || offerDesc.isBlank()) {
+            offerDesc = buildOfferDescription(
+                    request.getShortDescription(), request.getFullDescription(),
+                    request.getTerms(), request.getUsageRules(), request.getHowToUse());
+        }
+
         CouponOffer offer = CouponOffer.builder()
                 .title(request.getTitle())
+                .offerDescription(offerDesc)
+                // Legacy text fields — still written for backward compat
                 .shortDescription(request.getShortDescription())
                 .fullDescription(request.getFullDescription())
                 .merchant(merchant)
@@ -159,9 +170,7 @@ public class CouponOfferService {
                 .terms(request.getTerms())
                 .usageRules(request.getUsageRules())
                 .howToUse(request.getHowToUse())
-                .address(request.getAddress())
-                .contactPhone(request.getContactPhone())
-                .workingHours(request.getWorkingHours())
+                // Contact fields no longer written to coupon — live in merchant_locations
                 .giftAvailable(request.isGiftAvailable())
                 .status(CouponStatus.LEAD)
                 .totalSold(0)
@@ -410,8 +419,18 @@ public class CouponOfferService {
                 .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
         offer.setCategory(category);
 
+        // Build canonical offerDescription
+        String offerDesc = request.getOfferDescription();
+        if (offerDesc == null || offerDesc.isBlank()) {
+            offerDesc = buildOfferDescription(
+                    request.getShortDescription(), request.getFullDescription(),
+                    request.getTerms(), request.getUsageRules(), request.getHowToUse());
+        }
+
         // Обновляем скалярные поля
         offer.setTitle(request.getTitle());
+        offer.setOfferDescription(offerDesc);
+        // Legacy text fields — still written for backward compat
         offer.setShortDescription(request.getShortDescription());
         offer.setFullDescription(request.getFullDescription());
         offer.setOldPrice(request.getOldPrice());
@@ -423,9 +442,7 @@ public class CouponOfferService {
         offer.setTerms(request.getTerms());
         offer.setUsageRules(request.getUsageRules());
         offer.setHowToUse(request.getHowToUse());
-        offer.setAddress(request.getAddress());
-        offer.setContactPhone(request.getContactPhone());
-        offer.setWorkingHours(request.getWorkingHours());
+        // Contact fields no longer written to coupon — live in merchant_locations
         offer.setGiftAvailable(request.isGiftAvailable());
 
         // Мержим Options
@@ -570,15 +587,49 @@ public class CouponOfferService {
     // ==================== Mapping ====================
 
     public CouponOfferResponse mapToResponse(CouponOffer offer) {
+        // Resolve merchant primary location for contacts
+        MerchantLocationResponse primaryLoc = null;
+        if (offer.getMerchant() != null) {
+            primaryLoc = merchantLocationRepository
+                    .findByMerchantIdAndPrimaryTrue(offer.getMerchant().getId())
+                    .map(loc -> MerchantLocationResponse.builder()
+                            .id(loc.getId())
+                            .title(loc.getTitle())
+                            .address(loc.getAddress())
+                            .phone(loc.getPhone())
+                            .workingHours(loc.getWorkingHours())
+                            .latitude(loc.getLatitude())
+                            .longitude(loc.getLongitude())
+                            .primary(loc.isPrimary())
+                            .active(loc.isActive())
+                            .build())
+                    .orElse(null);
+        }
+
+        // Canonical offerDescription with fallback on legacy fields
+        String offerDesc = offer.getOfferDescription();
+        if (offerDesc == null || offerDesc.isBlank()) {
+            offerDesc = buildOfferDescription(
+                    offer.getShortDescription(), offer.getFullDescription(),
+                    offer.getTerms(), offer.getUsageRules(), offer.getHowToUse());
+        }
+
         return CouponOfferResponse.builder()
                 .id(offer.getId())
                 .title(offer.getTitle())
+                .offerDescription(offerDesc)
+                // Legacy text fields kept for backward compat
                 .shortDescription(offer.getShortDescription())
                 .fullDescription(offer.getFullDescription())
+                .terms(offer.getTerms())
+                .usageRules(offer.getUsageRules())
+                .howToUse(offer.getHowToUse())
                 .merchant(offer.getMerchant() != null ? CouponOfferResponse.MerchantSummary.builder()
                         .id(offer.getMerchant().getId())
                         .name(offer.getMerchant().getName())
                         .logoUrl(offer.getMerchant().getLogoUrl())
+                        .description(offer.getMerchant().getDescription())
+                        .primaryLocation(primaryLoc)
                         .build() : null)
                 .category(offer.getCategory() != null ? CouponOfferResponse.CategorySummary.builder()
                         .id(offer.getCategory().getId())
@@ -592,12 +643,6 @@ public class CouponOfferService {
                 .coverImageUrl(offer.getCoverImageUrl())
                 .buyUntil(offer.getBuyUntil())
                 .useUntil(offer.getUseUntil())
-                .terms(offer.getTerms())
-                .usageRules(offer.getUsageRules())
-                .howToUse(offer.getHowToUse())
-                .address(offer.getAddress())
-                .contactPhone(offer.getContactPhone())
-                .workingHours(offer.getWorkingHours())
                 .giftAvailable(offer.isGiftAvailable())
                 .status(offer.getStatus().name())
                 .assignedModeratorId(offer.getAssignedModeratorId())
@@ -668,10 +713,11 @@ public class CouponOfferService {
 
         CouponOffer lead = CouponOffer.builder()
                 .title("Лид от: " + merchant.getName())
-                .fullDescription(fullDesc)
+                .offerDescription(fullDesc)
+                .fullDescription(fullDesc) // Legacy field kept for backward compat
                 .merchant(merchant)
                 .status(CouponStatus.LEAD)
-                .contactPhone(request.getPhone())
+                .contactPhone(request.getPhone()) // Legacy field kept for backward compat
                 .build();
         
         couponOfferRepository.save(lead);
@@ -759,5 +805,34 @@ public class CouponOfferService {
         }
 
         couponOfferRepository.save(offer);
+    }
+
+    // ==================== Helpers ====================
+
+    /**
+     * Builds canonical offerDescription from legacy text fields.
+     * Uses the same deterministic algorithm as the V14 backfill migration.
+     */
+    private String buildOfferDescription(String shortDesc, String fullDesc,
+                                          String terms, String usageRules, String howToUse) {
+        StringBuilder sb = new StringBuilder();
+        if (shortDesc != null && !shortDesc.isBlank()) sb.append(shortDesc.trim());
+        if (fullDesc != null && !fullDesc.isBlank()) {
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append(fullDesc.trim());
+        }
+        if (terms != null && !terms.isBlank()) {
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append("## Условия\n").append(terms.trim());
+        }
+        if (usageRules != null && !usageRules.isBlank()) {
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append("## Правила использования\n").append(usageRules.trim());
+        }
+        if (howToUse != null && !howToUse.isBlank()) {
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append("## Как использовать\n").append(howToUse.trim());
+        }
+        return sb.length() > 0 ? sb.toString() : null;
     }
 }

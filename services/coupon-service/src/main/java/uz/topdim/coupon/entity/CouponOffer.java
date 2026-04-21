@@ -37,6 +37,10 @@ public class CouponOffer {
     @Column(name = "full_description", columnDefinition = "TEXT")
     private String fullDescription;
 
+    /** Canonical offer text (replaces short_description + full_description + terms + usageRules + howToUse). */
+    @Column(name = "offer_description", columnDefinition = "TEXT")
+    private String offerDescription;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "merchant_id", nullable = false)
     private Merchant merchant;

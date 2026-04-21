@@ -11,7 +11,8 @@ import java.util.List;
 
 /**
  * DTO запроса на создание купонного предложения.
- * Поля: title, description, merchantId, categoryId, options[].
+ * Release 1: canonical field is offerDescription.
+ * Legacy text fields accepted for backward compat but offerDescription takes priority.
  */
 @Data
 public class CreateCouponOfferRequest {
@@ -19,8 +20,15 @@ public class CreateCouponOfferRequest {
     @NotBlank(message = "Название обязательно")
     private String title;
 
+    /** Canonical offer text (Release 1+). Takes priority over legacy fields. */
+    private String offerDescription;
+
+    // --- Legacy text fields (accepted for backward compat) ---
     private String shortDescription;
     private String fullDescription;
+    private String terms;
+    private String usageRules;
+    private String howToUse;
 
     @NotNull(message = "Партнер обязателен")
     private Long merchantId;
@@ -44,12 +52,6 @@ public class CreateCouponOfferRequest {
     @NotNull(message = "Укажите срок использования")
     private LocalDateTime useUntil;
 
-    private String terms;
-    private String usageRules;
-    private String howToUse;
-    private String address;
-    private String contactPhone;
-    private String workingHours;
     private boolean giftAvailable;
 
     private List<CreateCouponOptionRequest> options;

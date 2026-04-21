@@ -32,6 +32,7 @@ class CouponOfferServiceTest {
     @Mock private CouponOfferRepository couponOfferRepository;
     @Mock private CouponOptionRepository couponOptionRepository;
     @Mock private MerchantRepository merchantRepository;
+    @Mock private MerchantLocationRepository merchantLocationRepository;
     @Mock private CategoryRepository categoryRepository;
     @Mock private ReviewRepository reviewRepository;
     @Mock private CouponImageRepository couponImageRepository;
@@ -46,7 +47,9 @@ class CouponOfferServiceTest {
         Category category = Category.builder().id(1L).name("Красота").slug("beauty").iconUrl("/icon.svg").build();
         return CouponOffer.builder()
                 .id(1L).title("SPA массаж 50%").shortDescription("Релакс")
-                .fullDescription("Детали").merchant(merchant).category(category)
+                .fullDescription("Детали")
+                .offerDescription("Релакс\n\nДетали")
+                .merchant(merchant).category(category)
                 .oldPrice(BigDecimal.valueOf(300000)).fromPrice(BigDecimal.valueOf(150000))
                 .discountPercent(50).coverImageUrl("/cover.jpg")
                 .status(CouponStatus.ACTIVE).totalSold(45).viewCount(100)
@@ -352,5 +355,82 @@ class CouponOfferServiceTest {
         assertThatThrownBy(() -> couponOfferService.delete(1L))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Удаление запрещено");
+    }
+
+    // ==================== Release 1: offerDescription + primaryLocation ====================
+
+    @Test
+    @DisplayName("Создание: пишет offerDescription")
+    void create_writesOfferDescription() {
+        Merchant merchant = Merchant.builder().id(1L).name("SPA").logoUrl("/l.jpg").build();
+        Category category = Category.builder().id(1L).name("Красота").slug("beauty").iconUrl("/i.svg").build();
+
+        CreateCouponOfferRequest request = new CreateCouponOfferRequest();
+        request.setTitle("Новый купон");
+        request.setOfferDescription("Полное описание оффера");
+        request.setMerchantId(1L);
+        request.setCategoryId(1L);
+        request.setFromPrice(BigDecimal.valueOf(100000));
+        request.setCoverImageUrl("/cover.jpg");
+        request.setBuyUntil(java.time.LocalDateTime.now().plusDays(30));
+        request.setUseUntil(java.time.LocalDateTime.now().plusDays(60));
+
+        when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
+
+        CouponOffer savedOffer = CouponOffer.builder()
+                .id(10L).title("Новый купон")
+                .offerDescription("Полное описание оффера")
+                .merchant(merchant).category(category)
+                .status(CouponStatus.LEAD).options(new ArrayList<>()).images(new ArrayList<>())
+                .fromPrice(BigDecimal.valueOf(100000))
+                .totalSold(0).viewCount(0).giftAvailable(false).build();
+
+        when(couponOfferRepository.save(any(CouponOffer.class))).thenReturn(savedOffer);
+        when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(savedOffer));
+
+        CouponOfferResponse result = couponOfferService.create(request);
+
+        assertThat(result.getOfferDescription()).isEqualTo("Полное описание оффера");
+    }
+
+    @Test
+    @DisplayName("mapToResponse: включает merchant primaryLocation")
+    void mapToResponse_includesMerchantPrimaryLocation() {
+        CouponOffer offer = createTestOffer();
+        MerchantLocation loc = MerchantLocation.builder()
+                .id(1L).merchant(offer.getMerchant())
+                .address("Ташкент, ул. Амира Темура")
+                .phone("+998901234567")
+                .workingHours("09:00-22:00")
+                .primary(true).active(true)
+                .build();
+
+        when(merchantLocationRepository.findByMerchantIdAndPrimaryTrue(1L))
+                .thenReturn(Optional.of(loc));
+
+        CouponOfferResponse result = couponOfferService.mapToResponse(offer);
+
+        assertThat(result.getMerchant().getPrimaryLocation()).isNotNull();
+        assertThat(result.getMerchant().getPrimaryLocation().getAddress())
+                .isEqualTo("Ташкент, ул. Амира Темура");
+        assertThat(result.getMerchant().getPrimaryLocation().getPhone())
+                .isEqualTo("+998901234567");
+    }
+
+    @Test
+    @DisplayName("mapToResponse: offerDescription fallback на legacy")
+    void mapToResponse_offerDescription_fallbackOnLegacy() {
+        CouponOffer offer = createTestOffer();
+        offer.setOfferDescription(null); // force fallback
+        offer.setShortDescription("Кратко");
+        offer.setFullDescription("Подробно");
+        offer.setTerms("Условия");
+
+        CouponOfferResponse result = couponOfferService.mapToResponse(offer);
+
+        assertThat(result.getOfferDescription()).contains("Кратко");
+        assertThat(result.getOfferDescription()).contains("Подробно");
+        assertThat(result.getOfferDescription()).contains("## Условия");
     }
 }

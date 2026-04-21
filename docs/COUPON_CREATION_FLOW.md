@@ -319,7 +319,7 @@ id | coupon_offer_id | image_url | sort_order
 | Endpoint | `POST /api/v1/admin/coupons` | `POST /api/v1/partner/coupons` |
 | Контроллер | `AdminCouponController` | `PartnerCouponController` |
 | Сервис | `CouponOfferService.create()` | `PartnerCouponService.createCouponOffer()` |
-| Начальный статус | **ACTIVE** | **PENDING_REVIEW** |
+| Начальный статус | **LEAD** | **LEAD** |
 | Мерчант | Выбирает из списка | Автоматически по userId |
 | Модерация | Не нужна | Нужна (ModCouponController) |
 | Варианты покупки (options) | ✅ Поддержаны | ❌ Не реализовано |

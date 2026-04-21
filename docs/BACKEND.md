@@ -130,7 +130,7 @@ payment-service ──publish──▶ payment.exchange / payment.completed
 ### Бизнес-логика
 - Каталог: фильтрация по категории, поиск, сортировка (popular/new/price/discount)
 - Redis кэш: categories (1h TTL), catalog (3m), topSelling (15m)
-- Жизненный цикл купона: LEAD → DRAFT → WAITING_FOR_MERCHANT → ACTIVE → SOLD_OUT/EXPIRED
+- Жизненный цикл купона: LEAD → DRAFT → WAITING_FOR_MERCHANT → REVISION_REQUESTED → ACTIVE → SOLD_OUT
 - Партнёр создаёт купон (LEAD), модератор берёт в работу (DRAFT), отправляет на согласование мерчанту
 - Admin/Moderator CRUD купонов и партнёров
 - Справочник базаров и магазинов (с геопоиском по области)
@@ -219,21 +219,25 @@ payment-service ──publish──▶ payment.exchange / payment.completed
 | POST | `/api/v1/partner/coupons` | ✅ PARTNER | Создать купон (статус LEAD) |
 | PUT | `/api/v1/partner/coupons/{id}` | ✅ PARTNER | Обновить купон (только DRAFT/REVISION_REQUESTED) |
 
-#### Bot Webhook (`/api/v1/bot`)
+#### Bot API (`/api/v1/bot/coupons`)
 | Method | URL | Auth | Описание |
 |---|---|---|---|
-| POST | `/api/v1/bot/webhook` | X-Bot-Api-Key | Webhook от Telegram-бота |
+| POST | `/api/v1/bot/coupons/{id}/approve` | X-Bot-Api-Key | Мерчант одобряет купон → ACTIVE |
+| POST | `/api/v1/bot/coupons/{id}/reject` | X-Bot-Api-Key | Мерчант запрашивает правки → REVISION_REQUESTED |
+| POST | `/api/v1/bot/coupons/leads` | X-Bot-Api-Key | Создать LEAD из заявки Telegram-бота |
+| GET | `/api/v1/bot/coupons/merchants/{chatId}` | X-Bot-Api-Key | Купоны мерчанта по telegramChatId |
+| GET | `/api/v1/bot/coupons/{id}/stats` | X-Bot-Api-Key | Статистика купона (продажи, погашения, рейтинг) |
 
 ### Модели
-- `CouponOffer` (title, description, merchant, category, prices, discount, images, status, redeemedCount, totalTurnover)
+- `CouponOffer` (title, shortDescription, fullDescription, merchant, category, prices, discount, images, status, terms, usageRules, howToUse, address, contactPhone, workingHours, giftAvailable, redeemedCount, totalTurnover, viewCount)
 - `CouponOption` (title, regularPrice, couponPrice, quantityLimit, quantitySold)
 - `Category` (name, nameUz, slug, iconUrl, sortOrder, active)
-- `Merchant` (name, description, logoUrl, address, phone, telegramUsername, active)
+- `Merchant` (name, description, logoUrl, coverUrl, address, phone, email, website, workingHours, contactPerson, active, userId, telegramChatId)
 
 ### Статусы купона
 ```
 LEAD → DRAFT → WAITING_FOR_MERCHANT → ACTIVE → SOLD_OUT
-                                             → EXPIRED
+                                     → REVISION_REQUESTED → DRAFT
 ```
 
 ### Кэширование (Redis)
@@ -313,7 +317,7 @@ LEAD → DRAFT → WAITING_FOR_MERCHANT → ACTIVE → SOLD_OUT
 
 ### Модели
 - `Cart` → `CartItem[]` (couponOfferId, optionId, quantity, unitPrice, isGift, giftRecipientName/Phone)
-- `Order` → `OrderItem[]` (orderNumber, userId, totalAmount, status, email, phone)
+- `Order` → `OrderItem[]` (orderNumber, userId, userEmail, userPhone, totalAmount, status)
 - `PurchasedCoupon` (couponCode, qrToken, status: ACTIVE/USED/EXPIRED/REFUNDED)
 - `Redemption` (purchasedCoupon, redemptionCode, merchantId, redeemedByStaff)
 - `RefundRequest` (order, userId, reason, status: PENDING/APPROVED/REJECTED, adminComment)
@@ -343,15 +347,16 @@ PENDING → PAID → COMPLETED
 | POST | `/api/v1/payments/create` | ✅ | Создать платёж |
 | GET | `/api/v1/payments/{id}/status` | ✅ | Статус платежа |
 | GET | `/api/v1/payments/order/{orderId}` | ✅ | Платёж по заказу |
+| POST | `/api/v1/payments/order/{orderId}/demo-complete` | ✅ | Demo-завершение (только в payment.mode=demo) |
 
 ### Модели
-- `Payment` (orderId, userId, amount, currency, provider, status, transactionId, paymentUrl)
+- `Payment` (orderId, userId, amount, currency, provider[PAYME/CLICK/UZUM], status, transactionId, paymentUrl, errorMessage)
 
 ### Статусы
 ```
-PENDING → PROCESSING → COMPLETED
-                     → FAILED
-                     → REFUNDED
+PENDING → COMPLETED
+       → FAILED
+       → REFUNDED
 ```
 
 ---

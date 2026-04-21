@@ -39,31 +39,36 @@ erDiagram
         varchar password
         varchar first_name
         varchar last_name
-        varchar role
-        varchar avatar_url
-        boolean enabled
+        varchar role "USER|PARTNER|MODERATOR|ADMIN|SUPER_ADMIN"
+        long security_version "JWT invalidation counter"
         boolean email_verified
         boolean phone_verified
+        boolean enabled
+        varchar avatar_url
+        boolean deleted
+        timestamp deleted_at
         timestamp created_at
         timestamp updated_at
-        boolean deleted
     }
     partner_applications {
         bigint id PK
-        varchar company_name
-        varchar contact_name
-        varchar email UK
+        varchar first_name
+        varchar last_name
         varchar phone
-        varchar status
+        varchar company_name
+        text comment
+        varchar status "PENDING|APPROVED|REJECTED"
         timestamp created_at
+        timestamp updated_at
     }
     staff {
         bigint id PK
-        bigint partner_user_id
+        bigint user_id "ID партнёра-владельца"
         varchar name
         varchar phone
-        varchar role
+        varchar role "default: CASHIER"
         boolean active
+        timestamp created_at
     }
     favorites {
         bigint id PK
@@ -89,14 +94,28 @@ erDiagram
         varchar ip_address
         timestamp created_at
     }
+    auth_action_tokens {
+        bigint id PK
+        bigint user_id
+        varchar type "PASSWORD_RESET|EMAIL_CONFIRM"
+        varchar token_hash "SHA-256"
+        varchar target "email or phone"
+        timestamp expires_at
+        timestamp used_at
+        boolean revoked
+        timestamp created_at
+        timestamp last_sent_at
+    }
     users ||--o{ refresh_tokens : "has"
+    users ||--o{ favorites : "saves"
+    users ||--o{ auth_action_tokens : "has"
 
-    %% Coupon Service
+    %% Coupon Service (topdim_coupon)
     categories {
         bigint id PK
-        varchar name
+        varchar name UK
         varchar name_uz
-        varchar slug UK
+        varchar slug
         varchar icon_url
         int sort_order
         boolean active
@@ -104,74 +123,157 @@ erDiagram
     merchants {
         bigint id PK
         varchar name
-        text description
+        varchar description
         varchar logo_url
+        varchar cover_url
+        varchar address "LEGACY — use merchant_locations"
+        varchar phone "LEGACY — use merchant_locations"
+        varchar email
+        varchar website
+        varchar working_hours "LEGACY — use merchant_locations"
+        varchar contact_person
+        boolean active
+        bigint user_id "Link to identity-service"
+        varchar telegram_chat_id
+        timestamp created_at
+        timestamp updated_at
+    }
+    merchant_locations {
+        bigint id PK
+        bigint merchant_id FK
+        varchar title
         varchar address
         varchar phone
-        varchar website
-        boolean deleted
+        varchar working_hours
+        double latitude
+        double longitude
+        boolean is_primary "partial unique per merchant"
+        boolean active
+        timestamp created_at
+        timestamp updated_at
     }
     coupon_offers {
         bigint id PK
         varchar title
-        text short_description
-        text full_description
-        bigint merchant_id FK "nullable"
-        bigint category_id FK "nullable"
-        decimal old_price
-        decimal from_price
+        text offer_description "CANONICAL — Release 1"
+        varchar short_description "LEGACY"
+        text full_description "LEGACY"
+        bigint merchant_id FK
+        bigint category_id FK
+        decimal old_price "12,2"
+        decimal from_price "12,2"
         int discount_percent
-        varchar status "LEAD|DRAFT|WAITING_FOR_MERCHANT|ACTIVE|SOLD_OUT|EXPIRED"
         varchar cover_image_url
         timestamp buy_until
         timestamp use_until
+        text terms "LEGACY"
+        text usage_rules "LEGACY"
+        text how_to_use "LEGACY"
+        varchar address "LEGACY — use merchant_locations"
+        varchar contact_phone "LEGACY — use merchant_locations"
+        varchar working_hours "LEGACY — use merchant_locations"
+        boolean is_gift_available
+        bigint assigned_moderator_id
+        varchar assigned_moderator_name
+        text revision_comment
+        varchar status "LEAD|DRAFT|WAITING_FOR_MERCHANT|REVISION_REQUESTED|ACTIVE|SOLD_OUT"
         int total_sold
-        int redeemed_count "V12: кол-во погашений"
-        decimal total_turnover "V12: общая выручка"
-        bigint assigned_moderator_id "V10"
-        tsvector search_vector
-        boolean deleted
+        int redeemed_count
+        int view_count
+        decimal total_turnover "12,2"
+        timestamp created_at
+        timestamp updated_at
     }
     coupon_options {
         bigint id PK
         bigint coupon_offer_id FK
-        varchar name
-        decimal original_price
-        decimal coupon_price
+        varchar title
+        decimal regular_price "12,2"
+        decimal coupon_price "12,2"
         int quantity_limit
         int quantity_sold
-        varchar status
+        varchar status "ACTIVE|SOLD_OUT|DISABLED"
     }
     coupon_images {
         bigint id PK
         bigint coupon_offer_id FK
-        varchar url
+        varchar image_url
         int sort_order
     }
     promo_codes {
         bigint id PK
         varchar code UK
-        bigint merchant_id FK
-        int discount_percent
+        decimal discount_amount
+        boolean is_percentage
+        int usage_limit
+        int used_count
         timestamp expires_at
-        boolean active
+        boolean is_active
+        timestamp created_at
     }
     reviews {
         bigint id PK
         bigint coupon_offer_id FK
         bigint user_id
-        int rating
+        varchar user_name
+        int rating "1-5"
         text comment
-        varchar status
+        varchar status "PENDING|APPROVED|REJECTED"
+        varchar reject_reason
         timestamp created_at
+    }
+    bazaars_coupon {
+        bigint id PK
+        varchar name
+        varchar name_uz
+        varchar type "BAZAAR|SHOPPING_CENTER|MARKET|TRADE_COMPLEX"
+        varchar description
+        varchar address
+        varchar city
+        double latitude
+        double longitude
+        varchar cover_image_url
+        varchar working_hours
+        varchar phone
+        varchar status "ACTIVE|INACTIVE"
+        timestamp created_at
+        timestamp updated_at
+    }
+    shops_coupon {
+        bigint id PK
+        bigint merchant_id FK "nullable"
+        bigint bazaar_id FK "nullable"
+        varchar name
+        varchar description
+        varchar category
+        varchar subcategory
+        varchar goods_description
+        varchar phone
+        varchar working_hours
+        text photos "JSON array"
+        varchar location_type "BAZAAR|STANDALONE"
+        varchar address
+        double latitude
+        double longitude
+        varchar pavilion
+        varchar sector
+        varchar row_number
+        varchar shop_number
+        int floor_number
+        varchar status "ACTIVE|PENDING_REVIEW|INACTIVE"
+        timestamp created_at
+        timestamp updated_at
     }
     categories ||--o{ coupon_offers : "contains"
     merchants ||--o{ coupon_offers : "sells"
+    merchants ||--o{ merchant_locations : "has"
     coupon_offers ||--o{ coupon_options : "has"
     coupon_offers ||--o{ coupon_images : "has"
     coupon_offers ||--o{ reviews : "has"
+    bazaars_coupon ||--o{ shops_coupon : "contains"
+    merchants ||--o{ shops_coupon : "owns"
 
-    %% Order Service
+    %% Order Service (topdim_order)
     carts {
         bigint id PK
         bigint user_id UK
@@ -190,11 +292,12 @@ erDiagram
         bigint id PK
         varchar order_number UK
         bigint user_id
-        decimal total_amount
-        varchar status
+        varchar user_email
+        varchar user_phone
+        decimal total_amount "12,2"
+        varchar status "PENDING|PAID|COMPLETED|CANCELLED|REFUNDED"
         timestamp created_at
         timestamp paid_at
-        boolean deleted
     }
     order_items {
         bigint id PK
@@ -210,11 +313,10 @@ erDiagram
         bigint order_id FK
         varchar coupon_code UK
         varchar qr_token UK
-        varchar status
+        varchar status "ACTIVE|USED|EXPIRED|REFUNDED"
         timestamp purchased_at
         timestamp expires_at
         timestamp used_at
-        boolean deleted
     }
     redemptions {
         bigint id PK
@@ -229,7 +331,7 @@ erDiagram
         bigint order_id FK
         bigint user_id
         varchar reason
-        varchar status
+        varchar status "PENDING|APPROVED|REJECTED"
         varchar admin_comment
         timestamp created_at
         timestamp resolved_at
@@ -251,23 +353,23 @@ erDiagram
     orders ||--o{ complaints : "has"
     purchased_coupons ||--o| redemptions : "redeemed"
 
-    %% Payment Service
+    %% Payment Service (topdim_payment)
     payments {
         bigint id PK
         bigint order_id
         bigint user_id
-        decimal amount
-        varchar currency
-        varchar provider
-        varchar status
+        decimal amount "12,2"
+        varchar currency "default: UZS"
+        varchar provider "PAYME|CLICK|UZUM"
+        varchar status "PENDING|COMPLETED|FAILED|REFUNDED"
         varchar transaction_id UK
-        text payment_url
+        varchar payment_url
+        varchar error_message
         timestamp created_at
         timestamp completed_at
-        boolean deleted
     }
 
-    %% Bazaar Service
+    %% Bazaar Service (topdim_bazaar)
     shop_categories {
         bigint id PK
         varchar name UK
@@ -279,14 +381,13 @@ erDiagram
         bigint id PK
         varchar name
         varchar name_uz
-        varchar type
+        varchar type "CENTRAL|DISTRICT|WHOLESALE|TRADE_COMPLEX"
         varchar address
         varchar city
         double latitude
         double longitude
         text description
         tsvector search_vector
-        boolean deleted
     }
     bazaar_maps {
         bigint id PK
@@ -303,7 +404,6 @@ erDiagram
         boolean has_coupon
         bigint linked_coupon_offer_id
         tsvector search_vector
-        boolean deleted
     }
     shop_product_tags {
         bigint id PK
@@ -316,9 +416,7 @@ erDiagram
     shop_categories ||--o{ shops : "categorizes"
     shops ||--o{ shop_product_tags : "tagged"
 
-    %% (User data moved to Identity Service — see above)
-
-    %% Notification Service
+    %% Notification Service (topdim_notification)
     notifications {
         bigint id PK
         bigint user_id
@@ -327,6 +425,7 @@ erDiagram
         text message
         boolean is_read
         timestamp created_at
+        timestamp updated_at
     }
 ```
 
@@ -334,32 +433,32 @@ erDiagram
 
 ## Таблицы по сервисам
 
-### Identity Service (topdim_identity) — 6 таблиц
+### Identity Service (topdim_identity) — 7 таблиц
 
 | Таблица | Строк (5M юзеров) | Описание |
 |---|---|---|
 | `users` | 5 000 000 | Пользователи (auth + профиль) |
 | `refresh_tokens` | ~10 000 000 | Refresh токены (2 на юзера) |
+| `auth_action_tokens` | ~5 000 000 | Токены сброса пароля / верификации email |
 | `audit_logs` | ~50 000 000 | Логи действий администраторов |
 | `partner_applications` | ~10 000 | Заявки на партнёрство |
 | `staff` | ~15 000 | Сотрудники партнёров (кассиры) |
 | `favorites` | ~10 000 000 | Избранные купоны пользователей |
 
-### Coupon Service (topdim_coupon) — 11 таблиц
+### Coupon Service (topdim_coupon) — 9 таблиц
 
 | Таблица | Строк | Описание |
 |---|---|---|
 | `categories` | ~20 | Категории купонов |
 | `merchants` | ~500 | Партнёры/продавцы |
-| `coupon_offers` | ~5 000 | Купонные предложения (статусы: LEAD/DRAFT/WAITING_FOR_MERCHANT/ACTIVE/SOLD_OUT/EXPIRED) |
-| `coupon_options` | ~15 000 | Варианты купонов |
+| `merchant_locations` | ~1 000 | Филиалы/адреса мерчантов (Release 1) |
+| `coupon_offers` | ~5 000 | Купонные предложения (LEAD→DRAFT→WAITING_FOR_MERCHANT→REVISION_REQUESTED→ACTIVE→SOLD_OUT) |
+| `coupon_options` | ~15 000 | Варианты купонов (title, regularPrice, couponPrice) |
 | `coupon_images` | ~20 000 | Изображения купонов |
-| `promo_codes` | ~1 000 | Промокоды от партнёров |
+| `promo_codes` | ~1 000 | Промокоды (discountAmount, isPercentage) |
 | `reviews` | ~500 000 | Отзывы на купоны |
 | `bazaars` | ~200 | Базары (справочник, coupon-service) |
-| `shops` | ~50 000 | Магазины базаров (справочник, coupon-service) |
-| `shop_categories` | ~20 | Категории магазинов |
-| `shop_product_tags` | ~200 000 | Теги продуктов |
+| `shops` | ~50 000 | Магазины (BAZAAR/STANDALONE, coupon-service) |
 
 ### Order Service (topdim_order) — 8 таблиц
 
@@ -378,7 +477,7 @@ erDiagram
 
 | Таблица | Строк | Описание |
 |---|---|---|
-| `payments` | **12 000 000** | Платежи |
+| `payments` | **12 000 000** | Платежи (PAYME/CLICK/UZUM) |
 
 ### Bazaar Service (topdim_bazaar) — 5 таблиц
 
@@ -412,28 +511,24 @@ erDiagram
 ### Полный список составных индексов
 
 ```sql
--- Auth
+-- Identity
 idx_users_email_enabled(email, enabled)
 idx_refresh_tokens_user_revoked(user_id, revoked)
 
 -- Coupon
 idx_coupon_offers_category_status(category_id, status)
 idx_coupon_offers_status_created(status, created_at DESC)
-idx_coupon_offers_search USING GIN(search_vector)
 
 -- Order
 idx_orders_user_status(user_id, status)
 idx_orders_user_created(user_id, created_at DESC)
 idx_purchased_coupons_user_status(user_id, status)
-idx_orders_not_deleted(user_id, status) WHERE deleted = FALSE
 
 -- Payment
 idx_payments_order_status(order_id, status)
 idx_payments_user_status(user_id, status)
 
 -- Bazaar
-idx_bazaars_city_active(city, active)
-idx_shops_bazaar_coupon(bazaar_id, has_coupon)
 idx_shops_search USING GIN(search_vector)
 ```
 
@@ -451,22 +546,18 @@ hikari:
 ```
 
 ### 2. Soft Delete
-Все основные таблицы имеют `deleted BOOLEAN DEFAULT FALSE`.
-Физическое удаление запрещено — данные архивируются.
+Основные таблицы поддерживают soft delete через `deleted BOOLEAN`.
 
-### 3. Full-Text Search (GIN)
-`coupon_offers`, `shops`, `bazaars` имеют `search_vector tsvector` с авто-триггером.
-
-### 4. Партиционирование
+### 3. Партиционирование
 `orders` партиционирована по `created_at` (квартально).
 
-### 5. Read Replicas
+### 4. Read Replicas
 `ReadWriteRoutingDataSource` направляет `@Transactional(readOnly=true)` на replica.
 
-### 6. PostgreSQL Tuning
+### 5. PostgreSQL Tuning
 `docker/postgresql.conf` — оптимизировано для 16GB RAM, SSD, replication.
 
-### 7. CQRS (Elasticsearch)
+### 6. CQRS (Elasticsearch)
 Каталог купонов синхронизируется в Elasticsearch для мгновенного поиска.
 
 ---
@@ -492,8 +583,8 @@ Shard 3: user_id 4,000,001 — 6,000,000
 
 | Сервис | Миграции |
 |---|---|
-| identity | V1 (tables), V2 (indexes), V3 (staff deleted), V4 (audit logs) |
-| coupon | V1 (tables), V2 (indexes), V3 (reviews & promos), V4 (GIN search), V5 (soft delete), V6 (merchant nullable), V7 (username reviews), V8 (bazaar/shop tables), V9 (merchant telegram + draft logic), V10 (assigned moderator), V11 (category nullable), **V12 (redeemed_count, total_turnover, SOLD_OUT status)** |
+| identity | V1 (users), V2 (refresh_tokens), V3 (audit_logs), V4 (favorites), V5 (staff), V6 (partner_applications), V7 (indexes), V8 (security_version), V9 (auth_action_tokens) |
+| coupon | V1 (tables), V2 (indexes), V3 (reviews & promos), V4 (GIN search), V5 (soft delete), V6 (merchant nullable), V7 (username reviews), V8 (bazaar/shop tables), V9 (merchant telegram + draft logic), V10 (assigned moderator), V11 (category nullable), V12 (redeemed_count, total_turnover, SOLD_OUT status) |
 | order | V1 (tables), V2 (redemptions), V3 (refunds), V4 (indexes), V5 (audit), V6 (partitioning), V7 (complaints) |
 | payment | V1 (tables), V2 (indexes), V3 (audit) |
 | bazaar | V1 (tables), V2 (indexes), V3 (audit), V4 (GIN search), V5 (user id to shops) |
@@ -503,7 +594,7 @@ Shard 3: user_id 4,000,001 — 6,000,000
 
 ```bash
 # Ежедневный backup (pg_dump)
-pg_dump -U topdim -Fc topdim_auth > backup/auth_$(date +%Y%m%d).dump
+pg_dump -U topdim -Fc topdim_identity > backup/identity_$(date +%Y%m%d).dump
 pg_dump -U topdim -Fc topdim_order > backup/order_$(date +%Y%m%d).dump
 
 # WAL archiving для point-in-time recovery

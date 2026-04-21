@@ -305,8 +305,9 @@ GET /api/v1/coupons?categoryId=3&sortBy=discount&page=0&size=10
         },
         "category": {
           "id": 3,
-          "name": "Красота и здоровье",
-          "slug": "beauty"
+          "name": "Beauty",
+          "slug": "beauty",
+          "iconUrl": "/media/icon-beauty.svg"
         },
         "oldPrice": 300000,
         "fromPrice": 150000,
@@ -318,11 +319,19 @@ GET /api/v1/coupons?categoryId=3&sortBy=discount&page=0&size=10
         "usageRules": "Предъявите QR код на кассе",
         "howToUse": "1. Купите купон. 2. Запишитесь. 3. Покажите QR.",
         "address": "Ташкент, ул. Навои 45",
+        "contactPhone": "+998901234567",
+        "workingHours": "09:00-21:00",
+        "giftAvailable": false,
+        "totalSold": 57,
+        "redeemedCount": 23,
+        "viewCount": 340,
+        "averageRating": 4.7,
+        "reviewCount": 18,
         "options": [
           {
             "id": 1,
-            "name": "Стандарт (60 мин)",
-            "originalPrice": 300000,
+            "title": "Стандарт (60 мин)",
+            "regularPrice": 300000,
             "couponPrice": 150000,
             "quantitySold": 45,
             "quantityLimit": 100,
@@ -330,8 +339,8 @@ GET /api/v1/coupons?categoryId=3&sortBy=discount&page=0&size=10
           },
           {
             "id": 2,
-            "name": "Премиум (90 мин)",
-            "originalPrice": 500000,
+            "title": "Премиум (90 мин)",
+            "regularPrice": 500000,
             "couponPrice": 250000,
             "quantitySold": 12,
             "quantityLimit": 50,
@@ -339,10 +348,11 @@ GET /api/v1/coupons?categoryId=3&sortBy=discount&page=0&size=10
           }
         ],
         "images": [
-          { "url": "/media/spa-1.jpg", "sortOrder": 1 },
-          { "url": "/media/spa-2.jpg", "sortOrder": 2 }
+          "/media/spa-1.jpg",
+          "/media/spa-2.jpg"
         ],
-        "status": "ACTIVE"
+        "status": "ACTIVE",
+        "createdAt": "2026-03-20T10:00:00"
       }
     ],
     "pageable": { "pageNumber": 0, "pageSize": 10 },
@@ -399,11 +409,12 @@ GET /api/v1/coupons?categoryId=3&sortBy=discount&page=0&size=10
 {
   "success": true,
   "data": [
-    { "id": 1, "name": "Еда и рестораны", "slug": "food", "iconUrl": "/media/icon-food.svg" },
-    { "id": 2, "name": "Развлечения", "slug": "entertainment", "iconUrl": "/media/icon-fun.svg" },
-    { "id": 3, "name": "Красота и здоровье", "slug": "beauty", "iconUrl": "/media/icon-beauty.svg" },
-    { "id": 4, "name": "Образование", "slug": "education", "iconUrl": "/media/icon-edu.svg" },
-    { "id": 5, "name": "Спорт и фитнес", "slug": "sport", "iconUrl": "/media/icon-sport.svg" }
+    { "id": 1, "name": "Еда и напитки", "slug": "food", "iconUrl": "/media/icon-food.svg" },
+    { "id": 2, "name": "Beauty", "slug": "beauty", "iconUrl": "/media/icon-beauty.svg" },
+    { "id": 3, "name": "Развлечения", "slug": "entertainment", "iconUrl": "/media/icon-fun.svg" },
+    { "id": 4, "name": "Здоровье и спорт", "slug": "health-sport", "iconUrl": "/media/icon-health.svg" },
+    { "id": 5, "name": "Услуги", "slug": "services", "iconUrl": "/media/icon-services.svg" },
+    { "id": 6, "name": "Сертификаты и подарки", "slug": "gifts", "iconUrl": "/media/icon-gifts.svg" }
   ]
 }
 ```
@@ -705,24 +716,30 @@ Base URL: `/api/v1/payments`
 
 **Статусы платежа:**
 ```
-PENDING → PROCESSING → COMPLETED → (order → PAID → coupons generated)
-                     → FAILED
-                     → REFUNDED
+PENDING → COMPLETED → (order → PAID → coupons generated)
+       → FAILED
+       → REFUNDED
 ```
+
+> Примечание: Провайдеры платежей — `PAYME`, `CLICK`, `UZUM`.
 
 ---
 
-## 8. Endpoints — Bazaar Service
+## 8. Endpoints — Directory (Bazaars & Shops)
 
-Base URL: `/api/v1/bazaars`
+> **Текущий Base URL:** `/api/v1/directory` (через `DirectoryController` в coupon-service)  
+> Примечание: В коде frontend и backend используется `/api/v1/directory/*`. Планируется миграция на отдельный bazaar-service — см. `coupon-merchant-db-refactor-plan.md`.
 
-### GET `/api/v1/bazaars` — Список базаров
+### GET `/api/v1/directory/bazaars` — Список базаров
 
 **Auth:** ❌ Не требуется
 
 | Параметр | Тип | Default |
 |---|---|---|
-| `city` | String | null |
+| `search` | String | null |
+| `type` | String | null |
+| `page` | int | 0 |
+| `size` | int | 20 |
 
 **Response:** `200 OK`
 ```json
@@ -733,7 +750,7 @@ Base URL: `/api/v1/bazaars`
       "id": 1,
       "name": "Чорсу базар",
       "nameUz": "Chorsu bozori",
-      "type": "CENTRAL",
+      "type": "BAZAAR",
       "address": "Ташкент, ул. Навои 1",
       "city": "Ташкент",
       "latitude": 41.3245,
@@ -743,10 +760,11 @@ Base URL: `/api/v1/bazaars`
       "workingHours": "06:00 - 20:00",
       "phone": "+998712345678",
       "shopCount": 234,
-      "mapCount": 3,
-      "createdAt": "2026-01-15T10:00:00"
+      "status": "ACTIVE"
     }
-  ]
+  ],
+  "totalPages": 5,
+  "totalElements": 95
 }
 ```
 
@@ -758,27 +776,19 @@ bazaars.forEach(b => L.marker([b.latitude, b.longitude]).addTo(map));
 
 ---
 
-### GET `/api/v1/bazaars/{id}` — Детали базара
+### GET `/api/v1/directory/bazaars/{id}` — Детали базара
 
 **Auth:** ❌ Не требуется
 
 ---
 
-### GET `/api/v1/bazaars/{id}/maps` — Внутренние карты базара
-
-**Auth:** ❌ Не требуется
-
-**Response:** `200 OK` — список BazaarMap (imageUrl, floor, zoneId)
-
----
-
-### GET `/api/v1/bazaars/{id}/shops` — Магазины базара
+### GET `/api/v1/directory/bazaars/{id}/shops` — Магазины базара
 
 **Auth:** ❌ Не требуется
 
 | Параметр | Тип | Default |
 |---|---|---|
-| `hasCoupon` | Boolean | null |
+| `search` | String | null |
 
 **Response:** `200 OK`
 ```json
@@ -787,20 +797,25 @@ bazaars.forEach(b => L.marker([b.latitude, b.longitude]).addTo(map));
   "data": [
     {
       "id": 15,
-      "bazaarId": 1,
-      "bazaarName": "Чорсу базар",
       "name": "Электроника мир",
+      "description": "Телефоны и аксессуары",
+      "category": "Электроника",
+      "subcategory": "Мобильные телефоны",
+      "goodsDescription": "Телефоны, аксессуары, ноутбуки",
+      "phone": "+998901111111",
+      "workingHours": "08:00 - 18:00",
+      "photos": ["/media/shop-42.jpg"],
+      "locationType": "BAZAAR",
+      "bazaar": { "id": 1, "name": "Чорсу базар" },
+      "pavilion": "A",
+      "sector": "north",
       "rowNumber": "A",
       "shopNumber": "42",
-      "categoryName": "Электроника",
-      "goodsDescription": "Телефоны, аксессуары, ноутбуки",
-      "workingHours": "08:00 - 18:00",
-      "phone": "+998901111111",
-      "photoUrl": "/media/shop-42.jpg",
-      "hasCoupon": true,
-      "linkedCouponOfferId": 7,
       "floorNumber": 2,
-      "zoneId": "A-north"
+      "address": "Ташкент, ул. Навои 1",
+      "latitude": 41.3245,
+      "longitude": 69.2345,
+      "status": "ACTIVE"
     }
   ]
 }
@@ -808,33 +823,47 @@ bazaars.forEach(b => L.marker([b.latitude, b.longitude]).addTo(map));
 
 ---
 
-### GET `/api/v1/shops/{id}` — Детали магазина
+### GET `/api/v1/directory/shops` — Все магазины / Поиск
+
+**Auth:** ❌ Не требуется
+
+| Параметр | Тип | Default |
+|---|---|---|
+| `search` | String | null |
+| `category` | String | null |
+| `page` | int | 0 |
+| `size` | int | 20 |
+
+---
+
+### GET `/api/v1/directory/shops/{id}` — Детали магазина
 
 **Auth:** ❌ Не требуется
 
 ---
 
-### GET `/api/v1/shops/search` — Поиск магазинов
+### GET `/api/v1/directory/area` — Поиск по области карты
 
 **Auth:** ❌ Не требуется
 
 | Параметр | Тип |
 |---|---|
-| `q` | String (обязательный) |
+| `minLat` | double |
+| `maxLat` | double |
+| `minLon` | double |
+| `maxLon` | double |
+
+**Response:** `200 OK` — `{ bazaars: [...], shops: [...] }`
 
 ---
 
-### GET `/api/v1/shops/categories` — Категории магазинов
+## 9. Endpoints — Identity Service (Users)
 
-**Auth:** ❌ Не требуется
-
----
-
-## 9. Endpoints — User Service
+> User-related endpoints входят в `identity-service` (единый сервис auth + профиль).
 
 Base URL: `/api/v1/users`
 
-### GET `/api/v1/users/profile` — Мой профиль
+### GET `/api/v1/users/me` — Мой профиль
 
 **Auth:** ✅ Bearer Token
 
@@ -859,7 +888,7 @@ Base URL: `/api/v1/users`
 
 ---
 
-### PUT `/api/v1/users/profile` — Обновить профиль
+### PUT `/api/v1/users/me` — Обновить профиль
 
 **Auth:** ✅ Bearer Token
 
@@ -877,7 +906,7 @@ Base URL: `/api/v1/users`
 
 ---
 
-### GET `/api/v1/users/favorites` — Мои избранные
+### GET `/api/v1/users/me/favorites` — Мои избранные
 
 **Auth:** ✅ Bearer Token
 
@@ -894,7 +923,7 @@ Base URL: `/api/v1/users`
 
 ---
 
-### POST `/api/v1/users/favorites` — Добавить в избранное
+### POST `/api/v1/users/me/favorites` — Добавить в избранное
 
 **Auth:** ✅ Bearer Token
 
@@ -909,7 +938,7 @@ Base URL: `/api/v1/users`
 
 ---
 
-### DELETE `/api/v1/users/favorites/{couponOfferId}` — Удалить из избранного
+### DELETE `/api/v1/users/me/favorites/{couponOfferId}` — Удалить из избранного
 
 **Auth:** ✅ Bearer Token
 
@@ -994,8 +1023,8 @@ Base URL: `/api/v1/admin` — **Все требуют роль ADMIN**
   "address": "Ташкент, ул. Навои 45",
   "options": [
     {
-      "name": "Стандарт (60 мин)",
-      "originalPrice": 300000,
+      "title": "Стандарт (60 мин)",
+      "regularPrice": 300000,
       "couponPrice": 150000,
       "quantityLimit": 100
     }
@@ -1007,9 +1036,9 @@ Base URL: `/api/v1/admin` — **Все требуют роль ADMIN**
 
 ---
 
-### PATCH `/api/v1/admin/coupons/{id}/status?status=PAUSED` — Изменить статус
+### PATCH `/api/v1/admin/coupons/{id}/status` — Изменить статус
 
-**Query:** `status` = `ACTIVE` | `PAUSED` | `ENDED`
+**Query:** `status` = `LEAD` | `DRAFT` | `WAITING_FOR_MERCHANT` | `REVISION_REQUESTED` | `ACTIVE` | `SOLD_OUT`
 
 ---
 
@@ -1029,10 +1058,13 @@ Base URL: `/api/v1/admin` — **Все требуют роль ADMIN**
   "name": "SPA Oasis",
   "description": "Премиум SPA салон",
   "logoUrl": "/media/spa-logo.jpg",
+  "coverUrl": "/media/spa-cover.jpg",
   "address": "Ташкент, ул. Навои 45",
   "phone": "+998901234567",
+  "email": "info@spa-oasis.uz",
   "website": "https://spa-oasis.uz",
-  "categoryId": 3
+  "workingHours": "09:00-21:00",
+  "contactPerson": "Алишер"
 }
 ```
 
@@ -1071,14 +1103,11 @@ Base URL: `/api/v1/admin` — **Все требуют роль ADMIN**
 | `ProfilePage` | `api.users.getProfile()` | `GET /users/profile` |
 | `ProfilePage` | `api.orders.getMyCoupons()` | `GET /orders/my-coupons` |
 | `ProfilePage` | `api.users.getFavorites()` | `GET /users/favorites` |
-| `BazaarMapPage` | `api.bazaars.getAll()` | `GET /bazaars` |
-| `BazaarDetailPage` | `api.bazaars.getById(id)` | `GET /bazaars/{id}` |
-| `BazaarDetailPage` | `api.bazaars.getShops(id)` | `GET /bazaars/{id}/shops` |
-| `SearchPage` | `api.bazaars.searchShops()` | `GET /shops/search?q=...` |
-| `ShopDetailPage` | `api.bazaars.getShop(id)` | `GET /shops/{id}` |
-| `Header` | `api.auth.logout()` | `POST /auth/logout` |
-| `CouponCard` ♥ | `api.users.addFavorite()` | `POST /users/favorites` |
-| `CartDrawer` | `api.orders.getCart()` | `GET /cart` |
+| `BazaarMapPage` | `directoryApi.getBazaars()` | `GET /directory/bazaars` |
+| `BazaarDetailPage` | `directoryApi.getBazaarById(id)` | `GET /directory/bazaars/{id}` |
+| `BazaarDetailPage` | `directoryApi.getShopsByBazaar(id)` | `GET /directory/bazaars/{id}/shops` |
+| `SearchPage` | `directoryApi.getShops({search})` | `GET /directory/shops?search=...` |
+| `ShopDetailPage` | `directoryApi.getShopById(id)` | `GET /directory/shops/{id}` |
 
 ### Zustand Store → API
 
@@ -1240,13 +1269,12 @@ export const formatPrice = (price: number): string => {
 | 21 | GET | `/api/v1/payments/{id}/status` | ✅ | payment |
 | 22 | GET | `/api/v1/payments/order/{orderId}` | ✅ | payment |
 | 23 | POST | `/api/v1/payments/callback` | ❌ | payment |
-| 24 | GET | `/api/v1/bazaars` | ❌ | bazaar |
-| 25 | GET | `/api/v1/bazaars/{id}` | ❌ | bazaar |
-| 26 | GET | `/api/v1/bazaars/{id}/maps` | ❌ | bazaar |
-| 27 | GET | `/api/v1/bazaars/{id}/shops` | ❌ | bazaar |
-| 28 | GET | `/api/v1/shops/{id}` | ❌ | bazaar |
-| 29 | GET | `/api/v1/shops/search?q=` | ❌ | bazaar |
-| 30 | GET | `/api/v1/shops/categories` | ❌ | bazaar |
+| 24 | GET | `/api/v1/directory/bazaars` | ❌ | coupon (directory) |
+| 25 | GET | `/api/v1/directory/bazaars/{id}` | ❌ | coupon (directory) |
+| 26 | GET | `/api/v1/directory/bazaars/{id}/shops` | ❌ | coupon (directory) |
+| 27 | GET | `/api/v1/directory/shops` | ❌ | coupon (directory) |
+| 28 | GET | `/api/v1/directory/shops/{id}` | ❌ | coupon (directory) |
+| 29 | GET | `/api/v1/directory/area` | ❌ | coupon (directory) |
 | 31 | GET | `/api/v1/users/me` | ✅ | user |
 | 32 | PUT | `/api/v1/users/me` | ✅ | user |
 | 33 | GET | `/api/v1/users/me/favorites` | ✅ | user |

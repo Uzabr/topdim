@@ -15,6 +15,7 @@ import uz.topdim.coupon.entity.Category;
 import uz.topdim.coupon.entity.Merchant;
 import uz.topdim.coupon.exception.ResourceNotFoundException;
 import uz.topdim.coupon.repository.CategoryRepository;
+import uz.topdim.coupon.repository.MerchantLocationRepository;
 import uz.topdim.coupon.repository.MerchantRepository;
 
 import java.util.List;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.*;
 class MerchantServiceTest {
 
     @Mock private MerchantRepository merchantRepository;
+    @Mock private MerchantLocationRepository merchantLocationRepository;
     @Mock private CategoryRepository categoryRepository;
 
     @InjectMocks
@@ -93,6 +95,11 @@ class MerchantServiceTest {
                 Merchant m = inv.getArgument(0);
                 m.setId(10L);
                 return m;
+            });
+            when(merchantRepository.findById(10L)).thenAnswer(inv -> {
+                Merchant m = Merchant.builder().id(10L).name("New SPA").description("Описание")
+                        .phone("+998901111111").active(true).build();
+                return Optional.of(m);
             });
 
             MerchantResponse result = merchantService.createMerchant(request);

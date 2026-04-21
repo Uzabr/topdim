@@ -6,11 +6,13 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Партнёр (продавец купонов).
  * Поля: name, description, logoUrl, address, phone.
- * Связан с CouponOffer.
+ * Связан с CouponOffer и MerchantLocation.
  */
 @Entity
 @Table(name = "merchants")
@@ -58,6 +60,10 @@ public class Merchant {
 
     @Column(name = "telegram_chat_id")
     private String telegramChatId;
+
+    @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<MerchantLocation> locations = new ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

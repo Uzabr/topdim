@@ -22,22 +22,29 @@ interface CouponFormData {
   categoryId: number;
   merchantId?: number;
   coverImageUrl: string;
-  shortDescription: string;
-  fullDescription: string;
-  terms: string;
-  usageRules: string;
-  howToUse: string;
+  offerDescription: string;
   oldPrice: number;
   fromPrice: number;
   discountPercent: number;
   options: CouponOptionData[];
   buyUntil: dayjs.Dayjs;
   useUntil: dayjs.Dayjs;
-  address: string;
-  contactPhone: string;
-  workingHours: string;
   giftAvailable: boolean;
   images: string[];
+}
+
+/**
+ * Builds offerDescription from legacy fields for backward compat
+ * when editing a coupon that doesn't have offerDescription yet.
+ */
+function buildOfferDescriptionFromLegacy(coupon: any): string {
+  const parts: string[] = [];
+  if (coupon.shortDescription?.trim()) parts.push(coupon.shortDescription.trim());
+  if (coupon.fullDescription?.trim()) parts.push(coupon.fullDescription.trim());
+  if (coupon.terms?.trim()) parts.push(`## Условия\n${coupon.terms.trim()}`);
+  if (coupon.usageRules?.trim()) parts.push(`## Правила использования\n${coupon.usageRules.trim()}`);
+  if (coupon.howToUse?.trim()) parts.push(`## Как использовать\n${coupon.howToUse.trim()}`);
+  return parts.join('\n\n');
 }
 
 export const CouponFormPage = () => {
@@ -68,24 +75,22 @@ export const CouponFormPage = () => {
   // Заполняем форму старыми данными
   useEffect(() => {
     if (existingCoupon) {
+      // Use canonical offerDescription, or build from legacy fields
+      const offerDesc = existingCoupon.offerDescription?.trim()
+        ? existingCoupon.offerDescription
+        : buildOfferDescriptionFromLegacy(existingCoupon);
+
       form.setFieldsValue({
         title: existingCoupon.title,
         categoryId: existingCoupon.category?.id,
         merchantId: existingCoupon.merchant?.id,
         coverImageUrl: existingCoupon.coverImageUrl,
-        shortDescription: existingCoupon.shortDescription,
-        fullDescription: existingCoupon.fullDescription,
-        terms: existingCoupon.terms,
-        usageRules: existingCoupon.usageRules,
-        howToUse: existingCoupon.howToUse,
+        offerDescription: offerDesc,
         oldPrice: existingCoupon.oldPrice,
         fromPrice: existingCoupon.fromPrice,
         discountPercent: existingCoupon.discountPercent,
         buyUntil: existingCoupon.buyUntil ? dayjs(existingCoupon.buyUntil) : undefined,
         useUntil: existingCoupon.useUntil ? dayjs(existingCoupon.useUntil) : undefined,
-        address: existingCoupon.address,
-        contactPhone: existingCoupon.contactPhone,
-        workingHours: existingCoupon.workingHours,
         giftAvailable: existingCoupon.giftAvailable || false,
         images: existingCoupon.images || [],
         options: existingCoupon.options
@@ -124,9 +129,9 @@ export const CouponFormPage = () => {
     }
   });
 
-  // Быстрое создание мерчанта
+  // Быстрое создание мерчанта (с primary location)
   const createMerchantMutation = useMutation({
-    mutationFn: async (values: { name: string }) => {
+    mutationFn: async (values: { name: string; address?: string; phone?: string; workingHours?: string }) => {
       const { data } = await api.post('/api/v1/admin/merchants', values);
       return data.data;
     },
@@ -422,18 +427,33 @@ export const CouponFormPage = () => {
                 )}
               </Card>
 
-              <Form.Item name="shortDescription" label="Краткое описание" extra="Пара слов об акции. Отображается прямо на плитке купона в общей ленте.">
-                <TextArea rows={2} placeholder="Пара слов об акции..." />
-              </Form.Item>
-
               <Alert 
-                message="Блок: О заведении (Полное описание)" 
-                description="Поддерживается Markdown! Используйте (-) для списков и (**) для жирного шрифта. Раздел отображается в детальной странице купона снизу."
+                message="Описание оффера" 
+                description="Одно поле для всего текста акции: краткое описание, подробности, условия, правила использования и инструкции. Поддерживается Markdown!"
                 type="info" showIcon style={{ marginBottom: 16, marginTop: 16 }} 
               />
               
-              <Form.Item name="fullDescription" label="Полное описание">
-                <TextArea rows={6} placeholder={"- Разнообразие вкусов\n- VIP-кабинки на 20 человек\n**Рекомендуем попробовать** салат «Мерилин»!"} />
+              <Form.Item name="offerDescription" label="Описание оффера (Markdown)">
+                <TextArea 
+                  rows={12} 
+                  placeholder={`Любая пицца 33 см + напиток на выбор
+
+Отличное предложение от PizzaLab! Выберите любую пиццу из нашего меню.
+
+## Условия
+- 1 купон на 1 человека в день
+- Действует в будние дни
+- Необходимо бронирование
+
+## Правила использования
+- Акция не суммируется с другими скидками
+- Не распространяется на доставку
+
+## Как использовать
+1. Покажите купон официанту
+2. Выберите пиццу из меню
+3. Наслаждайтесь!`} 
+                />
               </Form.Item>
 
               <Card type="inner" title="Варианты покупки (Виды сертификатов)" style={{ marginBottom: 24, marginTop: 16 }}>
@@ -495,24 +515,6 @@ export const CouponFormPage = () => {
                   )}
                 </Form.List>
               </Card>
-
-              <Alert 
-                message="Блок: Важная информация (Условия и Правила)" 
-                description="Все три поля поддерживают Markdown! Они группируются сверху карточки с красным значком предупреждения, как на Chocolife."
-                type="warning" showIcon style={{ marginBottom: 16 }} 
-              />
-
-              <Card type="inner" title="Правила и Условия" style={{ marginBottom: 24, paddingBottom: 0 }}>
-                <Form.Item name="terms" label="Условия (ограничения)" extra="Что обязательно нужно знать клиенту.">
-                  <TextArea rows={3} placeholder={"- Купон даёт право скидки до 40%\n- Средний счёт — 5 000 тг. (без учёта скидки)\n- Обслуживание 10% оплачивается отдельно"} />
-                </Form.Item>
-                <Form.Item name="usageRules" label="Общие правила" extra="Когда не работает скидка.">
-                  <TextArea rows={3} placeholder={"- Акция не действует на Ифтар сеты\n- Не распространяется на доставку\n- Не суммируется с другими акциями"} />
-                </Form.Item>
-                <Form.Item name="howToUse" label="Как использовать (Инструкция)" extra="Пошаговое использование.">
-                  <TextArea rows={3} placeholder={"1. Сообщите официанту, что у вас купон\n2. Назовите номер или покажите QR-код\n3. После закрытия счета скидка не применяется"} />
-                </Form.Item>
-              </Card>
             </Col>
 
             {/* Правая колонка (Сайдбар) */}
@@ -536,17 +538,11 @@ export const CouponFormPage = () => {
                 </Form.Item>
               </Card>
 
-              <Card type="inner" title="Контакты заведения" style={{ marginBottom: 16 }}>
-                <Form.Item name="address" label="Адрес проведения">
-                  <Input placeholder="г. Ташкент, ул. Амира Темура" />
-                </Form.Item>
-                <Form.Item name="contactPhone" label="Контактный телефон">
-                  <Input placeholder="+998 90 000 00 00" />
-                </Form.Item>
-                <Form.Item name="workingHours" label="Часы работы">
-                  <Input placeholder="Пн-Вс: 09:00 - 22:00" />
-                </Form.Item>
-              </Card>
+              <Alert
+                message="Контакты заведения"
+                description="Контактная информация теперь управляется в профиле Партнёра (Мерчанта). Откройте карточку мерчанта, чтобы добавить адреса и телефоны."
+                type="info" showIcon style={{ marginBottom: 16 }}
+              />
 
               <Card type="inner" title="Дополнительно">
                 <Form.Item name="giftAvailable" label="Доступен как подарок" valuePropName="checked"
@@ -573,7 +569,7 @@ export const CouponFormPage = () => {
         </Form>
       </Card>
 
-      {/* Модалка быстрого создания партнера */}
+      {/* Модалка быстрого создания партнера (с primary location) */}
       <Modal
         title="Быстрое создание партнера"
         open={isMerchantModalOpen}
@@ -589,6 +585,15 @@ export const CouponFormPage = () => {
         <Form form={merchantForm} layout="vertical">
           <Form.Item name="name" label="Название организации" rules={[{ required: true }]}>
             <Input placeholder="Например: PizzaLab" />
+          </Form.Item>
+          <Form.Item name="address" label="Адрес">
+            <Input placeholder="г. Ташкент, ул. Амира Темура" />
+          </Form.Item>
+          <Form.Item name="phone" label="Телефон">
+            <Input placeholder="+998 90 000 00 00" />
+          </Form.Item>
+          <Form.Item name="workingHours" label="Часы работы">
+            <Input placeholder="Пн-Вс: 09:00 - 22:00" />
           </Form.Item>
         </Form>
       </Modal>

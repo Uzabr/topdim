@@ -18,6 +18,7 @@ import uz.topdim.coupon.repository.CategoryRepository;
 import uz.topdim.coupon.repository.CouponImageRepository;
 import uz.topdim.coupon.repository.CouponOfferRepository;
 import uz.topdim.coupon.repository.CouponOptionRepository;
+import uz.topdim.coupon.repository.MerchantLocationRepository;
 import uz.topdim.coupon.repository.MerchantRepository;
 import uz.topdim.coupon.repository.ReviewRepository;
 
@@ -38,6 +39,7 @@ class CouponOfferServiceBusinessLogicTest {
     @Mock private CouponOptionRepository couponOptionRepository;
     @Mock private CouponImageRepository couponImageRepository;
     @Mock private MerchantRepository merchantRepository;
+    @Mock private MerchantLocationRepository merchantLocationRepository;
     @Mock private CategoryRepository categoryRepository;
     @Mock private ReviewRepository reviewRepository;
     @Mock private EntityManager entityManager;

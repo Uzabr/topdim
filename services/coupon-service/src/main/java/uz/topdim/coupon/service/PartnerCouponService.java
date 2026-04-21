@@ -89,8 +89,18 @@ public class PartnerCouponService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
 
+        // Build canonical offerDescription
+        String offerDesc = request.getOfferDescription();
+        if (offerDesc == null || offerDesc.isBlank()) {
+            offerDesc = buildOfferDescription(
+                    request.getShortDescription(), request.getFullDescription(),
+                    request.getTerms(), request.getUsageRules(), request.getHowToUse());
+        }
+
         CouponOffer offer = CouponOffer.builder()
                 .title(request.getTitle())
+                .offerDescription(offerDesc)
+                // Legacy text fields — still written for backward compat
                 .shortDescription(request.getShortDescription())
                 .fullDescription(request.getFullDescription())
                 .merchant(merchant)
@@ -104,9 +114,7 @@ public class PartnerCouponService {
                 .terms(request.getTerms())
                 .usageRules(request.getUsageRules())
                 .howToUse(request.getHowToUse())
-                .address(request.getAddress())
-                .contactPhone(request.getContactPhone())
-                .workingHours(request.getWorkingHours())
+                // Contact fields no longer written to coupon — live in merchant_locations
                 .giftAvailable(request.isGiftAvailable())
                 .status(CouponStatus.LEAD)
                 .build();
@@ -137,7 +145,17 @@ public class PartnerCouponService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
 
+        // Build canonical offerDescription
+        String offerDesc = request.getOfferDescription();
+        if (offerDesc == null || offerDesc.isBlank()) {
+            offerDesc = buildOfferDescription(
+                    request.getShortDescription(), request.getFullDescription(),
+                    request.getTerms(), request.getUsageRules(), request.getHowToUse());
+        }
+
         offer.setTitle(request.getTitle());
+        offer.setOfferDescription(offerDesc);
+        // Legacy text fields — still written for backward compat
         offer.setShortDescription(request.getShortDescription());
         offer.setFullDescription(request.getFullDescription());
         offer.setCategory(category);
@@ -150,9 +168,7 @@ public class PartnerCouponService {
         offer.setTerms(request.getTerms());
         offer.setUsageRules(request.getUsageRules());
         offer.setHowToUse(request.getHowToUse());
-        offer.setAddress(request.getAddress());
-        offer.setContactPhone(request.getContactPhone());
-        offer.setWorkingHours(request.getWorkingHours());
+        // Contact fields no longer written to coupon — live in merchant_locations
         offer.setGiftAvailable(request.isGiftAvailable());
         // После редактирования отклонённого — снова на модерацию
         if (offer.getStatus() == CouponStatus.REVISION_REQUESTED) {
@@ -167,6 +183,7 @@ public class PartnerCouponService {
         return CouponOfferResponse.builder()
                 .id(offer.getId())
                 .title(offer.getTitle())
+                .offerDescription(offer.getOfferDescription())
                 .shortDescription(offer.getShortDescription())
                 .oldPrice(offer.getOldPrice())
                 .fromPrice(offer.getFromPrice())
@@ -175,5 +192,31 @@ public class PartnerCouponService {
                 .status(offer.getStatus().name())
                 .totalSold(offer.getTotalSold())
                 .build();
+    }
+
+    /**
+     * Builds canonical offerDescription from legacy text fields.
+     */
+    private String buildOfferDescription(String shortDesc, String fullDesc,
+                                          String terms, String usageRules, String howToUse) {
+        StringBuilder sb = new StringBuilder();
+        if (shortDesc != null && !shortDesc.isBlank()) sb.append(shortDesc.trim());
+        if (fullDesc != null && !fullDesc.isBlank()) {
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append(fullDesc.trim());
+        }
+        if (terms != null && !terms.isBlank()) {
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append("## Условия\n").append(terms.trim());
+        }
+        if (usageRules != null && !usageRules.isBlank()) {
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append("## Правила использования\n").append(usageRules.trim());
+        }
+        if (howToUse != null && !howToUse.isBlank()) {
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append("## Как использовать\n").append(howToUse.trim());
+        }
+        return sb.length() > 0 ? sb.toString() : null;
     }
 }
