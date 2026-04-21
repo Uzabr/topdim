@@ -23,18 +23,22 @@ import { topdimDeals } from '../data/topdim';
 import './CouponDetailPage.css';
 
 const DEMO_COUPON: CouponOffer = {
-  id: 1, title: 'Скидка на пиццу в PizzaLab', shortDescription: 'Любая пицца 33 см + напиток',
-  fullDescription: 'Отличное предложение от PizzaLab! Выберите любую пиццу диаметром 33 см из нашего меню и получите напиток на выбор совершенно бесплатно.\n\nПредложение действует во всех филиалах PizzaLab в Ташкенте.',
-  merchant: { id: 1, name: 'PizzaLab', logoUrl: '' },
+  id: 1, title: 'Скидка на пиццу в PizzaLab',
+  offerDescription: 'Любая пицца 33 см + напиток\n\nОтличное предложение от PizzaLab! Выберите любую пиццу диаметром 33 см из нашего меню и получите напиток на выбор совершенно бесплатно.\n\n## Условия\n- 1 купон на 1 человека в день\n- Действует в будние дни\n- Необходимо бронирование\n\n## Правила использования\n- Покажите купон официанту перед заказом\n- Назовите номер купона при бронировании\n\n## Как использовать\n1. Покажите купон\n2. Выберите пиццу\n3. Наслаждайтесь',
+  shortDescription: 'Любая пицца 33 см + напиток',
+  merchant: {
+    id: 1, name: 'PizzaLab', logoUrl: '',
+    description: 'Предложение действует во всех филиалах PizzaLab в Ташкенте.',
+    primaryLocation: {
+      id: 1, address: 'Ташкент, Мирзо Улугбека, 55',
+      phone: '+998 90 123 45 67', workingHours: '10:00 – 22:00',
+    },
+  },
   category: { id: 1, name: 'Еда', slug: 'food' },
   oldPrice: 89000, fromPrice: 45000, discountPercent: 49,
   coverImageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80',
   buyUntil: '2026-04-30T00:00:00', useUntil: '2026-05-30T00:00:00',
-  terms: '- 1 купон на 1 человека в день\n- Действует в будние дни\n- Необходимо бронирование',
-  usageRules: '- Показать купон официанту перед заказом\n- Назвать номер купона при бронировании',
-  howToUse: '1. Покажите купон\n2. Выберите пиццу\n3. Наслаждайтесь',
-  address: 'Ташкент, Мирзо Улугбека, 55', contactPhone: '+998 90 123 45 67',
-  workingHours: '10:00 – 22:00', giftAvailable: true, status: 'ACTIVE', totalSold: 1234, viewCount: 5600,
+  giftAvailable: true, status: 'ACTIVE', totalSold: 1234, viewCount: 5600,
   options: [
     { id: 1, title: 'Пицца 33 см + напиток', regularPrice: 89000, couponPrice: 45000, quantityLimit: 100, quantitySold: 834, status: 'ACTIVE' },
     { id: 2, title: 'Пицца 33 см + 2 напитка + десерт', regularPrice: 140000, couponPrice: 75000, quantityLimit: 50, quantitySold: 312, status: 'ACTIVE' },
@@ -210,44 +214,27 @@ export default function CouponDetailPage() {
             {/* ═══ INFO TAB ═══ */}
             {activeTab === 'info' && (
               <div className="detail-info-tab">
-                {c.terms && (
-                  <div className="detail-block detail-block--warning">
-                    <h2 className="detail-section-title">
-                      <AlertCircle size={18} />
-                      Важная информация
-                    </h2>
-                    <div className="markdown-body">
-                      <ReactMarkdown>{c.terms}</ReactMarkdown>
+                {/* Offer description (canonical) */}
+                {(() => {
+                  const desc = c.offerDescription || '';
+                  return desc ? (
+                    <div className="detail-block">
+                      <div className="markdown-body">
+                        <ReactMarkdown>{desc}</ReactMarkdown>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ) : null;
+                })()}
 
-                {c.usageRules && (
-                  <div className="detail-block">
-                    <h2 className="detail-section-title">Правила использования</h2>
-                    <div className="markdown-body">
-                      <ReactMarkdown>{c.usageRules}</ReactMarkdown>
-                    </div>
-                  </div>
-                )}
-
-                {c.howToUse && (
-                  <div className="detail-block">
-                    <h2 className="detail-section-title">Как использовать</h2>
-                    <div className="markdown-body">
-                      <ReactMarkdown>{c.howToUse}</ReactMarkdown>
-                    </div>
-                  </div>
-                )}
-
-                {c.fullDescription && (
+                {/* About the merchant */}
+                {c.merchant?.description && (
                   <div className="detail-block">
                     <h2 className="detail-section-title">
                       <Info size={18} />
                       О заведении
                     </h2>
                     <div className="markdown-body">
-                      <ReactMarkdown>{c.fullDescription}</ReactMarkdown>
+                      <ReactMarkdown>{c.merchant.description}</ReactMarkdown>
                     </div>
                   </div>
                 )}
@@ -303,7 +290,7 @@ export default function CouponDetailPage() {
             {/* ═══ CONTACTS TAB ═══ */}
             {activeTab === 'contacts' && (
               <div className="detail-contacts-tab">
-                {c.address && (
+                {c.merchant?.primaryLocation?.address && (
                   <div className="detail-map-section">
                     <div className="detail-map-container" style={{ height: '260px', width: '100%', borderRadius: '16px', overflow: 'hidden', position: 'relative' }}>
                       <TwoGisMap 
@@ -314,21 +301,21 @@ export default function CouponDetailPage() {
                     </div>
                     <div className="detail-address">
                       <strong>📍 Адрес</strong>
-                      <p>{c.address}</p>
+                      <p>{c.merchant.primaryLocation.address}</p>
                     </div>
                   </div>
                 )}
 
-                {c.contactPhone && (
-                  <RevealPhone phone={c.contactPhone} />
+                {c.merchant?.primaryLocation?.phone && (
+                  <RevealPhone phone={c.merchant.primaryLocation.phone} />
                 )}
 
-                {c.workingHours && (
+                {c.merchant?.primaryLocation?.workingHours && (
                   <div className="detail-contact-item">
                     <Clock size={16} />
                     <div>
                       <span className="detail-contact-label">Часы работы</span>
-                      <p>{c.workingHours}</p>
+                      <p>{c.merchant.primaryLocation.workingHours}</p>
                     </div>
                   </div>
                 )}

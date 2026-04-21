@@ -1,12 +1,31 @@
 import apiClient from './client';
 import type { ApiResponse } from './client';
 
+export interface MerchantPrimaryLocation {
+  id: number;
+  title?: string;
+  address?: string;
+  phone?: string;
+  workingHours?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
 export interface CouponOffer {
   id: number;
   title: string;
+  /** Canonical offer description (Release 1+). */
+  offerDescription?: string;
+  // Legacy fields (kept for backward compat)
   shortDescription?: string;
   fullDescription?: string;
-  merchant: { id: number; name: string; logoUrl?: string };
+  merchant: {
+    id: number;
+    name: string;
+    logoUrl?: string;
+    description?: string;
+    primaryLocation?: MerchantPrimaryLocation;
+  };
   category: { id: number; name: string; slug: string; iconUrl?: string };
   oldPrice?: number;
   fromPrice: number;
@@ -14,12 +33,10 @@ export interface CouponOffer {
   coverImageUrl?: string;
   buyUntil: string;
   useUntil: string;
+  // Legacy text fields (backward compat)
   terms?: string;
   usageRules?: string;
   howToUse?: string;
-  address?: string;
-  contactPhone?: string;
-  workingHours?: string;
   giftAvailable: boolean;
   status: string;
   totalSold: number;
