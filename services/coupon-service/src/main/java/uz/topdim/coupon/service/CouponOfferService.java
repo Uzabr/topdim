@@ -21,6 +21,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static uz.topdim.coupon.util.PhoneUtils.normalize;
+
 /**
  * Сервис управления купонами.
  * CRUD операции, каталог с фильтрами и пагинацией.
@@ -693,7 +695,7 @@ public class CouponOfferService {
         }
 
         // Step 2: lookup by phone in merchant_locations (canonical)
-        String normalizedPhone = normalizePhone(request.getPhone());
+        String normalizedPhone = normalize(request.getPhone());
         if (merchant == null && normalizedPhone != null) {
             merchant = merchantLocationRepository.findFirstByPhoneAndActiveTrue(normalizedPhone)
                     .map(MerchantLocation::getMerchant)
@@ -761,16 +763,6 @@ public class CouponOfferService {
         couponOfferRepository.save(lead);
     }
 
-    /**
-     * Normalizes phone number by stripping non-digits and ensuring + prefix.
-     * Returns null if input is null/blank.
-     */
-    private String normalizePhone(String phone) {
-        if (phone == null || phone.isBlank()) return null;
-        String digits = phone.replaceAll("[^\\d+]", "");
-        if (digits.isEmpty()) return null;
-        return digits.startsWith("+") ? digits : "+" + digits;
-    }
 
     // ==================== Bot API (Stat & List) ====================
 

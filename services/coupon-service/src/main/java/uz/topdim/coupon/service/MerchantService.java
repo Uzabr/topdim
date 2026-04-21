@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static uz.topdim.coupon.util.PhoneUtils.normalize;
+
 /**
  * Сервис управления партнёрами (merchants) и их локациями.
  * CRUD операции, получение категорий.
@@ -74,7 +76,7 @@ public class MerchantService {
                 .logoUrl(request.getLogoUrl())
                 .coverUrl(request.getCoverUrl())
                 .address(request.getAddress())
-                .phone(request.getPhone())
+                .phone(normalize(request.getPhone()))
                 .email(request.getEmail())
                 .website(request.getWebsite())
                 .workingHours(request.getWorkingHours())
@@ -106,7 +108,7 @@ public class MerchantService {
         merchant.setLogoUrl(request.getLogoUrl());
         merchant.setCoverUrl(request.getCoverUrl());
         merchant.setAddress(request.getAddress());
-        merchant.setPhone(request.getPhone());
+        merchant.setPhone(normalize(request.getPhone()));
         merchant.setEmail(request.getEmail());
         merchant.setWebsite(request.getWebsite());
         merchant.setWorkingHours(request.getWorkingHours());
@@ -139,7 +141,7 @@ public class MerchantService {
                         .merchant(merchant)
                         .title(locReq.getTitle())
                         .address(locReq.getAddress())
-                        .phone(locReq.getPhone())
+                        .phone(normalize(locReq.getPhone()))
                         .workingHours(locReq.getWorkingHours())
                         .latitude(locReq.getLatitude())
                         .longitude(locReq.getLongitude())
@@ -169,7 +171,7 @@ public class MerchantService {
                         .merchant(merchant)
                         .title("Основной адрес")
                         .address(request.getAddress())
-                        .phone(request.getPhone())
+                        .phone(normalize(request.getPhone()))
                         .workingHours(request.getWorkingHours())
                         .primary(true)
                         .active(true)

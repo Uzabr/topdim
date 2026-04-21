@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -123,6 +124,47 @@ class MerchantServiceTest {
             MerchantResponse result = merchantService.updateMerchant(1L, request);
 
             assertThat(result.getName()).isEqualTo("Updated SPA");
+        }
+
+        @Test
+        @DisplayName("Создание: телефон с пробелами нормализуется")
+        void createMerchant_normalizesSpacedPhone() {
+            CreateMerchantRequest request = new CreateMerchantRequest();
+            request.setName("Phone Test");
+            request.setPhone("+998 90 123 45 67");
+
+            when(merchantRepository.save(any(Merchant.class))).thenAnswer(inv -> {
+                Merchant m = inv.getArgument(0);
+                m.setId(20L);
+                return m;
+            });
+            when(merchantRepository.findById(20L)).thenAnswer(inv -> {
+                Merchant m = Merchant.builder().id(20L).name("Phone Test")
+                        .phone("+998901234567").active(true).build();
+                return Optional.of(m);
+            });
+
+            merchantService.createMerchant(request);
+
+            ArgumentCaptor<Merchant> captor = ArgumentCaptor.forClass(Merchant.class);
+            verify(merchantRepository).save(captor.capture());
+            assertThat(captor.getValue().getPhone()).isEqualTo("+998901234567");
+        }
+
+        @Test
+        @DisplayName("Обновление: телефон с пробелами нормализуется")
+        void updateMerchant_normalizesSpacedPhone() {
+            Merchant existing = createTestMerchant();
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
+            when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            CreateMerchantRequest request = new CreateMerchantRequest();
+            request.setName("Updated SPA");
+            request.setPhone("+998 90 999 99 99");
+
+            merchantService.updateMerchant(1L, request);
+
+            assertThat(existing.getPhone()).isEqualTo("+998909999999");
         }
     }
 
