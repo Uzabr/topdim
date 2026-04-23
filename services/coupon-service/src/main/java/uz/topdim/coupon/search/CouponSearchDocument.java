@@ -23,11 +23,8 @@ public class CouponSearchDocument {
     /** Название (индексируется для поиска) */
     private String title;
 
-    /** Краткое описание (индексируется) */
-    private String shortDescription;
-
-    /** Полное описание (индексируется) */
-    private String fullDescription;
+    /** Canonical offer text (индексируется). */
+    private String offerDescription;
 
     /** Название категории */
     private String categoryName;

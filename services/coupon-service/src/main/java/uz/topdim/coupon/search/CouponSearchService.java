@@ -72,7 +72,7 @@ public class CouponSearchService {
 
     /**
      * Полнотекстовый поиск купонов.
-     * Ищет по title, shortDescription, fullDescription, merchantName, categoryName.
+     * Ищет по title, offerDescription, merchantName, categoryName.
      *
      * @param query поисковый запрос
      * @param categoryId фильтр по категории (nullable)
@@ -93,7 +93,7 @@ public class CouponSearchService {
             if (query != null && !query.isBlank()) {
                 must.add(Map.of("multi_match", Map.of(
                         "query", query,
-                        "fields", List.of("title^3", "shortDescription^2", "fullDescription", "merchantName", "categoryName"),
+                        "fields", List.of("title^3", "offerDescription^2", "merchantName", "categoryName"),
                         "type", "best_fields",
                         "fuzziness", "AUTO"
                 )));
@@ -161,8 +161,7 @@ public class CouponSearchService {
                         "properties": {
                           "id": { "type": "long" },
                           "title": { "type": "text", "analyzer": "russian" },
-                          "shortDescription": { "type": "text", "analyzer": "russian" },
-                          "fullDescription": { "type": "text", "analyzer": "russian" },
+                          "offerDescription": { "type": "text", "analyzer": "russian" },
                           "categoryName": { "type": "text" },
                           "categorySlug": { "type": "keyword" },
                           "categoryId": { "type": "long" },

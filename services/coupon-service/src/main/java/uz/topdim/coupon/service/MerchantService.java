@@ -125,56 +125,80 @@ public class MerchantService {
      * Otherwise, auto-creates a primary location from legacy fields if they exist.
      */
     private void saveLocations(Merchant merchant, CreateMerchantRequest request) {
+        List<MerchantLocation> normalizedLocations = buildLocations(merchant, request);
+
         // Remove existing locations
         merchantLocationRepository.deleteAllByMerchantId(merchant.getId());
         merchant.getLocations().clear();
 
-        if (request.getLocations() != null && !request.getLocations().isEmpty()) {
-            // Use explicit locations from request
-            boolean hasPrimary = false;
-            for (CreateMerchantRequest.LocationRequest locReq : request.getLocations()) {
-                MerchantLocation loc = MerchantLocation.builder()
-                        .merchant(merchant)
-                        .title(locReq.getTitle())
-                        .address(locReq.getAddress())
-                        .phone(normalize(locReq.getPhone()))
-                        .workingHours(locReq.getWorkingHours())
-                        .latitude(locReq.getLatitude())
-                        .longitude(locReq.getLongitude())
-                        .primary(locReq.isPrimary())
-                        .active(true)
-                        .build();
-                if (locReq.isPrimary()) hasPrimary = true;
-                merchantLocationRepository.save(loc);
-            }
-            // If no primary was set, promote the first one
-            if (!hasPrimary) {
-                List<MerchantLocation> saved = merchantLocationRepository.findByMerchantId(merchant.getId());
-                if (!saved.isEmpty()) {
-                    MerchantLocation first = saved.get(0);
-                    first.setPrimary(true);
-                    merchantLocationRepository.save(first);
-                }
-            }
-        } else {
-            // Auto-create primary from legacy fields
-            boolean hasLegacy = (request.getAddress() != null && !request.getAddress().isBlank())
-                    || (request.getPhone() != null && !request.getPhone().isBlank())
-                    || (request.getWorkingHours() != null && !request.getWorkingHours().isBlank());
+        for (MerchantLocation location : normalizedLocations) {
+            merchantLocationRepository.save(location);
+        }
+    }
 
-            if (hasLegacy) {
-                MerchantLocation loc = MerchantLocation.builder()
-                        .merchant(merchant)
-                        .title("Основной адрес")
-                        .address(request.getAddress())
-                        .phone(normalize(request.getPhone()))
-                        .workingHours(request.getWorkingHours())
-                        .primary(true)
-                        .active(true)
-                        .build();
-                merchantLocationRepository.save(loc);
+    private List<MerchantLocation> buildLocations(Merchant merchant, CreateMerchantRequest request) {
+        if (request.getLocations() != null && !request.getLocations().isEmpty()) {
+            List<CreateMerchantRequest.LocationRequest> nonEmptyLocations = request.getLocations().stream()
+                    .filter(this::hasLocationData)
+                    .toList();
+
+            if (!nonEmptyLocations.isEmpty()) {
+                long primaryCount = nonEmptyLocations.stream()
+                        .filter(CreateMerchantRequest.LocationRequest::isPrimary)
+                        .count();
+                if (primaryCount > 1) {
+                    throw new IllegalArgumentException("У мерчанта может быть только одна primary location");
+                }
+
+                List<MerchantLocation> normalizedLocations = new ArrayList<>();
+                for (CreateMerchantRequest.LocationRequest locReq : nonEmptyLocations) {
+                    normalizedLocations.add(MerchantLocation.builder()
+                            .merchant(merchant)
+                            .title(locReq.getTitle())
+                            .address(locReq.getAddress())
+                            .phone(normalize(locReq.getPhone()))
+                            .workingHours(locReq.getWorkingHours())
+                            .latitude(locReq.getLatitude())
+                            .longitude(locReq.getLongitude())
+                            .primary(locReq.isPrimary())
+                            .active(true)
+                            .build());
+                }
+
+                if (primaryCount == 0) {
+                    normalizedLocations.get(0).setPrimary(true);
+                }
+
+                return normalizedLocations;
             }
         }
+
+        boolean hasLegacy = (request.getAddress() != null && !request.getAddress().isBlank())
+                || (request.getPhone() != null && !request.getPhone().isBlank())
+                || (request.getWorkingHours() != null && !request.getWorkingHours().isBlank());
+
+        if (!hasLegacy) {
+            return List.of();
+        }
+
+        return List.of(MerchantLocation.builder()
+                .merchant(merchant)
+                .title("Основной адрес")
+                .address(request.getAddress())
+                .phone(normalize(request.getPhone()))
+                .workingHours(request.getWorkingHours())
+                .primary(true)
+                .active(true)
+                .build());
+    }
+
+    private boolean hasLocationData(CreateMerchantRequest.LocationRequest request) {
+        return (request.getTitle() != null && !request.getTitle().isBlank())
+                || (request.getAddress() != null && !request.getAddress().isBlank())
+                || (request.getPhone() != null && !request.getPhone().isBlank())
+                || (request.getWorkingHours() != null && !request.getWorkingHours().isBlank())
+                || request.getLatitude() != null
+                || request.getLongitude() != null;
     }
 
     // ==================== Categories ====================

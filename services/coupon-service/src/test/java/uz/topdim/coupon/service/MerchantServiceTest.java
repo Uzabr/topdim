@@ -177,6 +177,34 @@ class MerchantServiceTest {
             verify(merchantLocationRepository).save(locCaptor.capture());
             assertThat(locCaptor.getValue().getPhone()).isEqualTo("+998909999999");
         }
+
+        @Test
+        @DisplayName("Обновление: два primary location отклоняются до удаления существующих локаций")
+        void updateMerchant_rejectsMultiplePrimaryLocationsBeforeDelete() {
+            Merchant existing = createTestMerchant();
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+            CreateMerchantRequest.LocationRequest first = new CreateMerchantRequest.LocationRequest();
+            first.setTitle("Филиал 1");
+            first.setAddress("ул. 1");
+            first.setPrimary(true);
+
+            CreateMerchantRequest.LocationRequest second = new CreateMerchantRequest.LocationRequest();
+            second.setTitle("Филиал 2");
+            second.setAddress("ул. 2");
+            second.setPrimary(true);
+
+            CreateMerchantRequest request = new CreateMerchantRequest();
+            request.setName("Updated SPA");
+            request.setLocations(List.of(first, second));
+
+            assertThatThrownBy(() -> merchantService.updateMerchant(1L, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("только одна");
+
+            verify(merchantLocationRepository, never()).deleteAllByMerchantId(anyLong());
+            verify(merchantLocationRepository, never()).save(any());
+        }
     }
 
     // ==================== Categories ====================
