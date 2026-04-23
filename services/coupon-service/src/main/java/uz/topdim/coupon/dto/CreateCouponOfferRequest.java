@@ -10,9 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * DTO запроса на создание купонного предложения.
- * Release 1: canonical field is offerDescription.
- * Legacy text fields accepted for backward compat but offerDescription takes priority.
+ * Canonical contract for coupon create/update flows.
  */
 @Data
 public class CreateCouponOfferRequest {
@@ -20,21 +18,8 @@ public class CreateCouponOfferRequest {
     @NotBlank(message = "Название обязательно")
     private String title;
 
-    /** Canonical offer text (Release 1+). Takes priority over legacy fields. */
+    @NotBlank(message = "Описание оффера обязательно")
     private String offerDescription;
-
-    // --- Legacy text fields: DEPRECATED. Will be removed in Step 4. ---
-    // If offerDescription is empty, these are merged into it by the service.
-    @Deprecated(forRemoval = true)
-    private String shortDescription;
-    @Deprecated(forRemoval = true)
-    private String fullDescription;
-    @Deprecated(forRemoval = true)
-    private String terms;
-    @Deprecated(forRemoval = true)
-    private String usageRules;
-    @Deprecated(forRemoval = true)
-    private String howToUse;
 
     @NotNull(message = "Партнер обязателен")
     private Long merchantId;

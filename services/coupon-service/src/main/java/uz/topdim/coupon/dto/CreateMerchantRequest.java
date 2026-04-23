@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * DTO запроса на создание/обновление партнёра.
- * Поддерживает как legacy поля (address, phone), так и normalized locations.
+ * Contact data is managed only through normalized locations.
  */
 @Data
 public class CreateMerchantRequest {
@@ -17,15 +17,11 @@ public class CreateMerchantRequest {
     private String logoUrl;
     private String coverUrl;
 
-    // Legacy contact fields (still accepted; auto-creates primary location if no locations provided)
-    private String address;
-    private String phone;
     private String email;
     private String website;
-    private String workingHours;
     private String contactPerson;
 
-    /** Normalized locations. If provided, these take priority over legacy address/phone/workingHours. */
+    /** Normalized locations. Empty list is allowed for incomplete merchants before publication. */
     private List<LocationRequest> locations;
 
     @Data

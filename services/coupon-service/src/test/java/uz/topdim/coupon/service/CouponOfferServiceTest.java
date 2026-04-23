@@ -120,12 +120,15 @@ class CouponOfferServiceTest {
 
         CreateCouponOfferRequest request = new CreateCouponOfferRequest();
         request.setTitle("Новый купон");
-        request.setShortDescription("Краткое");
+        request.setOfferDescription("Краткое описание оффера");
         request.setMerchantId(1L);
         request.setCategoryId(1L);
         request.setOldPrice(BigDecimal.valueOf(200000));
         request.setFromPrice(BigDecimal.valueOf(100000));
         request.setDiscountPercent(50);
+        request.setCoverImageUrl("/cover.jpg");
+        request.setBuyUntil(java.time.LocalDateTime.now().plusDays(30));
+        request.setUseUntil(java.time.LocalDateTime.now().plusDays(60));
 
         when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
@@ -147,53 +150,6 @@ class CouponOfferServiceTest {
         verify(entityManager).clear();
     }
 
-    @Test
-    @DisplayName("Создание купона: offerDescription имеет приоритет над legacy text fields")
-    void create_prefersCanonicalOfferDescription() {
-        Merchant merchant = Merchant.builder().id(1L).name("SPA").logoUrl("/l.jpg").build();
-        Category category = Category.builder().id(1L).name("Красота").slug("beauty").iconUrl("/i.svg").build();
-
-        CreateCouponOfferRequest request = new CreateCouponOfferRequest();
-        request.setTitle("Новый купон");
-        request.setOfferDescription("Canonical text");
-        request.setShortDescription("Legacy short");
-        request.setFullDescription("Legacy full");
-        request.setMerchantId(1L);
-        request.setCategoryId(1L);
-        request.setFromPrice(BigDecimal.valueOf(100000));
-        request.setCoverImageUrl("/cover.jpg");
-        request.setBuyUntil(java.time.LocalDateTime.now().plusDays(30));
-        request.setUseUntil(java.time.LocalDateTime.now().plusDays(60));
-
-        when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
-        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
-        when(couponOfferRepository.save(any(CouponOffer.class))).thenAnswer(inv -> {
-            CouponOffer offer = inv.getArgument(0);
-            offer.setId(11L);
-            return offer;
-        });
-        when(couponOfferRepository.findById(11L)).thenReturn(Optional.of(
-                CouponOffer.builder()
-                        .id(11L)
-                        .title("Новый купон")
-                        .offerDescription("Canonical text")
-                        .merchant(merchant)
-                        .category(category)
-                        .fromPrice(BigDecimal.valueOf(100000))
-                        .options(new ArrayList<>())
-                        .images(new ArrayList<>())
-                        .status(CouponStatus.LEAD)
-                        .build()
-        ));
-
-        couponOfferService.create(request);
-
-        ArgumentCaptor<CouponOffer> captor = ArgumentCaptor.forClass(CouponOffer.class);
-        verify(couponOfferRepository).save(captor.capture());
-        assertThat(captor.getValue().getOfferDescription()).isEqualTo("Canonical text");
-    }
-
-    @Test
     @DisplayName("Удаление: существующий DRAFT — удаляет")
     void delete_existingDraft_deletes() {
         CouponOffer offer = createTestOffer();
@@ -372,6 +328,7 @@ class CouponOfferServiceTest {
 
         CreateCouponOfferRequest req = new CreateCouponOfferRequest();
         req.setTitle("Updated");
+        req.setOfferDescription("Updated description");
         req.setMerchantId(1L);
         req.setCategoryId(1L);
         req.setFromPrice(offer.getFromPrice());
@@ -393,6 +350,7 @@ class CouponOfferServiceTest {
 
         CreateCouponOfferRequest req = new CreateCouponOfferRequest();
         req.setTitle("Updated");
+        req.setOfferDescription("Updated description");
         req.setMerchantId(1L);
         req.setCategoryId(1L);
         req.setFromPrice(offer.getFromPrice());
@@ -506,14 +464,13 @@ class CouponOfferServiceTest {
     }
 
     @Test
-    @DisplayName("mapToResponse: null offerDescription → null shortDescription")
-    void mapToResponse_nullOfferDescription_returnsNullPreview() {
+    @DisplayName("mapToResponse: null offerDescription сохраняет null canonical field")
+    void mapToResponse_nullOfferDescription_returnsNullOfferDescription() {
         CouponOffer offer = createTestOffer();
         offer.setOfferDescription(null);
 
         CouponOfferResponse result = couponOfferService.mapToResponse(offer);
 
         assertThat(result.getOfferDescription()).isNull();
-        assertThat(result.getShortDescription()).isNull();
     }
 }

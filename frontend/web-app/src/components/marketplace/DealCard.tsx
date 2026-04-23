@@ -2,6 +2,7 @@ import { Clock3, Flame, Star, Ticket, Users, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import type { TopdimDeal } from '../../data/topdim';
+import { deriveCouponPreview } from '../../utils/couponPreview';
 import './DealCard.css';
 
 interface DealCardProps {
@@ -43,7 +44,7 @@ export default function DealCard({ deal, layout = 'standard' }: DealCardProps) {
           <span>{deal.location}</span>
         </div>
         <h3>{deal.title}</h3>
-        <p>{deal.shortDescription}</p>
+        <p>{deriveCouponPreview(deal.offerDescription)}</p>
 
         <div className="deal-card__tags">
           <span>{deal.vibe}</span>

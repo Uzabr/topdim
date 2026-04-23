@@ -47,9 +47,6 @@ interface Coupon {
   title: string;
   /** Canonical offer description (Release 1+). */
   offerDescription?: string;
-  // Legacy fields (backward compat, may be empty for new coupons)
-  shortDescription?: string;
-  fullDescription?: string;
   merchant: MerchantSummary | null;
   category?: CategorySummary | null;
   fromPrice: number;

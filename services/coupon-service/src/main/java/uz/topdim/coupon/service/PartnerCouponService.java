@@ -89,13 +89,7 @@ public class PartnerCouponService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
 
-        // Build canonical offerDescription
         String offerDesc = request.getOfferDescription();
-        if (offerDesc == null || offerDesc.isBlank()) {
-            offerDesc = buildOfferDescription(
-                    request.getShortDescription(), request.getFullDescription(),
-                    request.getTerms(), request.getUsageRules(), request.getHowToUse());
-        }
 
         CouponOffer offer = CouponOffer.builder()
                 .title(request.getTitle())
@@ -140,13 +134,7 @@ public class PartnerCouponService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
 
-        // Build canonical offerDescription
         String offerDesc = request.getOfferDescription();
-        if (offerDesc == null || offerDesc.isBlank()) {
-            offerDesc = buildOfferDescription(
-                    request.getShortDescription(), request.getFullDescription(),
-                    request.getTerms(), request.getUsageRules(), request.getHowToUse());
-        }
 
         offer.setTitle(request.getTitle());
         offer.setOfferDescription(offerDesc);
@@ -174,7 +162,6 @@ public class PartnerCouponService {
                 .id(offer.getId())
                 .title(offer.getTitle())
                 .offerDescription(offer.getOfferDescription())
-                .shortDescription(CouponOfferService.derivePreview(offer.getOfferDescription(), 150))
                 .oldPrice(offer.getOldPrice())
                 .fromPrice(offer.getFromPrice())
                 .discountPercent(offer.getDiscountPercent())
@@ -182,31 +169,5 @@ public class PartnerCouponService {
                 .status(offer.getStatus().name())
                 .totalSold(offer.getTotalSold())
                 .build();
-    }
-
-    /**
-     * Builds canonical offerDescription from legacy text fields.
-     */
-    private String buildOfferDescription(String shortDesc, String fullDesc,
-                                          String terms, String usageRules, String howToUse) {
-        StringBuilder sb = new StringBuilder();
-        if (shortDesc != null && !shortDesc.isBlank()) sb.append(shortDesc.trim());
-        if (fullDesc != null && !fullDesc.isBlank()) {
-            if (sb.length() > 0) sb.append("\n\n");
-            sb.append(fullDesc.trim());
-        }
-        if (terms != null && !terms.isBlank()) {
-            if (sb.length() > 0) sb.append("\n\n");
-            sb.append("## Условия\n").append(terms.trim());
-        }
-        if (usageRules != null && !usageRules.isBlank()) {
-            if (sb.length() > 0) sb.append("\n\n");
-            sb.append("## Правила использования\n").append(usageRules.trim());
-        }
-        if (howToUse != null && !howToUse.isBlank()) {
-            if (sb.length() > 0) sb.append("\n\n");
-            sb.append("## Как использовать\n").append(howToUse.trim());
-        }
-        return sb.length() > 0 ? sb.toString() : null;
     }
 }

@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * DTO ответа партнёра.
- * Включает профиль, legacy contact fields и normalized locations.
+ * Contact data is exposed only through primaryLocation / locations.
  */
 @Data
 @Builder
@@ -22,16 +22,8 @@ public class MerchantResponse {
     private String logoUrl;
     private String coverUrl;
 
-    // Legacy contact fields: DEPRECATED. Will be removed in Step 4.
-    // Contact data now lives exclusively in primaryLocation / locations.
-    @Deprecated(forRemoval = true)
-    private String address;
-    @Deprecated(forRemoval = true)
-    private String phone;
     private String email;
     private String website;
-    @Deprecated(forRemoval = true)
-    private String workingHours;
     private String contactPerson;
 
     private boolean active;

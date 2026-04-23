@@ -86,10 +86,15 @@ class MerchantServiceTest {
         @Test
         @DisplayName("Создание: успешное — active=true")
         void createMerchant_success() {
+            CreateMerchantRequest.LocationRequest primary = new CreateMerchantRequest.LocationRequest();
+            primary.setAddress("Ташкент");
+            primary.setPhone("+998901111111");
+            primary.setPrimary(true);
+
             CreateMerchantRequest request = new CreateMerchantRequest();
             request.setName("New SPA");
             request.setDescription("Описание");
-            request.setPhone("+998901111111");
+            request.setLocations(List.of(primary));
 
             when(merchantRepository.save(any(Merchant.class))).thenAnswer(inv -> {
                 Merchant m = inv.getArgument(0);
@@ -115,10 +120,15 @@ class MerchantServiceTest {
             when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
+            CreateMerchantRequest.LocationRequest primary = new CreateMerchantRequest.LocationRequest();
+            primary.setAddress("ул. Обновлённая");
+            primary.setPhone("+998909999999");
+            primary.setPrimary(true);
+
             CreateMerchantRequest request = new CreateMerchantRequest();
             request.setName("Updated SPA");
             request.setDescription("Новое описание");
-            request.setPhone("+998909999999");
+            request.setLocations(List.of(primary));
 
             MerchantResponse result = merchantService.updateMerchant(1L, request);
 
@@ -126,11 +136,16 @@ class MerchantServiceTest {
         }
 
         @Test
-        @DisplayName("Создание: телефон с пробелами нормализуется в auto-created location")
-        void createMerchant_normalizesSpacedPhoneInLocation() {
+        @DisplayName("Создание: телефон с пробелами нормализуется в normalized location")
+        void createMerchant_normalizesSpacedPhoneInNormalizedLocation() {
+            CreateMerchantRequest.LocationRequest primary = new CreateMerchantRequest.LocationRequest();
+            primary.setTitle("Основной адрес");
+            primary.setPhone("+998 90 123 45 67");
+            primary.setPrimary(true);
+
             CreateMerchantRequest request = new CreateMerchantRequest();
             request.setName("Phone Test");
-            request.setPhone("+998 90 123 45 67");
+            request.setLocations(List.of(primary));
 
             when(merchantRepository.save(any(Merchant.class))).thenAnswer(inv -> {
                 Merchant m = inv.getArgument(0);
@@ -145,11 +160,9 @@ class MerchantServiceTest {
 
             merchantService.createMerchant(request);
 
-            // Verify phone is no longer stored on merchant entity
             ArgumentCaptor<Merchant> merchantCaptor = ArgumentCaptor.forClass(Merchant.class);
             verify(merchantRepository).save(merchantCaptor.capture());
 
-            // Verify phone is written to auto-created primary location (normalized)
             ArgumentCaptor<uz.topdim.coupon.entity.MerchantLocation> locCaptor =
                     ArgumentCaptor.forClass(uz.topdim.coupon.entity.MerchantLocation.class);
             verify(merchantLocationRepository).save(locCaptor.capture());
@@ -158,20 +171,23 @@ class MerchantServiceTest {
         }
 
         @Test
-        @DisplayName("Обновление: телефон с пробелами нормализуется в auto-created location")
-        void updateMerchant_normalizesSpacedPhoneInLocation() {
+        @DisplayName("Обновление: телефон с пробелами нормализуется в normalized location")
+        void updateMerchant_normalizesSpacedPhoneInNormalizedLocation() {
             Merchant existing = createTestMerchant();
             when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
+            CreateMerchantRequest.LocationRequest primary = new CreateMerchantRequest.LocationRequest();
+            primary.setTitle("Основной адрес");
+            primary.setPhone("+998 90 999 99 99");
+            primary.setPrimary(true);
+
             CreateMerchantRequest request = new CreateMerchantRequest();
             request.setName("Updated SPA");
-            request.setPhone("+998 90 999 99 99");
+            request.setLocations(List.of(primary));
 
             merchantService.updateMerchant(1L, request);
 
-            // Verify phone is no longer updated on merchant entity
-            // (existing phone stays as-is, new phone goes to location)
             ArgumentCaptor<uz.topdim.coupon.entity.MerchantLocation> locCaptor =
                     ArgumentCaptor.forClass(uz.topdim.coupon.entity.MerchantLocation.class);
             verify(merchantLocationRepository).save(locCaptor.capture());

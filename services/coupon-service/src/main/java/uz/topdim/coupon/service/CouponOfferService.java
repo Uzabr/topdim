@@ -147,13 +147,7 @@ public class CouponOfferService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
 
-        // Build canonical offerDescription
         String offerDesc = request.getOfferDescription();
-        if (offerDesc == null || offerDesc.isBlank()) {
-            offerDesc = buildOfferDescription(
-                    request.getShortDescription(), request.getFullDescription(),
-                    request.getTerms(), request.getUsageRules(), request.getHowToUse());
-        }
 
         CouponOffer offer = CouponOffer.builder()
                 .title(request.getTitle())
@@ -417,13 +411,7 @@ public class CouponOfferService {
                 .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
         offer.setCategory(category);
 
-        // Build canonical offerDescription
         String offerDesc = request.getOfferDescription();
-        if (offerDesc == null || offerDesc.isBlank()) {
-            offerDesc = buildOfferDescription(
-                    request.getShortDescription(), request.getFullDescription(),
-                    request.getTerms(), request.getUsageRules(), request.getHowToUse());
-        }
 
         // Обновляем скалярные поля
         offer.setTitle(request.getTitle());
@@ -620,19 +608,12 @@ public class CouponOfferService {
                     .orElse(null);
         }
 
-        // Canonical offerDescription (V14 backfill ensured all existing coupons have this populated)
         String offerDesc = offer.getOfferDescription();
-
-        // Derive shortDescription from canonical offerDescription for backward compat
-        String derivedShortDesc = derivePreview(offerDesc, 150);
 
         return CouponOfferResponse.builder()
                 .id(offer.getId())
                 .title(offer.getTitle())
                 .offerDescription(offerDesc)
-                // Legacy text fields — derived from canonical, entity fields no longer read
-                .shortDescription(derivedShortDesc)
-                // fullDescription, terms, usageRules, howToUse — no longer populated (merged into offerDescription)
                 .merchant(offer.getMerchant() != null ? CouponOfferResponse.MerchantSummary.builder()
                         .id(offer.getMerchant().getId())
                         .name(offer.getMerchant().getName())
@@ -853,13 +834,10 @@ public class CouponOfferService {
     // ==================== Helpers ====================
 
     /**
-     * Derives a preview (teaser) from canonical offerDescription.
-     * Takes the first line of text, truncated to maxLength characters.
-     * Used to produce backward-compatible shortDescription for frontend cards.
+     * Internal preview helper used by Telegram preview payloads.
      */
     static String derivePreview(String offerDescription, int maxLength) {
         if (offerDescription == null || offerDescription.isBlank()) return null;
-        // Take first line (before any newline or markdown heading)
         String firstLine = offerDescription.lines()
                 .filter(line -> !line.isBlank() && !line.startsWith("##"))
                 .findFirst()
@@ -871,30 +849,4 @@ public class CouponOfferService {
         return firstLine;
     }
 
-    /**
-     * Builds canonical offerDescription from legacy text fields.
-     * Uses the same deterministic algorithm as the V14 backfill migration.
-     */
-    private String buildOfferDescription(String shortDesc, String fullDesc,
-                                          String terms, String usageRules, String howToUse) {
-        StringBuilder sb = new StringBuilder();
-        if (shortDesc != null && !shortDesc.isBlank()) sb.append(shortDesc.trim());
-        if (fullDesc != null && !fullDesc.isBlank()) {
-            if (sb.length() > 0) sb.append("\n\n");
-            sb.append(fullDesc.trim());
-        }
-        if (terms != null && !terms.isBlank()) {
-            if (sb.length() > 0) sb.append("\n\n");
-            sb.append("## Условия\n").append(terms.trim());
-        }
-        if (usageRules != null && !usageRules.isBlank()) {
-            if (sb.length() > 0) sb.append("\n\n");
-            sb.append("## Правила использования\n").append(usageRules.trim());
-        }
-        if (howToUse != null && !howToUse.isBlank()) {
-            if (sb.length() > 0) sb.append("\n\n");
-            sb.append("## Как использовать\n").append(howToUse.trim());
-        }
-        return sb.length() > 0 ? sb.toString() : null;
-    }
 }

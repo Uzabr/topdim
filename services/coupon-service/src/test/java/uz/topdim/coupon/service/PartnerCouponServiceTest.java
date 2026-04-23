@@ -55,9 +55,11 @@ class PartnerCouponServiceTest {
     private CreateCouponOfferRequest createRequest() {
         CreateCouponOfferRequest req = new CreateCouponOfferRequest();
         req.setTitle("Новый купон");
+        req.setOfferDescription("Описание оффера");
         req.setMerchantId(1L);
         req.setCategoryId(1L);
         req.setFromPrice(BigDecimal.valueOf(30000));
+        req.setCoverImageUrl("/cover.jpg");
         req.setBuyUntil(LocalDateTime.now().plusDays(30));
         req.setUseUntil(LocalDateTime.now().plusDays(60));
         return req;
@@ -148,8 +150,8 @@ class PartnerCouponServiceTest {
     }
 
     @Test
-    @DisplayName("createCouponOffer: offerDescription имеет приоритет над legacy text fields")
-    void createCouponOffer_prefersCanonicalOfferDescription() {
+    @DisplayName("createCouponOffer: сохраняет canonical offerDescription")
+    void createCouponOffer_persistsCanonicalOfferDescription() {
         Merchant merchant = createMerchant();
         when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(createCategory()));
@@ -161,8 +163,6 @@ class PartnerCouponServiceTest {
 
         CreateCouponOfferRequest request = createRequest();
         request.setOfferDescription("Canonical text");
-        request.setShortDescription("Legacy short");
-        request.setFullDescription("Legacy full");
 
         partnerCouponService.createCouponOffer(10L, request);
 

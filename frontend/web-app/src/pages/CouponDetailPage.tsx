@@ -20,12 +20,12 @@ import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { topdimDeals } from '../data/topdim';
+import { deriveCouponPreview } from '../utils/couponPreview';
 import './CouponDetailPage.css';
 
 const DEMO_COUPON: CouponOffer = {
   id: 1, title: 'Скидка на пиццу в PizzaLab',
   offerDescription: 'Любая пицца 33 см + напиток\n\nОтличное предложение от PizzaLab! Выберите любую пиццу диаметром 33 см из нашего меню и получите напиток на выбор совершенно бесплатно.\n\n## Условия\n- 1 купон на 1 человека в день\n- Действует в будние дни\n- Необходимо бронирование\n\n## Правила использования\n- Покажите купон официанту перед заказом\n- Назовите номер купона при бронировании\n\n## Как использовать\n1. Покажите купон\n2. Выберите пиццу\n3. Наслаждайтесь',
-  shortDescription: 'Любая пицца 33 см + напиток',
   merchant: {
     id: 1, name: 'PizzaLab', logoUrl: '',
     description: 'Предложение действует во всех филиалах PizzaLab в Ташкенте.',
@@ -133,7 +133,8 @@ export default function CouponDetailPage() {
     .map((d) => ({
       id: d.id,
       title: d.title,
-      shortDescription: d.shortDescription,
+      offerDescription: d.offerDescription,
+      shortDescription: deriveCouponPreview(d.offerDescription),
       merchant: d.merchant,
       category: d.category,
       oldPrice: d.oldPrice,
@@ -178,9 +179,7 @@ export default function CouponDetailPage() {
                 <div className="detail-merchant-badge">{c.merchant?.name}</div>
                 <h1 className="detail-title">{c.title}</h1>
                 {(() => {
-                  const preview = c.shortDescription || (c.offerDescription
-                    ? c.offerDescription.split('\n').find(l => l.trim() && !l.trim().startsWith('##'))?.trim()
-                    : undefined);
+                  const preview = deriveCouponPreview(c.offerDescription);
                   return preview ? <p className="detail-short-desc">{preview}</p> : null;
                 })()}
               </div>

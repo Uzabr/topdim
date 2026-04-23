@@ -62,9 +62,9 @@ public class MerchantService {
 
     /**
      * Создаёт нового партнёра (Admin).
-     * Если locations переданы — создаёт их. Иначе auto-creates primary из legacy fields.
+     * Locations are managed only through normalized locations[].
      *
-     * @param request name, description, logoUrl, locations or address/phone
+     * @param request name, description, logoUrl, normalized locations
      * @return созданный партнёр
      */
     @CacheEvict(value = "catalog", allEntries = true)
@@ -120,9 +120,7 @@ public class MerchantService {
     // ==================== Location Helpers ====================
 
     /**
-     * Saves locations for a merchant.
-     * If request.locations is provided, uses them (replacing existing).
-     * Otherwise, auto-creates a primary location from legacy fields if they exist.
+     * Saves normalized locations for a merchant, replacing all existing ones.
      */
     private void saveLocations(Merchant merchant, CreateMerchantRequest request) {
         List<MerchantLocation> normalizedLocations = buildLocations(merchant, request);
@@ -173,23 +171,7 @@ public class MerchantService {
             }
         }
 
-        boolean hasLegacy = (request.getAddress() != null && !request.getAddress().isBlank())
-                || (request.getPhone() != null && !request.getPhone().isBlank())
-                || (request.getWorkingHours() != null && !request.getWorkingHours().isBlank());
-
-        if (!hasLegacy) {
-            return List.of();
-        }
-
-        return List.of(MerchantLocation.builder()
-                .merchant(merchant)
-                .title("Основной адрес")
-                .address(request.getAddress())
-                .phone(normalize(request.getPhone()))
-                .workingHours(request.getWorkingHours())
-                .primary(true)
-                .active(true)
-                .build());
+        return List.of();
     }
 
     private boolean hasLocationData(CreateMerchantRequest.LocationRequest request) {
