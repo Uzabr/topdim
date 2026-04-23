@@ -7,6 +7,7 @@ import dayjs from 'dayjs';
 import api from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
@@ -243,7 +244,7 @@ export const CouponFormPage = () => {
             {/* Левая колонка */}
             <Col xs={24} md={16}>
               <Alert 
-                message="Главное" 
+                title="Главное" 
                 action={<InfoCircleOutlined />} 
                 description="Эта информация появится на общей витрине каталога и на Главной странице сайта."
                 type="info" showIcon style={{ marginBottom: 16 }} 
@@ -341,7 +342,7 @@ export const CouponFormPage = () => {
               >
                 <Upload
                   name="file"
-                  action="/api/v1/media/upload"
+                  action={`${API_BASE_URL}/api/v1/media/upload`}
                   headers={{ Authorization: `Bearer ${useAuthStore.getState().accessToken}` }}
                   listType="picture-card"
                   maxCount={1}
@@ -374,13 +375,13 @@ export const CouponFormPage = () => {
                 extra={<Text type="secondary">{galleryImages.length} фото</Text>}
               >
                 <Alert
-                  message="Дополнительные фото"
+                  title="Дополнительные фото"
                   description="Эти изображения отображаются в слайдере на детальной странице купона. Главное фото (миниатюра) загружается выше."
                   type="info" showIcon style={{ marginBottom: 16 }}
                 />
                 <Upload
                   name="file"
-                  action="/api/v1/media/upload"
+                  action={`${API_BASE_URL}/api/v1/media/upload`}
                   headers={{ Authorization: `Bearer ${useAuthStore.getState().accessToken}` }}
                   listType="picture-card"
                   showUploadList={false}
@@ -422,7 +423,7 @@ export const CouponFormPage = () => {
               </Card>
 
               <Alert 
-                message="Описание оффера" 
+                title="Описание оффера" 
                 description="Одно поле для всего текста акции: краткое описание, подробности, условия, правила использования и инструкции. Поддерживается Markdown!"
                 type="info" showIcon style={{ marginBottom: 16, marginTop: 16 }} 
               />
@@ -533,7 +534,7 @@ export const CouponFormPage = () => {
               </Card>
 
               <Alert
-                message="Контакты заведения"
+                title="Контакты заведения"
                 description="Контактная информация теперь управляется в профиле Партнёра (Мерчанта). Откройте карточку мерчанта, чтобы добавить адреса и телефоны."
                 type="info" showIcon style={{ marginBottom: 16 }}
               />

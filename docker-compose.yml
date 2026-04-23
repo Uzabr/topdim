@@ -65,9 +65,9 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-topdim}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-topdim_secret}
-    expose:
-      - "9000"
-      - "9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -83,8 +83,8 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: topdim-prometheus
-    expose:
-      - "9090"
+    ports:
+      - "9090:9090"
     volumes:
       - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -99,8 +99,8 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: topdim-grafana
-    expose:
-      - "3000"
+    ports:
+      - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-topdim}
@@ -114,8 +114,8 @@ services:
   loki:
     image: grafana/loki:latest
     container_name: topdim-loki
-    expose:
-      - "3100"
+    ports:
+      - "3100:3100"
     volumes:
       - ./docker/loki.yml:/etc/loki/local-config.yaml
       - loki_data:/loki
@@ -131,8 +131,8 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    expose:
-      - "9200"
+    ports:
+      - "9200:9200"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     healthcheck:
@@ -148,8 +148,8 @@ services:
     container_name: topdim-kibana
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    expose:
-      - "5601"
+    ports:
+      - "5601:5601"
     depends_on:
       - elasticsearch
     networks:
