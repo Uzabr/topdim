@@ -360,7 +360,7 @@ export const CouponFormPage = () => {
               >
                 <Upload
                   name="file"
-                  action="http://localhost:8080/api/v1/media/upload"
+                  action="/api/v1/media/upload"
                   headers={{ Authorization: `Bearer ${useAuthStore.getState().accessToken}` }}
                   listType="picture-card"
                   maxCount={1}
@@ -368,7 +368,7 @@ export const CouponFormPage = () => {
                   onChange={(info) => {
                     if (info.file.status === 'done') {
                       const urlPath = info.file.response?.data?.url;
-                      const fullUrl = `http://localhost:8080${urlPath}`;
+                      const fullUrl = urlPath;
                       setCoverImageUrl(fullUrl);
                       form.setFieldValue('coverImageUrl', fullUrl);
                       message.success('Изображение успешно загружено!');
@@ -399,7 +399,7 @@ export const CouponFormPage = () => {
                 />
                 <Upload
                   name="file"
-                  action="http://localhost:8080/api/v1/media/upload"
+                  action="/api/v1/media/upload"
                   headers={{ Authorization: `Bearer ${useAuthStore.getState().accessToken}` }}
                   listType="picture-card"
                   showUploadList={false}
@@ -407,7 +407,7 @@ export const CouponFormPage = () => {
                   onChange={(info) => {
                     if (info.file.status === 'done') {
                       const urlPath = info.file.response?.data?.url;
-                      const fullUrl = `http://localhost:8080${urlPath}`;
+                      const fullUrl = urlPath;
                       setGalleryImages(prev => [...prev, fullUrl]);
                       message.success('Фото добавлено в галерею');
                     } else if (info.file.status === 'error') {
