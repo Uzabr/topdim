@@ -360,13 +360,13 @@ export const MerchantReviewPage = () => {
             )}
             {!previewCoupon.offerDescription && previewCoupon.shortDescription && (
               <>
-                <Divider orientation="left">Краткое описание</Divider>
+                <Divider titlePlacement="left">Краткое описание</Divider>
                 <Paragraph>{previewCoupon.shortDescription}</Paragraph>
               </>
             )}
             {!previewCoupon.offerDescription && previewCoupon.fullDescription && (
               <>
-                <Divider orientation="left">Полное описание</Divider>
+                <Divider titlePlacement="left">Полное описание</Divider>
                 <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{previewCoupon.fullDescription}</Paragraph>
               </>
             )}
@@ -374,19 +374,19 @@ export const MerchantReviewPage = () => {
             {/* Условия — only show legacy if no offerDescription (they are merged in canonical) */}
             {!previewCoupon.offerDescription && previewCoupon.terms && (
               <>
-                <Divider orientation="left">Условия</Divider>
+                <Divider titlePlacement="left">Условия</Divider>
                 <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{previewCoupon.terms}</Paragraph>
               </>
             )}
             {!previewCoupon.offerDescription && previewCoupon.usageRules && (
               <>
-                <Divider orientation="left">Правила использования</Divider>
+                <Divider titlePlacement="left">Правила использования</Divider>
                 <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{previewCoupon.usageRules}</Paragraph>
               </>
             )}
             {!previewCoupon.offerDescription && previewCoupon.howToUse && (
               <>
-                <Divider orientation="left">Как использовать</Divider>
+                <Divider titlePlacement="left">Как использовать</Divider>
                 <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{previewCoupon.howToUse}</Paragraph>
               </>
             )}
@@ -408,7 +408,7 @@ export const MerchantReviewPage = () => {
             {/* Варианты (сертификаты) */}
             {previewCoupon.options && previewCoupon.options.length > 0 && (
               <>
-                <Divider orientation="left">Варианты покупки ({previewCoupon.options.length})</Divider>
+                <Divider titlePlacement="left">Варианты покупки ({previewCoupon.options.length})</Divider>
                 <Row gutter={[8, 8]}>
                   {previewCoupon.options.map((opt) => (
                     <Col key={opt.id} xs={24} sm={12}>
@@ -430,7 +430,7 @@ export const MerchantReviewPage = () => {
             {/* Галерея */}
             {previewCoupon.images && previewCoupon.images.length > 0 && (
               <>
-                <Divider orientation="left">Галерея ({previewCoupon.images.length})</Divider>
+                <Divider titlePlacement="left">Галерея ({previewCoupon.images.length})</Divider>
                 <Image.PreviewGroup>
                   <Space wrap>
                     {previewCoupon.images.map((url, idx) => (

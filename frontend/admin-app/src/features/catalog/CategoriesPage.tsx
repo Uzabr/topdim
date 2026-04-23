@@ -56,7 +56,7 @@ export const CategoriesPage = () => {
   const token = useAuthStore.getState().accessToken;
   const uploadProps: UploadProps = {
     name: 'file',
-    action: 'http://localhost:8080/api/v1/admin/categories/upload',
+    action: '/api/v1/admin/categories/upload',
     headers: {
       Authorization: `Bearer ${token}`,
     },

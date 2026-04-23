@@ -17,6 +17,7 @@
 @media (max-width: 768px) {
   .twogis-map {
     height: 360px;
+  }
 }
 
 /* Custom Controls */
