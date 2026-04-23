@@ -24,11 +24,18 @@ public class CouponOfferResponse {
     /** Canonical offer text (Release 1+). */
     private String offerDescription;
 
-    // --- Legacy fields (kept for backward compat during transition) ---
+    // --- Legacy fields: DEPRECATED. Will be removed in Step 4. ---
+    // Reads are derived from offerDescription in mapToResponse().
+    // Writes go only to offerDescription.
+    @Deprecated(forRemoval = true)
     private String shortDescription;
+    @Deprecated(forRemoval = true)
     private String fullDescription;
+    @Deprecated(forRemoval = true)
     private String terms;
+    @Deprecated(forRemoval = true)
     private String usageRules;
+    @Deprecated(forRemoval = true)
     private String howToUse;
 
     private MerchantSummary merchant;

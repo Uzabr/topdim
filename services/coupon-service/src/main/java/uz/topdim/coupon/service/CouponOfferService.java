@@ -158,9 +158,7 @@ public class CouponOfferService {
         CouponOffer offer = CouponOffer.builder()
                 .title(request.getTitle())
                 .offerDescription(offerDesc)
-                // Legacy text fields — still written for backward compat
-                .shortDescription(request.getShortDescription())
-                .fullDescription(request.getFullDescription())
+                // Legacy text fields no longer written — canonical offerDescription is source of truth
                 .merchant(merchant)
                 .category(category)
                 .oldPrice(request.getOldPrice())
@@ -169,10 +167,7 @@ public class CouponOfferService {
                 .coverImageUrl(request.getCoverImageUrl())
                 .buyUntil(request.getBuyUntil())
                 .useUntil(request.getUseUntil())
-                .terms(request.getTerms())
-                .usageRules(request.getUsageRules())
-                .howToUse(request.getHowToUse())
-                // Contact fields no longer written to coupon — live in merchant_locations
+                // Contact fields live in merchant_locations
                 .giftAvailable(request.isGiftAvailable())
                 .status(CouponStatus.LEAD)
                 .totalSold(0)
@@ -432,19 +427,14 @@ public class CouponOfferService {
         // Обновляем скалярные поля
         offer.setTitle(request.getTitle());
         offer.setOfferDescription(offerDesc);
-        // Legacy text fields — still written for backward compat
-        offer.setShortDescription(request.getShortDescription());
-        offer.setFullDescription(request.getFullDescription());
+        // Legacy text fields no longer written — canonical offerDescription is source of truth
         offer.setOldPrice(request.getOldPrice());
         offer.setFromPrice(request.getFromPrice());
         offer.setDiscountPercent(request.getDiscountPercent());
         offer.setCoverImageUrl(request.getCoverImageUrl());
         offer.setBuyUntil(request.getBuyUntil());
         offer.setUseUntil(request.getUseUntil());
-        offer.setTerms(request.getTerms());
-        offer.setUsageRules(request.getUsageRules());
-        offer.setHowToUse(request.getHowToUse());
-        // Contact fields no longer written to coupon — live in merchant_locations
+        // Contact fields live in merchant_locations
         offer.setGiftAvailable(request.isGiftAvailable());
 
         // Мержим Options
@@ -608,24 +598,19 @@ public class CouponOfferService {
                     .orElse(null);
         }
 
-        // Canonical offerDescription with fallback on legacy fields
+        // Canonical offerDescription (V14 backfill ensured all existing coupons have this populated)
         String offerDesc = offer.getOfferDescription();
-        if (offerDesc == null || offerDesc.isBlank()) {
-            offerDesc = buildOfferDescription(
-                    offer.getShortDescription(), offer.getFullDescription(),
-                    offer.getTerms(), offer.getUsageRules(), offer.getHowToUse());
-        }
+
+        // Derive shortDescription from canonical offerDescription for backward compat
+        String derivedShortDesc = derivePreview(offerDesc, 150);
 
         return CouponOfferResponse.builder()
                 .id(offer.getId())
                 .title(offer.getTitle())
                 .offerDescription(offerDesc)
-                // Legacy text fields kept for backward compat
-                .shortDescription(offer.getShortDescription())
-                .fullDescription(offer.getFullDescription())
-                .terms(offer.getTerms())
-                .usageRules(offer.getUsageRules())
-                .howToUse(offer.getHowToUse())
+                // Legacy text fields — derived from canonical, entity fields no longer read
+                .shortDescription(derivedShortDesc)
+                // fullDescription, terms, usageRules, howToUse — no longer populated (merged into offerDescription)
                 .merchant(offer.getMerchant() != null ? CouponOfferResponse.MerchantSummary.builder()
                         .id(offer.getMerchant().getId())
                         .name(offer.getMerchant().getName())
@@ -694,16 +679,12 @@ public class CouponOfferService {
             merchant = merchantRepository.findByTelegramChatId(request.getTelegramChatId()).orElse(null);
         }
 
-        // Step 2: lookup by phone in merchant_locations (canonical)
+        // Step 2: lookup by phone in merchant_locations (canonical — only source of phone data)
         String normalizedPhone = normalize(request.getPhone());
         if (merchant == null && normalizedPhone != null) {
             merchant = merchantLocationRepository.findFirstByPhoneAndActiveTrue(normalizedPhone)
                     .map(MerchantLocation::getMerchant)
                     .orElse(null);
-            // Fallback: also check legacy merchant.phone for backward compat
-            if (merchant == null) {
-                merchant = merchantRepository.findByPhone(normalizedPhone).orElse(null);
-            }
         }
 
         // Step 3: lookup by exact name (only if unique match)
@@ -722,7 +703,7 @@ public class CouponOfferService {
         if (merchant == null) {
             merchant = Merchant.builder()
                     .name(request.getCompanyName() != null ? request.getCompanyName() : "Unknown Lead")
-                    .phone(normalizedPhone) // Legacy field kept for backward compat
+                    // phone now lives in merchant_locations (created below)
                     .contactPerson((request.getFirstName() != null ? request.getFirstName() : "") + " " +
                                    (request.getLastName() != null ? request.getLastName() : ""))
                     .telegramChatId(request.getTelegramChatId())
@@ -754,10 +735,9 @@ public class CouponOfferService {
         CouponOffer lead = CouponOffer.builder()
                 .title("Лид от: " + merchant.getName())
                 .offerDescription(fullDesc)
-                .fullDescription(fullDesc) // Legacy field kept for backward compat
+                // Legacy fields no longer written — phone lives in merchant_locations
                 .merchant(merchant)
                 .status(CouponStatus.LEAD)
-                .contactPhone(normalizedPhone) // Legacy field kept for backward compat
                 .build();
         
         couponOfferRepository.save(lead);
@@ -849,6 +829,25 @@ public class CouponOfferService {
     }
 
     // ==================== Helpers ====================
+
+    /**
+     * Derives a preview (teaser) from canonical offerDescription.
+     * Takes the first line of text, truncated to maxLength characters.
+     * Used to produce backward-compatible shortDescription for frontend cards.
+     */
+    static String derivePreview(String offerDescription, int maxLength) {
+        if (offerDescription == null || offerDescription.isBlank()) return null;
+        // Take first line (before any newline or markdown heading)
+        String firstLine = offerDescription.lines()
+                .filter(line -> !line.isBlank() && !line.startsWith("##"))
+                .findFirst()
+                .orElse(offerDescription.substring(0, Math.min(offerDescription.length(), maxLength)));
+        firstLine = firstLine.trim();
+        if (firstLine.length() > maxLength) {
+            firstLine = firstLine.substring(0, maxLength - 1).trim() + "…";
+        }
+        return firstLine;
+    }
 
     /**
      * Builds canonical offerDescription from legacy text fields.

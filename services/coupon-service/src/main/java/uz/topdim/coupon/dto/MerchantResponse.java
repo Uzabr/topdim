@@ -22,11 +22,15 @@ public class MerchantResponse {
     private String logoUrl;
     private String coverUrl;
 
-    // Legacy contact fields (kept for backward compat, Release 2 cleanup)
+    // Legacy contact fields: DEPRECATED. Will be removed in Step 4.
+    // Contact data now lives exclusively in primaryLocation / locations.
+    @Deprecated(forRemoval = true)
     private String address;
+    @Deprecated(forRemoval = true)
     private String phone;
     private String email;
     private String website;
+    @Deprecated(forRemoval = true)
     private String workingHours;
     private String contactPerson;
 

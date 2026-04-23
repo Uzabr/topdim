@@ -51,7 +51,7 @@ public class TelegramPreviewService {
         payload.put("oldPrice", offer.getOldPrice());
         payload.put("newPrice", offer.getFromPrice());
         payload.put("coverImageUrl", offer.getCoverImageUrl());
-        payload.put("description", offer.getShortDescription());
+        payload.put("description", CouponOfferService.derivePreview(offer.getOfferDescription(), 150));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

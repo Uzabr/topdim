@@ -13,6 +13,14 @@ import SearchBar from '../components/ui/SearchBar';
 import { topdimCategories, topdimDeals } from '../data/topdim';
 import './HomePage.css';
 
+/** Derive teaser preview from canonical offerDescription (first non-empty, non-heading line, max 150 chars). */
+function derivePreview(text?: string, maxLen = 150): string | undefined {
+  if (!text) return undefined;
+  const line = text.split('\n').find(l => l.trim() && !l.trim().startsWith('##'));
+  if (!line) return text.substring(0, maxLen);
+  return line.trim().length > maxLen ? line.trim().substring(0, maxLen - 1) + '…' : line.trim();
+}
+
 const CategoryIcon = ({ slug }: { slug?: string }) => {
   switch (slug) {
     case 'food': return <Coffee size={18} />;
@@ -61,7 +69,8 @@ export default function HomePage() {
       return apiDeals.map((deal: any) => ({
         id: deal.id,
         title: deal.title,
-        shortDescription: deal.shortDescription,
+        offerDescription: deal.offerDescription,
+        shortDescription: deal.shortDescription || derivePreview(deal.offerDescription),
         merchant: deal.merchant || { id: 0, name: 'TopDim' },
         category: deal.category,
         oldPrice: deal.oldPrice,
@@ -104,7 +113,7 @@ export default function HomePage() {
     const normalizedSearch = search.trim().toLowerCase();
     return mappedDeals.filter((deal) => {
       const matchesCategory = activeCategory === null || deal.category?.id === activeCategory;
-      const haystack = `${deal.title} ${deal.shortDescription} ${deal.category?.name} ${deal.merchant?.name}`.toLowerCase();
+      const haystack = `${deal.title} ${deal.shortDescription || ''} ${deal.offerDescription || ''} ${deal.category?.name} ${deal.merchant?.name}`.toLowerCase();
       const matchesSearch = normalizedSearch.length === 0 || haystack.includes(normalizedSearch);
       return matchesCategory && matchesSearch;
     });

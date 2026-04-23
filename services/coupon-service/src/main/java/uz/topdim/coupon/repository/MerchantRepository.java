@@ -14,7 +14,6 @@ public interface MerchantRepository extends JpaRepository<Merchant, Long> {
 
     java.util.Optional<Merchant> findByUserId(Long userId);
     java.util.Optional<Merchant> findByTelegramChatId(String telegramChatId);
-    java.util.Optional<Merchant> findByPhone(String phone);
 
     // Bot lead name lookup
     java.util.Optional<Merchant> findFirstByNameIgnoreCase(String name);

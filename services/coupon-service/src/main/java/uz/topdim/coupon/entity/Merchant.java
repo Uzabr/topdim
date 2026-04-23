@@ -11,7 +11,8 @@ import java.util.List;
 
 /**
  * Партнёр (продавец купонов).
- * Поля: name, description, logoUrl, address, phone.
+ * Поля: name, description, logoUrl, email, website, contactPerson.
+ * Contact details (address, phone, workingHours) live in MerchantLocation.
  * Связан с CouponOffer и MerchantLocation.
  */
 @Entity
@@ -38,16 +39,11 @@ public class Merchant {
     @Column(name = "cover_url")
     private String coverUrl;
 
-    private String address;
-
-    private String phone;
+    // Legacy contact fields (address, phone, working_hours) removed — live in merchant_locations
 
     private String email;
 
     private String website;
-
-    @Column(name = "working_hours")
-    private String workingHours;
 
     @Column(name = "contact_person")
     private String contactPerson;

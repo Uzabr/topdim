@@ -23,11 +23,17 @@ public class CreateCouponOfferRequest {
     /** Canonical offer text (Release 1+). Takes priority over legacy fields. */
     private String offerDescription;
 
-    // --- Legacy text fields (accepted for backward compat) ---
+    // --- Legacy text fields: DEPRECATED. Will be removed in Step 4. ---
+    // If offerDescription is empty, these are merged into it by the service.
+    @Deprecated(forRemoval = true)
     private String shortDescription;
+    @Deprecated(forRemoval = true)
     private String fullDescription;
+    @Deprecated(forRemoval = true)
     private String terms;
+    @Deprecated(forRemoval = true)
     private String usageRules;
+    @Deprecated(forRemoval = true)
     private String howToUse;
 
     @NotNull(message = "Партнер обязателен")

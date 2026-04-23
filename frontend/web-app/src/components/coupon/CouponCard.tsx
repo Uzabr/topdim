@@ -8,6 +8,8 @@ import './CouponCard.css';
 export interface CouponCardData {
   id: number;
   title: string;
+  /** Canonical offer text. shortDescription is derived from this if not set. */
+  offerDescription?: string;
   shortDescription?: string;
   merchant: { id: number; name: string; logoUrl?: string };
   category?: { id: number; name: string; slug: string };

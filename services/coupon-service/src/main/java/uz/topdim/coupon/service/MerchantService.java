@@ -75,11 +75,9 @@ public class MerchantService {
                 .description(request.getDescription())
                 .logoUrl(request.getLogoUrl())
                 .coverUrl(request.getCoverUrl())
-                .address(request.getAddress())
-                .phone(normalize(request.getPhone()))
+                // Legacy contact fields no longer written to merchant entity — live in merchant_locations
                 .email(request.getEmail())
                 .website(request.getWebsite())
-                .workingHours(request.getWorkingHours())
                 .contactPerson(request.getContactPerson())
                 .active(true)
                 .build();
@@ -107,11 +105,9 @@ public class MerchantService {
         merchant.setDescription(request.getDescription());
         merchant.setLogoUrl(request.getLogoUrl());
         merchant.setCoverUrl(request.getCoverUrl());
-        merchant.setAddress(request.getAddress());
-        merchant.setPhone(normalize(request.getPhone()));
+        // Legacy contact fields no longer written to merchant entity — live in merchant_locations
         merchant.setEmail(request.getEmail());
         merchant.setWebsite(request.getWebsite());
-        merchant.setWorkingHours(request.getWorkingHours());
         merchant.setContactPerson(request.getContactPerson());
         merchantRepository.save(merchant);
 
@@ -289,11 +285,9 @@ public class MerchantService {
                 .description(merchant.getDescription())
                 .logoUrl(merchant.getLogoUrl())
                 .coverUrl(merchant.getCoverUrl())
-                .address(merchant.getAddress())
-                .phone(merchant.getPhone())
+                // Legacy contact fields no longer read from entity — data lives in locations
                 .email(merchant.getEmail())
                 .website(merchant.getWebsite())
-                .workingHours(merchant.getWorkingHours())
                 .contactPerson(merchant.getContactPerson())
                 .active(merchant.isActive())
                 .primaryLocation(primaryLoc)

@@ -46,9 +46,8 @@ class MerchantServiceTest {
             return Merchant.builder()
                     .id(1L).name("SPA Oasis").description("Лучший СПА")
                     .logoUrl("/logo.jpg").coverUrl("/cover.jpg")
-                    .address("Ташкент").phone("+998901234567")
                     .email("spa@test.com").website("https://spa.com")
-                    .workingHours("09:00-21:00").contactPerson("Алишер")
+                    .contactPerson("Алишер")
                     .active(true).build();
         }
 
@@ -71,7 +70,7 @@ class MerchantServiceTest {
             MerchantResponse result = merchantService.getMerchantById(1L);
 
             assertThat(result.getName()).isEqualTo("SPA Oasis");
-            assertThat(result.getPhone()).isEqualTo("+998901234567");
+            // phone no longer in merchant entity — lives in primaryLocation
         }
 
         @Test
@@ -99,7 +98,7 @@ class MerchantServiceTest {
             });
             when(merchantRepository.findById(10L)).thenAnswer(inv -> {
                 Merchant m = Merchant.builder().id(10L).name("New SPA").description("Описание")
-                        .phone("+998901111111").active(true).build();
+                        .active(true).build();
                 return Optional.of(m);
             });
 
@@ -127,8 +126,8 @@ class MerchantServiceTest {
         }
 
         @Test
-        @DisplayName("Создание: телефон с пробелами нормализуется")
-        void createMerchant_normalizesSpacedPhone() {
+        @DisplayName("Создание: телефон с пробелами нормализуется в auto-created location")
+        void createMerchant_normalizesSpacedPhoneInLocation() {
             CreateMerchantRequest request = new CreateMerchantRequest();
             request.setName("Phone Test");
             request.setPhone("+998 90 123 45 67");
@@ -140,20 +139,27 @@ class MerchantServiceTest {
             });
             when(merchantRepository.findById(20L)).thenAnswer(inv -> {
                 Merchant m = Merchant.builder().id(20L).name("Phone Test")
-                        .phone("+998901234567").active(true).build();
+                        .active(true).build();
                 return Optional.of(m);
             });
 
             merchantService.createMerchant(request);
 
-            ArgumentCaptor<Merchant> captor = ArgumentCaptor.forClass(Merchant.class);
-            verify(merchantRepository).save(captor.capture());
-            assertThat(captor.getValue().getPhone()).isEqualTo("+998901234567");
+            // Verify phone is no longer stored on merchant entity
+            ArgumentCaptor<Merchant> merchantCaptor = ArgumentCaptor.forClass(Merchant.class);
+            verify(merchantRepository).save(merchantCaptor.capture());
+
+            // Verify phone is written to auto-created primary location (normalized)
+            ArgumentCaptor<uz.topdim.coupon.entity.MerchantLocation> locCaptor =
+                    ArgumentCaptor.forClass(uz.topdim.coupon.entity.MerchantLocation.class);
+            verify(merchantLocationRepository).save(locCaptor.capture());
+            assertThat(locCaptor.getValue().getPhone()).isEqualTo("+998901234567");
+            assertThat(locCaptor.getValue().isPrimary()).isTrue();
         }
 
         @Test
-        @DisplayName("Обновление: телефон с пробелами нормализуется")
-        void updateMerchant_normalizesSpacedPhone() {
+        @DisplayName("Обновление: телефон с пробелами нормализуется в auto-created location")
+        void updateMerchant_normalizesSpacedPhoneInLocation() {
             Merchant existing = createTestMerchant();
             when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -164,7 +170,12 @@ class MerchantServiceTest {
 
             merchantService.updateMerchant(1L, request);
 
-            assertThat(existing.getPhone()).isEqualTo("+998909999999");
+            // Verify phone is no longer updated on merchant entity
+            // (existing phone stays as-is, new phone goes to location)
+            ArgumentCaptor<uz.topdim.coupon.entity.MerchantLocation> locCaptor =
+                    ArgumentCaptor.forClass(uz.topdim.coupon.entity.MerchantLocation.class);
+            verify(merchantLocationRepository).save(locCaptor.capture());
+            assertThat(locCaptor.getValue().getPhone()).isEqualTo("+998909999999");
         }
     }
 

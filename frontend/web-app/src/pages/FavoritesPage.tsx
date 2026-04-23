@@ -9,6 +9,14 @@ import { topdimDeals } from '../data/topdim';
 import { useLocalePath } from '../hooks/useLocalePath';
 import './FavoritesPage.css';
 
+/** Derive teaser preview from canonical offerDescription. */
+function derivePreview(text?: string, maxLen = 150): string | undefined {
+  if (!text) return undefined;
+  const line = text.split('\n').find(l => l.trim() && !l.trim().startsWith('##'));
+  if (!line) return text.substring(0, maxLen);
+  return line.trim().length > maxLen ? line.trim().substring(0, maxLen - 1) + '…' : line.trim();
+}
+
 export default function FavoritesPage() {
   const { favoriteIds } = useFavoritesStore();
   const lp = useLocalePath();
@@ -25,7 +33,8 @@ export default function FavoritesPage() {
     ? apiDeals.map((deal: any) => ({
         id: deal.id,
         title: deal.title,
-        shortDescription: deal.shortDescription,
+        offerDescription: deal.offerDescription,
+        shortDescription: deal.shortDescription || derivePreview(deal.offerDescription),
         merchant: deal.merchant,
         category: deal.category,
         oldPrice: deal.oldPrice,

@@ -31,13 +31,7 @@ public class CouponOffer {
     @Column(nullable = false)
     private String title;
 
-    @Column(name = "short_description")
-    private String shortDescription;
-
-    @Column(name = "full_description", columnDefinition = "TEXT")
-    private String fullDescription;
-
-    /** Canonical offer text (replaces short_description + full_description + terms + usageRules + howToUse). */
+    /** Canonical offer text (replaces legacy short_description + full_description + terms + usageRules + howToUse). */
     @Column(name = "offer_description", columnDefinition = "TEXT")
     private String offerDescription;
 
@@ -67,22 +61,7 @@ public class CouponOffer {
     @Column(name = "use_until")
     private LocalDateTime useUntil;
 
-    @Column(columnDefinition = "TEXT")
-    private String terms;
-
-    @Column(name = "usage_rules", columnDefinition = "TEXT")
-    private String usageRules;
-
-    @Column(name = "how_to_use", columnDefinition = "TEXT")
-    private String howToUse;
-
-    private String address;
-
-    @Column(name = "contact_phone")
-    private String contactPhone;
-
-    @Column(name = "working_hours")
-    private String workingHours;
+    // Legacy contact fields (address, contact_phone, working_hours) removed — live in merchant_locations
 
     @Column(name = "is_gift_available")
     private boolean giftAvailable;

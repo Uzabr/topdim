@@ -46,8 +46,7 @@ class CouponOfferServiceTest {
         Merchant merchant = Merchant.builder().id(1L).name("SPA Oasis").logoUrl("/logo.jpg").build();
         Category category = Category.builder().id(1L).name("Красота").slug("beauty").iconUrl("/icon.svg").build();
         return CouponOffer.builder()
-                .id(1L).title("SPA массаж 50%").shortDescription("Релакс")
-                .fullDescription("Детали")
+                .id(1L).title("SPA массаж 50%")
                 .offerDescription("Релакс\n\nДетали")
                 .merchant(merchant).category(category)
                 .oldPrice(BigDecimal.valueOf(300000)).fromPrice(BigDecimal.valueOf(150000))
@@ -419,18 +418,14 @@ class CouponOfferServiceTest {
     }
 
     @Test
-    @DisplayName("mapToResponse: offerDescription fallback на legacy")
-    void mapToResponse_offerDescription_fallbackOnLegacy() {
+    @DisplayName("mapToResponse: null offerDescription → null shortDescription")
+    void mapToResponse_nullOfferDescription_returnsNullPreview() {
         CouponOffer offer = createTestOffer();
-        offer.setOfferDescription(null); // force fallback
-        offer.setShortDescription("Кратко");
-        offer.setFullDescription("Подробно");
-        offer.setTerms("Условия");
+        offer.setOfferDescription(null);
 
         CouponOfferResponse result = couponOfferService.mapToResponse(offer);
 
-        assertThat(result.getOfferDescription()).contains("Кратко");
-        assertThat(result.getOfferDescription()).contains("Подробно");
-        assertThat(result.getOfferDescription()).contains("## Условия");
+        assertThat(result.getOfferDescription()).isNull();
+        assertThat(result.getShortDescription()).isNull();
     }
 }

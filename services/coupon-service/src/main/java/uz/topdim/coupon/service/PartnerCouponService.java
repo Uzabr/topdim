@@ -100,9 +100,7 @@ public class PartnerCouponService {
         CouponOffer offer = CouponOffer.builder()
                 .title(request.getTitle())
                 .offerDescription(offerDesc)
-                // Legacy text fields — still written for backward compat
-                .shortDescription(request.getShortDescription())
-                .fullDescription(request.getFullDescription())
+                // Legacy text fields no longer written — canonical offerDescription is source of truth
                 .merchant(merchant)
                 .category(category)
                 .oldPrice(request.getOldPrice())
@@ -111,10 +109,7 @@ public class PartnerCouponService {
                 .coverImageUrl(request.getCoverImageUrl())
                 .buyUntil(request.getBuyUntil())
                 .useUntil(request.getUseUntil())
-                .terms(request.getTerms())
-                .usageRules(request.getUsageRules())
-                .howToUse(request.getHowToUse())
-                // Contact fields no longer written to coupon — live in merchant_locations
+                // Contact fields live in merchant_locations
                 .giftAvailable(request.isGiftAvailable())
                 .status(CouponStatus.LEAD)
                 .build();
@@ -155,9 +150,7 @@ public class PartnerCouponService {
 
         offer.setTitle(request.getTitle());
         offer.setOfferDescription(offerDesc);
-        // Legacy text fields — still written for backward compat
-        offer.setShortDescription(request.getShortDescription());
-        offer.setFullDescription(request.getFullDescription());
+        // Legacy text fields no longer written — canonical offerDescription is source of truth
         offer.setCategory(category);
         offer.setOldPrice(request.getOldPrice());
         offer.setFromPrice(request.getFromPrice());
@@ -165,10 +158,7 @@ public class PartnerCouponService {
         offer.setCoverImageUrl(request.getCoverImageUrl());
         offer.setBuyUntil(request.getBuyUntil());
         offer.setUseUntil(request.getUseUntil());
-        offer.setTerms(request.getTerms());
-        offer.setUsageRules(request.getUsageRules());
-        offer.setHowToUse(request.getHowToUse());
-        // Contact fields no longer written to coupon — live in merchant_locations
+        // Contact fields live in merchant_locations
         offer.setGiftAvailable(request.isGiftAvailable());
         // После редактирования отклонённого — снова на модерацию
         if (offer.getStatus() == CouponStatus.REVISION_REQUESTED) {
@@ -184,7 +174,7 @@ public class PartnerCouponService {
                 .id(offer.getId())
                 .title(offer.getTitle())
                 .offerDescription(offer.getOfferDescription())
-                .shortDescription(offer.getShortDescription())
+                .shortDescription(CouponOfferService.derivePreview(offer.getOfferDescription(), 150))
                 .oldPrice(offer.getOldPrice())
                 .fromPrice(offer.getFromPrice())
                 .discountPercent(offer.getDiscountPercent())

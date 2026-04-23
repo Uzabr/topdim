@@ -52,7 +52,6 @@ class CouponOfferServiceBusinessLogicTest {
         return Merchant.builder()
                 .id(1L)
                 .name("Test Merchant")
-                .phone("+998901234567")
                 .telegramChatId("chat-1")
                 .active(true)
                 .build();
@@ -151,8 +150,8 @@ class CouponOfferServiceBusinessLogicTest {
         assertThat(lead.getMerchant()).isEqualTo(merchant);
         assertThat(lead.getStatus()).isEqualTo(CouponStatus.LEAD);
         assertThat(lead.getTitle()).isEqualTo("Лид от: Test Merchant");
-        assertThat(lead.getFullDescription()).contains("Promo from Telegram");
-        assertThat(lead.getFullDescription()).contains("voice-123");
+        assertThat(lead.getOfferDescription()).contains("Promo from Telegram");
+        assertThat(lead.getOfferDescription()).contains("voice-123");
     }
 
     @Test
@@ -178,15 +177,17 @@ class CouponOfferServiceBusinessLogicTest {
     }
 
     @Test
-    @DisplayName("createLeadFromBot: если locations не нашли, фоллбэк на legacy merchant.phone")
-    void createLeadFromBot_fallsBackToLegacyPhone() {
+    @DisplayName("createLeadFromBot: если locations не нашли по телефону, переходит к поиску по имени")
+    void createLeadFromBot_phoneNotInLocations_proceedsToNameLookup() {
         Merchant merchant = createMerchant();
         BotLeadRequest request = createLeadRequest();
         request.setTelegramChatId("unknown-chat");
 
         when(merchantRepository.findByTelegramChatId("unknown-chat")).thenReturn(Optional.empty());
         when(merchantLocationRepository.findFirstByPhoneAndActiveTrue("+998901234567")).thenReturn(Optional.empty());
-        when(merchantRepository.findByPhone("+998901234567")).thenReturn(Optional.of(merchant));
+        // Name lookup finds unique match
+        when(merchantRepository.countByNameIgnoreCase("Lead Company")).thenReturn(1L);
+        when(merchantRepository.findFirstByNameIgnoreCase("Lead Company")).thenReturn(Optional.of(merchant));
 
         couponOfferService.createLeadFromBot(request);
 
@@ -242,7 +243,6 @@ class CouponOfferServiceBusinessLogicTest {
 
         when(merchantRepository.findByTelegramChatId("new-chat")).thenReturn(Optional.empty());
         when(merchantLocationRepository.findFirstByPhoneAndActiveTrue("+998909999999")).thenReturn(Optional.empty());
-        when(merchantRepository.findByPhone("+998909999999")).thenReturn(Optional.empty());
         when(merchantRepository.countByNameIgnoreCase("Lead Company")).thenReturn(0L);
         when(merchantRepository.save(any(Merchant.class))).thenAnswer(invocation -> {
             Merchant merchant = invocation.getArgument(0);

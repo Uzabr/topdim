@@ -26,7 +26,6 @@ public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> 
 
     @Query("SELECT c FROM CouponOffer c WHERE c.status = :status AND " +
            "(LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(c.shortDescription) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.offerDescription) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<CouponOffer> searchByTitleOrDescription(@Param("status") CouponStatus status,
                                                   @Param("search") String search,
