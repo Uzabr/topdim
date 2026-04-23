@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -144,6 +145,30 @@ class PartnerCouponServiceTest {
         CouponOfferResponse result = partnerCouponService.createCouponOffer(10L, createRequest());
 
         assertThat(result.getStatus()).isEqualTo("LEAD");
+    }
+
+    @Test
+    @DisplayName("createCouponOffer: offerDescription имеет приоритет над legacy text fields")
+    void createCouponOffer_prefersCanonicalOfferDescription() {
+        Merchant merchant = createMerchant();
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(createCategory()));
+        when(couponOfferRepository.save(any())).thenAnswer(inv -> {
+            CouponOffer offer = inv.getArgument(0);
+            offer.setId(102L);
+            return offer;
+        });
+
+        CreateCouponOfferRequest request = createRequest();
+        request.setOfferDescription("Canonical text");
+        request.setShortDescription("Legacy short");
+        request.setFullDescription("Legacy full");
+
+        partnerCouponService.createCouponOffer(10L, request);
+
+        org.mockito.ArgumentCaptor<CouponOffer> captor = forClass(CouponOffer.class);
+        verify(couponOfferRepository).save(captor.capture());
+        assertThat(captor.getValue().getOfferDescription()).isEqualTo("Canonical text");
     }
 
     // ==================== updateMyCoupon ====================

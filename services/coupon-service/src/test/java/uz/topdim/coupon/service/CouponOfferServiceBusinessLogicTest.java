@@ -113,12 +113,32 @@ class CouponOfferServiceBusinessLogicTest {
     @DisplayName("updateStatus: WAITING_FOR_MERCHANT -> ACTIVE разрешён")
     void updateStatus_waitingForMerchantToActive_allowed() {
         CouponOffer offer = createOffer(CouponStatus.WAITING_FOR_MERCHANT);
+        uz.topdim.coupon.entity.MerchantLocation location = uz.topdim.coupon.entity.MerchantLocation.builder()
+                .id(5L)
+                .merchant(offer.getMerchant())
+                .address("Ташкент, ул. Шота Руставели, 1")
+                .primary(true)
+                .active(true)
+                .build();
         when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(offer));
+        when(merchantLocationRepository.findByMerchantIdAndPrimaryTrue(1L)).thenReturn(Optional.of(location));
         when(couponOfferRepository.save(any(CouponOffer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         CouponOfferResponse result = couponOfferService.updateStatus(10L, CouponStatus.ACTIVE);
 
         assertThat(result.getStatus()).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    @DisplayName("updateStatus: WAITING_FOR_MERCHANT -> ACTIVE без active primary location запрещён")
+    void updateStatus_waitingForMerchantToActive_withoutPrimaryLocation_throws() {
+        CouponOffer offer = createOffer(CouponStatus.WAITING_FOR_MERCHANT);
+        when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(offer));
+        when(merchantLocationRepository.findByMerchantIdAndPrimaryTrue(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> couponOfferService.updateStatus(10L, CouponStatus.ACTIVE))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("primary location");
     }
 
     @Test

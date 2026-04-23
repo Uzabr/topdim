@@ -205,6 +205,38 @@ class MerchantServiceTest {
             verify(merchantLocationRepository, never()).deleteAllByMerchantId(anyLong());
             verify(merchantLocationRepository, never()).save(any());
         }
+
+        @Test
+        @DisplayName("Создание: locations без primary → первый location становится primary")
+        void createMerchant_locationsWithoutPrimary_promotesFirst() {
+            CreateMerchantRequest.LocationRequest first = new CreateMerchantRequest.LocationRequest();
+            first.setAddress("Ташкент");
+            first.setPhone("+998 90 123 45 67");
+
+            CreateMerchantRequest.LocationRequest second = new CreateMerchantRequest.LocationRequest();
+            second.setAddress("Самарканд");
+
+            CreateMerchantRequest request = new CreateMerchantRequest();
+            request.setName("SPA Oasis");
+            request.setLocations(List.of(first, second));
+
+            when(merchantRepository.save(any(Merchant.class))).thenAnswer(inv -> {
+                Merchant merchant = inv.getArgument(0);
+                merchant.setId(30L);
+                return merchant;
+            });
+            when(merchantRepository.findById(30L)).thenReturn(Optional.of(
+                    Merchant.builder().id(30L).name("SPA Oasis").active(true).build()));
+
+            merchantService.createMerchant(request);
+
+            ArgumentCaptor<uz.topdim.coupon.entity.MerchantLocation> locCaptor =
+                    ArgumentCaptor.forClass(uz.topdim.coupon.entity.MerchantLocation.class);
+            verify(merchantLocationRepository, times(2)).save(locCaptor.capture());
+            assertThat(locCaptor.getAllValues().get(0).isPrimary()).isTrue();
+            assertThat(locCaptor.getAllValues().get(0).getPhone()).isEqualTo("+998901234567");
+            assertThat(locCaptor.getAllValues().get(1).isPrimary()).isFalse();
+        }
     }
 
     // ==================== Categories ====================

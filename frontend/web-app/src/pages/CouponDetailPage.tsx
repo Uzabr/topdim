@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Heart, Gift, ShoppingCart, TrendingUp, Calendar, Clock, AlertCircle, Info, Users, CreditCard, Check } from 'lucide-react';
+import { Heart, Gift, ShoppingCart, TrendingUp, Calendar, Clock, Info, Users, CreditCard, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import TwoGisMap from '../components/map/TwoGisMap';
 import { couponsApi } from '../api/coupons';

@@ -7,15 +7,8 @@ import type { CouponCardData } from '../components/coupon/CouponCard';
 import { couponsApi } from '../api/coupons';
 import { topdimDeals } from '../data/topdim';
 import { useLocalePath } from '../hooks/useLocalePath';
+import { deriveCouponPreview } from '../utils/couponPreview';
 import './FavoritesPage.css';
-
-/** Derive teaser preview from canonical offerDescription. */
-function derivePreview(text?: string, maxLen = 150): string | undefined {
-  if (!text) return undefined;
-  const line = text.split('\n').find(l => l.trim() && !l.trim().startsWith('##'));
-  if (!line) return text.substring(0, maxLen);
-  return line.trim().length > maxLen ? line.trim().substring(0, maxLen - 1) + '…' : line.trim();
-}
 
 export default function FavoritesPage() {
   const { favoriteIds } = useFavoritesStore();
@@ -34,7 +27,7 @@ export default function FavoritesPage() {
         id: deal.id,
         title: deal.title,
         offerDescription: deal.offerDescription,
-        shortDescription: deal.shortDescription || derivePreview(deal.offerDescription),
+        shortDescription: deal.shortDescription || deriveCouponPreview(deal.offerDescription),
         merchant: deal.merchant,
         category: deal.category,
         oldPrice: deal.oldPrice,
@@ -44,8 +37,8 @@ export default function FavoritesPage() {
         totalSold: deal.totalSold || 0,
         rating: deal.averageRating || 4.5 + Math.random() * 0.4,
         reviewCount: deal.reviewCount || Math.floor((deal.totalSold || 0) * 0.3),
-        address: deal.address,
-        location: deal.address || 'Ташкент',
+        address: deal.merchant?.primaryLocation?.address,
+        location: deal.merchant?.primaryLocation?.address || 'Ташкент',
         isHot: (deal.discountPercent || 0) >= 50,
         countdownText: '23:59:59',
         giftAvailable: deal.giftAvailable,

@@ -310,6 +310,7 @@ public class CouponOfferService {
                     + ". Допустимый: WAITING_FOR_MERCHANT");
         }
 
+        ensureMerchantReadyForPublication(offer);
         offer.setStatus(CouponStatus.ACTIVE);
         couponOfferRepository.save(offer);
 
@@ -532,8 +533,29 @@ public class CouponOfferService {
                     + "Допустимые: LEAD→DRAFT, DRAFT/REVISION→WAITING, WAITING→ACTIVE/REVISION");
         }
 
+        if (newStatus == CouponStatus.ACTIVE) {
+            ensureMerchantReadyForPublication(offer);
+        }
+
         offer.setStatus(newStatus);
         return mapToResponse(couponOfferRepository.save(offer));
+    }
+
+    private void ensureMerchantReadyForPublication(CouponOffer offer) {
+        Merchant merchant = offer.getMerchant();
+        if (merchant == null) {
+            throw new IllegalStateException("Нельзя публиковать купон без мерчанта");
+        }
+
+        MerchantLocation primaryLocation = merchantLocationRepository.findByMerchantIdAndPrimaryTrue(merchant.getId())
+                .filter(MerchantLocation::isActive)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Нельзя публиковать купон без active primary location у мерчанта"));
+
+        if (primaryLocation.getAddress() == null || primaryLocation.getAddress().isBlank()) {
+            throw new IllegalStateException(
+                    "Нельзя публиковать купон без адреса в primary location мерчанта");
+        }
     }
 
     /**

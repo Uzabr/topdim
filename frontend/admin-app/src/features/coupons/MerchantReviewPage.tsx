@@ -19,6 +19,7 @@ interface MerchantSummary {
   id: number;
   name: string;
   logoUrl?: string;
+  description?: string;
   primaryLocation?: {
     id: number;
     address?: string;
@@ -57,13 +58,6 @@ interface Coupon {
   coverImageUrl?: string;
   status: string;
   revisionComment: string | null;
-  terms?: string;
-  usageRules?: string;
-  howToUse?: string;
-  // Legacy contact fields (replaced by merchant.primaryLocation)
-  address?: string;
-  contactPhone?: string;
-  workingHours?: string;
   options?: CouponOption[];
   images?: string[];
   buyUntil?: string;
@@ -351,57 +345,51 @@ export const MerchantReviewPage = () => {
               </Descriptions.Item>
             </Descriptions>
 
-            {/* Описание — canonical offerDescription first */}
-            {previewCoupon.offerDescription && (
-              <>
-                <Divider orientation="left">Описание предложения</Divider>
-                <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{previewCoupon.offerDescription}</Paragraph>
-              </>
-            )}
-            {!previewCoupon.offerDescription && previewCoupon.shortDescription && (
-              <>
-                <Divider titlePlacement="left">Краткое описание</Divider>
-                <Paragraph>{previewCoupon.shortDescription}</Paragraph>
-              </>
-            )}
-            {!previewCoupon.offerDescription && previewCoupon.fullDescription && (
-              <>
-                <Divider titlePlacement="left">Полное описание</Divider>
-                <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{previewCoupon.fullDescription}</Paragraph>
-              </>
+            <Divider titlePlacement="left">О мерчанте</Divider>
+            <Descriptions bordered column={1} size="small">
+              <Descriptions.Item label="Название">
+                {previewCoupon.merchant?.name ?? 'Не указан'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Описание">
+                {previewCoupon.merchant?.description?.trim() || 'Не указано'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Логотип">
+                {previewCoupon.merchant?.logoUrl ? (
+                  <Image
+                    width={88}
+                    src={previewCoupon.merchant.logoUrl}
+                    alt={previewCoupon.merchant.name}
+                    style={{ borderRadius: 8 }}
+                    fallback="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODgiIGhlaWdodD0iODgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9Ijg4IiBoZWlnaHQ9Ijg4IiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZpbGw9IiNiYmIiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkxvZ288L3RleHQ+PC9zdmc+"
+                  />
+                ) : (
+                  'Не указан'
+                )}
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Divider titlePlacement="left">Описание предложения</Divider>
+            {previewCoupon.offerDescription ? (
+              <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{previewCoupon.offerDescription}</Paragraph>
+            ) : (
+              <Alert
+                type="warning"
+                showIcon
+                message="У купона не заполнено canonical описание оффера"
+              />
             )}
 
-            {/* Условия — only show legacy if no offerDescription (they are merged in canonical) */}
-            {!previewCoupon.offerDescription && previewCoupon.terms && (
-              <>
-                <Divider titlePlacement="left">Условия</Divider>
-                <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{previewCoupon.terms}</Paragraph>
-              </>
-            )}
-            {!previewCoupon.offerDescription && previewCoupon.usageRules && (
-              <>
-                <Divider titlePlacement="left">Правила использования</Divider>
-                <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{previewCoupon.usageRules}</Paragraph>
-              </>
-            )}
-            {!previewCoupon.offerDescription && previewCoupon.howToUse && (
-              <>
-                <Divider titlePlacement="left">Как использовать</Divider>
-                <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{previewCoupon.howToUse}</Paragraph>
-              </>
-            )}
-
-            {/* Контактная информация — canonical: merchant.primaryLocation */}
-            <Divider orientation="left">Контакты</Divider>
+            {/* Контактная информация — canonical only: merchant.primaryLocation */}
+            <Divider titlePlacement="left">Контакты</Divider>
             <Descriptions bordered column={1} size="small">
               <Descriptions.Item label="Адрес">
-                {previewCoupon.merchant?.primaryLocation?.address ?? previewCoupon.address ?? '-'}
+                {previewCoupon.merchant?.primaryLocation?.address?.trim() || 'Не указан'}
               </Descriptions.Item>
               <Descriptions.Item label="Телефон">
-                {previewCoupon.merchant?.primaryLocation?.phone ?? previewCoupon.contactPhone ?? '-'}
+                {previewCoupon.merchant?.primaryLocation?.phone?.trim() || 'Не указан'}
               </Descriptions.Item>
               <Descriptions.Item label="Время работы">
-                {previewCoupon.merchant?.primaryLocation?.workingHours ?? previewCoupon.workingHours ?? '-'}
+                {previewCoupon.merchant?.primaryLocation?.workingHours?.trim() || 'Не указано'}
               </Descriptions.Item>
             </Descriptions>
 

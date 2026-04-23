@@ -11,15 +11,8 @@ import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
 import SearchBar from '../components/ui/SearchBar';
 import { topdimCategories, topdimDeals } from '../data/topdim';
+import { deriveCouponPreview } from '../utils/couponPreview';
 import './HomePage.css';
-
-/** Derive teaser preview from canonical offerDescription (first non-empty, non-heading line, max 150 chars). */
-function derivePreview(text?: string, maxLen = 150): string | undefined {
-  if (!text) return undefined;
-  const line = text.split('\n').find(l => l.trim() && !l.trim().startsWith('##'));
-  if (!line) return text.substring(0, maxLen);
-  return line.trim().length > maxLen ? line.trim().substring(0, maxLen - 1) + '…' : line.trim();
-}
 
 const CategoryIcon = ({ slug }: { slug?: string }) => {
   switch (slug) {
@@ -70,7 +63,7 @@ export default function HomePage() {
         id: deal.id,
         title: deal.title,
         offerDescription: deal.offerDescription,
-        shortDescription: deal.shortDescription || derivePreview(deal.offerDescription),
+        shortDescription: deal.shortDescription || deriveCouponPreview(deal.offerDescription),
         merchant: deal.merchant || { id: 0, name: 'TopDim' },
         category: deal.category,
         oldPrice: deal.oldPrice,
@@ -80,8 +73,8 @@ export default function HomePage() {
         totalSold: deal.totalSold || 0,
         rating: deal.rating || 4.5 + Math.random() * 0.4,
         reviewCount: deal.reviews || Math.floor((deal.totalSold || 0) * 0.3),
-        address: deal.address,
-        location: deal.address || 'Ташкент',
+        address: deal.merchant?.primaryLocation?.address,
+        location: deal.merchant?.primaryLocation?.address || 'Ташкент',
         isHot: (deal.discountPercent || 0) >= 50,
         countdownText: '23:59:59',
         giftAvailable: deal.giftAvailable,
