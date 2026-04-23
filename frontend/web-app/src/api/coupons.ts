@@ -16,8 +16,10 @@ export interface CouponOffer {
   title: string;
   /** Canonical offer description (Release 1+). */
   offerDescription?: string;
-  // Legacy fields (kept for backward compat)
+  // Legacy fields: DEPRECATED — will be removed after Step 4.
+  /** @deprecated Use offerDescription. Derived from offerDescription by backend. */
   shortDescription?: string;
+  /** @deprecated Merged into offerDescription. */
   fullDescription?: string;
   merchant: {
     id: number;
@@ -33,9 +35,12 @@ export interface CouponOffer {
   coverImageUrl?: string;
   buyUntil: string;
   useUntil: string;
-  // Legacy text fields (backward compat)
+  // Legacy text fields: DEPRECATED — merged into offerDescription.
+  /** @deprecated Merged into offerDescription. */
   terms?: string;
+  /** @deprecated Merged into offerDescription. */
   usageRules?: string;
+  /** @deprecated Merged into offerDescription. */
   howToUse?: string;
   giftAvailable: boolean;
   status: string;

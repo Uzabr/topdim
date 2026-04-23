@@ -177,7 +177,12 @@ export default function CouponDetailPage() {
               <div>
                 <div className="detail-merchant-badge">{c.merchant?.name}</div>
                 <h1 className="detail-title">{c.title}</h1>
-                {c.shortDescription && <p className="detail-short-desc">{c.shortDescription}</p>}
+                {(() => {
+                  const preview = c.shortDescription || (c.offerDescription
+                    ? c.offerDescription.split('\n').find(l => l.trim() && !l.trim().startsWith('##'))?.trim()
+                    : undefined);
+                  return preview ? <p className="detail-short-desc">{preview}</p> : null;
+                })()}
               </div>
               <div className="detail-actions">
                 <button

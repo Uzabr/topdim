@@ -8,6 +8,14 @@ import type { CouponCardData } from '../components/coupon/CouponCard';
 import Select from '../components/ui/Select';
 import './CouponCatalogPage.css';
 
+/** Derive teaser preview from canonical offerDescription. */
+function derivePreview(text?: string, maxLen = 150): string | undefined {
+  if (!text) return undefined;
+  const line = text.split('\n').find(l => l.trim() && !l.trim().startsWith('##'));
+  if (!line) return text.substring(0, maxLen);
+  return line.trim().length > maxLen ? line.trim().substring(0, maxLen - 1) + '…' : line.trim();
+}
+
 const CategoryIcon = ({ slug }: { slug?: string }) => {
   switch (slug) {
     case 'food': return <Coffee size={16} />;
@@ -50,7 +58,8 @@ function mapToCardData(coupon: CouponOffer): CouponCardData {
   return {
     id: coupon.id,
     title: coupon.title,
-    shortDescription: coupon.shortDescription,
+    offerDescription: coupon.offerDescription,
+    shortDescription: coupon.shortDescription || derivePreview(coupon.offerDescription),
     merchant: coupon.merchant,
     category: coupon.category,
     oldPrice: coupon.oldPrice,

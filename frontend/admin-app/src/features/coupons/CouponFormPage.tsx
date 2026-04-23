@@ -133,7 +133,7 @@ export const CouponFormPage = () => {
   const createMerchantMutation = useMutation({
     mutationFn: async (values: { name: string; address?: string; phone?: string; workingHours?: string }) => {
       const payload: any = { name: values.name };
-      // Build locations[] with primary location from form fields
+      // Send contact data exclusively via locations[]
       const hasLocation = values.address || values.phone || values.workingHours;
       if (hasLocation) {
         payload.locations = [{
@@ -144,10 +144,6 @@ export const CouponFormPage = () => {
           isPrimary: true,
         }];
       }
-      // Also send flat fields for backward compat with server auto-migrate
-      if (values.address) payload.address = values.address;
-      if (values.phone) payload.phone = values.phone;
-      if (values.workingHours) payload.workingHours = values.workingHours;
 
       const { data } = await api.post('/api/v1/admin/merchants', payload);
       return data.data;
