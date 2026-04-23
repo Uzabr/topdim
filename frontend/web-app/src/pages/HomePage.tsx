@@ -63,7 +63,7 @@ export default function HomePage() {
         id: deal.id,
         title: deal.title,
         offerDescription: deal.offerDescription,
-        shortDescription: deal.shortDescription || deriveCouponPreview(deal.offerDescription),
+        shortDescription: deriveCouponPreview(deal.offerDescription),
         merchant: deal.merchant || { id: 0, name: 'TopDim' },
         category: deal.category,
         oldPrice: deal.oldPrice,
@@ -83,7 +83,8 @@ export default function HomePage() {
     return topdimDeals.map((d) => ({
       id: d.id,
       title: d.title,
-      shortDescription: d.shortDescription,
+      offerDescription: d.offerDescription,
+      shortDescription: deriveCouponPreview(d.offerDescription),
       merchant: d.merchant,
       category: d.category,
       oldPrice: d.oldPrice,
@@ -106,7 +107,8 @@ export default function HomePage() {
     const normalizedSearch = search.trim().toLowerCase();
     return mappedDeals.filter((deal) => {
       const matchesCategory = activeCategory === null || deal.category?.id === activeCategory;
-      const haystack = `${deal.title} ${deal.shortDescription || ''} ${deal.offerDescription || ''} ${deal.category?.name} ${deal.merchant?.name}`.toLowerCase();
+      const preview = deal.shortDescription || deriveCouponPreview(deal.offerDescription);
+      const haystack = `${deal.title} ${preview || ''} ${deal.offerDescription || ''} ${deal.category?.name} ${deal.merchant?.name}`.toLowerCase();
       const matchesSearch = normalizedSearch.length === 0 || haystack.includes(normalizedSearch);
       return matchesCategory && matchesSearch;
     });

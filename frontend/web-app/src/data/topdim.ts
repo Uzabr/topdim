@@ -51,7 +51,7 @@ const baseDeals: TopdimDeal[] = [
   {
     id: 101,
     title: 'Бранч и десерт на rooftop Terrace 360',
-    shortDescription: 'Панорамный завтрак с авторским десертом и кофе на двоих.',
+    offerDescription: 'Панорамный завтрак с авторским десертом и кофе на двоих.',
     merchant: { id: 11, name: 'Terrace 360' },
     category: { id: 1, name: 'Еда', slug: 'food' },
     oldPrice: 220000,
@@ -82,7 +82,7 @@ const baseDeals: TopdimDeal[] = [
   {
     id: 102,
     title: 'Glow-up day: уход + массаж лица',
-    shortDescription: 'Сыворотки, лифтинг-массаж и экспресс glow-уход за 55 минут.',
+    offerDescription: 'Сыворотки, лифтинг-массаж и экспресс glow-уход за 55 минут.',
     merchant: { id: 12, name: 'Peach Beauty Lab' },
     category: { id: 2, name: 'Красота', slug: 'beauty' },
     oldPrice: 280000,
@@ -111,7 +111,7 @@ const baseDeals: TopdimDeal[] = [
   {
     id: 103,
     title: 'VR arena + 2 игры для компании',
-    shortDescription: 'Динамичный пакет на четверых с leaderboard и welcome-drink.',
+    offerDescription: 'Динамичный пакет на четверых с leaderboard и welcome-drink.',
     merchant: { id: 13, name: 'Portal VR Club' },
     category: { id: 4, name: 'Развлечения', slug: 'entertainment' },
     oldPrice: 350000,
@@ -140,7 +140,7 @@ const baseDeals: TopdimDeal[] = [
   {
     id: 104,
     title: 'Фитнес + бассейн на месяц',
-    shortDescription: 'Безлимитный зал, бассейн и групповая тренировка в подарок.',
+    offerDescription: 'Безлимитный зал, бассейн и групповая тренировка в подарок.',
     merchant: { id: 14, name: 'Pulse Club' },
     category: { id: 3, name: 'Спорт', slug: 'sport' },
     oldPrice: 560000,
@@ -168,7 +168,7 @@ const baseDeals: TopdimDeal[] = [
   {
     id: 105,
     title: 'Сет суши + ролл дня',
-    shortDescription: 'Большой вечерний сет с бесплатной доставкой до 5 км.',
+    offerDescription: 'Большой вечерний сет с бесплатной доставкой до 5 км.',
     merchant: { id: 15, name: 'Mizu Kitchen' },
     category: { id: 1, name: 'Еда', slug: 'food' },
     oldPrice: 180000,
@@ -197,7 +197,7 @@ const baseDeals: TopdimDeal[] = [
   {
     id: 106,
     title: 'Детский парк: безлимит 3 часа',
-    shortDescription: 'Большая игровая зона, батуты и snack-box в комплекте.',
+    offerDescription: 'Большая игровая зона, батуты и snack-box в комплекте.',
     merchant: { id: 16, name: 'Joy Park' },
     category: { id: 4, name: 'Развлечения', slug: 'entertainment' },
     oldPrice: 200000,

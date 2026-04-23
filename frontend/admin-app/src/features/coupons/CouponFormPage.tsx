@@ -33,20 +33,6 @@ interface CouponFormData {
   images: string[];
 }
 
-/**
- * Builds offerDescription from legacy fields for backward compat
- * when editing a coupon that doesn't have offerDescription yet.
- */
-function buildOfferDescriptionFromLegacy(coupon: any): string {
-  const parts: string[] = [];
-  if (coupon.shortDescription?.trim()) parts.push(coupon.shortDescription.trim());
-  if (coupon.fullDescription?.trim()) parts.push(coupon.fullDescription.trim());
-  if (coupon.terms?.trim()) parts.push(`## Условия\n${coupon.terms.trim()}`);
-  if (coupon.usageRules?.trim()) parts.push(`## Правила использования\n${coupon.usageRules.trim()}`);
-  if (coupon.howToUse?.trim()) parts.push(`## Как использовать\n${coupon.howToUse.trim()}`);
-  return parts.join('\n\n');
-}
-
 export const CouponFormPage = () => {
   const { id } = useParams<{ id: string }>();
   const isEditMode = !!id;
@@ -75,17 +61,12 @@ export const CouponFormPage = () => {
   // Заполняем форму старыми данными
   useEffect(() => {
     if (existingCoupon) {
-      // Use canonical offerDescription, or build from legacy fields
-      const offerDesc = existingCoupon.offerDescription?.trim()
-        ? existingCoupon.offerDescription
-        : buildOfferDescriptionFromLegacy(existingCoupon);
-
       form.setFieldsValue({
         title: existingCoupon.title,
         categoryId: existingCoupon.category?.id,
         merchantId: existingCoupon.merchant?.id,
         coverImageUrl: existingCoupon.coverImageUrl,
-        offerDescription: offerDesc,
+        offerDescription: existingCoupon.offerDescription || '',
         oldPrice: existingCoupon.oldPrice,
         fromPrice: existingCoupon.fromPrice,
         discountPercent: existingCoupon.discountPercent,
@@ -141,7 +122,7 @@ export const CouponFormPage = () => {
           address: values.address || '',
           phone: values.phone || '',
           workingHours: values.workingHours || '',
-          isPrimary: true,
+          primary: true,
         }];
       }
 

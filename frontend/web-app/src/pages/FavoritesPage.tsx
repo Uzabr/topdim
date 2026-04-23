@@ -27,7 +27,7 @@ export default function FavoritesPage() {
         id: deal.id,
         title: deal.title,
         offerDescription: deal.offerDescription,
-        shortDescription: deal.shortDescription || deriveCouponPreview(deal.offerDescription),
+        shortDescription: deriveCouponPreview(deal.offerDescription),
         merchant: deal.merchant,
         category: deal.category,
         oldPrice: deal.oldPrice,
@@ -46,7 +46,8 @@ export default function FavoritesPage() {
     : topdimDeals.map((d) => ({
         id: d.id,
         title: d.title,
-        shortDescription: d.shortDescription,
+        offerDescription: d.offerDescription,
+        shortDescription: deriveCouponPreview(d.offerDescription),
         merchant: d.merchant || { id: 0, name: 'TopDim' },
         category: d.category,
         oldPrice: d.oldPrice,
