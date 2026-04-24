@@ -13,9 +13,11 @@ import uz.topdim.coupon.dto.CreateCategoryRequest;
 import uz.topdim.coupon.dto.CreateMerchantRequest;
 import uz.topdim.coupon.dto.MerchantResponse;
 import uz.topdim.coupon.entity.Category;
+import uz.topdim.coupon.entity.CouponStatus;
 import uz.topdim.coupon.entity.Merchant;
 import uz.topdim.coupon.exception.ResourceNotFoundException;
 import uz.topdim.coupon.repository.CategoryRepository;
+import uz.topdim.coupon.repository.CouponOfferRepository;
 import uz.topdim.coupon.repository.MerchantLocationRepository;
 import uz.topdim.coupon.repository.MerchantRepository;
 
@@ -32,6 +34,7 @@ class MerchantServiceTest {
     @Mock private MerchantRepository merchantRepository;
     @Mock private MerchantLocationRepository merchantLocationRepository;
     @Mock private CategoryRepository categoryRepository;
+    @Mock private CouponOfferRepository couponOfferRepository;
 
     @InjectMocks
     private MerchantService merchantService;
@@ -252,6 +255,77 @@ class MerchantServiceTest {
             assertThat(locCaptor.getAllValues().get(0).isPrimary()).isTrue();
             assertThat(locCaptor.getAllValues().get(0).getPhone()).isEqualTo("+998901234567");
             assertThat(locCaptor.getAllValues().get(1).isPrimary()).isFalse();
+        }
+
+        // ==================== Location Update Safety ====================
+
+        @Test
+        @DisplayName("updateMerchant: null locations preserves existing locations")
+        void updateMerchant_nullLocations_preservesExistingLocations() {
+            Merchant existing = createTestMerchant();
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
+            when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(merchantLocationRepository.findByMerchantIdAndActiveTrue(1L)).thenReturn(List.of(
+                    uz.topdim.coupon.entity.MerchantLocation.builder()
+                            .id(10L)
+                            .merchant(existing)
+                            .address("Ташкент, ул. Нукус, 10")
+                            .primary(true)
+                            .active(true)
+                            .build()
+            ));
+
+            CreateMerchantRequest request = new CreateMerchantRequest();
+            request.setName("Updated SPA");
+            request.setDescription("Новое описание");
+            request.setLocations(null);
+
+            MerchantResponse result = merchantService.updateMerchant(1L, request);
+
+            assertThat(result.getPrimaryLocation()).isNotNull();
+            verify(merchantLocationRepository, never()).deleteAllByMerchantId(1L);
+        }
+
+        @Test
+        @DisplayName("updateMerchant: empty locations with ACTIVE/WAITING coupons is rejected")
+        void updateMerchant_emptyLocationsWithPublicationDependentCoupons_throws() {
+            Merchant existing = createTestMerchant();
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
+            when(couponOfferRepository.existsByMerchantIdAndStatusIn(
+                    eq(1L),
+                    eq(List.of(CouponStatus.WAITING_FOR_MERCHANT, CouponStatus.ACTIVE))
+            )).thenReturn(true);
+
+            CreateMerchantRequest request = new CreateMerchantRequest();
+            request.setName("Updated SPA");
+            request.setLocations(List.of());
+
+            assertThatThrownBy(() -> merchantService.updateMerchant(1L, request))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("Нельзя удалить все locations");
+
+            verify(merchantLocationRepository, never()).deleteAllByMerchantId(anyLong());
+        }
+
+        @Test
+        @DisplayName("updateMerchant: empty locations without dependent coupons clears locations")
+        void updateMerchant_emptyLocationsWithoutDependentCoupons_clearsLocations() {
+            Merchant existing = createTestMerchant();
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
+            when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(couponOfferRepository.existsByMerchantIdAndStatusIn(
+                    eq(1L),
+                    eq(List.of(CouponStatus.WAITING_FOR_MERCHANT, CouponStatus.ACTIVE))
+            )).thenReturn(false);
+            when(merchantLocationRepository.findByMerchantIdAndActiveTrue(1L)).thenReturn(List.of());
+
+            CreateMerchantRequest request = new CreateMerchantRequest();
+            request.setName("Updated SPA");
+            request.setLocations(List.of());
+
+            merchantService.updateMerchant(1L, request);
+
+            verify(merchantLocationRepository).deleteAllByMerchantId(1L);
         }
     }
 

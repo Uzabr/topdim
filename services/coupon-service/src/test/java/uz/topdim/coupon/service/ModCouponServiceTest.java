@@ -139,6 +139,22 @@ class ModCouponServiceTest {
     }
 
     @Test
+    @DisplayName("reviewCoupon: approve failure does not send success notification")
+    void reviewCoupon_approveFailure_doesNotSendNotification() {
+        CouponOffer coupon = createCoupon(CouponStatus.WAITING_FOR_MERCHANT);
+        org.mockito.Mockito.lenient().when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(coupon));
+
+        org.mockito.Mockito.doThrow(new IllegalStateException("Нельзя публиковать купон без active primary location у мерчанта"))
+                .when(couponOfferService).approveByMerchant(10L);
+
+        assertThatThrownBy(() -> modCouponService.reviewCoupon(3L, 10L, "APPROVE", null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("primary location");
+
+        verify(rabbitTemplate, never()).convertAndSend(any(), any(), any(NotificationEvent.class));
+    }
+
+    @Test
     @DisplayName("reviewUserReview: REJECT сохраняет причину и отправляет notification пользователю")
     void reviewUserReview_reject_setsReasonAndSendsNotification() {
         Review review = Review.builder()

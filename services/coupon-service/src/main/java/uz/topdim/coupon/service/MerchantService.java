@@ -7,10 +7,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.coupon.dto.*;
 import uz.topdim.coupon.entity.Category;
+import uz.topdim.coupon.entity.CouponStatus;
 import uz.topdim.coupon.entity.Merchant;
 import uz.topdim.coupon.entity.MerchantLocation;
 import uz.topdim.coupon.exception.ResourceNotFoundException;
 import uz.topdim.coupon.repository.CategoryRepository;
+import uz.topdim.coupon.repository.CouponOfferRepository;
 import uz.topdim.coupon.repository.MerchantLocationRepository;
 import uz.topdim.coupon.repository.MerchantRepository;
 
@@ -32,6 +34,7 @@ public class MerchantService {
     private final MerchantRepository merchantRepository;
     private final MerchantLocationRepository merchantLocationRepository;
     private final CategoryRepository categoryRepository;
+    private final CouponOfferRepository couponOfferRepository;
 
     // ==================== Merchants ====================
 
@@ -111,8 +114,8 @@ public class MerchantService {
         merchant.setContactPerson(request.getContactPerson());
         merchantRepository.save(merchant);
 
-        // Update locations: replace all
-        saveLocations(merchant, request);
+        // Update locations: safe path (null = preserve, empty = check dependents)
+        saveLocationsForUpdate(merchant, request);
 
         return mapMerchant(merchantRepository.findById(id).orElseThrow());
     }
@@ -121,6 +124,7 @@ public class MerchantService {
 
     /**
      * Saves normalized locations for a merchant, replacing all existing ones.
+     * Used on CREATE path only.
      */
     private void saveLocations(Merchant merchant, CreateMerchantRequest request) {
         List<MerchantLocation> normalizedLocations = buildLocations(merchant, request);
@@ -132,6 +136,34 @@ public class MerchantService {
         for (MerchantLocation location : normalizedLocations) {
             merchantLocationRepository.save(location);
         }
+    }
+
+    /**
+     * Safe location update for UPDATE path:
+     * - null locations = preserve existing (no-op)
+     * - empty locations = check for dependent coupons before clearing
+     */
+    private void saveLocationsForUpdate(Merchant merchant, CreateMerchantRequest request) {
+        if (request.getLocations() == null) {
+            return;
+        }
+
+        List<MerchantLocation> normalizedLocations = buildLocations(merchant, request);
+        if (normalizedLocations.isEmpty() && hasPublicationDependentCoupons(merchant.getId())) {
+            throw new IllegalStateException(
+                    "Нельзя удалить все locations у мерчанта с WAITING_FOR_MERCHANT или ACTIVE купонами");
+        }
+
+        merchantLocationRepository.deleteAllByMerchantId(merchant.getId());
+        merchant.getLocations().clear();
+        normalizedLocations.forEach(merchantLocationRepository::save);
+    }
+
+    private boolean hasPublicationDependentCoupons(Long merchantId) {
+        return couponOfferRepository.existsByMerchantIdAndStatusIn(
+                merchantId,
+                List.of(CouponStatus.WAITING_FOR_MERCHANT, CouponStatus.ACTIVE)
+        );
     }
 
     private List<MerchantLocation> buildLocations(Merchant merchant, CreateMerchantRequest request) {

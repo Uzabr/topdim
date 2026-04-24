@@ -2,102 +2,118 @@
 
 ## Обзор
 
-Купон проходит полный жизненный цикл: **создание → модерация → публикация → покупка → погашение → возврат**.
+Купон проходит полный жизненный цикл: **заявка (LEAD) → подготовка (DRAFT) → согласование с мерчантом (WAITING_FOR_MERCHANT) → публикация (ACTIVE) → покупка → погашение → возврат**.
 
 ---
 
-## 1. Создание купона
+## 1. Создание купона (Консьерж-модель)
 
-### Путь А: Админ/Модератор — сразу ACTIVE
+### Путь А: Заявка из Telegram-бота → LEAD
+
+```
+POST /api/v1/bot/coupons/leads
+Внутренний вызов: Telegram-бот
+Контроллер: BotWebhookController
+Сервис: CouponOfferService.createLeadFromBot()
+Результат: status = LEAD
+```
+
+### Путь Б: Модератор берёт лид в работу → DRAFT
+
+```
+PATCH /api/v1/admin/coupons/{id}/take-to-work
+Роль: MODERATOR, ADMIN, SUPER_ADMIN
+Контроллер: AdminCouponController
+Сервис: CouponOfferService.takeToWork()
+Результат: status = DRAFT, модератор закреплён
+```
+
+### Путь В: Модератор создаёт купон напрямую
 
 ```
 POST /api/v1/admin/coupons
 Роль: MODERATOR, ADMIN, SUPER_ADMIN
 Контроллер: AdminCouponController
 Сервис: CouponOfferService.create()
-Результат: status = ACTIVE (сразу в каталоге)
+Результат: status = DRAFT
 ```
-
-Модератор заполняет форму в admin-app → купон **сразу публикуется**, модерация не нужна.
-
-### Путь Б: Партнёр — через модерацию
-
-```
-POST /api/v1/partner/coupons
-Роль: PARTNER
-Контроллер: PartnerCouponController
-Сервис: PartnerCouponService.createCouponOffer()
-Результат: status = PENDING_REVIEW (ждёт одобрения)
-```
-
-Партнёр заполняет форму → купон уходит на модерацию → модератор одобряет или отклоняет.
 
 ---
 
-## 2. Модерация (только для купонов партнёров)
+## 2. Согласование с мерчантом
 
-### Просмотр очереди
+### Отправка на согласование → WAITING_FOR_MERCHANT
 
 ```
-GET /api/v1/mod/coupons?page=0&size=10
+POST /api/v1/admin/coupons/{id}/send-to-approval
 Роль: MODERATOR, ADMIN, SUPER_ADMIN
-Контроллер: ModCouponController
-Сервис: ModCouponService.getPendingCoupons()
-Возвращает: купоны со статусом PENDING_REVIEW
+Контроллер: AdminCouponController
+Сервис: CouponOfferService.sendToApproval()
+Результат: status = WAITING_FOR_MERCHANT
 ```
 
-### Принятие решения
+### Мерчант одобряет → ACTIVE
+
+```
+POST /api/v1/bot/coupons/{id}/approve
+Внутренний вызов: Telegram-бот
+Сервис: CouponOfferService.approveByMerchant()
+Результат: status = ACTIVE (купон в каталоге)
+
+⚠ Публикация требует publication-ready мерчанта:
+  - у мерчанта есть active primary location с заполненным адресом.
+  - если мерчант не готов — возвращается 409 Conflict с бизнес-причиной.
+```
+
+### Мерчант просит правки → REVISION_REQUESTED
+
+```
+POST /api/v1/bot/coupons/{id}/reject
+Внутренний вызов: Telegram-бот
+Body: { "comment": "Поправьте цену" }
+Сервис: CouponOfferService.requestRevisionByMerchant()
+Результат: status = REVISION_REQUESTED → модератор получает задачу
+```
+
+### Модератор пересогласовывает купон
 
 ```
 PATCH /api/v1/mod/coupons/{id}/review
 Body: { "status": "APPROVE" | "REJECT", "reason": "..." }
-Контроллер: ModCouponController
 Сервис: ModCouponService.reviewCoupon()
 ```
 
-- **APPROVE** → статус = `ACTIVE`, партнёр получает уведомление "Купон одобрен"
-- **REJECT** → статус = `REJECTED`, партнёр получает уведомление с причиной
+- **APPROVE** → вызывает `approveByMerchant()`, статус = `ACTIVE` (при наличии publication-ready мерчанта)
+- **REJECT** → вызывает `requestRevisionByMerchant()`, статус = `REVISION_REQUESTED`
 
 Уведомления отправляются через RabbitMQ → notification-service.
-
-### Повторная подача
-
-Партнёр может исправить отклонённый купон:
-
-```
-PUT /api/v1/partner/coupons/{id}
-Условие: статус = DRAFT, PENDING_REVIEW или REJECTED
-Результат: если был REJECTED → автоматически PENDING_REVIEW
-```
 
 ---
 
 ## 3. Управление статусами (Админ)
 
 ```
-PATCH /api/v1/admin/coupons/{id}/status?status=PAUSED
+PATCH /api/v1/admin/coupons/{id}/status?status=ACTIVE
 Роль: MODERATOR, ADMIN, SUPER_ADMIN
 Сервис: CouponOfferService.updateStatus()
 ```
 
 ### Все статусы купона
 
-| Статус           | Кто ставит    | Виден покупателям | Описание                          |
-|------------------|---------------|-------------------|-----------------------------------|
-| `DRAFT`          | Партнёр       | ❌                | Черновик                          |
-| `PENDING_REVIEW` | Партнёр       | ❌                | На модерации                      |
-| `ACTIVE`         | Модератор     | ✅                | Опубликован, можно купить         |
-| `REJECTED`       | Модератор     | ❌                | Отклонён, можно исправить         |
-| `PAUSED`         | Админ         | ❌                | Приостановлен                     |
-| `EXPIRED`        | Система       | ❌                | Истёк срок buyUntil               |
-| `ARCHIVED`       | Админ         | ❌                | В архиве                          |
+| Статус                   | Кто ставит        | Виден покупателям | Описание                                    |
+|--------------------------|-------------------|-------------------|---------------------------------------------|
+| `LEAD`                   | Telegram-бот      | ❌                | Заявка/лид — начальная точка                |
+| `DRAFT`                  | Модератор         | ❌                | Черновик, заполняется модератором           |
+| `WAITING_FOR_MERCHANT`   | Модератор         | ❌                | Отправлен мерчанту на согласование          |
+| `REVISION_REQUESTED`     | Мерчант           | ❌                | Мерчант запросил правки                     |
+| `ACTIVE`                 | Мерчант/Модератор | ✅                | Опубликован, можно купить                   |
+| `SOLD_OUT`               | Система           | ❌                | Все сертификаты распроданы                  |
 
 ### Диаграмма переходов
 
 ```
-DRAFT → PENDING_REVIEW → ACTIVE → PAUSED → ACTIVE
-                       ↘ REJECTED → (edit) → PENDING_REVIEW
-                         ACTIVE → EXPIRED → ARCHIVED
+LEAD → DRAFT → WAITING_FOR_MERCHANT → ACTIVE → SOLD_OUT
+                                     ↘ REVISION_REQUESTED → DRAFT → ...
 ```
 
 ---
@@ -226,8 +242,16 @@ GET /api/v1/partner/redemptions?page=0&size=20
 
 | Функция | Описание |
 |---------|----------|
-| DRAFT в UI | Нет кнопки "Сохранить черновик" у партнёра |
 | auto-EXPIRED | Нет Scheduled-задачи для автоматического истечения купонов |
 | Payment интеграция | `generatePurchasedCoupons()` вызывается, но нет реальной оплаты |
 | Уведомления | Событие уходит в RabbitMQ, но notification-service не полностью обрабатывает |
 | QR-сканер на фронте | Нет страницы/приложения для партнёра, чтобы сканировать QR |
+
+## Обработка бизнес-ошибок (coupon flow)
+
+| Исключение | HTTP статус | Когда |
+|---|---|---|
+| `IllegalStateException` | `409 Conflict` | Попытка approve/publish при отсутствии publication-ready мерчанта |
+| `IllegalArgumentException` | `400 Bad Request` | Невалидные данные (например, >1 primary location у мерчанта) |
+| `ResourceNotFoundException` | `404 Not Found` | Ресурс не найден |
+| Прочие | `500 Internal Server Error` | Непредвиденные ошибки |

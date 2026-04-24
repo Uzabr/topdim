@@ -45,4 +45,6 @@ public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> 
     @Modifying
     @Query("UPDATE CouponOffer c SET c.viewCount = c.viewCount + 1 WHERE c.id = :id")
     void incrementViewCount(@Param("id") Long id);
+
+    boolean existsByMerchantIdAndStatusIn(Long merchantId, List<CouponStatus> statuses);
 }

@@ -119,7 +119,7 @@ graph TB
 | Компонент | Технология |
 |---|---|
 | Язык | Java 21 (LTS) |
-| Framework | Spring Boot 3.3 |
+| Framework | Spring Boot 3.4 |
 | API Gateway | Spring Cloud Gateway |
 | Service Discovery | Spring Cloud Netflix Eureka |
 | Config | Spring Cloud Config |
@@ -140,13 +140,13 @@ graph TB
 
 | Компонент | Технология |
 |---|---|
-| Framework | React 18 |
-| Build Tool | Vite 5 |
-| Routing | React Router 6 |
+| Framework | React 19 |
+| Build Tool | Vite 8 |
+| Routing | React Router 6 (Web) / 7 (Admin) |
 | State | Zustand |
-| HTTP Client | Axios + React Query (TanStack Query) |
-| UI Kit | Custom Design System (CSS Modules) |
-| Map | Leaflet + React-Leaflet |
+| HTTP Client | Axios + React Query (TanStack Query v5) |
+| UI Kit | Ant Design 6 (Admin) + Custom UI / CSS Modules (Web) |
+| Map | 2GIS MapGL |
 | Forms | React Hook Form + Zod |
 | i18n | react-i18next (ru, uz) |
 | Charts (Admin) | Recharts |

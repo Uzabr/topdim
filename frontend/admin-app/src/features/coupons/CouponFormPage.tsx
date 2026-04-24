@@ -6,6 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import api from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
+import { getPublicationReadiness } from './publicationReadiness';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 const { Title, Text } = Typography;
@@ -48,6 +49,8 @@ export const CouponFormPage = () => {
   const queryClient = useQueryClient();
   const { message, modal } = App.useApp();
   const userRole = useAuthStore((s) => s.user?.role) || 'MODERATOR';
+
+  const selectedMerchantId = Form.useWatch('merchantId', form);
 
   // Загружаем существующий купон (только в режиме редактирования)
   const { data: existingCoupon, isLoading: isCouponLoading } = useQuery({
@@ -110,6 +113,9 @@ export const CouponFormPage = () => {
       return res.data.data;
     }
   });
+
+  const selectedMerchant = merchants?.find((m: any) => m.id === selectedMerchantId);
+  const readiness = getPublicationReadiness(selectedMerchant);
 
   // Быстрое создание мерчанта (с primary location)
   const createMerchantMutation = useMutation({
@@ -296,6 +302,24 @@ export const CouponFormPage = () => {
                     )}
                   </Form.Item>
                 </Col>
+
+                {selectedMerchant && (
+                  <Col span={24}>
+                    <Alert
+                      type={readiness.ready ? 'success' : 'warning'}
+                      showIcon
+                      title={readiness.ready ? 'Мерчант готов к публикации купона' : 'Мерчант ещё не готов к публикации'}
+                      description={
+                        readiness.ready ? 'У primary location заполнен адрес, approve-path не будет заблокирован.' : (
+                          <ul style={{ margin: 0, paddingLeft: 18 }}>
+                            {readiness.reasons.map((reason) => <li key={reason}>{reason}</li>)}
+                          </ul>
+                        )
+                      }
+                      style={{ marginBottom: 16 }}
+                    />
+                  </Col>
+                )}
                 <Col span={12}>
                   <Form.Item
                     name="categoryId"

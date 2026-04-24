@@ -1176,6 +1176,7 @@ Checkout содержит:
 ### Подтверждено кодом
 
 - Admin может создать мерчанта из admin form быстро.
+- Quick-create в coupon form отправляет контакты через `locations[]` и создает `primaryLocation`.
 - Bot lead flow может создать неактивного мерчанта автоматически.
 
 ### Открытый вопрос
@@ -1501,11 +1502,25 @@ Bazaar — это крупный location container с адресом, типо�
 - отправка preview;
 - фиксация approve/revision.
 
+### Уточнение product rule
+
+- Merchant approval завершает только этап согласования.
+- Само опубликование допустимо только если мерчант уже publication-ready.
+- Publication-ready для текущего MVP означает:
+  - мерчант существует;
+  - у него есть active `primaryLocation`;
+  - в `primaryLocation` заполнен адрес.
+
 ## 15.4. Coupon approval flow
 
 ### Подтверждено кодом
 
 - Финальное customer-facing опубликование наступает после merchant approve, когда купон становится `ACTIVE`.
+
+### Уточнение product rule
+
+- Публикация не должна auto-fill merchant data.
+- Если publication-ready merchant отсутствует, approve-path должен завершаться бизнес-ошибкой, а не silent publish.
 
 ## 15.5. Content editing rights
 
@@ -1615,6 +1630,11 @@ SEO:
 Above the fold:
 
 - gallery + title + price context + main CTA.
+
+Контакты:
+
+- contacts tab виден только авторизованному пользователю;
+- источник контактов и адреса — `merchant.primaryLocation`, а не coupon-level contact fields.
 
 ## 16.4. Cart
 
@@ -1733,9 +1753,15 @@ Above the fold:
 
 - header/status tag;
 - main left column with content;
-- right sidebar with dates/contacts/options;
+- right sidebar with dates, flags и options;
 - save CTA;
 - merchant quick-create modal.
+
+### Уточнение product rule
+
+- Coupon form больше не является источником contact data оффера.
+- Контакты заведения управляются через merchant profile / `merchant_locations`.
+- Quick-create merchant modal остается частью coupon flow, но сохраняет контактные данные как `primaryLocation`.
 
 ## 16.14. Partner Applications
 
@@ -1782,6 +1808,16 @@ Above the fold:
 ### Подтверждено кодом
 
 Купон может стать `ACTIVE` только после merchant approval из `WAITING_FOR_MERCHANT`.
+
+### Уточнение product rule
+
+Merchant approval сам по себе недостаточен: переход в `ACTIVE` разрешён только если мерчант publication-ready.
+
+Для текущего MVP publication-ready означает:
+
+- есть мерчант;
+- есть active `primaryLocation`;
+- в `primaryLocation` заполнен адрес.
 
 ### BR-C-006
 
@@ -2022,15 +2058,24 @@ Current flow:
 
 ## 20.2. Merchant profile completion
 
-### Открытый вопрос
+### Подтверждено кодом / Уточнение
 
-- Нет закрепленного flow для полноценного merchant account completion.
+- Полноценного merchant web-account completion flow пока нет.
+- Но для coupon flow уже существует обязательный operational минимум:
+  - staff должен довести merchant до publication-ready состояния до публикации купона;
+  - для этого нужен active `primaryLocation` с адресом.
 
 ## 20.3. Coupon submission
 
 ### Подтверждено кодом
 
 - В MVP staff создает/редактирует купон, merchant его согласует.
+
+### Уточнение product rule
+
+- Merchant в MVP не обязан собирать весь оффер самостоятельно.
+- Merchant-side участие ограничено согласованием, запросом правок и получением stats через bot.
+- Финальная публикация зависит не только от approve, но и от readiness merchant profile.
 
 ## 20.4. Revision handling
 
@@ -2067,6 +2112,13 @@ Current flow:
 4. send to merchant;
 5. resolve revision if needed;
 6. publish after merchant approval.
+
+### Уточнение product rule
+
+Между шагами `5` и `6` должен соблюдаться дополнительный gate:
+
+- перед публикацией staff обязан убедиться, что merchant publication-ready;
+- если у мерчанта нет active `primaryLocation` с адресом, publish должен быть заблокирован.
 
 ## 21.3. Manage taxonomy
 
@@ -2106,6 +2158,10 @@ Current flow:
 - `REVISION_REQUESTED` — мерчант запросил правки
 - `ACTIVE` — доступен пользователям
 - `SOLD_OUT` — лимит продаж исчерпан
+
+### Уточнение product rule
+
+- `ACTIVE` означает не просто “merchant approved”, а “merchant approved + merchant publication-ready”.
 
 ## 22.3. Review
 
@@ -2361,7 +2417,7 @@ Current flow:
 
 ### Открытый вопрос
 
-- Какой merchant onboarding путь canonical для MVP?
+- В какой момент и через какой flow из merchant lead создается полноценный `PARTNER` account?
 - Какой bazaar/service layer canonical для public experience?
 - Какая модель checkout canonical?
 - Как должны вести себя direct links на non-public контент?
