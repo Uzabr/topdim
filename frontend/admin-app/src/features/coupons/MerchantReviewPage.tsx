@@ -11,6 +11,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import api from '../../api/client';
+import { getPublicationReadiness } from './publicationReadiness';
 
 const { Paragraph, Text, Title } = Typography;
 const { TextArea } = Input;
@@ -25,6 +26,7 @@ interface MerchantSummary {
     address?: string;
     phone?: string;
     workingHours?: string;
+    active?: boolean;
   };
 }
 
@@ -289,16 +291,34 @@ export const MerchantReviewPage = () => {
         open={!!previewCoupon}
         onCancel={() => setPreviewCoupon(null)}
         width={800}
-        footer={previewCoupon ? (
-          <Space>
-            <Button onClick={() => setPreviewCoupon(null)}>Закрыть</Button>
-            <Button danger onClick={() => { handleRejectClick(previewCoupon.id); }}>Отклонить</Button>
-            <Button type="primary" onClick={() => handleApprove(previewCoupon.id, previewCoupon.title)}
-              loading={approveMutation.isPending}>
-              Одобрить → ACTIVE
-            </Button>
-          </Space>
-        ) : null}
+        footer={previewCoupon ? (() => {
+          const previewReadiness = getPublicationReadiness(previewCoupon.merchant);
+          return (
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              {!previewReadiness.ready && (
+                <Alert
+                  type="error"
+                  showIcon
+                  title="Купон нельзя публиковать"
+                  description={
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      {previewReadiness.reasons.map((reason) => <li key={reason}>{reason}</li>)}
+                    </ul>
+                  }
+                />
+              )}
+              <Space>
+                <Button onClick={() => setPreviewCoupon(null)}>Закрыть</Button>
+                <Button danger onClick={() => { handleRejectClick(previewCoupon.id); }}>Отклонить</Button>
+                <Button type="primary" disabled={!previewReadiness.ready}
+                  onClick={() => handleApprove(previewCoupon.id, previewCoupon.title)}
+                  loading={approveMutation.isPending}>
+                  Одобрить → ACTIVE
+                </Button>
+              </Space>
+            </Space>
+          );
+        })() : null}
       >
         {previewCoupon && (
           <div>

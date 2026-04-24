@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 import api from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
+import { getPublicationReadiness } from './publicationReadiness';
 
 const { Paragraph, Text, Title } = Typography;
 
@@ -25,6 +26,10 @@ type CouponStatus =
 interface MerchantSummary {
   id: number;
   name: string;
+  primaryLocation?: {
+    address?: string;
+    active?: boolean;
+  } | null;
 }
 
 interface Coupon {
@@ -266,6 +271,19 @@ export const CouponKanbanPage = () => {
                               <Text>{coupon.merchant?.name ?? 'Мерчант не указан'}</Text>
                             </Space>
                           </div>
+
+                          {(coupon.status === 'DRAFT' || coupon.status === 'REVISION_REQUESTED') && (() => {
+                            const couponReadiness = getPublicationReadiness(coupon.merchant);
+                            return !couponReadiness.ready ? (
+                              <Alert
+                                type="warning"
+                                showIcon
+                                title="Не готов к публикации"
+                                description={couponReadiness.reasons.join('. ')}
+                                style={{ marginBottom: 4 }}
+                              />
+                            ) : null;
+                          })()}
 
                           <div>
                             <Text strong>{formatPrice(coupon.fromPrice)}</Text>
