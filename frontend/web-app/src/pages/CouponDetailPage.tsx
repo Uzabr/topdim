@@ -5,7 +5,7 @@ import { Heart, Gift, ShoppingCart, TrendingUp, Calendar, Clock, Info, Users, Cr
 import ReactMarkdown from 'react-markdown';
 import TwoGisMap from '../components/map/TwoGisMap';
 import { couponsApi } from '../api/coupons';
-import type { CouponOffer, CouponOption } from '../api/coupons';
+import type { CouponOption } from '../api/coupons';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
 import { useFavoritesStore } from '../store/favoritesStore';
@@ -21,35 +21,10 @@ import type { CouponCardData } from '../components/coupon/CouponCard';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { topdimDeals } from '../data/topdim';
 import { deriveCouponPreview } from '../utils/couponPreview';
+import CouponUnavailableState from '../components/coupon/CouponUnavailableState';
 import './CouponDetailPage.css';
 
-const DEMO_COUPON: CouponOffer = {
-  id: 1, title: 'Скидка на пиццу в PizzaLab',
-  offerDescription: 'Любая пицца 33 см + напиток\n\nОтличное предложение от PizzaLab! Выберите любую пиццу диаметром 33 см из нашего меню и получите напиток на выбор совершенно бесплатно.\n\n## Условия\n- 1 купон на 1 человека в день\n- Действует в будние дни\n- Необходимо бронирование\n\n## Правила использования\n- Покажите купон официанту перед заказом\n- Назовите номер купона при бронировании\n\n## Как использовать\n1. Покажите купон\n2. Выберите пиццу\n3. Наслаждайтесь',
-  merchant: {
-    id: 1, name: 'PizzaLab', logoUrl: '',
-    description: 'Предложение действует во всех филиалах PizzaLab в Ташкенте.',
-    primaryLocation: {
-      id: 1, address: 'Ташкент, Мирзо Улугбека, 55',
-      phone: '+998 90 123 45 67', workingHours: '10:00 – 22:00',
-    },
-  },
-  category: { id: 1, name: 'Еда', slug: 'food' },
-  oldPrice: 89000, fromPrice: 45000, discountPercent: 49,
-  coverImageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80',
-  buyUntil: '2026-04-30T00:00:00', useUntil: '2026-05-30T00:00:00',
-  giftAvailable: true, status: 'ACTIVE', totalSold: 1234, viewCount: 5600,
-  options: [
-    { id: 1, title: 'Пицца 33 см + напиток', regularPrice: 89000, couponPrice: 45000, quantityLimit: 100, quantitySold: 834, status: 'ACTIVE' },
-    { id: 2, title: 'Пицца 33 см + 2 напитка + десерт', regularPrice: 140000, couponPrice: 75000, quantityLimit: 50, quantitySold: 312, status: 'ACTIVE' },
-  ],
-  images: [
-    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=1200&q=80',
-  ],
-  createdAt: '2026-03-01'
-};
+
 
 const MOCK_REVIEWS = [
   { id: 1, author: 'Алишер М.', rating: 5, text: 'Отличная пицца! Быстро обслужили, всем рекомендую.', date: '2026-03-28' },
@@ -73,14 +48,40 @@ export default function CouponDetailPage() {
   const navigate = useNavigate();
   const lp = useLocalePath();
 
-  const { data: coupon } = useQuery({
+  const {
+    data: coupon,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ['coupon', id],
     queryFn: () => couponsApi.getById(Number(id)),
     select: (res) => res.data.data,
     enabled: !!id,
+    retry: false,
   });
 
-  const c = coupon || DEMO_COUPON;
+  if (isLoading) {
+    return (
+      <div className="detail-page">
+        <div className="detail-loading">
+          <div>
+            <div className="detail-loading__spinner" />
+            <div className="detail-loading__text">Загрузка купона...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !coupon) {
+    return (
+      <div className="detail-page">
+        <CouponUnavailableState />
+      </div>
+    );
+  }
+
+  const c = coupon;
   const buyDaysLeft = daysUntil(c.buyUntil);
   const discount = c.discountPercent || (c.oldPrice ? Math.round((1 - c.fromPrice / c.oldPrice) * 100) : 0);
   const fav = isFavorite(c.id);

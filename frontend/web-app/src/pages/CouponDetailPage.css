@@ -670,3 +670,118 @@
   from { opacity: 1; transform: translateX(-50%) translateY(0); }
   to   { opacity: 0; transform: translateX(-50%) translateY(20px); }
 }
+
+/* ═══ Coupon Unavailable State ═══ */
+.coupon-unavailable {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+  padding: 48px 20px;
+}
+
+.coupon-unavailable__card {
+  width: min(560px, 100%);
+  padding: 32px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #fffdf8 0%, #fff8ef 100%);
+  border: 1px solid rgba(210, 166, 121, 0.22);
+  box-shadow: 0 20px 60px rgba(117, 74, 28, 0.10);
+  text-align: center;
+}
+
+.coupon-unavailable__icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 18px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(201, 104, 39, 0.10);
+  color: #b65b25;
+}
+
+.coupon-unavailable__card h1 {
+  margin: 0 0 12px;
+  font-size: var(--font-xl);
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.coupon-unavailable__card p {
+  margin: 0 0 24px;
+  color: rgba(52, 37, 26, 0.74);
+  font-size: var(--font-sm);
+  line-height: 1.6;
+}
+
+.coupon-unavailable__actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.coupon-unavailable__primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 24px;
+  border-radius: var(--radius-pill);
+  background: var(--gradient-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--font-sm);
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgba(255, 102, 96, 0.25);
+  transition: all var(--transition-fast);
+}
+
+.coupon-unavailable__primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(255, 102, 96, 0.35);
+}
+
+.coupon-unavailable__secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 24px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-chip);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: var(--font-sm);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  transition: all var(--transition-fast);
+}
+
+.coupon-unavailable__secondary:hover {
+  background: var(--bg-muted);
+}
+
+/* Loading state */
+.detail-loading {
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+}
+
+.detail-loading__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--bg-muted);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: detail-spin 0.8s linear infinite;
+}
+
+@keyframes detail-spin {
+  to { transform: rotate(360deg); }
+}
+
+.detail-loading__text {
+  margin-top: 16px;
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+}
