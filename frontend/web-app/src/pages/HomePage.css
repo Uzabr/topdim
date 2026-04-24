@@ -233,7 +233,7 @@
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scroll-padding: var(--space-md);
-  padding: 12px var(--space-md) 12px 0; /* top/bottom 12px for breathing room */
+  padding: 12px var(--space-md) 20px 0; /* top/bottom 12px for breathing room */
   scrollbar-width: none;
   -ms-overflow-style: none;
   cursor: grab;
