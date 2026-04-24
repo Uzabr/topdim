@@ -110,6 +110,49 @@ class CouponOfferServiceTest {
                 .hasMessageContaining("не найден");
     }
 
+    // ==================== Public visibility guard ====================
+
+    @Test
+    @DisplayName("Public getById: ACTIVE coupon returns detail")
+    void getById_activeCoupon_returnsOffer() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.ACTIVE);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        CouponOfferResponse result = couponOfferService.getById(1L);
+
+        assertThat(result.getTitle()).isEqualTo("SPA массаж 50%");
+        verify(couponOfferRepository).incrementViewCount(1L);
+    }
+
+    @Test
+    @DisplayName("Public getById: WAITING_FOR_MERCHANT coupon returns not found")
+    void getById_waitingCoupon_throwsNotFound() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.getById(1L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("не найден");
+
+        verify(couponOfferRepository, never()).incrementViewCount(anyLong());
+    }
+
+    @Test
+    @DisplayName("Public getById: DRAFT coupon returns not found")
+    void getById_draftCoupon_throwsNotFound() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.getById(1L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("не найден");
+
+        verify(couponOfferRepository, never()).incrementViewCount(anyLong());
+    }
+
     // ==================== Admin ====================
 
     @Test

@@ -88,6 +88,10 @@ public class CouponOfferService {
         CouponOffer offer = couponOfferRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
+        if (offer.getStatus() != CouponStatus.ACTIVE) {
+            throw new ResourceNotFoundException("Купон не найден");
+        }
+
         // Атомарный инкремент view count (без race condition)
         couponOfferRepository.incrementViewCount(id);
 
