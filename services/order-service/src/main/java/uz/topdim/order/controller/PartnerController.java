@@ -1,19 +1,24 @@
 package uz.topdim.order.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
+import uz.topdim.order.dto.CreateRedemptionRequest;
 import uz.topdim.order.dto.PartnerStatsResponse;
+import uz.topdim.order.dto.RedeemCouponResponse;
 import uz.topdim.order.dto.RedemptionResponse;
+import uz.topdim.order.entity.PurchasedCoupon;
+import uz.topdim.order.service.OrderService;
+import uz.topdim.order.service.PartnerMerchantResolver;
 import uz.topdim.order.service.PartnerService;
-import java.util.List;
 
 /**
- * Контроллер партнёра — статистика и погашения.
- * merchantId и couponOfferIds передаются через headers из Gateway.
+ * Контроллер партнёра — погашение купонов, статистика и история.
+ * merchantId резолвится из доверенного X-User-Id через coupon-service.
  */
 @RestController
 @RequestMapping("/api/v1/partner")
@@ -22,12 +27,26 @@ import java.util.List;
 public class PartnerController {
 
     private final PartnerService partnerService;
+    private final OrderService orderService;
+    private final PartnerMerchantResolver partnerMerchantResolver;
+
+    /** Погашение купона по PIN-коду. */
+    @PostMapping("/redemptions")
+    public ResponseEntity<ApiResponse<RedeemCouponResponse>> createRedemption(
+            @RequestHeader("X-User-Id") Long userId,
+            @Valid @RequestBody CreateRedemptionRequest request
+    ) {
+        Long merchantId = partnerMerchantResolver.resolveMerchantId(userId);
+        String couponCode = request.getCouponCode().trim().toUpperCase();
+        PurchasedCoupon coupon = orderService.redeemCoupon(couponCode, merchantId, request.getStaffName());
+        return ResponseEntity.ok(ApiResponse.success("Купон использован", orderService.mapToRedeemResponse(coupon)));
+    }
 
     /** Статистика продаж партнёра. */
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<PartnerStatsResponse>> getStats(
             @RequestHeader("X-Merchant-Id") Long merchantId,
-            @RequestParam List<Long> couponOfferIds
+            @RequestParam java.util.List<Long> couponOfferIds
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 partnerService.getStats(merchantId, couponOfferIds)));

@@ -136,10 +136,10 @@ public class OrderController {
 
     // ==================== Redemption ====================
 
-    /** Погашение купона (QR / код). */
+    /** Погашение купона (legacy endpoint). Предпочтительный — POST /partner/redemptions. */
     @PreAuthorize("hasAnyRole('PARTNER', 'ADMIN', 'SUPER_ADMIN')")
     @PostMapping("/api/v1/orders/redeem")
-    public ResponseEntity<ApiResponse<PurchasedCoupon>> redeemCoupon(
+    public ResponseEntity<ApiResponse<RedeemCouponResponse>> redeemCoupon(
             @RequestHeader("X-Merchant-Id") Long merchantId,
             @Valid @RequestBody RedeemCouponRequest request
     ) {
@@ -148,7 +148,7 @@ public class OrderController {
                 merchantId,
                 request.getStaffName()
         );
-        return ResponseEntity.ok(ApiResponse.success("Купон использован", coupon));
+        return ResponseEntity.ok(ApiResponse.success("Купон использован", orderService.mapToRedeemResponse(coupon)));
     }
 
     // ==================== Refund Requests ====================

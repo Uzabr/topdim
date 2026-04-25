@@ -15,6 +15,7 @@ import uz.topdim.order.client.CouponPurchaseSnapshot;
 import uz.topdim.order.dto.CartResponse;
 import uz.topdim.order.dto.OrderResponse;
 import uz.topdim.order.dto.PurchasedCouponResponse;
+import uz.topdim.order.dto.RedeemCouponResponse;
 import uz.topdim.order.entity.*;
 import uz.topdim.order.repository.*;
 
@@ -623,6 +624,26 @@ public class OrderService {
                 .merchantAddress(coupon.getMerchantAddress())
                 .merchantPhone(coupon.getMerchantPhone())
                 .merchantWorkingHours(coupon.getMerchantWorkingHours())
+                .purchasedAt(coupon.getPurchasedAt())
+                .expiresAt(coupon.getExpiresAt())
+                .usedAt(coupon.getUsedAt())
+                .build();
+    }
+
+    /**
+     * Маппит PurchasedCoupon в RedeemCouponResponse для партнёрского UI.
+     */
+    public RedeemCouponResponse mapToRedeemResponse(PurchasedCoupon coupon) {
+        return RedeemCouponResponse.builder()
+                .purchasedCouponId(coupon.getId())
+                .couponOfferId(coupon.getCouponOfferId())
+                .couponOptionId(coupon.getCouponOptionId())
+                .couponTitle(coupon.getCouponTitle())
+                .optionTitle(coupon.getOptionTitle())
+                .couponCode(coupon.getCouponCode())
+                .status(coupon.getStatus().name())
+                .merchantId(coupon.getMerchantId())
+                .merchantName(coupon.getMerchantName())
                 .purchasedAt(coupon.getPurchasedAt())
                 .expiresAt(coupon.getExpiresAt())
                 .usedAt(coupon.getUsedAt())
