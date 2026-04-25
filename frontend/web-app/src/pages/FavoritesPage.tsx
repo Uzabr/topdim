@@ -5,9 +5,8 @@ import { useFavoritesStore } from '../store/favoritesStore';
 import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
 import { couponsApi } from '../api/coupons';
-import { topdimDeals } from '../data/topdim';
 import { useLocalePath } from '../hooks/useLocalePath';
-import { deriveCouponPreview } from '../utils/couponPreview';
+import { mapCouponOfferToCardData } from '../utils/couponCardMapper';
 import './FavoritesPage.css';
 
 export default function FavoritesPage() {
@@ -22,46 +21,7 @@ export default function FavoritesPage() {
 
   const apiDeals = couponsData || [];
 
-  const mappedDeals: CouponCardData[] = (apiDeals.length > 0)
-    ? apiDeals.map((deal: any) => ({
-        id: deal.id,
-        title: deal.title,
-        offerDescription: deal.offerDescription,
-        shortDescription: deriveCouponPreview(deal.offerDescription),
-        merchant: deal.merchant,
-        category: deal.category,
-        oldPrice: deal.oldPrice,
-        fromPrice: deal.fromPrice,
-        discountPercent: deal.discountPercent,
-        coverImageUrl: deal.coverImageUrl,
-        totalSold: deal.totalSold || 0,
-        rating: deal.averageRating || 4.5 + Math.random() * 0.4,
-        reviewCount: deal.reviewCount || Math.floor((deal.totalSold || 0) * 0.3),
-        address: deal.merchant?.primaryLocation?.address,
-        location: deal.merchant?.primaryLocation?.address || 'Ташкент',
-        isHot: (deal.discountPercent || 0) >= 50,
-        countdownText: '23:59:59',
-        giftAvailable: deal.giftAvailable,
-      }))
-    : topdimDeals.map((d) => ({
-        id: d.id,
-        title: d.title,
-        offerDescription: d.offerDescription,
-        shortDescription: deriveCouponPreview(d.offerDescription),
-        merchant: d.merchant || { id: 0, name: 'TopDim' },
-        category: d.category,
-        oldPrice: d.oldPrice,
-        fromPrice: d.fromPrice,
-        discountPercent: d.discountPercent,
-        coverImageUrl: d.coverImageUrl || d.image,
-        totalSold: d.totalSold,
-        rating: d.rating,
-        reviewCount: d.reviews,
-        location: d.location,
-        isHot: d.isHot,
-        countdownText: d.countdownText || '23:59:59',
-        giftAvailable: d.giftAvailable,
-      }));
+  const mappedDeals: CouponCardData[] = apiDeals.map(mapCouponOfferToCardData);
 
   const mapped = mappedDeals.filter(deal => favoriteIds.includes(deal.id));
 
