@@ -11,7 +11,7 @@ interface Props {
 
 export default function DirectoryShopCard({ shop, compact = false }: Props) {
   const lp = useLocalePath();
-  const CardWrapper: any = shop.isExternal ? 'a' : Link;
+  const CardWrapper: React.ElementType = shop.isExternal ? 'a' : Link;
   const linkProps = shop.isExternal
     ? { href: `https://2gis.uz/search/${encodeURIComponent(shop.name)}`, target: '_blank', rel: 'noreferrer' }
     : { to: lp(`/shops/${shop.id}`) };

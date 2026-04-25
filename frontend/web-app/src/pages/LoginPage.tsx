@@ -34,18 +34,25 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const lp = useLocalePath();
 
+  type FormData = {
+    email: string;
+    password: string;
+    firstName?: string;
+    phone?: string;
+  };
+
   const {
     register: formRegister,
     handleSubmit,
     control,
     formState: { errors },
     reset,
-  } = useForm<any>({
+  } = useForm<FormData>({
     resolver: zodResolver(isLogin ? loginSchema : registerSchema),
     mode: 'onBlur',
   });
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: FormData) => {
     setServerError('');
     try {
       if (isLogin) {
@@ -54,13 +61,14 @@ export default function LoginPage() {
         await register({
           email: data.email,
           password: data.password,
-          firstName: data.firstName,
+          firstName: data.firstName || '',
           phone: data.phone,
         });
       }
       navigate(lp('/'));
-    } catch (err: any) {
-      setServerError(err.response?.data?.message || 'Ошибка. Попробуйте ещё раз.');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setServerError(error.response?.data?.message || 'Ошибка. Попробуйте ещё раз.');
     }
   };
 

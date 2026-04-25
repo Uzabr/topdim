@@ -39,10 +39,10 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
   useEffect(() => {
     if (!coupon.countdownText || !coupon.countdownText.includes(':')) return;
 
-    let parts = coupon.countdownText.split(':').map(Number);
+    const parts = coupon.countdownText.split(':').map(Number);
     if (parts.length !== 3 || parts.some(isNaN)) return;
 
-    let [hours, minutes, seconds] = parts;
+    const [hours, minutes, seconds] = parts;
     let totalSeconds = hours * 3600 + minutes * 60 + seconds;
 
     const timer = setInterval(() => {

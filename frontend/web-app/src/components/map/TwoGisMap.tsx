@@ -3,6 +3,8 @@ import { load } from '@2gis/mapgl';
 import type { Bazaar } from '../../api/bazaars';
 import './TwoGisMap.css';
 
+import type { Map, Marker, Polygon, MapPointerEvent } from '@2gis/mapgl/types';
+
 const MAPGL_KEY = 'REMOVED_MAP_API_KEY'; // public demo key
 
 interface TwoGisMapProps {
@@ -30,12 +32,12 @@ export default function TwoGisMap({
   staticMarker,
 }: TwoGisMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const mapglRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const drawPolygonRef = useRef<any>(null);
+  const mapRef = useRef<Map | null>(null);
+  const mapglRef = useRef<Awaited<ReturnType<typeof load>> | null>(null);
+  const markersRef = useRef<Marker[]>([]);
+  const drawPolygonRef = useRef<Polygon | null>(null);
   const drawPointsRef = useRef<[number, number][]>([]);
-  const tempMarkersRef = useRef<any[]>([]);
+  const tempMarkersRef = useRef<Marker[]>([]);
 
   // Initialize map
   useEffect(() => {
@@ -127,6 +129,7 @@ export default function TwoGisMap({
   useEffect(() => {
     const map = mapRef.current;
     const mapgl = mapglRef.current;
+    const container = containerRef.current;
     if (!map || !mapgl) return;
 
     if (!isDrawing) {
@@ -135,11 +138,11 @@ export default function TwoGisMap({
     }
 
     // Change cursor
-    if (containerRef.current) {
-      containerRef.current.style.cursor = 'crosshair';
+    if (container) {
+      container.style.cursor = 'crosshair';
     }
 
-    const handleClick = (e: any) => {
+    const handleClick = (e: MapPointerEvent) => {
       const [lon, lat] = e.lngLat;
       drawPointsRef.current.push([lon, lat]);
 
@@ -179,19 +182,21 @@ export default function TwoGisMap({
 
       onAreaSelect?.(bounds);
 
-      if (containerRef.current) {
-        containerRef.current.style.cursor = '';
+      if (container) {
+        container.style.cursor = '';
       }
     };
 
     map.on('click', handleClick);
+    // @ts-expect-error MapGL typing is missing dblclick event
     map.on('dblclick', handleDblClick);
 
     return () => {
       map.off('click', handleClick);
+      // @ts-expect-error MapGL typing is missing dblclick event
       map.off('dblclick', handleDblClick);
-      if (containerRef.current) {
-        containerRef.current.style.cursor = '';
+      if (container) {
+        container.style.cursor = '';
       }
     };
   }, [isDrawing, onAreaSelect, clearDrawing]);

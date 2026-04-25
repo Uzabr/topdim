@@ -73,8 +73,9 @@ export default function CheckoutPage() {
       clearCart();
       // Переход на страницу оплаты (Stage 6) или профиль
       navigate(lp(`/payment/${order.id}`), { replace: true });
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка оформления заказа');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || 'Ошибка оформления заказа');
     } finally {
       setIsLoading(false);
     }
