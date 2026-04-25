@@ -604,15 +604,17 @@ CANCELLED → отменён
 
 ---
 
-### POST `/api/v1/orders/redeem` — Погашение купона
+### POST `/api/v1/orders/redeem` — Погашение купона (Legacy)
 
-**Auth:** ✅ Bearer Token
+> **Deprecated.** Используйте `POST /api/v1/partner/redemptions` вместо этого.
+
+**Auth:** ✅ Bearer Token (PARTNER, ADMIN, SUPER_ADMIN)
 
 **Headers:**
 
 | Header | Required | Source |
 |---|---|---|
-| `X-Merchant-Id` | yes | API Gateway / authenticated partner context |
+| `X-Merchant-Id` | yes | Legacy — gateway не пробрасывает; используйте новый endpoint |
 
 **Request:**
 ```json
@@ -622,9 +624,92 @@ CANCELLED → отменён
 }
 ```
 
-`merchantId` must not be accepted from request body for ownership decisions.
+**Response:** `200 OK` — RedeemCouponResponse
 
-**Response:** `200 OK` — PurchasedCoupon (status: USED)
+---
+
+### POST `/api/v1/partner/redemptions` — Погашение купона (Preferred)
+
+**Auth:** ✅ Bearer Token (PARTNER, ADMIN, SUPER_ADMIN)
+
+**Headers:**
+
+| Header | Required | Source |
+|---|---|---|
+| `X-User-Id` | yes | API Gateway (из JWT) |
+
+Backend резолвит `merchantId` из `X-User-Id` через coupon-service. Frontend **не** должен передавать `merchantId`.
+
+**Request:**
+```json
+{
+  "couponCode": "TDSP-AB12CD",
+  "staffName": "Анна"
+}
+```
+
+`couponCode` автоматически trim + toUpperCase на бэкенде.
+
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "message": "Купон использован",
+  "data": {
+    "purchasedCouponId": 501,
+    "couponOfferId": 10,
+    "couponOptionId": 20,
+    "couponTitle": "SPA-массаж",
+    "optionTitle": "Стандарт",
+    "couponCode": "TDSP-AB12CD",
+    "status": "USED",
+    "merchantId": 77,
+    "merchantName": "SPA Oasis",
+    "purchasedAt": "2026-04-20T10:00:00",
+    "expiresAt": "2026-05-20T10:00:00",
+    "usedAt": "2026-04-26T12:00:00"
+  }
+}
+```
+
+**Ошибки:**
+- `409` — купон уже использован / принадлежит другому мерчанту / мерчант не активен
+- `404` — купон не найден
+
+---
+
+### GET `/api/v1/partner/stats` — Статистика партнёра
+
+**Auth:** ✅ Bearer Token (PARTNER, ADMIN, SUPER_ADMIN)
+
+**Headers:** `X-User-Id` (из JWT gateway)
+
+merchantId резолвится автоматически. Запрос не требует `couponOfferIds`.
+
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "totalCoupons": 5,
+    "totalSold": 120,
+    "totalRedeemed": 48,
+    "totalRevenue": 2400000
+  }
+}
+```
+
+---
+
+### GET `/api/v1/partner/redemptions` — История погашений
+
+**Auth:** ✅ Bearer Token (PARTNER, ADMIN, SUPER_ADMIN)
+
+**Headers:** `X-User-Id` (из JWT gateway)
+
+**Params:** `page` (default: 0), `size` (default: 20)
+
+**Response:** `200 OK` — Page<RedemptionResponse>
 
 ---
 

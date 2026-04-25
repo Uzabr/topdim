@@ -90,6 +90,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     headers.remove("X-User-Id");
                     headers.remove("X-User-Email");
                     headers.remove("X-User-Role");
+                    headers.remove("X-Merchant-Id");
                 })
                 .build();
         exchange = exchange.mutate().request(cleanedRequest).build();

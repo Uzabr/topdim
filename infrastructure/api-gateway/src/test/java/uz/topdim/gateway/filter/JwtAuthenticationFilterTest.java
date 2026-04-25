@@ -84,6 +84,33 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
+    @DisplayName("защищённый запрос: внешний X-Merchant-Id удаляется из downstream")
+    void protectedRequest_externalMerchantId_isStripped() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        String token = createToken("7", "PARTNER", "partner@topdim.uz", "jti-456", 1L);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/partner/redemptions")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header("X-Merchant-Id", "spoofed-merchant")
+                        .build()
+        );
+
+        when(tokenValidationService.isTokenInvalid("jti-456", "7", 1L)).thenReturn(Mono.just(false));
+        when(gatewayFilterChain.filter(any())).thenReturn(Mono.empty());
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        ArgumentCaptor<org.springframework.web.server.ServerWebExchange> exchangeCaptor =
+                ArgumentCaptor.forClass(org.springframework.web.server.ServerWebExchange.class);
+        verify(gatewayFilterChain).filter(exchangeCaptor.capture());
+
+        HttpHeaders forwardedHeaders = exchangeCaptor.getValue().getRequest().getHeaders();
+        assertThat(forwardedHeaders.getFirst("X-User-Id")).isEqualTo("7");
+        assertThat(forwardedHeaders.getFirst("X-User-Role")).isEqualTo("PARTNER");
+        assertThat(forwardedHeaders.containsKey("X-Merchant-Id")).isFalse();
+    }
+
+    @Test
     @DisplayName("защищённый запрос: invalidated token отклоняется до downstream")
     void protectedRequest_withInvalidatedToken_returnsUnauthorized() {
         ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
