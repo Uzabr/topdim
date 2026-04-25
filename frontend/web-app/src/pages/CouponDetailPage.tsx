@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Gift, ShoppingCart, TrendingUp, Calendar, Clock, Info, Users, CreditCard, Check } from 'lucide-react';
@@ -19,8 +19,8 @@ import ShareButton from '../components/ui/ShareButton';
 import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
 import { useLocalePath } from '../hooks/useLocalePath';
-import { topdimDeals } from '../data/topdim';
 import { deriveCouponPreview } from '../utils/couponPreview';
+import { mapCouponOfferToCardData } from '../utils/couponCardMapper';
 import CouponUnavailableState from '../components/coupon/CouponUnavailableState';
 import './CouponDetailPage.css';
 
@@ -59,6 +59,24 @@ export default function CouponDetailPage() {
     enabled: !!id,
     retry: false,
   });
+
+  const { data: relatedCoupons = [] } = useQuery({
+    queryKey: ['related-coupons', coupon?.category?.id, coupon?.id],
+    queryFn: () => couponsApi.getCatalog({
+      categoryId: coupon?.category?.id,
+      size: 6,
+    }),
+    select: (res) => res.data.data.content,
+    enabled: !!coupon?.category?.id,
+  });
+
+  useEffect(() => {
+    if (!coupon || typeof document === 'undefined') {
+      return;
+    }
+
+    document.title = `${coupon.title} | TopDim`;
+  }, [coupon]);
 
   if (isLoading) {
     return (
@@ -127,36 +145,16 @@ export default function CouponDetailPage() {
     optionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  // Related deals
-  const relatedDeals: CouponCardData[] = topdimDeals
-    .filter((d) => d.id !== c.id)
+  const relatedDeals: CouponCardData[] = relatedCoupons
+    .filter((deal) => deal.id !== c.id)
     .slice(0, 6)
-    .map((d) => ({
-      id: d.id,
-      title: d.title,
-      offerDescription: d.offerDescription,
-      shortDescription: deriveCouponPreview(d.offerDescription),
-      merchant: d.merchant,
-      category: d.category,
-      oldPrice: d.oldPrice,
-      fromPrice: d.fromPrice,
-      discountPercent: d.discountPercent,
-      coverImageUrl: d.coverImageUrl || d.image,
-      totalSold: d.totalSold,
-      rating: d.rating,
-      reviewCount: d.reviews,
-      location: d.location,
-      isHot: d.isHot,
-    }));
+    .map(mapCouponOfferToCardData);
 
   // Average rating
   const avgRating = MOCK_REVIEWS.reduce((s, r) => s + r.rating, 0) / MOCK_REVIEWS.length;
 
   return (
     <div className="detail-page">
-      {/* SEO: title */}
-      {typeof document !== 'undefined' && (document.title = `${c.title} | TopDim`)}
-
       {/* Breadcrumbs */}
       <div className="container">
         <Breadcrumbs items={[
