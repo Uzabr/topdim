@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.order.client.CouponClient;
 import uz.topdim.order.client.CouponPurchaseSnapshot;
+import uz.topdim.order.dto.PurchasedCouponResponse;
 import uz.topdim.order.entity.*;
 import uz.topdim.order.repository.*;
 
@@ -405,6 +406,10 @@ class OrderServiceTest {
                 .couponTitle("SPA").optionTitle("Standard")
                 .unitPrice(BigDecimal.valueOf(150000)).quantity(1)
                 .merchantId(77L)
+                .merchantName("SPA Oasis")
+                .merchantAddress("Ташкент, ул. Амира Темура, 10")
+                .merchantPhone("+998901234567")
+                .merchantWorkingHours("10:00-22:00")
                 .expiresAt(LocalDateTime.of(2027, 7, 1, 12, 0))
                 .gift(false).build();
         Order order = Order.builder().id(100L).userId(10L)
@@ -424,7 +429,42 @@ class OrderServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getMerchantId()).isEqualTo(77L);
+        assertThat(result.get(0).getMerchantName()).isEqualTo("SPA Oasis");
+        assertThat(result.get(0).getMerchantAddress()).isEqualTo("Ташкент, ул. Амира Темура, 10");
+        assertThat(result.get(0).getMerchantPhone()).isEqualTo("+998901234567");
+        assertThat(result.get(0).getMerchantWorkingHours()).isEqualTo("10:00-22:00");
         assertThat(result.get(0).getExpiresAt()).isEqualTo(LocalDateTime.of(2027, 7, 1, 12, 0));
+    }
+
+    @Test
+    @DisplayName("Purchased coupon response: exposes usage context for profile")
+    void mapToCouponResponse_includesUsageContext() {
+        PurchasedCoupon coupon = PurchasedCoupon.builder()
+                .id(501L)
+                .couponOfferId(10L)
+                .couponOptionId(20L)
+                .couponTitle("SPA")
+                .optionTitle("Standard")
+                .couponCode("CP-1234")
+                .qrToken("qr-token")
+                .status(PurchasedCouponStatus.ACTIVE)
+                .merchantId(77L)
+                .merchantName("SPA Oasis")
+                .merchantAddress("Ташкент, ул. Амира Темура, 10")
+                .merchantPhone("+998901234567")
+                .merchantWorkingHours("10:00-22:00")
+                .expiresAt(LocalDateTime.of(2027, 7, 1, 12, 0))
+                .build();
+
+        PurchasedCouponResponse response = orderService.mapToCouponResponse(coupon);
+
+        assertThat(response.getCouponOfferId()).isEqualTo(10L);
+        assertThat(response.getCouponOptionId()).isEqualTo(20L);
+        assertThat(response.getMerchantId()).isEqualTo(77L);
+        assertThat(response.getMerchantName()).isEqualTo("SPA Oasis");
+        assertThat(response.getMerchantAddress()).isEqualTo("Ташкент, ул. Амира Темура, 10");
+        assertThat(response.getMerchantPhone()).isEqualTo("+998901234567");
+        assertThat(response.getMerchantWorkingHours()).isEqualTo("10:00-22:00");
     }
 
     // ==================== User Coupons Read ====================

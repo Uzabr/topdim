@@ -571,13 +571,18 @@ Frontend: Перенаправить на страницу оплаты
   "data": [
     {
       "id": 501,
-      "orderId": 45,
       "couponOfferId": 1,
+      "couponOptionId": 10,
       "couponTitle": "Скидка 50% на SPA массаж",
-      "optionName": "Премиум (90 мин)",
-      "code": "TDSP-AB12CD",
+      "optionTitle": "Премиум (90 мин)",
+      "couponCode": "TDSP-AB12CD",
       "qrToken": "uuid-unique-qr-token",
       "status": "ACTIVE",
+      "merchantId": 77,
+      "merchantName": "SPA Oasis",
+      "merchantAddress": "Ташкент, ул. Амира Темура, 10",
+      "merchantPhone": "+998901234567",
+      "merchantWorkingHours": "10:00-22:00",
       "purchasedAt": "2026-03-25T01:05:00",
       "expiresAt": "2026-06-30T23:59:59",
       "usedAt": null
@@ -585,6 +590,8 @@ Frontend: Перенаправить на страницу оплаты
   ]
 }
 ```
+
+> Merchant usage fields (`merchantName`, `merchantAddress`, `merchantPhone`, `merchantWorkingHours`) are purchase-time snapshots. They are shown in the user's profile even if the original public coupon offer later becomes `SOLD_OUT` or `ARCHIVED`.
 
 **Статусы купона:**
 

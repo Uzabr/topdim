@@ -117,6 +117,11 @@ public class CouponOfferService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Опция купона не найдена"));
 
+        Merchant merchant = offer.getMerchant();
+        MerchantLocation primaryLocation = merchant != null
+                ? merchantLocationRepository.findByMerchantIdAndPrimaryTrue(merchant.getId()).orElse(null)
+                : null;
+
         return CouponPurchaseSnapshotResponse.builder()
                 .couponOfferId(offer.getId())
                 .couponOptionId(option.getId())
@@ -127,7 +132,11 @@ public class CouponOfferService {
                 .couponPrice(option.getCouponPrice())
                 .quantityLimit(option.getQuantityLimit())
                 .quantitySold(option.getQuantitySold())
-                .merchantId(offer.getMerchant() != null ? offer.getMerchant().getId() : null)
+                .merchantId(merchant != null ? merchant.getId() : null)
+                .merchantName(merchant != null ? merchant.getName() : null)
+                .merchantAddress(primaryLocation != null ? primaryLocation.getAddress() : null)
+                .merchantPhone(primaryLocation != null ? primaryLocation.getPhone() : null)
+                .merchantWorkingHours(primaryLocation != null ? primaryLocation.getWorkingHours() : null)
                 .buyUntil(offer.getBuyUntil())
                 .useUntil(offer.getUseUntil())
                 .build();

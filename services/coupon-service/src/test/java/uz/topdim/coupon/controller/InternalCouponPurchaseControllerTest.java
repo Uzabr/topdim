@@ -52,6 +52,10 @@ class InternalCouponPurchaseControllerTest {
                         .quantityLimit(5)
                         .quantitySold(2)
                         .merchantId(77L)
+                        .merchantName("SPA Oasis")
+                        .merchantAddress("Ташкент, ул. Амира Темура, 10")
+                        .merchantPhone("+998901234567")
+                        .merchantWorkingHours("10:00-22:00")
                         .buyUntil(LocalDateTime.of(2027, 6, 1, 12, 0))
                         .useUntil(LocalDateTime.of(2027, 7, 1, 12, 0))
                         .build()
@@ -66,6 +70,10 @@ class InternalCouponPurchaseControllerTest {
                 .andExpect(jsonPath("$.data.optionTitle").value("Canonical option"))
                 .andExpect(jsonPath("$.data.couponPrice").value(99000))
                 .andExpect(jsonPath("$.data.merchantId").value(77))
+                .andExpect(jsonPath("$.data.merchantName").value("SPA Oasis"))
+                .andExpect(jsonPath("$.data.merchantAddress").value("Ташкент, ул. Амира Темура, 10"))
+                .andExpect(jsonPath("$.data.merchantPhone").value("+998901234567"))
+                .andExpect(jsonPath("$.data.merchantWorkingHours").value("10:00-22:00"))
                 .andExpect(jsonPath("$.data.useUntil").exists());
     }
 

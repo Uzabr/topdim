@@ -23,6 +23,10 @@ public class CouponPurchaseSnapshotResponse {
     private Integer quantityLimit;
     private int quantitySold;
     private Long merchantId;
+    private String merchantName;
+    private String merchantAddress;
+    private String merchantPhone;
+    private String merchantWorkingHours;
     private LocalDateTime buyUntil;
     private LocalDateTime useUntil;
 }

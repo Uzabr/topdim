@@ -53,11 +53,18 @@ export interface OrderResponse {
 
 export interface PurchasedCoupon {
   id: number;
+  couponOfferId: number;
+  couponOptionId: number;
   couponTitle: string;
   optionTitle: string;
   couponCode: string;
   qrToken: string;
   status: 'ACTIVE' | 'USED' | 'EXPIRED' | 'CANCELLED';
+  merchantId?: number;
+  merchantName?: string;
+  merchantAddress?: string;
+  merchantPhone?: string;
+  merchantWorkingHours?: string;
   purchasedAt: string;
   expiresAt?: string;
   usedAt?: string;

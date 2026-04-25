@@ -920,15 +920,20 @@ Checkout содержит:
 - опция;
 - PIN/код;
 - статус;
-- срок действия.
+- срок действия;
+- **merchant name** (purchase-time snapshot);
+- **merchant address** (purchase-time snapshot);
+- **merchant phone** (purchase-time snapshot);
+- **merchant working hours** (purchase-time snapshot).
 
-### Рекомендация
+### Реализовано (v2 — usage snapshot)
 
-- В MVP purchased coupon card должна еще явно объяснять:
-  - где использовать;
-  - что показать;
-  - можно ли вернуть;
-  - что делать, если партнер не принимает купон.
+- Purchased coupon card содержит:
+  - где использовать (адрес партнёра, зафиксированный при покупке);
+  - что показать (PIN-код, QR-токен);
+  - контакт партнёра (телефон, часы работы);
+  - что делать, если партнёр не принимает купон (help-hint).
+- Merchant usage fields НЕ зависят от public coupon visibility — оффер может стать SOLD_OUT/ARCHIVED, данные купона останутся.
 
 ## 9.12. Bazaar browsing
 

@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import uz.topdim.coupon.dto.CouponOfferResponse;
+import uz.topdim.coupon.dto.CouponPurchaseSnapshotResponse;
 import uz.topdim.coupon.dto.CreateCouponOfferRequest;
 import uz.topdim.coupon.entity.*;
 import uz.topdim.coupon.exception.ResourceNotFoundException;
@@ -644,5 +645,44 @@ class CouponOfferServiceTest {
         CouponOfferResponse result = couponOfferService.mapToResponse(offer);
 
         assertThat(result.getOfferDescription()).isNull();
+    }
+
+    // ==================== Purchase Snapshot Merchant Context ====================
+
+    @Test
+    @DisplayName("Purchase snapshot: includes merchant usage context from primary location")
+    void getPurchaseSnapshot_includesMerchantUsageContext() {
+        CouponOffer offer = createTestOffer();
+        CouponOption option = CouponOption.builder()
+                .id(20L)
+                .couponOffer(offer)
+                .title("Standard")
+                .couponPrice(BigDecimal.valueOf(99000))
+                .regularPrice(BigDecimal.valueOf(150000))
+                .quantityLimit(10)
+                .quantitySold(2)
+                .status(CouponOptionStatus.ACTIVE)
+                .build();
+        offer.setOptions(new ArrayList<>(List.of(option)));
+        MerchantLocation location = MerchantLocation.builder()
+                .id(30L)
+                .merchant(offer.getMerchant())
+                .address("\u0422\u0430\u0448\u043a\u0435\u043d\u0442, \u0443\u043b. \u0410\u043c\u0438\u0440\u0430 \u0422\u0435\u043c\u0443\u0440\u0430, 10")
+                .phone("+998901234567")
+                .workingHours("10:00-22:00")
+                .primary(true)
+                .active(true)
+                .build();
+
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(merchantLocationRepository.findByMerchantIdAndPrimaryTrue(1L)).thenReturn(Optional.of(location));
+
+        CouponPurchaseSnapshotResponse result = couponOfferService.getPurchaseSnapshot(1L, 20L);
+
+        assertThat(result.getMerchantId()).isEqualTo(1L);
+        assertThat(result.getMerchantName()).isEqualTo("SPA Oasis");
+        assertThat(result.getMerchantAddress()).isEqualTo("\u0422\u0430\u0448\u043a\u0435\u043d\u0442, \u0443\u043b. \u0410\u043c\u0438\u0440\u0430 \u0422\u0435\u043c\u0443\u0440\u0430, 10");
+        assertThat(result.getMerchantPhone()).isEqualTo("+998901234567");
+        assertThat(result.getMerchantWorkingHours()).isEqualTo("10:00-22:00");
     }
 }

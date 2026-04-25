@@ -55,6 +55,18 @@ public class PurchasedCoupon {
     @Column(name = "merchant_id")
     private Long merchantId;
 
+    @Column(name = "merchant_name")
+    private String merchantName;
+
+    @Column(name = "merchant_address", columnDefinition = "TEXT")
+    private String merchantAddress;
+
+    @Column(name = "merchant_phone")
+    private String merchantPhone;
+
+    @Column(name = "merchant_working_hours")
+    private String merchantWorkingHours;
+
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
