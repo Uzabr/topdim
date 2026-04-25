@@ -17,6 +17,13 @@ import { MerchantReviewPage } from './features/coupons/MerchantReviewPage';
 import { CategoriesPage } from './features/catalog/CategoriesPage';
 import { StaffPage } from './features/system/StaffPage';
 import { AuditLogPage } from './features/system/AuditLogPage';
+import { PartnerRedeemPage } from './features/partner-redemptions/PartnerRedeemPage';
+import { useAuthStore } from './store/authStore';
+
+function HomeRedirect() {
+  const role = useAuthStore((state) => state.user?.role);
+  return <Navigate to={role === 'PARTNER' ? '/partner/redeem' : '/dashboard'} replace />;
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -84,9 +91,16 @@ function App() {
                 </Route>
               </Route>
 
+              {/* Партнёрские роуты */}
+              <Route element={<ProtectedRoute allowedRoles={['PARTNER', 'ADMIN', 'SUPER_ADMIN']} />}>
+                <Route element={<AdminLayout />}>
+                  <Route path="/partner/redeem" element={<PartnerRedeemPage />} />
+                </Route>
+              </Route>
+
               {/* Корневой редирект */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<HomeRedirect />} />
+              <Route path="*" element={<HomeRedirect />} />
             </Routes>
           </BrowserRouter>
         </AntApp>
