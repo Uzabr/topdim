@@ -52,6 +52,9 @@ public class PurchasedCoupon {
     @Column(name = "purchased_at", updatable = false)
     private LocalDateTime purchasedAt;
 
+    @Column(name = "merchant_id")
+    private Long merchantId;
+
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 

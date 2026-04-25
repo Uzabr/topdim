@@ -318,7 +318,7 @@ LEAD → DRAFT → WAITING_FOR_MERCHANT → ACTIVE → SOLD_OUT
 ### Модели
 - `Cart` → `CartItem[]` (couponOfferId, optionId, quantity, unitPrice, isGift, giftRecipientName/Phone)
 - `Order` → `OrderItem[]` (orderNumber, userId, userEmail, userPhone, totalAmount, status)
-- `PurchasedCoupon` (couponCode, qrToken, status: ACTIVE/USED/EXPIRED/REFUNDED)
+- `PurchasedCoupon` (couponCode, qrToken, status: ACTIVE/USED/EXPIRED/CANCELLED)
 - `Redemption` (purchasedCoupon, redemptionCode, merchantId, redeemedByStaff)
 - `RefundRequest` (order, userId, reason, status: PENDING/APPROVED/REJECTED, adminComment)
 - `Complaint` (order, userId, reason, status, resolutionComment)

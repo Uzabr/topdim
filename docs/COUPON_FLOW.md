@@ -181,7 +181,8 @@ GET /api/v1/orders/my-coupons?status=ACTIVE
 ```
 POST /api/v1/orders/redeem
 Роль: PARTNER, ADMIN, SUPER_ADMIN
-Body: { "couponCode": "CP-A1B2C3D4", "merchantId": 5, "staffName": "Иван" }
+Headers: X-Merchant-Id: 5
+Body: { "couponCode": "CP-A1B2C3D4", "staffName": "Иван" }
 Сервис: OrderService.redeemCoupon()
 ```
 
@@ -199,7 +200,7 @@ Body: { "couponCode": "CP-A1B2C3D4", "merchantId": 5, "staffName": "Иван" }
 | `ACTIVE`   | Можно использовать       |
 | `USED`     | Погашён партнёром        |
 | `EXPIRED`  | Истёк срок действия      |
-| `REFUNDED` | Возвращён                |
+| `CANCELLED` | Отменён                 |
 
 ---
 

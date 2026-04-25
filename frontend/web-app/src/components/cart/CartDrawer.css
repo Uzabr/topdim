@@ -258,6 +258,19 @@
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
 }
 
+.cart-drawer__error {
+  padding: 10px 14px;
+  margin-bottom: var(--space-md);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 77, 79, 0.08);
+  border: 1px solid rgba(255, 77, 79, 0.2);
+  color: var(--danger);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
 .cart-drawer__total {
   display: flex;
   justify-content: space-between;

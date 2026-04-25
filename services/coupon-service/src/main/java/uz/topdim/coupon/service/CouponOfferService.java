@@ -99,6 +99,40 @@ public class CouponOfferService {
     }
 
     /**
+     * Получает snapshot для покупки (internal).
+     * НЕ инкрементит viewCount — для валидации заказа.
+     *
+     * @param couponId ID купона
+     * @param optionId ID опции
+     * @return snapshot с каноническими данными
+     */
+    @Transactional(readOnly = true)
+    public CouponPurchaseSnapshotResponse getPurchaseSnapshot(Long couponId, Long optionId) {
+        CouponOffer offer = couponOfferRepository.findById(couponId)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        CouponOption option = offer.getOptions().stream()
+                .filter(opt -> opt.getId().equals(optionId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Опция купона не найдена"));
+
+        return CouponPurchaseSnapshotResponse.builder()
+                .couponOfferId(offer.getId())
+                .couponOptionId(option.getId())
+                .couponTitle(offer.getTitle())
+                .optionTitle(option.getTitle())
+                .couponStatus(offer.getStatus().name())
+                .optionStatus(option.getStatus().name())
+                .couponPrice(option.getCouponPrice())
+                .quantityLimit(option.getQuantityLimit())
+                .quantitySold(option.getQuantitySold())
+                .merchantId(offer.getMerchant() != null ? offer.getMerchant().getId() : null)
+                .buyUntil(offer.getBuyUntil())
+                .useUntil(offer.getUseUntil())
+                .build();
+    }
+
+    /**
      * Получает детальную информацию о купоне (Admin).
      * НЕ инкрементит viewCount — для внутреннего просмотра/редактирования.
      *

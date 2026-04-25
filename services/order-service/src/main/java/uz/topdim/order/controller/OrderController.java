@@ -140,11 +140,12 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('PARTNER', 'ADMIN', 'SUPER_ADMIN')")
     @PostMapping("/api/v1/orders/redeem")
     public ResponseEntity<ApiResponse<PurchasedCoupon>> redeemCoupon(
+            @RequestHeader("X-Merchant-Id") Long merchantId,
             @Valid @RequestBody RedeemCouponRequest request
     ) {
         PurchasedCoupon coupon = orderService.redeemCoupon(
                 request.getCouponCode(),
-                request.getMerchantId(),
+                merchantId,
                 request.getStaffName()
         );
         return ResponseEntity.ok(ApiResponse.success("Купон использован", coupon));

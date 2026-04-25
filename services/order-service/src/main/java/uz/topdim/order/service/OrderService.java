@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.common.events.OrderCreatedEvent;
 import uz.topdim.common.events.CouponPurchasedEvent;
+import uz.topdim.common.dto.ApiResponse;
+import uz.topdim.order.client.CouponClient;
+import uz.topdim.order.client.CouponPurchaseSnapshot;
 import uz.topdim.order.dto.CartResponse;
 import uz.topdim.order.dto.OrderResponse;
 import uz.topdim.order.dto.PurchasedCouponResponse;
@@ -37,6 +40,7 @@ public class OrderService {
     private final RedemptionRepository redemptionRepository;
     private final RefundRequestRepository refundRequestRepository;
     private final RabbitTemplate rabbitTemplate;
+    private final CouponClient couponClient;
 
     // ==================== Cart ====================
 
@@ -71,14 +75,39 @@ public class OrderService {
     public Cart addToCart(Long userId, Long couponOfferId, Long couponOptionId,
                          String couponTitle, String optionTitle, BigDecimal unitPrice,
                          int quantity, boolean isGift, String giftName, String giftPhone) {
+        CouponPurchaseSnapshot snapshot = loadPurchaseSnapshot(couponOfferId, couponOptionId);
+
+        // Fail fast: status + expiry before touching cart
+        assertPurchasableStatus(snapshot);
+
         Cart cart = getCartByUserId(userId);
+        CartItem existing = cart.getItems().stream()
+                .filter(item -> item.getCouponOfferId().equals(couponOfferId)
+                        && item.getCouponOptionId().equals(couponOptionId))
+                .findFirst()
+                .orElse(null);
+
+        int requestedQuantity = quantity + (existing != null ? existing.getQuantity() : 0);
+        assertQuantityAvailable(snapshot, requestedQuantity);
+
+        if (existing != null) {
+            existing.setCouponTitle(snapshot.getCouponTitle());
+            existing.setOptionTitle(snapshot.getOptionTitle());
+            existing.setUnitPrice(snapshot.getCouponPrice());
+            existing.setQuantity(requestedQuantity);
+            existing.setGift(isGift);
+            existing.setGiftRecipientName(giftName);
+            existing.setGiftRecipientPhone(giftPhone);
+            return cartRepository.save(cart);
+        }
+
         CartItem item = CartItem.builder()
                 .cart(cart)
-                .couponOfferId(couponOfferId)
-                .couponOptionId(couponOptionId)
-                .couponTitle(couponTitle)
-                .optionTitle(optionTitle)
-                .unitPrice(unitPrice)
+                .couponOfferId(snapshot.getCouponOfferId())
+                .couponOptionId(snapshot.getCouponOptionId())
+                .couponTitle(snapshot.getCouponTitle())
+                .optionTitle(snapshot.getOptionTitle())
+                .unitPrice(snapshot.getCouponPrice())
                 .quantity(quantity)
                 .gift(isGift)
                 .giftRecipientName(giftName)
@@ -133,9 +162,36 @@ public class OrderService {
             throw new IllegalStateException("Корзина пуста");
         }
 
-        BigDecimal totalAmount = cart.getItems().stream()
-                .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Revalidate every cart line against canonical coupon data
+        List<OrderItem> orderItems = new ArrayList<>();
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (CartItem cartItem : cart.getItems()) {
+            CouponPurchaseSnapshot snapshot = loadPurchaseSnapshot(
+                    cartItem.getCouponOfferId(),
+                    cartItem.getCouponOptionId()
+            );
+            assertPurchasableStatus(snapshot);
+            assertQuantityAvailable(snapshot, cartItem.getQuantity());
+
+            BigDecimal lineTotal = snapshot.getCouponPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+            totalAmount = totalAmount.add(lineTotal);
+
+            OrderItem orderItem = OrderItem.builder()
+                    .couponOfferId(snapshot.getCouponOfferId())
+                    .couponOptionId(snapshot.getCouponOptionId())
+                    .couponTitle(snapshot.getCouponTitle())
+                    .optionTitle(snapshot.getOptionTitle())
+                    .unitPrice(snapshot.getCouponPrice())
+                    .quantity(cartItem.getQuantity())
+                    .merchantId(snapshot.getMerchantId())
+                    .expiresAt(snapshot.getUseUntil())
+                    .gift(cartItem.isGift())
+                    .giftRecipientName(cartItem.getGiftRecipientName())
+                    .giftRecipientPhone(cartItem.getGiftRecipientPhone())
+                    .build();
+            orderItems.add(orderItem);
+        }
 
         Order order = Order.builder()
                 .orderNumber(generateOrderNumber())
@@ -146,21 +202,8 @@ public class OrderService {
                 .status(OrderStatus.PENDING)
                 .build();
 
-        List<OrderItem> orderItems = new ArrayList<>();
-        for (CartItem cartItem : cart.getItems()) {
-            OrderItem orderItem = OrderItem.builder()
-                    .order(order)
-                    .couponOfferId(cartItem.getCouponOfferId())
-                    .couponOptionId(cartItem.getCouponOptionId())
-                    .couponTitle(cartItem.getCouponTitle())
-                    .optionTitle(cartItem.getOptionTitle())
-                    .unitPrice(cartItem.getUnitPrice())
-                    .quantity(cartItem.getQuantity())
-                    .gift(cartItem.isGift())
-                    .giftRecipientName(cartItem.getGiftRecipientName())
-                    .giftRecipientPhone(cartItem.getGiftRecipientPhone())
-                    .build();
-            orderItems.add(orderItem);
+        for (OrderItem orderItem : orderItems) {
+            orderItem.setOrder(order);
         }
         order.setItems(orderItems);
         order = orderRepository.save(order);
@@ -197,6 +240,12 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Заказ не найден"));
 
+        // Idempotency guard: return existing coupons without creating duplicates
+        List<PurchasedCoupon> existingCoupons = purchasedCouponRepository.findByOrderId(orderId);
+        if (!existingCoupons.isEmpty()) {
+            return existingCoupons;
+        }
+
         order.setStatus(OrderStatus.PAID);
         order.setPaidAt(LocalDateTime.now());
         orderRepository.save(order);
@@ -215,6 +264,8 @@ public class OrderService {
                         .couponCode(couponCode)
                         .qrToken(UUID.randomUUID().toString())
                         .status(PurchasedCouponStatus.ACTIVE)
+                        .merchantId(item.getMerchantId())
+                        .expiresAt(item.getExpiresAt())
                         .gift(item.isGift())
                         .giftRecipientName(item.getGiftRecipientName())
                         .giftRecipientPhone(item.getGiftRecipientPhone())
@@ -321,8 +372,9 @@ public class OrderService {
      * @param userId ID пользователя
      * @return список купонов (всех статусов)
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PurchasedCoupon> getUserCoupons(Long userId) {
+        expireOverduePurchasedCoupons();
         return purchasedCouponRepository.findByUserId(userId);
     }
 
@@ -332,8 +384,9 @@ public class OrderService {
      * @param userId ID пользователя
      * @return список купонов (всех статусов)
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PurchasedCoupon> getUserCouponsByStatus(Long userId, PurchasedCouponStatus status) {
+        expireOverduePurchasedCoupons();
         return purchasedCouponRepository.findByUserIdAndStatus(userId, status);
     }
 
@@ -351,11 +404,22 @@ public class OrderService {
      */
     @Transactional
     public PurchasedCoupon redeemCoupon(String couponCode, Long merchantId, String staffName) {
+        expireOverduePurchasedCoupons();
         PurchasedCoupon coupon = purchasedCouponRepository.findByCouponCode(couponCode)
                 .orElseThrow(() -> new IllegalArgumentException("Купон не найден"));
 
         if (coupon.getStatus() != PurchasedCouponStatus.ACTIVE) {
             throw new IllegalStateException("Купон не может быть использован. Статус: " + coupon.getStatus());
+        }
+
+        if (coupon.getExpiresAt() != null && coupon.getExpiresAt().isBefore(LocalDateTime.now())) {
+            coupon.setStatus(PurchasedCouponStatus.EXPIRED);
+            purchasedCouponRepository.save(coupon);
+            throw new IllegalStateException("Срок действия купона истёк");
+        }
+
+        if (coupon.getMerchantId() != null && !coupon.getMerchantId().equals(merchantId)) {
+            throw new IllegalStateException("Купон принадлежит другому мерчанту");
         }
 
         coupon.setStatus(PurchasedCouponStatus.USED);
@@ -439,6 +503,43 @@ public class OrderService {
 
     private String generateCouponCode() {
         return "CP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
+    // ==================== Expiry ====================
+
+    private void expireOverduePurchasedCoupons() {
+        purchasedCouponRepository.expireActiveCouponsBefore(LocalDateTime.now());
+    }
+
+    // ==================== Purchase validation ====================
+
+    private CouponPurchaseSnapshot loadPurchaseSnapshot(Long couponOfferId, Long couponOptionId) {
+        ApiResponse<CouponPurchaseSnapshot> response = couponClient.getPurchaseSnapshot(couponOfferId, couponOptionId);
+        if (response == null || response.getData() == null) {
+            throw new IllegalStateException("Купон недоступен для покупки");
+        }
+        return response.getData();
+    }
+
+    private void assertPurchasableStatus(CouponPurchaseSnapshot snapshot) {
+        if (!"ACTIVE".equals(snapshot.getCouponStatus())) {
+            throw new IllegalStateException("Купон недоступен для покупки");
+        }
+        if (!"ACTIVE".equals(snapshot.getOptionStatus())) {
+            throw new IllegalStateException("Опция купона недоступна для покупки");
+        }
+        if (snapshot.getBuyUntil() != null && snapshot.getBuyUntil().isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("Срок покупки купона истёк");
+        }
+    }
+
+    private void assertQuantityAvailable(CouponPurchaseSnapshot snapshot, int quantity) {
+        if (snapshot.getQuantityLimit() != null && snapshot.getQuantityLimit() > 0) {
+            int remaining = snapshot.getQuantityLimit() - snapshot.getQuantitySold();
+            if (quantity > remaining) {
+                throw new IllegalStateException("Недостаточно купонов в наличии");
+            }
+        }
     }
 
     // ==================== Mapping ====================

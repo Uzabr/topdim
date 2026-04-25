@@ -6,13 +6,15 @@ import { useLocalePath } from '../hooks/useLocalePath';
 import heroImage from '../assets/images/hero-banner.png';
 import { useQuery } from '@tanstack/react-query';
 import { couponsApi } from '../api/coupons';
-import type { Category } from '../api/coupons';
+import type { Category, CouponOffer } from '../api/coupons';
 import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
 import SearchBar from '../components/ui/SearchBar';
-import { topdimCategories, topdimDeals } from '../data/topdim';
-import { deriveCouponPreview } from '../utils/couponPreview';
+import { mapCouponOfferToCardData } from '../utils/couponCardMapper';
 import './HomePage.css';
+
+const EMPTY_CATEGORIES: Category[] = [];
+const EMPTY_COUPONS: CouponOffer[] = [];
 
 const CategoryIcon = ({ slug }: { slug?: string }) => {
   switch (slug) {
@@ -47,8 +49,8 @@ export default function HomePage() {
     select: (res) => res.data.data.content,
   });
 
-  const categories: Category[] = categoriesData || topdimCategories;
-  const apiDeals = couponsData || [];
+  const categories: Category[] = categoriesData ?? EMPTY_CATEGORIES;
+  const apiDeals = couponsData ?? EMPTY_COUPONS;
 
   const searchSuggestions = useMemo(() => {
     return categories.map((c) => ({
@@ -58,48 +60,7 @@ export default function HomePage() {
   }, [categories, i18n.language]);
 
   const mappedDeals: CouponCardData[] = useMemo(() => {
-    if (apiDeals.length > 0) {
-      return apiDeals.map((deal: any) => ({
-        id: deal.id,
-        title: deal.title,
-        offerDescription: deal.offerDescription,
-        shortDescription: deriveCouponPreview(deal.offerDescription),
-        merchant: deal.merchant || { id: 0, name: 'TopDim' },
-        category: deal.category,
-        oldPrice: deal.oldPrice,
-        fromPrice: deal.fromPrice,
-        discountPercent: deal.discountPercent,
-        coverImageUrl: deal.coverImageUrl,
-        totalSold: deal.totalSold || 0,
-        rating: deal.rating || 4.5 + Math.random() * 0.4,
-        reviewCount: deal.reviews || Math.floor((deal.totalSold || 0) * 0.3),
-        address: deal.merchant?.primaryLocation?.address,
-        location: deal.merchant?.primaryLocation?.address || 'Ташкент',
-        isHot: (deal.discountPercent || 0) >= 50,
-        countdownText: '23:59:59',
-        giftAvailable: deal.giftAvailable,
-      }));
-    }
-    return topdimDeals.map((d) => ({
-      id: d.id,
-      title: d.title,
-      offerDescription: d.offerDescription,
-      shortDescription: deriveCouponPreview(d.offerDescription),
-      merchant: d.merchant,
-      category: d.category,
-      oldPrice: d.oldPrice,
-      fromPrice: d.fromPrice,
-      discountPercent: d.discountPercent,
-      coverImageUrl: d.coverImageUrl || d.image,
-      totalSold: d.totalSold,
-      rating: d.rating,
-      reviewCount: d.reviews,
-      address: d.location,
-      location: d.location,
-      isHot: d.isHot,
-      countdownText: d.countdownText,
-      giftAvailable: d.giftAvailable,
-    }));
+    return apiDeals.map(mapCouponOfferToCardData);
   }, [apiDeals]);
 
 
@@ -107,8 +68,7 @@ export default function HomePage() {
     const normalizedSearch = search.trim().toLowerCase();
     return mappedDeals.filter((deal) => {
       const matchesCategory = activeCategory === null || deal.category?.id === activeCategory;
-      const preview = deal.shortDescription || deriveCouponPreview(deal.offerDescription);
-      const haystack = `${deal.title} ${preview || ''} ${deal.offerDescription || ''} ${deal.category?.name} ${deal.merchant?.name}`.toLowerCase();
+      const haystack = `${deal.title} ${deal.shortDescription || ''} ${deal.offerDescription || ''} ${deal.category?.name || ''} ${deal.merchant?.name || ''}`.toLowerCase();
       const matchesSearch = normalizedSearch.length === 0 || haystack.includes(normalizedSearch);
       return matchesCategory && matchesSearch;
     });
