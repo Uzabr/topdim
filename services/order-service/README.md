@@ -40,7 +40,9 @@ Cart → POST /orders → Order (PENDING) → publish OrderCreatedEvent
 
 ### Погашение купона
 ```
-POST /orders/redeem { couponCode, merchantId, staffName }
+POST /orders/redeem
+Header: X-Merchant-Id
+Body: { couponCode, staffName }
   → PurchasedCoupon.status = USED
   → Создаётся запись Redemption
 ```

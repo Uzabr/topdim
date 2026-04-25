@@ -3,6 +3,7 @@ package uz.topdim.order.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "order_items")
@@ -47,4 +48,10 @@ public class OrderItem {
 
     @Column(name = "gift_recipient_phone")
     private String giftRecipientPhone;
+
+    @Column(name = "merchant_id")
+    private Long merchantId;
+
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
 }

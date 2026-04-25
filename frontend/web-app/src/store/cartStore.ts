@@ -37,6 +37,7 @@ interface CartState {
 
   isOpen: boolean;
   isLoading: boolean;
+  error: string | null;
   totalItems: number;
   totalPrice: number;
 
@@ -49,6 +50,7 @@ interface CartState {
   updateQuantity: (key: string, quantity: number) => void;
   removeFromCart: (key: string) => void;
   clearCart: () => void;
+  clearError: () => void;
 
   // Auth-mode actions
   fetchBackendCart: () => Promise<void>;
@@ -122,11 +124,13 @@ export const useCartStore = create<CartState>((set, get) => ({
   items: initialItems,
   isOpen: false,
   isLoading: false,
+  error: null,
   ...calcLocalTotals(initialItems),
 
   openCart: () => set({ isOpen: true }),
   closeCart: () => set({ isOpen: false }),
   toggleCart: () => set((s) => ({ isOpen: !s.isOpen })),
+  clearError: () => set({ error: null }),
 
   setMode: (mode: CartMode) => {
     if (mode === 'auth') {
@@ -281,21 +285,24 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   addToBackendCart: async (request: AddToCartRequest) => {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     try {
       const response = await ordersApi.addToCart(request);
       const cart = response.data.data;
+      const backendItems = cart.items || [];
       set({
-        backendItems: cart.items,
+        backendItems,
         backendCartId: cart.id,
-        items: backendToLocal(cart.items),
+        items: backendToLocal(backendItems),
         isOpen: true,
         isLoading: false,
-        ...calcBackendTotals(cart.items),
+        error: null,
+        ...calcBackendTotals(backendItems),
       });
-    } catch (error) {
-      console.error('Failed to add to backend cart:', error);
-      set({ isLoading: false });
+    } catch (err: any) {
+      const message = err?.response?.data?.message || 'Не удалось добавить купон в корзину';
+      set({ isLoading: false, error: message });
+      throw err;
     }
   },
 

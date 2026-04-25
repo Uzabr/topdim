@@ -135,10 +135,14 @@ export default function ProfilePage() {
                         {coupon.status === 'ACTIVE' ? 'Активно' :
                          coupon.status === 'USED' ? 'Использовано' : 'Истёк'}
                       </span>
-                      {coupon.expiresAt && (
+                      {coupon.status === 'USED' && coupon.usedAt && (
                         <span className="coupon-expires">
-                          {activeTab === 'USED' ? 'Использован: ' : 'Действует до '} 
-                          {new Date(coupon.expiresAt).toLocaleDateString('ru-RU')}
+                          Использован: {new Date(coupon.usedAt).toLocaleDateString('ru-RU')}
+                        </span>
+                      )}
+                      {coupon.status !== 'USED' && coupon.expiresAt && (
+                        <span className="coupon-expires">
+                          Действует до {new Date(coupon.expiresAt).toLocaleDateString('ru-RU')}
                         </span>
                       )}
                     </div>

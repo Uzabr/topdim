@@ -1426,7 +1426,11 @@ Bazaar — это крупный location container с адресом, типо�
 ### Подтверждено кодом
 
 - В каталоге купонов используется backend search через `/api/v1/coupons`.
-- В отдельной search page купонный поиск пока mock-based.
+- В отдельной search page купонный поиск использует backend search через `/api/v1/coupons?search=<term>`.
+
+### Product rule
+
+- Public coupon storefront production pages must use real API data only. Demo coupon fixtures are allowed for design/dev references, but not as runtime fallback for catalog, home, favorites, search, or related coupon sections.
 
 ## 14.3. Merchant / shop search
 
@@ -2007,7 +2011,7 @@ Alternative:
 
 1. user purchases offer;
 2. receives purchased coupon;
-3. partner/admin redeems by code;
+3. partner/admin redeems by code; merchant context comes from trusted gateway header `X-Merchant-Id`;
 4. status becomes `USED`.
 
 ### Рекомендация

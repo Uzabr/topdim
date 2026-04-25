@@ -313,7 +313,7 @@ erDiagram
         bigint order_id FK
         varchar coupon_code UK
         varchar qr_token UK
-        varchar status "ACTIVE|USED|EXPIRED|REFUNDED"
+        varchar status "ACTIVE|USED|EXPIRED|CANCELLED"
         timestamp purchased_at
         timestamp expires_at
         timestamp used_at

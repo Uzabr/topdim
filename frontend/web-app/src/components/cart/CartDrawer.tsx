@@ -5,7 +5,7 @@ import { formatPrice } from '../../utils/format';
 import './CartDrawer.css';
 
 export default function CartDrawer() {
-  const { items, isOpen, closeCart, removeFromCart, updateQuantity, totalItems, totalPrice } = useCartStore();
+  const { items, isOpen, closeCart, removeFromCart, updateQuantity, totalItems, totalPrice, error, clearError } = useCartStore();
   const navigate = useNavigate();
 
   if (!isOpen) return null;
@@ -90,6 +90,11 @@ export default function CartDrawer() {
             </div>
 
             <div className="cart-drawer__footer">
+              {error && (
+                <div className="cart-drawer__error" role="alert" onClick={clearError}>
+                  {error}
+                </div>
+              )}
               <div className="cart-drawer__total">
                 <span>Итого к оплате:</span>
                 <span className="cart-drawer__total-amount">{formatPrice(totalPrice)}</span>

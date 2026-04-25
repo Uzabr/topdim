@@ -50,6 +50,9 @@ public class SecurityConfig {
                         // Bot webhook — внутренний вызов от Telegram-сервиса (без JWT)
                         .requestMatchers("/api/v1/bot/**").permitAll()
 
+                        // Internal inter-service calls (Feign: order-service → coupon-service)
+                        .requestMatchers("/api/v1/internal/**").permitAll()
+
                         // Partner endpoints — PARTNER, ADMIN, SUPER_ADMIN
                         .requestMatchers("/api/v1/partner/**").hasAnyRole("PARTNER", "ADMIN", "SUPER_ADMIN")
 

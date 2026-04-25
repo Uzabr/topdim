@@ -1,9 +1,13 @@
 package uz.topdim.order.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import uz.topdim.order.entity.PurchasedCoupon;
 import uz.topdim.order.entity.PurchasedCouponStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +21,16 @@ public interface PurchasedCouponRepository extends JpaRepository<PurchasedCoupon
     List<PurchasedCoupon> findByOrderId(Long orderId);
     Optional<PurchasedCoupon> findByCouponCode(String couponCode);
     Optional<PurchasedCoupon> findByQrToken(String qrToken);
+
+    @Modifying
+    @Query("""
+            update PurchasedCoupon pc
+               set pc.status = uz.topdim.order.entity.PurchasedCouponStatus.EXPIRED
+             where pc.status = uz.topdim.order.entity.PurchasedCouponStatus.ACTIVE
+               and pc.expiresAt is not null
+               and pc.expiresAt < :now
+            """)
+    int expireActiveCouponsBefore(@Param("now") LocalDateTime now);
 
     long countByCouponOfferIdIn(java.util.Collection<Long> couponOfferIds);
     long countByCouponOfferIdInAndStatus(java.util.Collection<Long> couponOfferIds, PurchasedCouponStatus status);

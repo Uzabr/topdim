@@ -562,7 +562,7 @@ Frontend: Перенаправить на страницу оплаты
 
 | Параметр | Тип | Default | Описание |
 |---|---|---|---|
-| `status` | String | null | `ACTIVE`, `USED`, `EXPIRED`, `REFUNDED` |
+| `status` | String | null | `ACTIVE`, `USED`, `EXPIRED`, `CANCELLED` |
 
 **Response:** `200 OK`
 ```json
@@ -592,7 +592,7 @@ Frontend: Перенаправить на страницу оплаты
 ACTIVE → купон куплен, можно использовать
 USED   → купон погашен (предъявлен партнёру)
 EXPIRED → срок истёк
-REFUNDED → возвращён
+CANCELLED → отменён
 ```
 
 ---
@@ -601,14 +601,21 @@ REFUNDED → возвращён
 
 **Auth:** ✅ Bearer Token
 
+**Headers:**
+
+| Header | Required | Source |
+|---|---|---|
+| `X-Merchant-Id` | yes | API Gateway / authenticated partner context |
+
 **Request:**
 ```json
 {
   "couponCode": "TDSP-AB12CD",
-  "merchantId": "5",
   "staffName": "Анна"
 }
 ```
+
+`merchantId` must not be accepted from request body for ownership decisions.
 
 **Response:** `200 OK` — PurchasedCoupon (status: USED)
 
