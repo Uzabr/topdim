@@ -17,4 +17,7 @@ public interface CouponClient {
             @PathVariable("couponId") Long couponId,
             @PathVariable("optionId") Long optionId
     );
+
+    @GetMapping("/internal/merchants/by-user/{userId}")
+    ApiResponse<MerchantContext> getMerchantContextByUserId(@PathVariable("userId") Long userId);
 }
