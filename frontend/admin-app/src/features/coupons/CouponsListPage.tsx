@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Table, Tag, Button, Space, Typography, Popconfirm, message } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Table, Tag, Button, Space, Typography, Popconfirm, Modal, Input, message } from 'antd';
+import { EditOutlined, DeleteOutlined, PlusOutlined, StopOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -10,6 +10,18 @@ import type { ColumnsType } from 'antd/es/table';
 
 const { Title } = Typography;
 
+interface CouponRow {
+  id: number;
+  title: string;
+  oldPrice: number | null;
+  fromPrice: number;
+  discountPercent: number;
+  status: string;
+  createdAt: string;
+  archiveReason?: string | null;
+  archivedAt?: string | null;
+}
+
 export const CouponsListPage = () => {
   const [page, setPage] = useState(0);
   const navigate = useNavigate();
@@ -18,7 +30,7 @@ export const CouponsListPage = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['admin-coupons', page],
     queryFn: async () => {
-      const res = await api.get<ApiResponse<PageResponse<any>>>(
+      const res = await api.get<ApiResponse<PageResponse<CouponRow>>>(
         '/api/v1/admin/coupons',
         { params: { page, size: 20 } }
       );
@@ -40,9 +52,27 @@ export const CouponsListPage = () => {
     WAITING_FOR_MERCHANT: 'purple',
     REVISION_REQUESTED: 'orange',
     ACTIVE: 'green',
+    SOLD_OUT: 'cyan',
+    ARCHIVED: 'default',
   };
 
-  const columns: ColumnsType<any> = [
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [archiveTargetId, setArchiveTargetId] = useState<number | null>(null);
+  const [archiveReason, setArchiveReason] = useState('');
+
+  const archiveMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
+      api.post(`/api/v1/admin/coupons/${id}/archive`, { reason }),
+    onSuccess: () => {
+      message.success('Купон снят с публикации');
+      queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
+      setArchiveModalOpen(false);
+      setArchiveReason('');
+      setArchiveTargetId(null);
+    },
+  });
+
+  const columns: ColumnsType<CouponRow> = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     { title: 'Название', dataIndex: 'title' },
     { title: 'Старая цена', dataIndex: 'oldPrice', render: (val) => val ? `${val} сум` : '-' },
@@ -62,8 +92,9 @@ export const CouponsListPage = () => {
       title: 'Действия',
       width: 140,
       render: (_, record) => {
-        const isEditable = record.status === 'LEAD' || record.status === 'DRAFT' || record.status === 'REVISION_REQUESTED' || record.status === 'ACTIVE';
+        const isEditable = record.status === 'LEAD' || record.status === 'DRAFT' || record.status === 'REVISION_REQUESTED';
         const isDeletable = record.status === 'LEAD' || record.status === 'DRAFT' || record.status === 'REVISION_REQUESTED';
+        const isArchivable = record.status === 'ACTIVE' || record.status === 'SOLD_OUT';
         return (
           <Space>
             {isEditable ? (
@@ -83,6 +114,17 @@ export const CouponsListPage = () => {
               </Popconfirm>
             ) : (
               <Button type="text" danger icon={<DeleteOutlined />} disabled title="Удаление заблокировано" />
+            )}
+            {isArchivable && (
+              <Button
+                type="text"
+                icon={<StopOutlined />}
+                title="Снять с публикации"
+                onClick={() => {
+                  setArchiveTargetId(record.id);
+                  setArchiveModalOpen(true);
+                }}
+              />
             )}
           </Space>
         );
@@ -112,6 +154,27 @@ export const CouponsListPage = () => {
           showTotal: (total) => `Всего: ${total}`,
         }}
       />
+
+      <Modal
+        title="Снять купон с публикации"
+        open={archiveModalOpen}
+        onCancel={() => { setArchiveModalOpen(false); setArchiveReason(''); setArchiveTargetId(null); }}
+        onOk={() => {
+          if (!archiveTargetId || !archiveReason.trim()) return;
+          archiveMutation.mutate({ id: archiveTargetId, reason: archiveReason.trim() });
+        }}
+        okText="Архивировать"
+        cancelText="Отмена"
+        okButtonProps={{ danger: true, disabled: !archiveReason.trim(), loading: archiveMutation.isPending }}
+      >
+        <p>Купон будет скрыт из каталога. Уже купленные сертификаты останутся действительными.</p>
+        <Input.TextArea
+          rows={3}
+          value={archiveReason}
+          onChange={(e) => setArchiveReason(e.target.value)}
+          placeholder="Укажите причину архивирования (обязательно)"
+        />
+      </Modal>
     </div>
   );
 };

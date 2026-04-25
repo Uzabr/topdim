@@ -18,6 +18,7 @@ import uz.topdim.coupon.exception.ResourceNotFoundException;
 import uz.topdim.coupon.repository.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -398,7 +399,8 @@ public class CouponOfferService {
 
     /**
      * Обновляет существующий купон (Admin).
-     * Разрешено из статусов DRAFT, REVISION_REQUESTED, ACTIVE.
+     * Разрешено из статусов DRAFT, REVISION_REQUESTED.
+     * ACTIVE, SOLD_OUT, ARCHIVED — immutable в MVP.
      * Модераторы могут редактировать только свои купоны (assignedModeratorId).
      * ADMIN/SUPER_ADMIN могут редактировать любые.
      *
@@ -419,13 +421,12 @@ public class CouponOfferService {
         CouponOffer offer = couponOfferRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
-        // State Machine: редактирование из DRAFT, REVISION_REQUESTED, ACTIVE
+        // State Machine: редактирование только из DRAFT, REVISION_REQUESTED
         if (offer.getStatus() != CouponStatus.DRAFT
-                && offer.getStatus() != CouponStatus.REVISION_REQUESTED
-                && offer.getStatus() != CouponStatus.ACTIVE) {
+                && offer.getStatus() != CouponStatus.REVISION_REQUESTED) {
             throw new IllegalStateException(
                     "Редактирование запрещено из статуса " + offer.getStatus()
-                    + ". Допустимые: DRAFT, REVISION_REQUESTED, ACTIVE");
+                    + ". Допустимые: DRAFT, REVISION_REQUESTED");
         }
 
         // Ownership check: MODERATOR может редактировать только свои
@@ -551,12 +552,14 @@ public class CouponOfferService {
             case REVISION_REQUESTED -> current == CouponStatus.WAITING_FOR_MERCHANT;
             case LEAD -> false;
             case SOLD_OUT -> false; // Устанавливается автоматически через registerSale
+            case ARCHIVED -> false; // Используйте dedicated archive endpoint with reason.
         };
 
         if (!allowed) {
             throw new IllegalStateException(
                     "Переход " + current + " → " + newStatus + " запрещён. "
-                    + "Допустимые: LEAD→DRAFT, DRAFT/REVISION→WAITING, WAITING→ACTIVE/REVISION");
+                    + "Допустимые: LEAD→DRAFT, DRAFT/REVISION→WAITING, WAITING→ACTIVE/REVISION. "
+                    + "Для ACTIVE/SOLD_OUT используйте archive endpoint");
         }
 
         if (newStatus == CouponStatus.ACTIVE) {
@@ -585,9 +588,42 @@ public class CouponOfferService {
     }
 
     /**
+     * Архивирует опубликованный или распроданный купон.
+     * Останавливает будущие продажи, но не меняет уже купленные купоны.
+     */
+    @Caching(evict = {
+            @CacheEvict(value = "catalog", allEntries = true),
+            @CacheEvict(value = "topSelling", allEntries = true),
+            @CacheEvict(value = "couponDetail", key = "#id")
+    })
+    @Transactional
+    public CouponOfferResponse archive(Long id, String reason) {
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        String trimmedReason = reason == null ? "" : reason.trim();
+        if (trimmedReason.isBlank()) {
+            throw new IllegalArgumentException("Причина архивирования обязательна");
+        }
+
+        if (offer.getStatus() != CouponStatus.ACTIVE && offer.getStatus() != CouponStatus.SOLD_OUT) {
+            throw new IllegalStateException(
+                    "Архивирование запрещено из статуса " + offer.getStatus()
+                    + ". Допустимые: ACTIVE, SOLD_OUT");
+        }
+
+        offer.setStatus(CouponStatus.ARCHIVED);
+        offer.setArchiveReason(trimmedReason);
+        offer.setArchivedAt(LocalDateTime.now());
+
+        log.info("Купон #{} архивирован. Причина: {}", id, trimmedReason);
+        return mapToResponse(couponOfferRepository.save(offer));
+    }
+
+    /**
      * Удаляет купон (Admin).
      * Разрешено только из статусов LEAD, DRAFT, REVISION_REQUESTED.
-     * ACTIVE и WAITING_FOR_MERCHANT защищены от удаления.
+     * ACTIVE, WAITING_FOR_MERCHANT, SOLD_OUT, ARCHIVED защищены от удаления.
      * Сбрасывает Redis кэш.
      *
      * @param id идентификатор купона
@@ -604,7 +640,9 @@ public class CouponOfferService {
         CouponOffer offer = couponOfferRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
-        if (offer.getStatus() == CouponStatus.ACTIVE || offer.getStatus() == CouponStatus.WAITING_FOR_MERCHANT) {
+        if (offer.getStatus() != CouponStatus.LEAD
+                && offer.getStatus() != CouponStatus.DRAFT
+                && offer.getStatus() != CouponStatus.REVISION_REQUESTED) {
             throw new IllegalStateException(
                     "Удаление запрещено из статуса " + offer.getStatus()
                     + ". Допустимые для удаления: LEAD, DRAFT, REVISION_REQUESTED");
@@ -676,6 +714,8 @@ public class CouponOfferService {
                 .assignedModeratorId(offer.getAssignedModeratorId())
                 .assignedModeratorName(offer.getAssignedModeratorName())
                 .revisionComment(offer.getRevisionComment())
+                .archiveReason(offer.getArchiveReason())
+                .archivedAt(offer.getArchivedAt())
                 .totalSold(offer.getTotalSold())
                 .redeemedCount(offer.getRedeemedCount())
                 .totalTurnover(offer.getTotalTurnover())

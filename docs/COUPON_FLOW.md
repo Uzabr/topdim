@@ -106,14 +106,20 @@ PATCH /api/v1/admin/coupons/{id}/status?status=ACTIVE
 | `DRAFT`                  | Модератор         | ❌                | Черновик, заполняется модератором           |
 | `WAITING_FOR_MERCHANT`   | Модератор         | ❌                | Отправлен мерчанту на согласование          |
 | `REVISION_REQUESTED`     | Мерчант           | ❌                | Мерчант запросил правки                     |
-| `ACTIVE`                 | Мерчант/Модератор | ✅                | Опубликован, можно купить                   |
-| `SOLD_OUT`               | Система           | ❌                | Все сертификаты распроданы                  |
+| `ACTIVE`                 | Мерчант/Модератор | ✅                | Опубликован, можно купить. Immutable.       |
+| `SOLD_OUT`               | Система           | ❌                | Все сертификаты распроданы. Immutable.       |
+| `ARCHIVED`               | Staff             | ❌                | Снят с продажи. Купленные купоны не меняются. |
+
+> **Immutability:** `ACTIVE` и `SOLD_OUT` офферы нельзя редактировать.
+> Для остановки продаж используйте архивирование с обязательной причиной.
 
 ### Диаграмма переходов
 
 ```
 LEAD → DRAFT → WAITING_FOR_MERCHANT → ACTIVE → SOLD_OUT
                                      ↘ REVISION_REQUESTED → DRAFT → ...
+                                              ACTIVE → ARCHIVED
+                                           SOLD_OUT → ARCHIVED
 ```
 
 ---

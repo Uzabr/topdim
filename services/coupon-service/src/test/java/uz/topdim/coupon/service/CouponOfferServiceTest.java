@@ -381,15 +381,11 @@ class CouponOfferServiceTest {
     }
 
     @Test
-    @DisplayName("Update: из ACTIVE — разрешено (Variant B)")
-    void update_fromActive_allowed() {
+    @DisplayName("Update: из ACTIVE — запрещено, опубликованный купон immutable")
+    void update_fromActive_throws() {
         CouponOffer offer = createTestOffer();
         offer.setStatus(CouponStatus.ACTIVE);
-        Merchant merchant = offer.getMerchant();
-        Category category = offer.getCategory();
         when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
-        when(categoryRepository.findById(anyLong())).thenReturn(Optional.of(category));
-        when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
 
         CreateCouponOfferRequest req = new CreateCouponOfferRequest();
         req.setTitle("Updated");
@@ -398,8 +394,39 @@ class CouponOfferServiceTest {
         req.setCategoryId(1L);
         req.setFromPrice(offer.getFromPrice());
 
-        assertThatCode(() -> couponOfferService.update(1L, req, 100L, "ADMIN"))
-                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> couponOfferService.update(1L, req, 100L, "ADMIN"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Редактирование запрещено");
+
+        verify(couponOfferRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Update: из SOLD_OUT — запрещено")
+    void update_fromSoldOut_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.SOLD_OUT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.update(1L, new CreateCouponOfferRequest(), 100L, "ADMIN"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Редактирование запрещено");
+
+        verify(couponOfferRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Update: из ARCHIVED — запрещено")
+    void update_fromArchived_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.ARCHIVED);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.update(1L, new CreateCouponOfferRequest(), 100L, "ADMIN"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Редактирование запрещено");
+
+        verify(couponOfferRepository, never()).save(any());
     }
 
     @Test
@@ -438,6 +465,108 @@ class CouponOfferServiceTest {
     void delete_waitingForMerchant_throws() {
         CouponOffer offer = createTestOffer();
         offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.delete(1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Удаление запрещено");
+    }
+
+    // ==================== Archive ====================
+
+    @Test
+    @DisplayName("Archive: ACTIVE → ARCHIVED сохраняет причину и дату")
+    void archive_fromActive_setsArchivedReasonAndArchivedAt() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.ACTIVE);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.save(any(CouponOffer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CouponOfferResponse result = couponOfferService.archive(1L, "Ошибка в условиях акции");
+
+        assertThat(result.getStatus()).isEqualTo("ARCHIVED");
+        assertThat(result.getArchiveReason()).isEqualTo("Ошибка в условиях акции");
+        assertThat(result.getArchivedAt()).isNotNull();
+        assertThat(offer.getStatus()).isEqualTo(CouponStatus.ARCHIVED);
+        assertThat(offer.getArchiveReason()).isEqualTo("Ошибка в условиях акции");
+        assertThat(offer.getArchivedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Archive: SOLD_OUT → ARCHIVED разрешён")
+    void archive_fromSoldOut_allowed() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.SOLD_OUT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.save(any(CouponOffer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CouponOfferResponse result = couponOfferService.archive(1L, "Оффер больше не актуален");
+
+        assertThat(result.getStatus()).isEqualTo("ARCHIVED");
+        assertThat(result.getArchiveReason()).isEqualTo("Оффер больше не актуален");
+    }
+
+    @Test
+    @DisplayName("Archive: DRAFT запрещён")
+    void archive_fromDraft_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.archive(1L, "Не нужен"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Архивирование запрещено");
+
+        verify(couponOfferRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Archive: ARCHIVED повторно запрещён")
+    void archive_fromArchived_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.ARCHIVED);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.archive(1L, "Повторно"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Архивирование запрещено");
+
+        verify(couponOfferRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Archive: пустая причина запрещена")
+    void archive_blankReason_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.ACTIVE);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.archive(1L, " "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Причина архивирования обязательна");
+
+        verify(couponOfferRepository, never()).save(any());
+    }
+
+    // ==================== Delete protection ====================
+
+    @Test
+    @DisplayName("Delete: ARCHIVED — запрещено")
+    void delete_archived_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.ARCHIVED);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.delete(1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Удаление запрещено");
+    }
+
+    @Test
+    @DisplayName("Delete: SOLD_OUT — запрещено")
+    void delete_soldOut_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.SOLD_OUT);
         when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
 
         assertThatThrownBy(() -> couponOfferService.delete(1L))

@@ -21,7 +21,9 @@ type CouponStatus =
   | 'DRAFT'
   | 'WAITING_FOR_MERCHANT'
   | 'REVISION_REQUESTED'
-  | 'ACTIVE';
+  | 'ACTIVE'
+  | 'SOLD_OUT'
+  | 'ARCHIVED';
 
 interface MerchantSummary {
   id: number;
@@ -100,6 +102,8 @@ const statusTagColors: Record<CouponStatus, string> = {
   WAITING_FOR_MERCHANT: 'purple',
   REVISION_REQUESTED: 'red',
   ACTIVE: 'green',
+  SOLD_OUT: 'cyan',
+  ARCHIVED: 'default',
 };
 
 const statusLabels: Record<CouponStatus, string> = {
@@ -108,6 +112,8 @@ const statusLabels: Record<CouponStatus, string> = {
   WAITING_FOR_MERCHANT: 'WAITING_FOR_MERCHANT',
   REVISION_REQUESTED: 'REVISION_REQUESTED',
   ACTIVE: 'ACTIVE',
+  SOLD_OUT: 'SOLD_OUT',
+  ARCHIVED: 'ARCHIVED',
 };
 
 function normalizeCoupons(data: Coupon[] | CouponsPagePayload): Coupon[] {

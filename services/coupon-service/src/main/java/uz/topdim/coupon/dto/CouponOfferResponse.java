@@ -37,6 +37,8 @@ public class CouponOfferResponse {
     private Long assignedModeratorId;
     private String assignedModeratorName;
     private String revisionComment;
+    private String archiveReason;
+    private LocalDateTime archivedAt;
     private int totalSold;
     private int redeemedCount;
     private BigDecimal totalTurnover;

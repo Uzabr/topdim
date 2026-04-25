@@ -1047,9 +1047,42 @@ Base URL: `/api/v1/admin` — **Все требуют роль ADMIN**
 
 **Query:** `status` = `LEAD` | `DRAFT` | `WAITING_FOR_MERCHANT` | `REVISION_REQUESTED` | `ACTIVE` | `SOLD_OUT`
 
+> **Note:** `ARCHIVED` нельзя установить через generic status endpoint.
+> Используйте dedicated `POST /api/v1/admin/coupons/{id}/archive`.
+
 ---
 
 ### DELETE `/api/v1/admin/coupons/{id}` — Удалить купон
+
+Допустимо только из статусов: `LEAD`, `DRAFT`, `REVISION_REQUESTED`.
+`ACTIVE`, `WAITING_FOR_MERCHANT`, `SOLD_OUT`, `ARCHIVED` защищены от удаления.
+
+---
+
+### POST `/api/v1/admin/coupons/{id}/archive` — Архивировать купон
+
+**Auth:** 🔒 MODERATOR / ADMIN / SUPER_ADMIN
+
+**Допустимые исходные статусы:** `ACTIVE`, `SOLD_OUT`
+
+Останавливает продажи, скрывает из публичного каталога.
+Уже купленные сертификаты остаются действительными — никакого автоматического рефанда или отмены.
+
+**Request:**
+```json
+{
+  "reason": "Ошибка в условиях акции"
+}
+```
+
+**Response:** `200 OK` — CouponOfferResponse с `status: "ARCHIVED"`, `archiveReason`, `archivedAt`.
+
+**Ошибки:**
+| Код | Сообщение |
+|---|---|
+| `400` | "Причина архивирования обязательна" |
+| `400` | "Архивирование запрещено из статуса ..." |
+| `404` | "Купон не найден" |
 
 ---
 
@@ -1294,6 +1327,7 @@ export const formatPrice = (price: number): string => {
 | 40 | POST | `/api/v1/admin/coupons` | 🔒 ADMIN | coupon |
 | 41 | PATCH | `/api/v1/admin/coupons/{id}/status` | 🔒 ADMIN | coupon |
 | 42 | DELETE | `/api/v1/admin/coupons/{id}` | 🔒 ADMIN | coupon |
+| 42a | POST | `/api/v1/admin/coupons/{id}/archive` | 🔒 ADMIN | coupon |
 | 43 | GET | `/api/v1/admin/merchants` | 🔒 ADMIN | coupon |
 | 44 | GET | `/api/v1/admin/merchants/{id}` | 🔒 ADMIN | coupon |
 | 45 | POST | `/api/v1/admin/merchants` | 🔒 ADMIN | coupon |

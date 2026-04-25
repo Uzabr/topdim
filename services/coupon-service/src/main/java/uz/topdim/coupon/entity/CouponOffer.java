@@ -75,6 +75,12 @@ public class CouponOffer {
     @Column(name = "revision_comment", columnDefinition = "TEXT")
     private String revisionComment;
 
+    @Column(name = "archive_reason", columnDefinition = "TEXT")
+    private String archiveReason;
+
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CouponStatus status;

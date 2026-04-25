@@ -81,6 +81,16 @@ public class AdminCouponController {
         return ResponseEntity.ok(ApiResponse.success("Купон удалён", null));
     }
 
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PostMapping("/coupons/{id}/archive")
+    public ResponseEntity<ApiResponse<CouponOfferResponse>> archiveCoupon(
+            @PathVariable Long id,
+            @Valid @RequestBody ArchiveCouponRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Купон снят с публикации", couponOfferService.archive(id, request.getReason())));
+    }
+
     /** Отправить купон на согласование мерчанту (DRAFT/REVISION_REQUESTED → WAITING_FOR_MERCHANT). */
     @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
     @PostMapping("/coupons/{id}/send-to-approval")

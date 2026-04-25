@@ -153,6 +153,17 @@ class CouponOfferServiceBusinessLogicTest {
     }
 
     @Test
+    @DisplayName("updateStatus: ACTIVE -> ARCHIVED через generic status endpoint запрещён")
+    void updateStatus_activeToArchived_throws() {
+        CouponOffer offer = createOffer(CouponStatus.ACTIVE);
+        when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.updateStatus(10L, CouponStatus.ARCHIVED))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("запрещён");
+    }
+
+    @Test
     @DisplayName("createLeadFromBot: переиспользует мерчанта по telegramChatId")
     void createLeadFromBot_reusesMerchantByTelegramChatId() {
         Merchant merchant = createMerchant();
