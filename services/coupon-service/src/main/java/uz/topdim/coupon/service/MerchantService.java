@@ -36,6 +36,24 @@ public class MerchantService {
     private final CategoryRepository categoryRepository;
     private final CouponOfferRepository couponOfferRepository;
 
+    // ==================== Internal Context ====================
+
+    /**
+     * Возвращает контекст мерчанта по userId (для межсервисных вызовов).
+     */
+    @Transactional(readOnly = true)
+    public MerchantContextResponse getMerchantContextByUserId(Long userId) {
+        Merchant merchant = merchantRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Мерчант для пользователя не найден"));
+
+        return MerchantContextResponse.builder()
+                .merchantId(merchant.getId())
+                .userId(merchant.getUserId())
+                .name(merchant.getName())
+                .active(merchant.isActive())
+                .build();
+    }
+
     // ==================== Merchants ====================
 
     /**
