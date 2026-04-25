@@ -102,6 +102,15 @@ const allMenuItems: MenuItem[] = [
       { key: '/system/audit', icon: <AuditOutlined />, label: 'Журнал действий', roles: ['SUPER_ADMIN'] },
     ],
   },
+  {
+    key: '/partner',
+    icon: <SafetyCertificateOutlined />,
+    label: 'Партнёр',
+    roles: ['PARTNER', 'ADMIN', 'SUPER_ADMIN'],
+    children: [
+      { key: '/partner/redeem', icon: <TagOutlined />, label: 'Погашение купонов', roles: ['PARTNER', 'ADMIN', 'SUPER_ADMIN'] },
+    ],
+  },
 ];
 
 function filterMenuByRole(items: MenuItem[], role: UserRole): MenuItem[] {
