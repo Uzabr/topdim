@@ -4,8 +4,8 @@ import { LogOut, Settings, Clock, CheckCircle, Ticket, Wallet, AlertCircle } fro
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { ordersApi } from '../api/orders';
-import type { PurchasedCoupon } from '../api/orders';
 import Tabs from '../components/ui/Tabs';
+import PurchasedCouponCard from '../components/profile/PurchasedCouponCard';
 import { formatPrice } from '../utils/format';
 import { useLocalePath } from '../hooks/useLocalePath';
 import './ProfilePage.css';
@@ -117,49 +117,8 @@ export default function ProfilePage() {
               </button>
             </div>
           ) : (
-            coupons.map((coupon: PurchasedCoupon) => (
-               <div key={coupon.id} className={`purchased-coupon glass-card purchased-coupon--${coupon.status.toLowerCase()}`}>
-                 <div className="purchased-coupon__main">
-                   <h3>{coupon.couponTitle}</h3>
-                   <p>{coupon.optionTitle}</p>
-                 </div>
-                 
-                 <div className="purchased-coupon__details">
-                    <div className="purchased-coupon__code">
-                      <span className="code-label">ПИН КОД</span>
-                      <span className="code-value">{coupon.couponCode || '—'}</span>
-                    </div>
-                    
-                    <div className="purchased-coupon__meta">
-                      <span className={`badge badge--${coupon.status.toLowerCase()}`}>
-                        {coupon.status === 'ACTIVE' ? 'Активно' :
-                         coupon.status === 'USED' ? 'Использовано' : 'Истёк'}
-                      </span>
-                      {coupon.status === 'USED' && coupon.usedAt && (
-                        <span className="coupon-expires">
-                          Использован: {new Date(coupon.usedAt).toLocaleDateString('ru-RU')}
-                        </span>
-                      )}
-                      {coupon.status !== 'USED' && coupon.expiresAt && (
-                        <span className="coupon-expires">
-                          Действует до {new Date(coupon.expiresAt).toLocaleDateString('ru-RU')}
-                        </span>
-                      )}
-                    </div>
-                 </div>
-
-                 {coupon.status === 'ACTIVE' && coupon.couponCode && (
-                    <button 
-                      className="primary-button purchased-coupon__btn"
-                      onClick={() => {
-                        navigator.clipboard.writeText(coupon.couponCode);
-                        alert('ПИН-код скопирован!');
-                      }}
-                    >
-                      Скопировать ПИН-код
-                    </button>
-                 )}
-               </div>
+            coupons.map((coupon) => (
+              <PurchasedCouponCard key={coupon.id} coupon={coupon} />
             ))
           )}
         </div>
