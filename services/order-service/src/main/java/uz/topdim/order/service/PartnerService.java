@@ -57,6 +57,26 @@ public class PartnerService {
     }
 
     /**
+     * Статистика партнёра — безопасная версия, использует только merchantId.
+     * Не принимает couponOfferIds от клиента.
+     */
+    @Transactional(readOnly = true)
+    public PartnerStatsResponse getStats(Long merchantId) {
+        long totalCoupons = purchasedCouponRepository.countDistinctCouponOfferIdsByMerchantId(merchantId);
+        long totalSold = purchasedCouponRepository.countByMerchantId(merchantId);
+        long totalRedeemed = purchasedCouponRepository.countByMerchantIdAndStatus(
+                merchantId, PurchasedCouponStatus.USED);
+        BigDecimal revenue = purchasedCouponRepository.sumRevenueByMerchantId(merchantId);
+
+        return PartnerStatsResponse.builder()
+                .totalCoupons((int) totalCoupons)
+                .totalSold(totalSold)
+                .totalRedeemed(totalRedeemed)
+                .totalRevenue(revenue != null ? revenue : BigDecimal.ZERO)
+                .build();
+    }
+
+    /**
      * История погашений по мерчанту.
      */
     @Transactional(readOnly = true)

@@ -37,4 +37,16 @@ public interface PurchasedCouponRepository extends JpaRepository<PurchasedCoupon
 
     @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(oi.unitPrice * oi.quantity), 0) FROM OrderItem oi WHERE oi.couponOfferId IN :ids")
     java.math.BigDecimal sumRevenueByCouponOfferIds(@org.springframework.data.repository.query.Param("ids") java.util.Collection<Long> couponOfferIds);
+
+    // === Merchant-based stats (no client-provided coupon ids) ===
+
+    long countByMerchantId(Long merchantId);
+
+    long countByMerchantIdAndStatus(Long merchantId, PurchasedCouponStatus status);
+
+    @Query("SELECT COUNT(DISTINCT pc.couponOfferId) FROM PurchasedCoupon pc WHERE pc.merchantId = :merchantId")
+    long countDistinctCouponOfferIdsByMerchantId(@Param("merchantId") Long merchantId);
+
+    @Query("SELECT COALESCE(SUM(oi.unitPrice * oi.quantity), 0) FROM OrderItem oi WHERE oi.merchantId = :merchantId")
+    java.math.BigDecimal sumRevenueByMerchantId(@Param("merchantId") Long merchantId);
 }

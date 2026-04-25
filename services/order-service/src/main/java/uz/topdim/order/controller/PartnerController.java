@@ -45,20 +45,20 @@ public class PartnerController {
     /** Статистика продаж партнёра. */
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<PartnerStatsResponse>> getStats(
-            @RequestHeader("X-Merchant-Id") Long merchantId,
-            @RequestParam java.util.List<Long> couponOfferIds
+            @RequestHeader("X-User-Id") Long userId
     ) {
-        return ResponseEntity.ok(ApiResponse.success(
-                partnerService.getStats(merchantId, couponOfferIds)));
+        Long merchantId = partnerMerchantResolver.resolveMerchantId(userId);
+        return ResponseEntity.ok(ApiResponse.success(partnerService.getStats(merchantId)));
     }
 
     /** История погашений. */
     @GetMapping("/redemptions")
     public ResponseEntity<ApiResponse<Page<RedemptionResponse>>> getRedemptions(
-            @RequestHeader("X-Merchant-Id") Long merchantId,
+            @RequestHeader("X-User-Id") Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
+        Long merchantId = partnerMerchantResolver.resolveMerchantId(userId);
         return ResponseEntity.ok(ApiResponse.success(
                 partnerService.getRedemptions(merchantId, page, size)));
     }

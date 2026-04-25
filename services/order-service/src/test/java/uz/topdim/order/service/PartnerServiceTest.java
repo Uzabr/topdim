@@ -91,4 +91,20 @@ class PartnerServiceTest {
         assertThat(redemptions.getContent().get(0).getCouponCode()).isEqualTo("CODE123");
         assertThat(redemptions.getContent().get(0).getRedeemedByStaff()).isEqualTo("Cashier 1");
     }
+
+    @Test
+    @DisplayName("getStats: calculates stats by merchantId without client-provided coupon ids")
+    void getStats_byMerchantId_returnsCalculatedStats() {
+        when(purchasedCouponRepository.countByMerchantId(77L)).thenReturn(100L);
+        when(purchasedCouponRepository.countByMerchantIdAndStatus(77L, PurchasedCouponStatus.USED)).thenReturn(40L);
+        when(purchasedCouponRepository.countDistinctCouponOfferIdsByMerchantId(77L)).thenReturn(2L);
+        when(purchasedCouponRepository.sumRevenueByMerchantId(77L)).thenReturn(BigDecimal.valueOf(500000));
+
+        PartnerStatsResponse stats = partnerService.getStats(77L);
+
+        assertThat(stats.getTotalCoupons()).isEqualTo(2);
+        assertThat(stats.getTotalSold()).isEqualTo(100);
+        assertThat(stats.getTotalRedeemed()).isEqualTo(40);
+        assertThat(stats.getTotalRevenue()).isEqualTo(BigDecimal.valueOf(500000));
+    }
 }
