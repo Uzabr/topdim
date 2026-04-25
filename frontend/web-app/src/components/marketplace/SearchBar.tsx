@@ -1,6 +1,17 @@
 import { Mic, Search } from 'lucide-react';
 import './SearchBar.css';
 
+interface ISpeechRecognition {
+  lang: string;
+  onresult: (event: { results: { transcript: string }[][] }) => void;
+  start: () => void;
+}
+
+interface WindowWithSpeech extends Window {
+  SpeechRecognition?: new () => ISpeechRecognition;
+  webkitSpeechRecognition?: new () => ISpeechRecognition;
+}
+
 interface SearchBarProps {
   value: string;
   onChange: (value: string) => void;
@@ -30,15 +41,16 @@ export default function SearchBar({
           placeholder={placeholder}
           aria-label={placeholder}
         />
+
         <button type="button" className="search-bar__voice" aria-label="Голосовой поиск" onClick={() => {
-          const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+          const SpeechRecognition = (window as unknown as WindowWithSpeech).SpeechRecognition || (window as unknown as WindowWithSpeech).webkitSpeechRecognition;
           if (!SpeechRecognition) {
             alert("Ваш браузер не поддерживает голосовой ввод");
             return;
           }
           const recognition = new SpeechRecognition();
           recognition.lang = 'ru-RU';
-          recognition.onresult = (event: any) => {
+          recognition.onresult = (event: { results: { transcript: string }[][] }) => {
             onChange(event.results[0][0].transcript);
           };
           recognition.start();

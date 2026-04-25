@@ -299,8 +299,9 @@ export const useCartStore = create<CartState>((set, get) => ({
         error: null,
         ...calcBackendTotals(backendItems),
       });
-    } catch (err: any) {
-      const message = err?.response?.data?.message || 'Не удалось добавить купон в корзину';
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      const message = error.response?.data?.message || 'Не удалось добавить купон в корзину';
       set({ isLoading: false, error: message });
       throw err;
     }

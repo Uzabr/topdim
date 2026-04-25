@@ -124,8 +124,8 @@ export default function BazaarMapPage() {
 
   // Handle area select from map
   const handleAreaSelect = useCallback(async (bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number }) => {
-    let localBazaars: any[] = [];
-    let localShops: any[] = [];
+    let localBazaars: Bazaar[] = [];
+    let localShops: Shop[] = [];
 
     try {
       const res = await directoryApi.searchInArea(bounds);
@@ -143,8 +143,18 @@ export default function BazaarMapPage() {
       );
     }
 
+    interface TwoGisCatalogItem {
+      name: string;
+      type: string;
+      rubrics?: { name: string }[];
+      address_name?: string;
+      address_comment?: string;
+      point?: { lat: number; lon: number };
+      schedule?: { name: string };
+    }
+
     // 2GIS Catalog API Fetch
-    let externalShops: any[] = [];
+    let externalShops: Shop[] = [];
     try {
       const point1 = `${bounds.minLon},${bounds.maxLat}`; // Top-left
       const point2 = `${bounds.maxLon},${bounds.minLat}`; // Bottom-right
@@ -156,7 +166,7 @@ export default function BazaarMapPage() {
       const json = await resp.json();
       
       if (json.result && json.result.items) {
-        externalShops = json.result.items.map((it: any, idx: number) => ({
+        externalShops = json.result.items.map((it: TwoGisCatalogItem, idx: number) => ({
           id: -(Date.now() + idx), // Fake negative ID for external
           name: it.name,
           type: 'STANDALONE',
@@ -168,8 +178,9 @@ export default function BazaarMapPage() {
           workingHours: it.schedule?.name || 'Внешний источник 2ГИС',
           photos: [],
           bazaarId: -1,
-          isExternal: true
-        }));
+          isExternal: true,
+          status: 'ACTIVE'
+        } as Shop));
       }
     } catch (err) {
       console.error('Failed to fetch from 2GIS', err);

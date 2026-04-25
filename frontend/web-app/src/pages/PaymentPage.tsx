@@ -75,9 +75,10 @@ export default function PaymentPage() {
         } else {
           setState('pending');
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as { response?: { status?: number, data?: { message?: string } } };
         // 404 = payment not yet created by event-driven flow
-        if (err.response?.status === 404) {
+        if (error.response?.status === 404) {
           pollCountRef.current += 1;
           if (pollCountRef.current >= MAX_POLL_ATTEMPTS) {
             if (intervalRef.current) {
@@ -89,7 +90,7 @@ export default function PaymentPage() {
           // Continue polling
         } else {
           // Unexpected error
-          setError(err.response?.data?.message || 'Ошибка при проверке платежа');
+          setError(error.response?.data?.message || 'Ошибка при проверке платежа');
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
@@ -129,11 +130,12 @@ export default function PaymentPage() {
       const p = res.data.data;
       setPayment(p);
       setState('completed');
-    } catch (err: any) {
-      const msg = err.response?.data?.message || 'Ошибка при подтверждении покупки';
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number, data?: { message?: string } } };
+      const msg = error.response?.data?.message || 'Ошибка при подтверждении покупки';
       setError(msg);
       // Don't switch to 'failed' for recoverable errors — keep on pending
-      if (err.response?.status === 403) {
+      if (error.response?.status === 403) {
         setError('Демо-оплата недоступна. Обратитесь к администратору.');
       }
     } finally {
