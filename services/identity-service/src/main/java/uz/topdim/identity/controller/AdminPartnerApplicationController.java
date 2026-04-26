@@ -1,5 +1,6 @@
 package uz.topdim.identity.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -7,7 +8,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import uz.topdim.identity.dto.ApprovePartnerApplicationRequest;
 import uz.topdim.identity.dto.PartnerApplicationResponse;
+import uz.topdim.identity.dto.RejectPartnerApplicationRequest;
 import uz.topdim.identity.entity.ApplicationStatus;
 import uz.topdim.identity.service.PartnerApplicationService;
 
@@ -37,12 +40,28 @@ public class AdminPartnerApplicationController {
     }
 
     @PatchMapping("/{id}/approve")
-    public ResponseEntity<Map<String, Object>> approve(@PathVariable Long id) {
-        return ResponseEntity.ok(Map.of("success", true, "message", "Заявка одобрена", "data", service.approve(id)));
+    public ResponseEntity<Map<String, Object>> approve(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long adminId,
+            @Valid @RequestBody ApprovePartnerApplicationRequest request
+    ) {
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Application approved",
+                "data", service.approve(id, adminId, request)
+        ));
     }
 
     @PatchMapping("/{id}/reject")
-    public ResponseEntity<Map<String, Object>> reject(@PathVariable Long id) {
-        return ResponseEntity.ok(Map.of("success", true, "message", "Заявка отклонена", "data", service.reject(id)));
+    public ResponseEntity<Map<String, Object>> reject(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long adminId,
+            @Valid @RequestBody RejectPartnerApplicationRequest request
+    ) {
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Application rejected",
+                "data", service.reject(id, adminId, request)
+        ));
     }
 }
