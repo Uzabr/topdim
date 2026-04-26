@@ -115,6 +115,14 @@ public class PartnerApplicationService {
         app.setLinkedMerchantId(merchant.getId());
         app.setRejectionReason(null);
 
+        // Сохраняем данные, введённые/дополненные модератором, обратно в заявку
+        app.setCompanyName(request.getMerchantName());
+        app.setAddress(request.getAddress());
+        app.setCity(request.getCity());
+        app.setWorkingHours(request.getWorkingHours());
+        app.setWebsite(request.getWebsite());
+        app.setEmail(request.getLoginEmail());
+
         return toResponse(repository.save(app));
     }
 

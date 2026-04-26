@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Table, Tag, Button, Space, Typography, message, Modal, Form, Input, Descriptions } from 'antd';
+import { Table, Tag, Button, Space, Typography, App, Modal, Form, Input, Descriptions } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/client';
@@ -39,6 +39,7 @@ export const PartnerApplicationsPage = () => {
   const [approveForm] = Form.useForm<ApprovePayload>();
   const [rejectForm] = Form.useForm<RejectPayload>();
   const queryClient = useQueryClient();
+  const { message } = App.useApp();
 
   const { data, isLoading } = useQuery({
     queryKey: ['partner-applications', page],
