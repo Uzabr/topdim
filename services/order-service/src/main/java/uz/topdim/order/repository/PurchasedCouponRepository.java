@@ -32,12 +32,6 @@ public interface PurchasedCouponRepository extends JpaRepository<PurchasedCoupon
             """)
     int expireActiveCouponsBefore(@Param("now") LocalDateTime now);
 
-    long countByCouponOfferIdIn(java.util.Collection<Long> couponOfferIds);
-    long countByCouponOfferIdInAndStatus(java.util.Collection<Long> couponOfferIds, PurchasedCouponStatus status);
-
-    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(oi.unitPrice * oi.quantity), 0) FROM OrderItem oi WHERE oi.couponOfferId IN :ids")
-    java.math.BigDecimal sumRevenueByCouponOfferIds(@org.springframework.data.repository.query.Param("ids") java.util.Collection<Long> couponOfferIds);
-
     // === Merchant-based stats (no client-provided coupon ids) ===
 
     long countByMerchantId(Long merchantId);

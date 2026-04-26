@@ -538,6 +538,26 @@ class OrderServiceTest {
     }
 
     @Test
+    @DisplayName("Погашение: купон без merchantId не может быть использован")
+    void redeemCoupon_missingMerchantId_throwsException() {
+        PurchasedCoupon coupon = PurchasedCoupon.builder()
+                .id(1L)
+                .couponCode("CP-ORPHAN1")
+                .expiresAt(LocalDateTime.now().plusDays(1))
+                .status(PurchasedCouponStatus.ACTIVE)
+                .build();
+
+        when(purchasedCouponRepository.findByCouponCode("CP-ORPHAN1")).thenReturn(Optional.of(coupon));
+
+        assertThatThrownBy(() -> orderService.redeemCoupon("CP-ORPHAN1", 77L, "Анна"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("У купона не указан мерчант");
+
+        verify(purchasedCouponRepository, never()).save(any(PurchasedCoupon.class));
+        verify(redemptionRepository, never()).save(any(Redemption.class));
+    }
+
+    @Test
     @DisplayName("Погашение: expired coupon переводится в EXPIRED и не погашается")
     void redeemCoupon_expiredCoupon_marksExpiredAndThrows() {
         PurchasedCoupon coupon = PurchasedCoupon.builder()

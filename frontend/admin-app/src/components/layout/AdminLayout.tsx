@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Avatar, Dropdown, Typography, theme } from 'antd';
+import type { MenuProps } from 'antd';
 import {
   DashboardOutlined,
   SafetyCertificateOutlined,
@@ -122,6 +123,15 @@ function filterMenuByRole(items: MenuItem[], role: UserRole): MenuItem[] {
     }));
 }
 
+function toAntMenuItems(items: MenuItem[]): MenuProps['items'] {
+  return items.map(({ key, icon, label, children }) => ({
+    key,
+    icon,
+    label,
+    children: children ? toAntMenuItems(children) : undefined,
+  }));
+}
+
 export const AdminLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
@@ -131,6 +141,7 @@ export const AdminLayout = () => {
 
   const userRole = user?.role || 'MODERATOR';
   const visibleMenu = filterMenuByRole(allMenuItems, userRole);
+  const menuItems = toAntMenuItems(visibleMenu);
 
   const handleMenuClick = ({ key }: { key: string }) => {
     navigate(key);
@@ -205,7 +216,7 @@ export const AdminLayout = () => {
           mode="inline"
           selectedKeys={[location.pathname]}
           defaultOpenKeys={visibleMenu.filter((m) => m.children).map((m) => m.key)}
-          items={visibleMenu as any}
+          items={menuItems}
           onClick={handleMenuClick}
         />
       </Sider>

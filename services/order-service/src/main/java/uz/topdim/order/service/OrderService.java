@@ -427,7 +427,11 @@ public class OrderService {
             throw new IllegalStateException("Срок действия купона истёк");
         }
 
-        if (coupon.getMerchantId() != null && !coupon.getMerchantId().equals(merchantId)) {
+        if (coupon.getMerchantId() == null) {
+            throw new IllegalStateException("У купона не указан мерчант");
+        }
+
+        if (!coupon.getMerchantId().equals(merchantId)) {
             throw new IllegalStateException("Купон принадлежит другому мерчанту");
         }
 
@@ -439,7 +443,7 @@ public class OrderService {
         Redemption redemption = Redemption.builder()
                 .purchasedCoupon(coupon)
                 .redemptionCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                .merchantId(merchantId != null ? merchantId : 0L)
+                .merchantId(merchantId)
                 .redeemedByStaff(staffName)
                 .redeemedAt(LocalDateTime.now())
                 .build();

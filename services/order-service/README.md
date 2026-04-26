@@ -40,12 +40,15 @@ Cart → POST /orders → Order (PENDING) → publish OrderCreatedEvent
 
 ### Погашение купона
 ```
-POST /orders/redeem
-Header: X-Merchant-Id
+POST /api/v1/partner/redemptions
+Header: X-User-Id (from API Gateway JWT)
 Body: { couponCode, staffName }
+  → order-service resolves merchant via coupon-service Merchant.userId
   → PurchasedCoupon.status = USED
   → Создаётся запись Redemption
 ```
+
+Legacy `POST /api/v1/orders/redeem` with `X-Merchant-Id` is kept only for backward compatibility and must not be used by frontend.
 
 ### Возврат
 ```

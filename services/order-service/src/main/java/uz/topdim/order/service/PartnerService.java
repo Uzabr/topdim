@@ -15,11 +15,10 @@ import uz.topdim.order.repository.PurchasedCouponRepository;
 import uz.topdim.order.repository.RedemptionRepository;
 
 import java.math.BigDecimal;
-import java.util.Collection;
 
 /**
  * Сервис статистики и погашений для партнёра.
- * merchantId и couponOfferIds передаются из контроллера.
+ * merchantId резолвится контроллером из доверенного X-User-Id.
  */
 @Slf4j
 @Service
@@ -28,33 +27,6 @@ public class PartnerService {
 
     private final PurchasedCouponRepository purchasedCouponRepository;
     private final RedemptionRepository redemptionRepository;
-
-    /**
-     * Статистика партнёра: продажи, погашения, выручка.
-     *
-     * @param merchantId ID мерчанта
-     * @param couponOfferIds ID купонов этого мерчанта
-     */
-    @Transactional(readOnly = true)
-    public PartnerStatsResponse getStats(Long merchantId, Collection<Long> couponOfferIds) {
-        if (couponOfferIds.isEmpty()) {
-            return PartnerStatsResponse.builder()
-                    .totalCoupons(0).totalSold(0).totalRedeemed(0)
-                    .totalRevenue(BigDecimal.ZERO).build();
-        }
-
-        long totalSold = purchasedCouponRepository.countByCouponOfferIdIn(couponOfferIds);
-        long totalRedeemed = purchasedCouponRepository.countByCouponOfferIdInAndStatus(
-                couponOfferIds, PurchasedCouponStatus.USED);
-        BigDecimal revenue = purchasedCouponRepository.sumRevenueByCouponOfferIds(couponOfferIds);
-
-        return PartnerStatsResponse.builder()
-                .totalCoupons(couponOfferIds.size())
-                .totalSold(totalSold)
-                .totalRedeemed(totalRedeemed)
-                .totalRevenue(revenue != null ? revenue : BigDecimal.ZERO)
-                .build();
-    }
 
     /**
      * Статистика партнёра — безопасная версия, использует только merchantId.

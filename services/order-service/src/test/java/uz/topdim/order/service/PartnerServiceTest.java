@@ -20,7 +20,6 @@ import uz.topdim.order.repository.RedemptionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,33 +37,6 @@ class PartnerServiceTest {
 
     @InjectMocks
     private PartnerService partnerService;
-
-    @Test
-    @DisplayName("getStats: пустой список couponOfferIds возвращает нули")
-    void getStats_emptyIds_returnsZeros() {
-        PartnerStatsResponse stats = partnerService.getStats(1L, Set.of());
-
-        assertThat(stats.getTotalCoupons()).isEqualTo(0);
-        assertThat(stats.getTotalSold()).isEqualTo(0);
-        assertThat(stats.getTotalRedeemed()).isEqualTo(0);
-        assertThat(stats.getTotalRevenue()).isEqualTo(BigDecimal.ZERO);
-    }
-
-    @Test
-    @DisplayName("getStats: возвращает правильную статистику")
-    void getStats_withIds_returnsCalculatedStats() {
-        Set<Long> ids = Set.of(10L, 11L);
-        when(purchasedCouponRepository.countByCouponOfferIdIn(ids)).thenReturn(100L);
-        when(purchasedCouponRepository.countByCouponOfferIdInAndStatus(ids, PurchasedCouponStatus.USED)).thenReturn(40L);
-        when(purchasedCouponRepository.sumRevenueByCouponOfferIds(ids)).thenReturn(BigDecimal.valueOf(500000));
-
-        PartnerStatsResponse stats = partnerService.getStats(1L, ids);
-
-        assertThat(stats.getTotalCoupons()).isEqualTo(2);
-        assertThat(stats.getTotalSold()).isEqualTo(100L);
-        assertThat(stats.getTotalRedeemed()).isEqualTo(40L);
-        assertThat(stats.getTotalRevenue()).isEqualTo(BigDecimal.valueOf(500000));
-    }
 
     @Test
     @DisplayName("getRedemptions: возвращает разбитый на страницы список")

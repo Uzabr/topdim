@@ -2016,7 +2016,7 @@ Alternative:
 
 1. user purchases offer;
 2. receives purchased coupon;
-3. partner/admin redeems by code; merchant context comes from trusted gateway header `X-Merchant-Id`;
+3. partner redeems by code; backend resolves merchant context from trusted gateway `X-User-Id`;
 4. status becomes `USED`.
 
 ### Рекомендация
