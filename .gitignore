@@ -15,6 +15,7 @@ dist/
 .gemini/
 .agents/
 .agent/
+.cursorignore
 
 # IDE
 .idea/
@@ -25,6 +26,7 @@ dist/
 .project
 .classpath
 .settings/
+
 
 # OS
 .DS_Store

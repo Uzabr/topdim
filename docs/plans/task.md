@@ -1,11 +1,11 @@
-# Partner Onboarding MVP — Task Tracker
+# Purchase Lifecycle Reconciliation — Task Tracker
 
-| # | Task | Status |
-|---|------|--------|
-| 1 | Extend Partner Application Data Model | ✅ done |
-| 2 | Add Coupon-Service Internal Merchant Onboarding | ✅ done |
-| 3 | Implement Identity Approval Flow | ✅ done |
-| 4 | Build Public Partner Application Form | ✅ done |
-| 5 | Improve Admin Partner Application Review UI | ✅ done |
-| 6 | Security And Role Cleanup | ✅ done (already configured) |
-| 7 | Documentation And Final Verification | ✅ done |
+| Task | Status | Description |
+|------|--------|-------------|
+| Task 0 | ✅ done | Baseline Verification — all 3 services pass |
+| Task 1 | 🔄 in_progress | Make Payment Creation Idempotent |
+| Task 2 | ⬜ not_started | Add Backend Cart Quantity Update |
+| Task 3 | ⬜ not_started | Register Paid Coupon Sales Idempotently |
+| Task 4 | ⬜ not_started | Support QR Token Redemption |
+| Task 5 | ⬜ not_started | Sync Redeemed Count To Coupon Service Idempotently |
+| Task 6 | ⬜ not_started | Final End-To-End Verification |

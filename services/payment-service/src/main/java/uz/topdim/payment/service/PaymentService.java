@@ -39,6 +39,14 @@ public class PaymentService {
      */
     @Transactional
     public Payment createPayment(Long orderId, Long userId, BigDecimal amount, String provider) {
+        // Idempotency: если платёж для этого заказа уже существует, возвращаем его
+        Optional<Payment> existing = paymentRepository.findByOrderId(orderId);
+        if (existing.isPresent()) {
+            log.info("Платёж для заказа {} уже существует (id={}), возвращаем существующий",
+                    orderId, existing.get().getId());
+            return existing.get();
+        }
+
         PaymentProvider paymentProvider;
         try {
             paymentProvider = PaymentProvider.valueOf(provider.toUpperCase());
@@ -124,6 +132,12 @@ public class PaymentService {
                         .provider(PaymentProvider.PAYME)
                         .status(PaymentStatus.PENDING)
                         .build());
+
+        // Idempotency: если платёж уже COMPLETED — не публикуем повторное событие
+        if (payment.getStatus() == PaymentStatus.COMPLETED) {
+            log.info("Платёж для заказа {} уже COMPLETED, пропускаем повторный callback", orderId);
+            return payment;
+        }
 
         payment.setStatus(PaymentStatus.COMPLETED);
         payment.setCompletedAt(LocalDateTime.now());

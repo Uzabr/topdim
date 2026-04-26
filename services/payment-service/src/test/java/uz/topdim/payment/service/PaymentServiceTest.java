@@ -11,6 +11,7 @@ import uz.topdim.payment.entity.*;
 import uz.topdim.payment.repository.PaymentRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -26,9 +27,12 @@ class PaymentServiceTest {
     @InjectMocks
     private PaymentService paymentService;
 
+    // ─── Existing tests ───
+
     @Test
     @DisplayName("Создание платежа: статус PENDING, генерирует URL")
     void createPayment_statusPending() {
+        when(paymentRepository.findByOrderId(100L)).thenReturn(Optional.empty());
         when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> {
             Payment p = inv.getArgument(0);
             p.setId(1L);
@@ -47,6 +51,7 @@ class PaymentServiceTest {
     @Test
     @DisplayName("Создание платежа: невалидный провайдер → дефолт PAYME")
     void createPayment_invalidProvider_defaultsToPayme() {
+        when(paymentRepository.findByOrderId(101L)).thenReturn(Optional.empty());
         when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> {
             Payment p = inv.getArgument(0);
             p.setId(2L);
@@ -95,5 +100,49 @@ class PaymentServiceTest {
         assertThatThrownBy(() -> paymentService.getPaymentByOrderId(999L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("не найден");
+    }
+
+    // ─── Task 1: Idempotency tests ───
+
+    @Test
+    @DisplayName("createPayment: если платёж для orderId уже существует → возвращает существующий, не создаёт новый")
+    void createPayment_existingOrder_returnsExistingPaymentAndDoesNotSaveNewOne() {
+        Payment existing = Payment.builder()
+                .id(5L).orderId(200L).userId(10L)
+                .amount(BigDecimal.valueOf(100000)).status(PaymentStatus.PENDING)
+                .provider(PaymentProvider.PAYME).currency("UZS")
+                .transactionId("existing-txn").paymentUrl("https://payment.topdim.uz/pay/existing-txn")
+                .build();
+
+        when(paymentRepository.findByOrderId(200L)).thenReturn(Optional.of(existing));
+
+        Payment result = paymentService.createPayment(200L, 10L, BigDecimal.valueOf(100000), "payme");
+
+        // Must return existing payment, not save a new one
+        assertThat(result.getId()).isEqualTo(5L);
+        assertThat(result.getTransactionId()).isEqualTo("existing-txn");
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    @DisplayName("handleCallback: уже COMPLETED платёж → не публикует повторный PaymentCompletedEvent")
+    void handleCallback_completedPayment_doesNotRepublishPaymentCompletedEvent() {
+        Payment alreadyCompleted = Payment.builder()
+                .id(1L).orderId(100L).userId(10L)
+                .amount(BigDecimal.valueOf(150000)).status(PaymentStatus.COMPLETED)
+                .provider(PaymentProvider.PAYME).currency("UZS")
+                .completedAt(LocalDateTime.now().minusMinutes(5))
+                .transactionId("txn-already-done")
+                .build();
+
+        when(paymentRepository.findByOrderId(100L)).thenReturn(Optional.of(alreadyCompleted));
+
+        Payment result = paymentService.handleCallback(100L, 10L, BigDecimal.valueOf(150000), "payme", "txn-retry");
+
+        // Must return existing completed payment without re-publishing event
+        assertThat(result.getStatus()).isEqualTo(PaymentStatus.COMPLETED);
+        assertThat(result.getTransactionId()).isEqualTo("txn-already-done"); // original txn preserved
+        verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), any(Object.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
     }
 }
