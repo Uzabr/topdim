@@ -47,4 +47,8 @@ public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> 
     void incrementViewCount(@Param("id") Long id);
 
     boolean existsByMerchantIdAndStatusIn(Long merchantId, List<CouponStatus> statuses);
+
+    long countByMerchantId(Long merchantId);
+
+    long countByMerchantIdAndStatus(Long merchantId, CouponStatus status);
 }

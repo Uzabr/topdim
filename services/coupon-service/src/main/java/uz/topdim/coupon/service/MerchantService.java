@@ -3,6 +3,8 @@ package uz.topdim.coupon.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.coupon.dto.*;
@@ -95,15 +97,42 @@ public class MerchantService {
     // ==================== Merchants ====================
 
     /**
-     * Получает список всех партнёров.
-     *
-     * @return список MerchantResponse
+     * Получает список всех партнёров (для coupon form selector — НЕ МЕНЯТЬ).
      */
     @Transactional(readOnly = true)
     public List<MerchantResponse> getAllMerchants() {
         return merchantRepository.findByActiveTrue().stream()
                 .map(this::mapMerchant)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Admin paginated merchant search с readiness и счётчиками купонов.
+     */
+    @Transactional(readOnly = true)
+    public Page<AdminMerchantSummaryResponse> getAdminMerchantPage(String search, Boolean active, Pageable pageable) {
+        Page<Merchant> merchants = merchantRepository.searchMerchants(search, active, pageable);
+        return merchants.map(this::mapToAdminSummary);
+    }
+
+    /**
+     * Активация/деактивация мерчанта (Admin).
+     * Деактивация блокируется при наличии ACTIVE/WAITING_FOR_MERCHANT купонов.
+     */
+    @CacheEvict(value = "catalog", allEntries = true)
+    @Transactional
+    public MerchantResponse setMerchantActiveStatus(Long id, boolean active) {
+        Merchant merchant = merchantRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Партнёр не найден"));
+
+        if (!active && hasPublicationDependentCoupons(merchant.getId())) {
+            throw new IllegalStateException(
+                    "Нельзя деактивировать мерчанта с активными или ожидающими подтверждения купонами");
+        }
+
+        merchant.setActive(active);
+        merchantRepository.save(merchant);
+        return mapMerchant(merchantRepository.findById(id).orElseThrow());
     }
 
     /**
@@ -373,21 +402,72 @@ public class MerchantService {
                 .map(this::mapLocation)
                 .collect(Collectors.toList());
 
+        MerchantLocation primaryRaw = locations.stream()
+                .filter(MerchantLocation::isPrimary)
+                .findFirst().orElse(null);
+        String[] readiness = computePublicationReadiness(merchant, primaryRaw);
+
         return MerchantResponse.builder()
                 .id(merchant.getId())
                 .name(merchant.getName())
                 .description(merchant.getDescription())
                 .logoUrl(merchant.getLogoUrl())
                 .coverUrl(merchant.getCoverUrl())
-                // Legacy contact fields no longer read from entity — data lives in locations
                 .email(merchant.getEmail())
                 .website(merchant.getWebsite())
                 .contactPerson(merchant.getContactPerson())
                 .userId(merchant.getUserId())
                 .active(merchant.isActive())
+                .publicationReady(readiness[0] == null)
+                .publicationBlockReason(readiness[0])
                 .primaryLocation(primaryLoc)
                 .locations(locResponses)
                 .build();
+    }
+
+    private AdminMerchantSummaryResponse mapToAdminSummary(Merchant merchant) {
+        List<MerchantLocation> locations = merchantLocationRepository
+                .findByMerchantIdAndActiveTrue(merchant.getId());
+
+        MerchantLocationResponse primaryLoc = locations.stream()
+                .filter(MerchantLocation::isPrimary)
+                .findFirst()
+                .map(this::mapLocation)
+                .orElse(null);
+
+        MerchantLocation primaryRaw = locations.stream()
+                .filter(MerchantLocation::isPrimary)
+                .findFirst().orElse(null);
+        String[] readiness = computePublicationReadiness(merchant, primaryRaw);
+
+        return AdminMerchantSummaryResponse.builder()
+                .id(merchant.getId())
+                .name(merchant.getName())
+                .logoUrl(merchant.getLogoUrl())
+                .contactPerson(merchant.getContactPerson())
+                .email(merchant.getEmail())
+                .userId(merchant.getUserId())
+                .active(merchant.isActive())
+                .primaryLocation(primaryLoc)
+                .publicationReady(readiness[0] == null)
+                .publicationBlockReason(readiness[0])
+                .activeCouponsCount(couponOfferRepository.countByMerchantIdAndStatus(merchant.getId(), CouponStatus.ACTIVE))
+                .waitingCouponsCount(couponOfferRepository.countByMerchantIdAndStatus(merchant.getId(), CouponStatus.WAITING_FOR_MERCHANT))
+                .totalCouponsCount(couponOfferRepository.countByMerchantId(merchant.getId()))
+                .build();
+    }
+
+    /**
+     * Вычисляет причину блокировки публикации.
+     * @return String[1] where [0] is null if ready, or block reason string
+     */
+    private String[] computePublicationReadiness(Merchant merchant, MerchantLocation primary) {
+        if (!merchant.isActive()) return new String[]{"Мерчант не активен"};
+        if (primary == null) return new String[]{"Нет primary location"};
+        if (!primary.isActive()) return new String[]{"Primary location не активна"};
+        if (primary.getAddress() == null || primary.getAddress().isBlank()) return new String[]{"Не указан адрес"};
+        if (primary.getPhone() == null || primary.getPhone().isBlank()) return new String[]{"Не указан телефон"};
+        return new String[]{null}; // ready
     }
 
     private MerchantLocationResponse mapLocation(MerchantLocation loc) {

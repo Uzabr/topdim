@@ -68,6 +68,7 @@ const allMenuItems: MenuItem[] = [
     label: 'Справочники',
     roles: ['ADMIN', 'SUPER_ADMIN'],
     children: [
+      { key: '/catalog/merchants', icon: <ShopOutlined />, label: 'Мерчанты', roles: ['ADMIN', 'SUPER_ADMIN'] },
       { key: '/catalog/categories', icon: <AppstoreOutlined />, label: 'Категории', roles: ['ADMIN', 'SUPER_ADMIN'] },
       { key: '/catalog/bazaars', icon: <ShopOutlined />, label: 'Базары', roles: ['ADMIN', 'SUPER_ADMIN'] },
       { key: '/catalog/shops', icon: <ShopOutlined />, label: 'Магазины', roles: ['ADMIN', 'SUPER_ADMIN'] },

@@ -673,6 +673,22 @@ public class CouponOfferService {
         return couponOfferRepository.findAll(pageable).map(this::mapToResponse);
     }
 
+    /**
+     * Возвращает купоны мерчанта для admin detail page.
+     * Проверяет существование мерчанта.
+     */
+    @Transactional(readOnly = true)
+    public Page<CouponOfferResponse> getMerchantCouponsForAdmin(Long merchantId, CouponStatus status, int page, int size) {
+        if (!merchantRepository.existsById(merchantId)) {
+            throw new ResourceNotFoundException("Мерчант не найден");
+        }
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        if (status != null) {
+            return couponOfferRepository.findByMerchantIdAndStatus(merchantId, status, pageable).map(this::mapToResponse);
+        }
+        return couponOfferRepository.findByMerchantId(merchantId, pageable).map(this::mapToResponse);
+    }
+
     // ==================== Mapping ====================
 
     public CouponOfferResponse mapToResponse(CouponOffer offer) {

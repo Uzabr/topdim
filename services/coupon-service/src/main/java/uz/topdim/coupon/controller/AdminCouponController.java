@@ -119,6 +119,19 @@ public class AdminCouponController {
         return ResponseEntity.ok(ApiResponse.success(merchantService.getAllMerchants()));
     }
 
+    /** Paginated admin merchant list with search, active filter, readiness & coupon counts. */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @GetMapping("/merchants/page")
+    public ResponseEntity<ApiResponse<Page<AdminMerchantSummaryResponse>>> getMerchantPage(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                merchantService.getAdminMerchantPage(search, active, org.springframework.data.domain.PageRequest.of(page, size))));
+    }
+
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/merchants/{id}")
     public ResponseEntity<ApiResponse<MerchantResponse>> getMerchant(@PathVariable Long id) {
@@ -141,6 +154,31 @@ public class AdminCouponController {
             @Valid @RequestBody CreateMerchantRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success("Партнёр обновлён", merchantService.updateMerchant(id, request)));
+    }
+
+    /** Activate/deactivate merchant safely. */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PatchMapping("/merchants/{id}/active")
+    public ResponseEntity<ApiResponse<MerchantResponse>> setMerchantActiveStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateMerchantActiveRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                request.getActive() ? "Мерчант активирован" : "Мерчант деактивирован",
+                merchantService.setMerchantActiveStatus(id, request.getActive())));
+    }
+
+    /** Merchant coupons for admin detail page. */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @GetMapping("/merchants/{id}/coupons")
+    public ResponseEntity<ApiResponse<Page<CouponOfferResponse>>> getMerchantCoupons(
+            @PathVariable Long id,
+            @RequestParam(required = false) CouponStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                couponOfferService.getMerchantCouponsForAdmin(id, status, page, size)));
     }
 
 }

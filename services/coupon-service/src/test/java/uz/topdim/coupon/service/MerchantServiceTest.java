@@ -351,6 +351,170 @@ class MerchantServiceTest {
             verify(merchantRepository, never()).save(any(Merchant.class));
             verify(merchantLocationRepository, never()).save(any(uz.topdim.coupon.entity.MerchantLocation.class));
         }
+
+        // ==================== Publication Readiness ====================
+
+        @Test
+        @DisplayName("Publication ready — active merchant, primary location with address and phone")
+        void publicationReady_allConditions() {
+            Merchant merchant = createTestMerchant();
+            var primaryLoc = uz.topdim.coupon.entity.MerchantLocation.builder()
+                    .id(100L).merchant(merchant).title("Главный").address("Ташкент")
+                    .phone("+998901234567").primary(true).active(true).build();
+
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+            when(merchantLocationRepository.findByMerchantIdAndActiveTrue(1L)).thenReturn(List.of(primaryLoc));
+
+            MerchantResponse result = merchantService.getMerchantById(1L);
+
+            assertThat(result.isPublicationReady()).isTrue();
+            assertThat(result.getPublicationBlockReason()).isNull();
+        }
+
+        @Test
+        @DisplayName("Publication blocked — merchant inactive")
+        void publicationBlocked_merchantInactive() {
+            Merchant merchant = createTestMerchant();
+            merchant.setActive(false);
+            var primaryLoc = uz.topdim.coupon.entity.MerchantLocation.builder()
+                    .id(100L).merchant(merchant).address("Ташкент").phone("+998901234567")
+                    .primary(true).active(true).build();
+
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+            when(merchantLocationRepository.findByMerchantIdAndActiveTrue(1L)).thenReturn(List.of(primaryLoc));
+
+            MerchantResponse result = merchantService.getMerchantById(1L);
+
+            assertThat(result.isPublicationReady()).isFalse();
+            assertThat(result.getPublicationBlockReason()).isEqualTo("Мерчант не активен");
+        }
+
+        @Test
+        @DisplayName("Publication blocked — no primary location")
+        void publicationBlocked_noPrimaryLocation() {
+            Merchant merchant = createTestMerchant();
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+            when(merchantLocationRepository.findByMerchantIdAndActiveTrue(1L)).thenReturn(List.of());
+
+            MerchantResponse result = merchantService.getMerchantById(1L);
+
+            assertThat(result.isPublicationReady()).isFalse();
+            assertThat(result.getPublicationBlockReason()).isEqualTo("Нет primary location");
+        }
+
+        @Test
+        @DisplayName("Publication blocked — missing address on primary location")
+        void publicationBlocked_missingAddress() {
+            Merchant merchant = createTestMerchant();
+            var primaryLoc = uz.topdim.coupon.entity.MerchantLocation.builder()
+                    .id(100L).merchant(merchant).address("").phone("+998901234567")
+                    .primary(true).active(true).build();
+
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+            when(merchantLocationRepository.findByMerchantIdAndActiveTrue(1L)).thenReturn(List.of(primaryLoc));
+
+            MerchantResponse result = merchantService.getMerchantById(1L);
+
+            assertThat(result.isPublicationReady()).isFalse();
+            assertThat(result.getPublicationBlockReason()).isEqualTo("Не указан адрес");
+        }
+
+        @Test
+        @DisplayName("Publication blocked — missing phone on primary location")
+        void publicationBlocked_missingPhone() {
+            Merchant merchant = createTestMerchant();
+            var primaryLoc = uz.topdim.coupon.entity.MerchantLocation.builder()
+                    .id(100L).merchant(merchant).address("Ташкент").phone(null)
+                    .primary(true).active(true).build();
+
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+            when(merchantLocationRepository.findByMerchantIdAndActiveTrue(1L)).thenReturn(List.of(primaryLoc));
+
+            MerchantResponse result = merchantService.getMerchantById(1L);
+
+            assertThat(result.isPublicationReady()).isFalse();
+            assertThat(result.getPublicationBlockReason()).isEqualTo("Не указан телефон");
+        }
+
+        // ==================== Activate/Deactivate ====================
+
+        @Test
+        @DisplayName("Activate merchant — success")
+        void activateMerchant_success() {
+            Merchant merchant = createTestMerchant();
+            merchant.setActive(false);
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+            when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(merchantLocationRepository.findByMerchantIdAndActiveTrue(1L)).thenReturn(List.of());
+
+            merchantService.setMerchantActiveStatus(1L, true);
+
+            verify(merchantRepository).save(argThat(m -> m.isActive()));
+        }
+
+        @Test
+        @DisplayName("Deactivate merchant — success when no dependent coupons")
+        void deactivateMerchant_successNoDependents() {
+            Merchant merchant = createTestMerchant();
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+            when(couponOfferRepository.existsByMerchantIdAndStatusIn(eq(1L), anyList())).thenReturn(false);
+            when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(merchantLocationRepository.findByMerchantIdAndActiveTrue(1L)).thenReturn(List.of());
+
+            merchantService.setMerchantActiveStatus(1L, false);
+
+            verify(merchantRepository).save(argThat(m -> !m.isActive()));
+        }
+
+        @Test
+        @DisplayName("Deactivate merchant — blocked when active coupons exist")
+        void deactivateMerchant_blockedActiveCoupons() {
+            Merchant merchant = createTestMerchant();
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+            when(couponOfferRepository.existsByMerchantIdAndStatusIn(eq(1L), anyList())).thenReturn(true);
+
+            assertThatThrownBy(() -> merchantService.setMerchantActiveStatus(1L, false))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("Нельзя деактивировать мерчанта");
+        }
+
+        @Test
+        @DisplayName("Set active status — merchant not found")
+        void setActiveStatus_notFound() {
+            when(merchantRepository.findById(999L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> merchantService.setMerchantActiveStatus(999L, true))
+                    .isInstanceOf(ResourceNotFoundException.class);
+        }
+
+        // ==================== Admin Paginated Search ====================
+
+        @Test
+        @DisplayName("Admin merchant page — returns summary with coupon counts")
+        void adminMerchantPage_returnsSummaryWithCouponCounts() {
+            Merchant merchant = createTestMerchant();
+            var pageable = org.springframework.data.domain.PageRequest.of(0, 20);
+            var page = new org.springframework.data.domain.PageImpl<>(List.of(merchant), pageable, 1);
+            var primaryLoc = uz.topdim.coupon.entity.MerchantLocation.builder()
+                    .id(100L).merchant(merchant).address("Ташкент").phone("+998901234567")
+                    .primary(true).active(true).build();
+
+            when(merchantRepository.searchMerchants(null, null, pageable)).thenReturn(page);
+            when(merchantLocationRepository.findByMerchantIdAndActiveTrue(1L)).thenReturn(List.of(primaryLoc));
+            when(couponOfferRepository.countByMerchantIdAndStatus(1L, CouponStatus.ACTIVE)).thenReturn(3L);
+            when(couponOfferRepository.countByMerchantIdAndStatus(1L, CouponStatus.WAITING_FOR_MERCHANT)).thenReturn(1L);
+            when(couponOfferRepository.countByMerchantId(1L)).thenReturn(5L);
+
+            var result = merchantService.getAdminMerchantPage(null, null, pageable);
+
+            assertThat(result.getContent()).hasSize(1);
+            var summary = result.getContent().get(0);
+            assertThat(summary.getName()).isEqualTo("SPA Oasis");
+            assertThat(summary.isPublicationReady()).isTrue();
+            assertThat(summary.getActiveCouponsCount()).isEqualTo(3L);
+            assertThat(summary.getWaitingCouponsCount()).isEqualTo(1L);
+            assertThat(summary.getTotalCouponsCount()).isEqualTo(5L);
+        }
     }
 
     // ==================== Categories ====================
@@ -497,3 +661,4 @@ class MerchantServiceTest {
         }
     }
 }
+

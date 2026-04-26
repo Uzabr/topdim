@@ -29,6 +29,10 @@ public class MerchantResponse {
     private Long userId;
     private boolean active;
 
+    /** Publication readiness computed from merchant + primary location. */
+    private boolean publicationReady;
+    private String publicationBlockReason;
+
     /** Primary location (canonical source for storefront coupon detail). */
     private MerchantLocationResponse primaryLocation;
 

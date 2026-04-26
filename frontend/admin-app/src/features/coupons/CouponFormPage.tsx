@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, Form, Input, InputNumber, Button, Typography, App, Row, Col, DatePicker, Select, Tag, Modal, Space, Upload, Alert, Spin, Switch } from 'antd';
 import { ExclamationCircleOutlined, PlusOutlined, UploadOutlined, MinusCircleOutlined, InfoCircleOutlined, ArrowLeftOutlined, DeleteOutlined, GiftOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import api from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
@@ -113,6 +113,23 @@ export const CouponFormPage = () => {
       return res.data.data;
     }
   });
+
+  // Preselect merchant from query string (e.g. ?merchantId=13)
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    if (!isEditMode && merchants) {
+      const qsMerchantId = searchParams.get('merchantId');
+      if (qsMerchantId) {
+        const mid = Number(qsMerchantId);
+        const found = merchants.find((m: any) => m.id === mid);
+        if (found) {
+          form.setFieldValue('merchantId', mid);
+        } else {
+          message.warning(`Мерчант #${qsMerchantId} не найден — выберите вручную`);
+        }
+      }
+    }
+  }, [merchants, isEditMode, searchParams, form, message]);
 
   const selectedMerchant = merchants?.find((m: any) => m.id === selectedMerchantId);
   const readiness = getPublicationReadiness(selectedMerchant);
