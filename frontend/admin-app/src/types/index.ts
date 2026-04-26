@@ -34,9 +34,22 @@ export interface PartnerApplication {
   firstName: string;
   lastName: string;
   phone: string;
+  email: string | null;
   companyName: string;
+  city: string | null;
+  address: string | null;
+  workingHours: string | null;
+  businessCategory: string | null;
+  website: string | null;
+  telegramUsername: string | null;
   comment: string | null;
+  source: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason: string | null;
+  reviewedBy: number | null;
+  reviewedAt: string | null;
+  linkedUserId: number | null;
+  linkedMerchantId: number | null;
   createdAt: string;
   updatedAt: string | null;
 }
