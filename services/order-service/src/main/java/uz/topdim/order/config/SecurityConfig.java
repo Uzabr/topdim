@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -48,8 +49,12 @@ public class SecurityConfig {
                         // Погашение купона — только PARTNER (и выше по иерархии)
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders/redeem").hasRole("PARTNER")
 
-                        // Статистика и история партнёра
-                        .requestMatchers("/api/v1/partner/**").hasAnyRole("PARTNER", "ADMIN", "SUPER_ADMIN")
+                        // Статистика, история и погашение партнёра — строго только исходная роль PARTNER.
+                        // Через RoleHeaderAuthenticationFilter ADMIN наследует ROLE_PARTNER, поэтому hasRole()
+                        // здесь небезопасен для cashier redeem сценария.
+                        .requestMatchers("/api/v1/partner/**").access((authentication, context) ->
+                                new AuthorizationDecision("PARTNER".equalsIgnoreCase(
+                                        context.getRequest().getHeader("X-User-Role"))))
 
                         // Все остальные endpoints — требуют аутентификации
                         .anyRequest().authenticated()

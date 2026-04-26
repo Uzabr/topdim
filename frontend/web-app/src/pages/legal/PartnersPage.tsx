@@ -1,7 +1,9 @@
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { submitPartnerApplication, PartnerApplicationData } from '../../api/partners';
+import { submitPartnerApplication } from '../../api/partners';
+import type { PartnerApplicationData } from '../../api/partners';
 import './PartnersPage.css';
 
 export default function PartnersPage() {

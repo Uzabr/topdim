@@ -123,6 +123,16 @@ public class PartnerApplicationService {
         String phone = normalizePhone(request.getPhone());
 
         User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
+        User userByPhone = phone != null ? userRepository.findByPhone(phone).orElse(null) : null;
+
+        if (user != null && userByPhone != null && !user.getId().equals(userByPhone.getId())) {
+            throw new IllegalStateException("Phone is already linked to another user");
+        }
+
+        if (user == null) {
+            user = userByPhone;
+        }
+
         if (user == null) {
             user = User.builder()
                     .email(email)
