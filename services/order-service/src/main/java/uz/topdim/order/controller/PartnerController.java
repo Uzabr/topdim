@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.order.dto.CreateRedemptionRequest;
 import uz.topdim.order.dto.PartnerStatsResponse;
+import uz.topdim.order.dto.QrRedemptionRequest;
 import uz.topdim.order.dto.RedeemCouponResponse;
 import uz.topdim.order.dto.RedemptionResponse;
 import uz.topdim.order.entity.PurchasedCoupon;
@@ -40,6 +41,18 @@ public class PartnerController {
         String couponCode = request.getCouponCode().trim().toUpperCase();
         PurchasedCoupon coupon = orderService.redeemCoupon(couponCode, merchantId, request.getStaffName());
         return ResponseEntity.ok(ApiResponse.success("Купон использован", orderService.mapToRedeemResponse(coupon)));
+    }
+
+    /** Погашение купона по QR-токену (сканирование). */
+    @PostMapping("/redemptions/qr")
+    public ResponseEntity<ApiResponse<RedeemCouponResponse>> redeemByQr(
+            @RequestHeader("X-User-Id") Long userId,
+            @Valid @RequestBody QrRedemptionRequest request
+    ) {
+        Long merchantId = partnerMerchantResolver.resolveMerchantId(userId);
+        PurchasedCoupon coupon = orderService.redeemByQrToken(
+                request.getQrToken().trim(), merchantId, request.getStaffName());
+        return ResponseEntity.ok(ApiResponse.success("Купон использован по QR", orderService.mapToRedeemResponse(coupon)));
     }
 
     /** Статистика продаж партнёра. */

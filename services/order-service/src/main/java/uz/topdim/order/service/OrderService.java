@@ -1,6 +1,7 @@
 package uz.topdim.order.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -9,9 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.common.events.OrderCreatedEvent;
 import uz.topdim.common.events.CouponPurchasedEvent;
+import uz.topdim.common.events.CouponRedeemedEvent;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.order.client.CouponClient;
 import uz.topdim.order.client.CouponPurchaseSnapshot;
+import uz.topdim.order.client.RegisterSaleRequest;
 import uz.topdim.order.dto.CartResponse;
 import uz.topdim.order.dto.OrderResponse;
 import uz.topdim.order.dto.PurchasedCouponResponse;
@@ -30,6 +33,7 @@ import java.util.UUID;
  * Корзина → Checkout → Заказ → Покупка купонов → Погашение.
  * Публикует события: OrderCreated, CouponPurchased.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -129,6 +133,39 @@ public class OrderService {
         Cart cart = getCartByUserId(userId);
         cart.getItems().removeIf(item -> item.getId().equals(cartItemId));
         cartRepository.save(cart);
+    }
+
+    /**
+     * Обновляет количество товара в корзине.
+     * Перезагружает purchase snapshot для ревалидации доступности.
+     *
+     * @param userId ID пользователя
+     * @param itemId ID элемента корзины
+     * @param quantity новое количество (≥ 1)
+     * @return обновлённая корзина
+     * @throws IllegalArgumentException если item не найден в корзине пользователя
+     * @throws IllegalStateException если купон недоступен или количество превышает остаток
+     */
+    @Transactional
+    public Cart updateCartItemQuantity(Long userId, Long itemId, int quantity) {
+        Cart cart = getCartByUserId(userId);
+        CartItem item = cart.getItems().stream()
+                .filter(i -> i.getId().equals(itemId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Элемент корзины не найден"));
+
+        CouponPurchaseSnapshot snapshot = loadPurchaseSnapshot(
+                item.getCouponOfferId(), item.getCouponOptionId());
+        assertPurchasableStatus(snapshot);
+        assertQuantityAvailable(snapshot, quantity);
+
+        item.setQuantity(quantity);
+        // Обновляем канонические данные из snapshot
+        item.setCouponTitle(snapshot.getCouponTitle());
+        item.setOptionTitle(snapshot.getOptionTitle());
+        item.setUnitPrice(snapshot.getCouponPrice());
+
+        return cartRepository.save(cart);
     }
 
     /**
@@ -296,6 +333,25 @@ public class OrderService {
             }
         }
 
+        // Register sales in coupon-service (idempotent)
+        for (OrderItem item : order.getItems()) {
+            try {
+                couponClient.registerSale(
+                        item.getCouponOfferId(),
+                        item.getCouponOptionId(),
+                        RegisterSaleRequest.builder()
+                                .orderId(orderId)
+                                .quantity(item.getQuantity())
+                                .amount(item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                                .build()
+                );
+            } catch (Exception e) {
+                // Log but don't fail — coupon generation already succeeded
+                log.warn("Не удалось зарегистрировать продажу в coupon-service для orderId={}, couponId={}: {}",
+                        orderId, item.getCouponOfferId(), e.getMessage());
+            }
+        }
+
         return coupons;
     }
 
@@ -417,6 +473,33 @@ public class OrderService {
         PurchasedCoupon coupon = purchasedCouponRepository.findByCouponCode(couponCode)
                 .orElseThrow(() -> new IllegalArgumentException("Купон не найден"));
 
+        return processRedemption(coupon, merchantId, staffName);
+    }
+
+    /**
+     * Погашение купона по QR-токену.
+     * Та же бизнес-логика что и redeemCoupon, но поиск по qrToken.
+     *
+     * @param qrToken уникальный QR-токен купона
+     * @param merchantId ID партнёра, погашающего купон
+     * @param staffName имя сотрудника
+     * @return обновлённый PurchasedCoupon
+     * @throws IllegalArgumentException если купон по QR не найден
+     * @throws IllegalStateException если купон не может быть использован
+     */
+    @Transactional
+    public PurchasedCoupon redeemByQrToken(String qrToken, Long merchantId, String staffName) {
+        expireOverduePurchasedCoupons();
+        PurchasedCoupon coupon = purchasedCouponRepository.findByQrToken(qrToken)
+                .orElseThrow(() -> new IllegalArgumentException("Купон по QR-токену не найден"));
+
+        return processRedemption(coupon, merchantId, staffName);
+    }
+
+    /**
+     * Общая логика погашения — валидация статуса, expiry, merchant, создание Redemption.
+     */
+    private PurchasedCoupon processRedemption(PurchasedCoupon coupon, Long merchantId, String staffName) {
         if (coupon.getStatus() != PurchasedCouponStatus.ACTIVE) {
             throw new IllegalStateException("Купон не может быть использован. Статус: " + coupon.getStatus());
         }
@@ -439,7 +522,6 @@ public class OrderService {
         coupon.setUsedAt(LocalDateTime.now());
         purchasedCouponRepository.save(coupon);
 
-        // Create redemption record
         Redemption redemption = Redemption.builder()
                 .purchasedCoupon(coupon)
                 .redemptionCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
@@ -448,6 +530,17 @@ public class OrderService {
                 .redeemedAt(LocalDateTime.now())
                 .build();
         redemptionRepository.save(redemption);
+
+        // Publish event for coupon-service to sync redeemedCount
+        CouponRedeemedEvent event = CouponRedeemedEvent.builder()
+                .purchasedCouponId(coupon.getId())
+                .orderId(coupon.getOrder() != null ? coupon.getOrder().getId() : null)
+                .couponOfferId(coupon.getCouponOfferId())
+                .couponOptionId(coupon.getCouponOptionId())
+                .merchantId(merchantId)
+                .redeemedAt(LocalDateTime.now())
+                .build();
+        rabbitTemplate.convertAndSend("coupon.exchange", "coupon.redeemed", event);
 
         return coupon;
     }

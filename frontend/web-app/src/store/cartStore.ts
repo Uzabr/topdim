@@ -218,14 +218,23 @@ export const useCartStore = create<CartState>((set, get) => ({
     }
 
     if (get().mode === 'auth') {
-      // Auth mode: find backendItem by key pattern and update via API
-      // For now, update locally in backendItems (full PATCH API to be added in later stages)
-      const newItems = get().backendItems.map((item) =>
-        makeKey(item.couponOfferId, item.couponOptionId) === key
-          ? { ...item, quantity }
-          : item
+      // Auth mode: call backend PATCH and refresh cart
+      const item = get().backendItems.find(
+        (i) => makeKey(i.couponOfferId, i.couponOptionId) === key
       );
-      set({ backendItems: newItems, items: backendToLocal(newItems), ...calcBackendTotals(newItems) });
+      if (item) {
+        set({ isLoading: true, error: null });
+        ordersApi.updateCartItemQuantity(item.id, quantity)
+          .then(async () => {
+            await get().fetchBackendCart();
+            set({ isLoading: false });
+          })
+          .catch((err: unknown) => {
+            const error = err as { response?: { data?: { message?: string } } };
+            const message = error.response?.data?.message || 'Не удалось обновить количество';
+            set({ isLoading: false, error: message });
+          });
+      }
       return;
     }
 

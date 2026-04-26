@@ -80,6 +80,9 @@ export const ordersApi = {
   removeFromCart: (itemId: number) =>
     apiClient.delete<ApiResponse<void>>(`/api/v1/cart/items/${itemId}`),
 
+  updateCartItemQuantity: (itemId: number, quantity: number) =>
+    apiClient.patch<ApiResponse<Cart>>(`/api/v1/cart/items/${itemId}`, { quantity }),
+
   createOrder: (email: string, phone: string) =>
     apiClient.post<ApiResponse<OrderResponse>>('/api/v1/orders', { email, phone }),
 

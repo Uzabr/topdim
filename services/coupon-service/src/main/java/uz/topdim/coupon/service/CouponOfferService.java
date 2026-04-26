@@ -41,6 +41,8 @@ public class CouponOfferService {
     private final MerchantLocationRepository merchantLocationRepository;
     private final CategoryRepository categoryRepository;
     private final ReviewRepository reviewRepository;
+    private final CouponSaleRepository couponSaleRepository;
+    private final CouponRedemptionLedgerRepository couponRedemptionLedgerRepository;
     private final EntityManager entityManager;
     private final TelegramPreviewService telegramPreviewService;
 
@@ -916,6 +918,113 @@ public class CouponOfferService {
         }
 
         couponOfferRepository.save(offer);
+    }
+
+    /**
+     * Идемпотентная регистрация продажи купона.
+     * Использует coupon_sales ledger для предотвращения дублирования.
+     * Если (orderId, couponId, optionId) уже зарегистрирован — пропускает без инкремента.
+     *
+     * @param orderId ID заказа
+     * @param couponId ID купонного предложения
+     * @param optionId ID опции купона
+     * @param quantity количество проданных единиц
+     * @param amount сумма продажи
+     */
+    @Caching(evict = {
+            @CacheEvict(value = "catalog", allEntries = true),
+            @CacheEvict(value = "topSelling", allEntries = true),
+            @CacheEvict(value = "couponDetail", key = "#couponId")
+    })
+    @Transactional
+    public void registerSaleOnce(Long orderId, Long couponId, Long optionId, int quantity, BigDecimal amount) {
+        // Idempotency check
+        if (couponSaleRepository.findByOrderIdAndCouponOfferIdAndCouponOptionId(orderId, couponId, optionId).isPresent()) {
+            log.info("Продажа для заказа {} купона {} опции {} уже зарегистрирована, пропускаем", orderId, couponId, optionId);
+            return;
+        }
+
+        CouponOffer offer = couponOfferRepository.findById(couponId)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        CouponOption option = offer.getOptions().stream()
+                .filter(opt -> opt.getId().equals(optionId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Опция купона не найдена"));
+
+        // Записываем в ledger
+        CouponSale sale = CouponSale.builder()
+                .orderId(orderId)
+                .couponOfferId(couponId)
+                .couponOptionId(optionId)
+                .quantity(quantity)
+                .amount(amount != null ? amount : BigDecimal.ZERO)
+                .build();
+        couponSaleRepository.save(sale);
+
+        // Обновляем счётчики
+        option.setQuantitySold(option.getQuantitySold() + quantity);
+        offer.setTotalSold(offer.getTotalSold() + quantity);
+        offer.setTotalTurnover(offer.getTotalTurnover().add(amount != null ? amount : BigDecimal.ZERO));
+
+        // Проверяем общий лимит для автоматического SOLD_OUT
+        int totalSold = offer.getTotalSold();
+        int totalLimit = offer.getOptions().stream()
+                .mapToInt(opt -> opt.getQuantityLimit() != null ? opt.getQuantityLimit() : 0)
+                .sum();
+
+        if (totalLimit > 0 && totalSold >= totalLimit && offer.getStatus() == CouponStatus.ACTIVE) {
+            offer.setStatus(CouponStatus.SOLD_OUT);
+            log.info("Купон #{} автоматически переведен в SOLD_OUT через registerSaleOnce", couponId);
+
+            if (offer.getMerchant() != null && offer.getMerchant().getTelegramChatId() != null) {
+                telegramPreviewService.sendPushMessage(
+                        offer.getMerchant().getTelegramChatId(),
+                        "🛑 Сертификаты по акции распроданы! Публикация автоматически приостановлена. " +
+                        "Чтобы запустить новую, нажмите [➕ Создать купон]."
+                );
+            }
+        }
+
+        couponOfferRepository.save(offer);
+        log.info("Зарегистрирована продажа: orderId={}, couponId={}, optionId={}, qty={}, amount={}",
+                orderId, couponId, optionId, quantity, amount);
+    }
+
+    /**
+     * Идемпотентный инкремент redeemedCount по событию погашения.
+     * Использует coupon_redemption_ledger для предотвращения дублирования.
+     *
+     * @param purchasedCouponId ID купленного купона (уникальный ключ идемпотентности)
+     * @param couponOfferId ID купонного предложения
+     * @param couponOptionId ID опции купона
+     * @param merchantId ID мерчанта
+     */
+    @Transactional
+    public void incrementRedeemedOnce(Long purchasedCouponId, Long couponOfferId, Long couponOptionId, Long merchantId) {
+        if (couponRedemptionLedgerRepository.findByPurchasedCouponId(purchasedCouponId).isPresent()) {
+            log.info("Погашение purchasedCouponId={} уже учтено, пропускаем", purchasedCouponId);
+            return;
+        }
+
+        CouponOffer offer = couponOfferRepository.findById(couponOfferId)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        // Record in ledger
+        CouponRedemptionLedger ledger = CouponRedemptionLedger.builder()
+                .purchasedCouponId(purchasedCouponId)
+                .couponOfferId(couponOfferId)
+                .couponOptionId(couponOptionId)
+                .merchantId(merchantId)
+                .build();
+        couponRedemptionLedgerRepository.save(ledger);
+
+        // Increment counter
+        offer.setRedeemedCount(offer.getRedeemedCount() + 1);
+        couponOfferRepository.save(offer);
+
+        log.info("Инкремент redeemedCount для couponOfferId={}, purchasedCouponId={}, new count={}",
+                couponOfferId, purchasedCouponId, offer.getRedeemedCount());
     }
 
     // ==================== Helpers ====================

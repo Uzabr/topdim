@@ -66,6 +66,17 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success("Удалено из корзины", null));
     }
 
+    /** Обновить количество товара в корзине. */
+    @PatchMapping("/api/v1/cart/items/{itemId}")
+    public ResponseEntity<ApiResponse<CartResponse>> updateCartItemQuantity(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long itemId,
+            @Valid @RequestBody UpdateCartItemQuantityRequest request
+    ) {
+        Cart cart = orderService.updateCartItemQuantity(userId, itemId, request.getQuantity());
+        return ResponseEntity.ok(ApiResponse.success("Количество обновлено", orderService.mapToCartResponse(cart)));
+    }
+
     /** Очистить корзину полностью. */
     @DeleteMapping("/api/v1/cart")
     public ResponseEntity<ApiResponse<Void>> clearCart(@RequestHeader("X-User-Id") Long userId) {

@@ -94,6 +94,63 @@ class OrderServiceTest {
         return ApiResponse.success(snapshot);
     }
 
+    // ==================== UpdateCartItemQuantity ====================
+
+    @Test
+    @DisplayName("Обновление количества в корзине: успешное обновление с ревалидацией snapshot")
+    void updateCartItemQuantity_success_updatesQuantityAndRevalidates() {
+        CartItem item = CartItem.builder()
+                .id(10L).couponOfferId(5L).couponOptionId(3L)
+                .couponTitle("SPA").optionTitle("Standard")
+                .unitPrice(BigDecimal.valueOf(99000)).quantity(1)
+                .gift(false).build();
+        Cart cart = Cart.builder().id(1L).userId(10L)
+                .items(new ArrayList<>(List.of(item))).build();
+        item.setCart(cart);
+
+        when(cartRepository.findByUserId(10L)).thenReturn(Optional.of(cart));
+        when(couponClient.getPurchaseSnapshot(5L, 3L)).thenReturn(snapshotResponse(activeSnapshot()));
+        when(cartRepository.save(any(Cart.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Cart result = orderService.updateCartItemQuantity(10L, 10L, 3);
+
+        assertThat(result.getItems().get(0).getQuantity()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("Обновление количества: item не принадлежит корзине юзера → IllegalArgumentException")
+    void updateCartItemQuantity_itemNotInUserCart_throws() {
+        Cart cart = Cart.builder().id(1L).userId(10L).items(new ArrayList<>()).build();
+        when(cartRepository.findByUserId(10L)).thenReturn(Optional.of(cart));
+
+        assertThatThrownBy(() -> orderService.updateCartItemQuantity(10L, 999L, 2))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("Обновление количества: превышает доступный остаток → IllegalStateException")
+    void updateCartItemQuantity_exceedsAvailable_throws() {
+        CouponPurchaseSnapshot snapshot = activeSnapshot();
+        snapshot.setQuantityLimit(3);
+        snapshot.setQuantitySold(2);
+
+        CartItem item = CartItem.builder()
+                .id(10L).couponOfferId(5L).couponOptionId(3L)
+                .couponTitle("SPA").optionTitle("Standard")
+                .unitPrice(BigDecimal.valueOf(99000)).quantity(1)
+                .gift(false).build();
+        Cart cart = Cart.builder().id(1L).userId(10L)
+                .items(new ArrayList<>(List.of(item))).build();
+        item.setCart(cart);
+
+        when(cartRepository.findByUserId(10L)).thenReturn(Optional.of(cart));
+        when(couponClient.getPurchaseSnapshot(5L, 3L)).thenReturn(snapshotResponse(snapshot));
+
+        assertThatThrownBy(() -> orderService.updateCartItemQuantity(10L, 10L, 5))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Недостаточно купонов");
+    }
+
     // ==================== AddToCart ====================
 
     @Test
@@ -577,6 +634,69 @@ class OrderServiceTest {
 
         assertThat(coupon.getStatus()).isEqualTo(PurchasedCouponStatus.EXPIRED);
         verify(redemptionRepository, never()).save(any(Redemption.class));
+    }
+
+    // ==================== QR Token Redemption ====================
+
+    @Test
+    @DisplayName("Погашение по QR-токену: активный купон → USED")
+    void redeemByQrToken_activeCoupon_marksAsUsed() {
+        PurchasedCoupon coupon = PurchasedCoupon.builder()
+                .id(1L).couponCode("CP-QR1234")
+                .qrToken("qr-token-abc123")
+                .merchantId(5L)
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .status(PurchasedCouponStatus.ACTIVE).build();
+
+        when(purchasedCouponRepository.findByQrToken("qr-token-abc123")).thenReturn(Optional.of(coupon));
+        when(purchasedCouponRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(redemptionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        PurchasedCoupon result = orderService.redeemByQrToken("qr-token-abc123", 5L, "Анна");
+
+        assertThat(result.getStatus()).isEqualTo(PurchasedCouponStatus.USED);
+        assertThat(result.getUsedAt()).isNotNull();
+        verify(redemptionRepository).save(any(Redemption.class));
+    }
+
+    @Test
+    @DisplayName("Погашение по QR-токену: несуществующий токен → IllegalArgumentException")
+    void redeemByQrToken_notFound_throwsException() {
+        when(purchasedCouponRepository.findByQrToken("invalid-token")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.redeemByQrToken("invalid-token", 5L, "Анна"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("не найден");
+    }
+
+    @Test
+    @DisplayName("Погашение по QR-токену: уже использованный → IllegalStateException")
+    void redeemByQrToken_alreadyUsed_throwsException() {
+        PurchasedCoupon coupon = PurchasedCoupon.builder()
+                .id(1L).couponCode("CP-USED").qrToken("qr-used")
+                .merchantId(5L).status(PurchasedCouponStatus.USED).build();
+
+        when(purchasedCouponRepository.findByQrToken("qr-used")).thenReturn(Optional.of(coupon));
+
+        assertThatThrownBy(() -> orderService.redeemByQrToken("qr-used", 5L, "Анна"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("не может быть использован");
+    }
+
+    @Test
+    @DisplayName("Погашение по QR-токену: чужой merchantId → IllegalStateException")
+    void redeemByQrToken_wrongMerchant_throwsException() {
+        PurchasedCoupon coupon = PurchasedCoupon.builder()
+                .id(1L).couponCode("CP-QR999").qrToken("qr-token-xyz")
+                .merchantId(77L)
+                .expiresAt(LocalDateTime.now().plusDays(1))
+                .status(PurchasedCouponStatus.ACTIVE).build();
+
+        when(purchasedCouponRepository.findByQrToken("qr-token-xyz")).thenReturn(Optional.of(coupon));
+
+        assertThatThrownBy(() -> orderService.redeemByQrToken("qr-token-xyz", 88L, "Анна"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("другому мерчанту");
     }
 
     // ==================== Refund ====================
