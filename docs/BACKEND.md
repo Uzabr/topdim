@@ -8,6 +8,7 @@
 order-service ──▶ coupon-service   (CouponClient: getCouponById, getCouponOption)
 order-service ──▶ identity-service (UserClient: getUserById)
 bazaar-service ──▶ coupon-service  (CouponClient: getCouponOfferById)
+identity-service ──▶ coupon-service (CouponMerchantClient: createMerchant)
 ```
 
 ### Асинхронные события (RabbitMQ)
