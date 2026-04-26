@@ -10,4 +10,5 @@ import uz.topdim.identity.entity.PartnerApplication;
 @Repository
 public interface PartnerApplicationRepository extends JpaRepository<PartnerApplication, Long> {
     Page<PartnerApplication> findByStatus(ApplicationStatus status, Pageable pageable);
+    boolean existsByPhoneAndStatus(String phone, ApplicationStatus status);
 }

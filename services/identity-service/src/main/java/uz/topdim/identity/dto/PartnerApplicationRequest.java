@@ -15,4 +15,25 @@ public class PartnerApplicationRequest {
     @NotBlank(message = "Название компании обязательно") @Size(max = 100)
     private String companyName;
     private String comment;
+
+    @Size(max = 255)
+    private String email;
+
+    @Size(max = 100)
+    private String city;
+
+    @Size(max = 500)
+    private String address;
+
+    @Size(max = 255)
+    private String workingHours;
+
+    @Size(max = 100)
+    private String businessCategory;
+
+    @Size(max = 255)
+    private String website;
+
+    @Size(max = 100)
+    private String telegramUsername;
 }

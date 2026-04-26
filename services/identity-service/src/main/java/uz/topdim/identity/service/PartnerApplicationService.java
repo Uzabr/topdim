@@ -19,10 +19,27 @@ public class PartnerApplicationService {
 
     @Transactional
     public PartnerApplicationResponse submit(PartnerApplicationRequest request) {
+        String phone = normalizePhone(request.getPhone());
+        if (repository.existsByPhoneAndStatus(phone, ApplicationStatus.PENDING)) {
+            throw new IllegalStateException("pending partner application already exists for phone");
+        }
+
         PartnerApplication app = PartnerApplication.builder()
-                .firstName(request.getFirstName()).lastName(request.getLastName())
-                .phone(request.getPhone()).companyName(request.getCompanyName())
-                .comment(request.getComment()).status(ApplicationStatus.PENDING).build();
+                .firstName(request.getFirstName().trim())
+                .lastName(request.getLastName().trim())
+                .phone(phone)
+                .email(blankToNull(request.getEmail()))
+                .companyName(request.getCompanyName().trim())
+                .city(blankToNull(request.getCity()))
+                .address(blankToNull(request.getAddress()))
+                .workingHours(blankToNull(request.getWorkingHours()))
+                .businessCategory(blankToNull(request.getBusinessCategory()))
+                .website(blankToNull(request.getWebsite()))
+                .telegramUsername(blankToNull(request.getTelegramUsername()))
+                .comment(blankToNull(request.getComment()))
+                .source("WEB")
+                .status(ApplicationStatus.PENDING)
+                .build();
         return toResponse(repository.save(app));
     }
 
@@ -51,10 +68,35 @@ public class PartnerApplicationService {
         return toResponse(repository.save(app));
     }
 
-    private PartnerApplicationResponse toResponse(PartnerApplication e) {
+    PartnerApplicationResponse toResponse(PartnerApplication e) {
         return PartnerApplicationResponse.builder()
                 .id(e.getId()).firstName(e.getFirstName()).lastName(e.getLastName())
-                .phone(e.getPhone()).companyName(e.getCompanyName()).comment(e.getComment())
-                .status(e.getStatus()).createdAt(e.getCreatedAt()).updatedAt(e.getUpdatedAt()).build();
+                .phone(e.getPhone()).email(e.getEmail()).companyName(e.getCompanyName())
+                .city(e.getCity()).address(e.getAddress()).workingHours(e.getWorkingHours())
+                .businessCategory(e.getBusinessCategory()).website(e.getWebsite())
+                .telegramUsername(e.getTelegramUsername()).comment(e.getComment())
+                .source(e.getSource()).status(e.getStatus())
+                .rejectionReason(e.getRejectionReason()).reviewedBy(e.getReviewedBy())
+                .reviewedAt(e.getReviewedAt()).linkedUserId(e.getLinkedUserId())
+                .linkedMerchantId(e.getLinkedMerchantId())
+                .createdAt(e.getCreatedAt()).updatedAt(e.getUpdatedAt()).build();
+    }
+
+    String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    String normalizePhone(String phone) {
+        if (phone == null) {
+            return null;
+        }
+        String digits = phone.replaceAll("\\D", "");
+        if (digits.startsWith("998")) {
+            return "+" + digits;
+        }
+        return digits.isBlank() ? phone.trim() : "+" + digits;
     }
 }
