@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, Tag, Button, Space, Typography, App, Modal, Form, Input, Descriptions } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -40,6 +41,7 @@ export const PartnerApplicationsPage = () => {
   const [rejectForm] = Form.useForm<RejectPayload>();
   const queryClient = useQueryClient();
   const { message } = App.useApp();
+  const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
     queryKey: ['partner-applications', page],
@@ -118,6 +120,18 @@ export const PartnerApplicationsPage = () => {
           <Button size="small" icon={<EyeOutlined />} onClick={() => setDetailTarget(record)}>
             Детали
           </Button>
+          {record.status === 'APPROVED' && record.linkedMerchantId && (
+            <Button
+              size="small"
+              type="link"
+              onClick={() => navigate(`/catalog/merchants/${record.linkedMerchantId}`)}
+            >
+              Открыть мерчанта
+            </Button>
+          )}
+          {record.status === 'APPROVED' && !record.linkedMerchantId && (
+            <Tag color="warning">Мерчант не привязан</Tag>
+          )}
           {record.status === 'PENDING' && (
             <>
               <Button

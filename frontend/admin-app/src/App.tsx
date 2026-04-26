@@ -18,6 +18,8 @@ import { CategoriesPage } from './features/catalog/CategoriesPage';
 import { StaffPage } from './features/system/StaffPage';
 import { AuditLogPage } from './features/system/AuditLogPage';
 import { PartnerRedeemPage } from './features/partner-redemptions/PartnerRedeemPage';
+import { MerchantsPage } from './features/merchants/MerchantsPage';
+import { MerchantDetailPage } from './features/merchants/MerchantDetailPage';
 import { useAuthStore } from './store/authStore';
 
 function HomeRedirect() {
@@ -72,6 +74,8 @@ function App() {
 
                   {/* Справочники (только ADMIN, SUPER_ADMIN) */}
                   <Route path="/catalog/categories" element={<CategoriesPage />} />
+                  <Route path="/catalog/merchants" element={<MerchantsPage />} />
+                  <Route path="/catalog/merchants/:id" element={<MerchantDetailPage />} />
                   {/* TODO: подключить BazaarsPage, ShopsPage */}
 
                   {/* Заказы (только ADMIN, SUPER_ADMIN) */}
