@@ -54,6 +54,44 @@ public class MerchantService {
                 .build();
     }
 
+    /**
+     * Создаёт мерчанта при partner onboarding (idempotent by userId).
+     */
+    @CacheEvict(value = "catalog", allEntries = true)
+    @Transactional
+    public MerchantResponse createFromOnboarding(CreateMerchantOnboardingRequest request) {
+        Merchant existing = merchantRepository.findByUserId(request.getUserId()).orElse(null);
+        if (existing != null) {
+            return mapMerchant(existing);
+        }
+
+        Merchant merchant = Merchant.builder()
+                .name(request.getName().trim())
+                .description(request.getDescription())
+                .email(request.getEmail())
+                .website(request.getWebsite())
+                .contactPerson(request.getContactPerson())
+                .userId(request.getUserId())
+                .active(true)
+                .build();
+        merchant = merchantRepository.save(merchant);
+
+        MerchantLocation location = MerchantLocation.builder()
+                .merchant(merchant)
+                .title(request.getLocation().getTitle())
+                .address(request.getLocation().getAddress())
+                .phone(normalize(request.getLocation().getPhone()))
+                .workingHours(request.getLocation().getWorkingHours())
+                .latitude(request.getLocation().getLatitude())
+                .longitude(request.getLocation().getLongitude())
+                .primary(true)
+                .active(true)
+                .build();
+        merchantLocationRepository.save(location);
+
+        return mapMerchant(merchantRepository.findById(merchant.getId()).orElseThrow());
+    }
+
     // ==================== Merchants ====================
 
     /**
@@ -345,6 +383,7 @@ public class MerchantService {
                 .email(merchant.getEmail())
                 .website(merchant.getWebsite())
                 .contactPerson(merchant.getContactPerson())
+                .userId(merchant.getUserId())
                 .active(merchant.isActive())
                 .primaryLocation(primaryLoc)
                 .locations(locResponses)

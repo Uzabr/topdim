@@ -26,6 +26,7 @@ public class MerchantResponse {
     private String website;
     private String contactPerson;
 
+    private Long userId;
     private boolean active;
 
     /** Primary location (canonical source for storefront coupon detail). */

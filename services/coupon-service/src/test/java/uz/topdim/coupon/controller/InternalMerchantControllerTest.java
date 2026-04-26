@@ -7,15 +7,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import uz.topdim.coupon.dto.CreateMerchantOnboardingRequest;
 import uz.topdim.coupon.dto.MerchantContextResponse;
+import uz.topdim.coupon.dto.MerchantResponse;
 import uz.topdim.coupon.exception.GlobalExceptionHandler;
 import uz.topdim.coupon.exception.ResourceNotFoundException;
 import uz.topdim.coupon.service.MerchantService;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -64,5 +69,37 @@ class InternalMerchantControllerTest {
         mockMvc.perform(get("/api/v1/internal/merchants/by-user/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false));
+    }
+    @Test
+    @DisplayName("POST /api/v1/internal/merchants/onboarding: creates merchant linked to user")
+    void createOnboardingMerchant_returnsMerchant() throws Exception {
+        MerchantResponse response = MerchantResponse.builder()
+                .id(77L)
+                .name("Ali Cafe")
+                .userId(10L)
+                .active(true)
+                .build();
+
+        when(merchantService.createFromOnboarding(any(CreateMerchantOnboardingRequest.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/internal/merchants/onboarding")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": 10,
+                                  "name": "Ali Cafe",
+                                  "email": "partner@example.uz",
+                                  "contactPerson": "Ali Valiev",
+                                  "location": {
+                                    "address": "Amir Temur 10",
+                                    "phone": "+998901234567",
+                                    "workingHours": "10:00-22:00"
+                                  }
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(77))
+                .andExpect(jsonPath("$.data.userId").value(10));
     }
 }

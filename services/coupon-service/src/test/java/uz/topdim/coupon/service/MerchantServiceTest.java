@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uz.topdim.coupon.dto.CategoryResponse;
 import uz.topdim.coupon.dto.CreateCategoryRequest;
+import uz.topdim.coupon.dto.CreateMerchantOnboardingRequest;
 import uz.topdim.coupon.dto.CreateMerchantRequest;
 import uz.topdim.coupon.dto.MerchantResponse;
 import uz.topdim.coupon.entity.Category;
@@ -326,6 +327,29 @@ class MerchantServiceTest {
             merchantService.updateMerchant(1L, request);
 
             verify(merchantLocationRepository).deleteAllByMerchantId(1L);
+        }
+        @Test
+        @DisplayName("createFromOnboarding: existing merchant by userId returns existing merchant")
+        void createFromOnboarding_existingUserMerchant_returnsExisting() {
+            Merchant existing = Merchant.builder()
+                    .id(77L)
+                    .userId(10L)
+                    .name("Ali Cafe")
+                    .active(true)
+                    .build();
+
+            CreateMerchantOnboardingRequest request = new CreateMerchantOnboardingRequest();
+            request.setUserId(10L);
+            request.setName("Ali Cafe");
+
+            when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(existing));
+            when(merchantLocationRepository.findByMerchantIdAndActiveTrue(77L)).thenReturn(List.of());
+
+            MerchantResponse result = merchantService.createFromOnboarding(request);
+
+            assertThat(result.getId()).isEqualTo(77L);
+            verify(merchantRepository, never()).save(any(Merchant.class));
+            verify(merchantLocationRepository, never()).save(any(uz.topdim.coupon.entity.MerchantLocation.class));
         }
     }
 
