@@ -92,7 +92,7 @@ function App() {
               </Route>
 
               {/* Партнёрские роуты */}
-              <Route element={<ProtectedRoute allowedRoles={['PARTNER', 'ADMIN', 'SUPER_ADMIN']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['PARTNER']} />}>
                 <Route element={<AdminLayout />}>
                   <Route path="/partner/redeem" element={<PartnerRedeemPage />} />
                 </Route>

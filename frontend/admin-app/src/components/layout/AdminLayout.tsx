@@ -107,9 +107,9 @@ const allMenuItems: MenuItem[] = [
     key: '/partner',
     icon: <SafetyCertificateOutlined />,
     label: 'Партнёр',
-    roles: ['PARTNER', 'ADMIN', 'SUPER_ADMIN'],
+    roles: ['PARTNER'],
     children: [
-      { key: '/partner/redeem', icon: <TagOutlined />, label: 'Погашение купонов', roles: ['PARTNER', 'ADMIN', 'SUPER_ADMIN'] },
+      { key: '/partner/redeem', icon: <TagOutlined />, label: 'Погашение купонов', roles: ['PARTNER'] },
     ],
   },
 ];
