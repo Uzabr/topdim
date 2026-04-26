@@ -104,6 +104,7 @@ class PartnerApplicationServiceTest {
 
         when(repository.findById(5L)).thenReturn(Optional.of(app));
         when(userRepository.findByEmailIgnoreCase("partner@example.uz")).thenReturn(Optional.empty());
+        when(userRepository.findByPhone("+998901234567")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("Temp12345")).thenReturn("encoded");
         when(userRepository.save(any(User.class))).thenReturn(partner);
         when(couponMerchantClient.createMerchant(any(CreateMerchantOnboardingRequest.class)))
@@ -162,6 +163,37 @@ class PartnerApplicationServiceTest {
         assertThatThrownBy(() -> service.approve(5L, 99L, request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Admin or moderator");
+    }
+
+    @Test
+    @DisplayName("approve: phone linked to another user is rejected before merchant creation")
+    void approve_phoneLinkedToAnotherUser_throws() {
+        PartnerApplication app = PartnerApplication.builder()
+                .id(5L).firstName("Ali").lastName("V").phone("+998901234567")
+                .companyName("X").status(ApplicationStatus.PENDING).source("WEB").build();
+
+        User emailUser = User.builder().id(10L).email("partner@test.uz").role(Role.USER)
+                .password("pw").firstName("Ali").enabled(true).build();
+        User phoneUser = User.builder().id(11L).email("other@test.uz").phone("+998901234567").role(Role.USER)
+                .password("pw").firstName("Other").enabled(true).build();
+
+        ApprovePartnerApplicationRequest request = new ApprovePartnerApplicationRequest();
+        request.setLoginEmail("partner@test.uz");
+        request.setTemporaryPassword("Temp12345");
+        request.setMerchantName("Test");
+        request.setAddress("addr");
+        request.setPhone("+998901234567");
+
+        when(repository.findById(5L)).thenReturn(Optional.of(app));
+        when(userRepository.findByEmailIgnoreCase("partner@test.uz")).thenReturn(Optional.of(emailUser));
+        when(userRepository.findByPhone("+998901234567")).thenReturn(Optional.of(phoneUser));
+
+        assertThatThrownBy(() -> service.approve(5L, 99L, request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Phone is already linked to another user");
+
+        verify(couponMerchantClient, never()).createMerchant(any(CreateMerchantOnboardingRequest.class));
+        verify(repository, never()).save(any(PartnerApplication.class));
     }
 
     // ==================== Reject ====================
