@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from './store/authStore';
@@ -47,6 +47,61 @@ function RootRedirect() {
   return <Navigate to={`/${lang}`} replace />;
 }
 
+function AppShell() {
+  const location = useLocation();
+  const isPartnerLanding = /^\/(ru|uz)\/partners\/?$/.test(location.pathname);
+
+  useEffect(() => {
+    if (isPartnerLanding) {
+      document.body.classList.add('td-partner-body');
+      document.documentElement.classList.add('td-partner-body');
+    } else {
+      document.body.classList.remove('td-partner-body');
+      document.documentElement.classList.remove('td-partner-body');
+    }
+  }, [isPartnerLanding]);
+
+  return (
+    <div className="app-shell">
+      {!isPartnerLanding && <Header />}
+      <main className="app-main">
+      <Routes>
+        {/* Bare root → redirect to /ru or /uz */}
+        <Route path="/" element={<RootRedirect />} />
+
+        {/* All pages under /:lang */}
+        <Route path="/:lang" element={<LocaleLayout />}>
+          <Route index element={<HomePage />} />
+          <Route path="coupons" element={<CouponCatalogPage />} />
+          <Route path="coupons/:id" element={<CouponDetailPage />} />
+          <Route path="cart" element={<CartPage />} />
+          <Route path="checkout" element={<CheckoutPage />} />
+          <Route path="payment/:orderId" element={<PaymentPage />} />
+          <Route path="bazaar" element={<BazaarMapPage />} />
+          <Route path="bazaar/:id" element={<BazaarDetailPage />} />
+          <Route path="shops/:id" element={<ShopDetailPage />} />
+          <Route path="login" element={<LoginPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="search" element={<SearchPage />} />
+          <Route path="favorites" element={<FavoritesPage />} />
+          <Route path="partners" element={<PartnersPage />} />
+          <Route path="faq" element={<FAQPage />} />
+          <Route path="terms" element={<TermsPage />} />
+          <Route path="privacy" element={<PrivacyPage />} />
+        </Route>
+
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+      </main>
+      {!isPartnerLanding && <Footer />}
+      {!isPartnerLanding && <BottomNav />}
+      <CartDrawer />
+      <LimitModal />
+      <CookieConsent />
+    </div>
+  );
+}
+
 function AppContent() {
   const { loadFromStorage } = useAuthStore();
 
@@ -57,43 +112,7 @@ function AppContent() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ScrollToTop />
-      <div className="app-shell">
-        <Header />
-        <main className="app-main">
-        <Routes>
-          {/* Bare root → redirect to /ru or /uz */}
-          <Route path="/" element={<RootRedirect />} />
-
-          {/* All pages under /:lang */}
-          <Route path="/:lang" element={<LocaleLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="coupons" element={<CouponCatalogPage />} />
-            <Route path="coupons/:id" element={<CouponDetailPage />} />
-            <Route path="cart" element={<CartPage />} />
-            <Route path="checkout" element={<CheckoutPage />} />
-            <Route path="payment/:orderId" element={<PaymentPage />} />
-            <Route path="bazaar" element={<BazaarMapPage />} />
-            <Route path="bazaar/:id" element={<BazaarDetailPage />} />
-            <Route path="shops/:id" element={<ShopDetailPage />} />
-            <Route path="login" element={<LoginPage />} />
-            <Route path="profile" element={<ProfilePage />} />
-            <Route path="search" element={<SearchPage />} />
-            <Route path="favorites" element={<FavoritesPage />} />
-            <Route path="partners" element={<PartnersPage />} />
-            <Route path="faq" element={<FAQPage />} />
-            <Route path="terms" element={<TermsPage />} />
-            <Route path="privacy" element={<PrivacyPage />} />
-          </Route>
-
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-        </main>
-        <Footer />
-        <BottomNav />
-        <CartDrawer />
-        <LimitModal />
-        <CookieConsent />
-      </div>
+      <AppShell />
     </BrowserRouter>
   );
 }

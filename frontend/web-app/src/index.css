@@ -62,6 +62,26 @@
   box-sizing: border-box;
 }
 
+html.td-partner-body,
+html.td-partner-body body {
+  background: #020403 !important;
+  color: #f7fff7 !important;
+  color-scheme: dark !important;
+}
+
+body.td-partner-body #root {
+  width: 100% !important;
+  max-width: none !important;
+  border: none !important;
+  margin: 0 !important;
+  text-align: left !important;
+  background: transparent !important;
+}
+
+body.td-partner-body .app-main {
+  background: transparent !important;
+}
+
 body {
   margin: 0;
 }
