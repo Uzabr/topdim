@@ -5,13 +5,15 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Запись о погашении купона.
+ * Создаётся при сканировании QR кода или вводе PIN партнёром.
+ * Хранит merchantId, merchantLocationId (филиал), staffId, staffName
+ * и метод погашения (PIN/QR).
+ */
 @Entity
 @Table(name = "redemptions")
-@Getter @Setter @Builder @NoArgsConstructor /**
- * Запись о погашении купона.
- * Создаётся при сканировании QR кода партнёром.
- * Хранит merchantId, staffName и время погашения.
- */
+@Getter @Setter @Builder @NoArgsConstructor
 @AllArgsConstructor
 public class Redemption {
 
@@ -29,8 +31,20 @@ public class Redemption {
     @Column(nullable = false)
     private Long merchantId;
 
+    /** ID филиала, где произошло погашение */
+    @Column(name = "merchant_location_id")
+    private Long merchantLocationId;
+
+    /** ID сотрудника из staff таблицы identity-service */
+    @Column(name = "staff_id")
+    private Long staffId;
+
     @Column
     private String redeemedByStaff;
+
+    /** Метод погашения: PIN или QR */
+    @Column(name = "redeem_method", length = 10)
+    private String redeemMethod;
 
     @Column
     private String note;

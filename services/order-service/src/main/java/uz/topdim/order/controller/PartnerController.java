@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.order.client.PartnerAccessContext;
 import uz.topdim.order.dto.CreateRedemptionRequest;
+import uz.topdim.order.dto.PartnerDashboardResponse;
 import uz.topdim.order.dto.PartnerStatsResponse;
 import uz.topdim.order.dto.QrRedemptionRequest;
 import uz.topdim.order.dto.RedeemCouponResponse;
@@ -44,7 +45,9 @@ public class PartnerController {
         PartnerAccessContext ctx = partnerAccessResolver.resolveForRedemption(userId);
         String couponCode = request.getCouponCode().trim().toUpperCase();
         String staffName = ctx.getStaffName() != null ? ctx.getStaffName() : request.getStaffName();
-        PurchasedCoupon coupon = orderService.redeemCoupon(couponCode, ctx.getMerchantId(), staffName);
+        PurchasedCoupon coupon = orderService.redeemCoupon(
+                couponCode, ctx.getMerchantId(), staffName,
+                ctx.getMerchantLocationId(), ctx.getStaffId(), "PIN");
         return ResponseEntity.ok(ApiResponse.success("Купон использован", orderService.mapToRedeemResponse(coupon)));
     }
 
@@ -57,7 +60,8 @@ public class PartnerController {
         PartnerAccessContext ctx = partnerAccessResolver.resolveForRedemption(userId);
         String staffName = ctx.getStaffName() != null ? ctx.getStaffName() : request.getStaffName();
         PurchasedCoupon coupon = orderService.redeemByQrToken(
-                request.getQrToken().trim(), ctx.getMerchantId(), staffName);
+                request.getQrToken().trim(), ctx.getMerchantId(), staffName,
+                ctx.getMerchantLocationId(), ctx.getStaffId());
         return ResponseEntity.ok(ApiResponse.success("Купон использован по QR", orderService.mapToRedeemResponse(coupon)));
     }
 
@@ -78,7 +82,21 @@ public class PartnerController {
             @RequestParam(defaultValue = "20") int size
     ) {
         PartnerAccessContext ctx = partnerAccessResolver.resolve(userId);
+        // Cashier sees only own redemptions, Owner/Manager sees all merchant redemptions
+        if ("CASHIER".equals(ctx.getRole()) && ctx.getStaffId() != null) {
+            return ResponseEntity.ok(ApiResponse.success(
+                    partnerService.getRedemptionsByStaff(ctx.getMerchantId(), ctx.getStaffId(), page, size)));
+        }
         return ResponseEntity.ok(ApiResponse.success(
                 partnerService.getRedemptions(ctx.getMerchantId(), page, size)));
+    }
+
+    /** Дашборд партнёра — KPI, последние погашения. Owner/Manager only. */
+    @GetMapping("/dashboard")
+    public ResponseEntity<ApiResponse<PartnerDashboardResponse>> getDashboard(
+            @RequestHeader("X-User-Id") Long userId
+    ) {
+        PartnerAccessContext ctx = partnerAccessResolver.resolveForDashboard(userId);
+        return ResponseEntity.ok(ApiResponse.success(partnerService.getDashboard(ctx.getMerchantId())));
     }
 }

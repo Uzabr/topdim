@@ -14,5 +14,7 @@ public interface RedemptionRepository extends JpaRepository<Redemption, Long> {
     Optional<Redemption> findByPurchasedCouponId(Long purchasedCouponId);
 
     org.springframework.data.domain.Page<Redemption> findByMerchantId(Long merchantId, org.springframework.data.domain.Pageable pageable);
+    org.springframework.data.domain.Page<Redemption> findByMerchantIdAndStaffId(Long merchantId, Long staffId, org.springframework.data.domain.Pageable pageable);
+    org.springframework.data.domain.Page<Redemption> findByMerchantIdAndMerchantLocationId(Long merchantId, Long merchantLocationId, org.springframework.data.domain.Pageable pageable);
     long countByMerchantId(Long merchantId);
 }

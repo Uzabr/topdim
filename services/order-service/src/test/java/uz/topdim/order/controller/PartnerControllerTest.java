@@ -65,7 +65,7 @@ class PartnerControllerTest {
                 .build();
 
         when(partnerAccessResolver.resolveForRedemption(10L)).thenReturn(ownerContext());
-        when(orderService.redeemCoupon("CP-TEST1234", 77L, "Анна")).thenReturn(coupon);
+        when(orderService.redeemCoupon("CP-TEST1234", 77L, "Анна", null, null, "PIN")).thenReturn(coupon);
         when(orderService.mapToRedeemResponse(coupon)).thenReturn(
                 uz.topdim.order.dto.RedeemCouponResponse.builder()
                         .purchasedCouponId(501L).couponOfferId(10L).couponOptionId(20L)
@@ -92,7 +92,7 @@ class PartnerControllerTest {
                 .andExpect(jsonPath("$.data.merchantId").value(77));
 
         verify(partnerAccessResolver).resolveForRedemption(10L);
-        verify(orderService).redeemCoupon("CP-TEST1234", 77L, "Анна");
+        verify(orderService).redeemCoupon("CP-TEST1234", 77L, "Анна", null, null, "PIN");
     }
 
     @Test
@@ -107,7 +107,7 @@ class PartnerControllerTest {
                 .build();
 
         when(partnerAccessResolver.resolveForRedemption(20L)).thenReturn(cashierContext());
-        when(orderService.redeemCoupon("CP-TEST5678", 77L, "Кассир Али")).thenReturn(coupon);
+        when(orderService.redeemCoupon("CP-TEST5678", 77L, "Кассир Али", 200L, 5L, "PIN")).thenReturn(coupon);
         when(orderService.mapToRedeemResponse(coupon)).thenReturn(
                 uz.topdim.order.dto.RedeemCouponResponse.builder()
                         .purchasedCouponId(502L).couponOfferId(10L).couponOptionId(20L)
@@ -131,7 +131,7 @@ class PartnerControllerTest {
                 .andExpect(jsonPath("$.data.couponCode").value("CP-TEST5678"));
 
         // Staff name from context, not from request
-        verify(orderService).redeemCoupon("CP-TEST5678", 77L, "Кассир Али");
+        verify(orderService).redeemCoupon("CP-TEST5678", 77L, "Кассир Али", 200L, 5L, "PIN");
     }
 
     @Test

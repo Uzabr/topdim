@@ -79,6 +79,16 @@ public class MerchantService {
     }
 
     /**
+     * Возвращает профиль мерчанта по userId владельца.
+     */
+    @Transactional(readOnly = true)
+    public MerchantResponse getMyMerchant(Long userId) {
+        Merchant merchant = merchantRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Мерчант для пользователя не найден"));
+        return mapMerchant(merchant);
+    }
+
+    /**
      * Создаёт мерчанта при partner onboarding (idempotent by userId).
      */
     @CacheEvict(value = "catalog", allEntries = true)

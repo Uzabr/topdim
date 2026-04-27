@@ -458,48 +458,53 @@ public class OrderService {
     // ==================== Redemption ====================
 
     /**
-     * Погашение купона.
-     * Меняет статус на USED, создаёт запись Redemption.
-     *
-     * @param couponCode уникальный код купона
-     * @param merchantId ID партнёра, погашающего купон
-     * @param staffName имя сотрудника
-     * @return обновлённый PurchasedCoupon
-     * @throws IllegalArgumentException если купон не найден или уже использован
+     * Погашение купона по PIN-коду (legacy — без access context).
      */
     @Transactional
     public PurchasedCoupon redeemCoupon(String couponCode, Long merchantId, String staffName) {
+        return redeemCoupon(couponCode, merchantId, staffName, null, null, "PIN");
+    }
+
+    /**
+     * Погашение купона по PIN-коду с полным access context.
+     */
+    @Transactional
+    public PurchasedCoupon redeemCoupon(String couponCode, Long merchantId, String staffName,
+                                         Long merchantLocationId, Long staffId, String redeemMethod) {
         expireOverduePurchasedCoupons();
         PurchasedCoupon coupon = purchasedCouponRepository.findByCouponCode(couponCode)
                 .orElseThrow(() -> new IllegalArgumentException("Купон не найден"));
 
-        return processRedemption(coupon, merchantId, staffName);
+        return processRedemption(coupon, merchantId, staffName, merchantLocationId, staffId, redeemMethod);
     }
 
     /**
-     * Погашение купона по QR-токену.
-     * Та же бизнес-логика что и redeemCoupon, но поиск по qrToken.
-     *
-     * @param qrToken уникальный QR-токен купона
-     * @param merchantId ID партнёра, погашающего купон
-     * @param staffName имя сотрудника
-     * @return обновлённый PurchasedCoupon
-     * @throws IllegalArgumentException если купон по QR не найден
-     * @throws IllegalStateException если купон не может быть использован
+     * Погашение купона по QR-токену (legacy — без access context).
      */
     @Transactional
     public PurchasedCoupon redeemByQrToken(String qrToken, Long merchantId, String staffName) {
+        return redeemByQrToken(qrToken, merchantId, staffName, null, null);
+    }
+
+    /**
+     * Погашение купона по QR-токену с полным access context.
+     */
+    @Transactional
+    public PurchasedCoupon redeemByQrToken(String qrToken, Long merchantId, String staffName,
+                                             Long merchantLocationId, Long staffId) {
         expireOverduePurchasedCoupons();
         PurchasedCoupon coupon = purchasedCouponRepository.findByQrToken(qrToken)
                 .orElseThrow(() -> new IllegalArgumentException("Купон по QR-токену не найден"));
 
-        return processRedemption(coupon, merchantId, staffName);
+        return processRedemption(coupon, merchantId, staffName, merchantLocationId, staffId, "QR");
     }
 
     /**
      * Общая логика погашения — валидация статуса, expiry, merchant, создание Redemption.
+     * Сохраняет merchantLocationId, staffId и redeemMethod из access context.
      */
-    private PurchasedCoupon processRedemption(PurchasedCoupon coupon, Long merchantId, String staffName) {
+    private PurchasedCoupon processRedemption(PurchasedCoupon coupon, Long merchantId, String staffName,
+                                               Long merchantLocationId, Long staffId, String redeemMethod) {
         if (coupon.getStatus() != PurchasedCouponStatus.ACTIVE) {
             throw new IllegalStateException("Купон не может быть использован. Статус: " + coupon.getStatus());
         }
@@ -526,7 +531,10 @@ public class OrderService {
                 .purchasedCoupon(coupon)
                 .redemptionCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .merchantId(merchantId)
+                .merchantLocationId(merchantLocationId)
+                .staffId(staffId)
                 .redeemedByStaff(staffName)
+                .redeemMethod(redeemMethod)
                 .redeemedAt(LocalDateTime.now())
                 .build();
         redemptionRepository.save(redemption);

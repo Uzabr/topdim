@@ -114,15 +114,37 @@ public class CouponOfferService {
         CouponOffer offer = couponOfferRepository.findById(couponId)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
-        CouponOption option = offer.getOptions().stream()
-                .filter(opt -> opt.getId().equals(optionId))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Опция купона не найдена"));
-
         Merchant merchant = offer.getMerchant();
         MerchantLocation primaryLocation = merchant != null
                 ? merchantLocationRepository.findByMerchantIdAndPrimaryTrue(merchant.getId()).orElse(null)
                 : null;
+
+        // optionId == 0 — фолбэк: купон без явных опций, покупка по базовой цене
+        if (optionId == 0L || offer.getOptions().isEmpty()) {
+            return CouponPurchaseSnapshotResponse.builder()
+                    .couponOfferId(offer.getId())
+                    .couponOptionId(0L)
+                    .couponTitle(offer.getTitle())
+                    .optionTitle(offer.getTitle())
+                    .couponStatus(offer.getStatus().name())
+                    .optionStatus("ACTIVE")
+                    .couponPrice(offer.getFromPrice())
+                    .quantityLimit(0)
+                    .quantitySold(offer.getTotalSold())
+                    .merchantId(merchant != null ? merchant.getId() : null)
+                    .merchantName(merchant != null ? merchant.getName() : null)
+                    .merchantAddress(primaryLocation != null ? primaryLocation.getAddress() : null)
+                    .merchantPhone(primaryLocation != null ? primaryLocation.getPhone() : null)
+                    .merchantWorkingHours(primaryLocation != null ? primaryLocation.getWorkingHours() : null)
+                    .buyUntil(offer.getBuyUntil())
+                    .useUntil(offer.getUseUntil())
+                    .build();
+        }
+
+        CouponOption option = offer.getOptions().stream()
+                .filter(opt -> opt.getId().equals(optionId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Опция купона не найдена"));
 
         return CouponPurchaseSnapshotResponse.builder()
                 .couponOfferId(offer.getId())
@@ -963,11 +985,6 @@ public class CouponOfferService {
         CouponOffer offer = couponOfferRepository.findById(couponId)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
-        CouponOption option = offer.getOptions().stream()
-                .filter(opt -> opt.getId().equals(optionId))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Опция купона не найдена"));
-
         // Записываем в ledger
         CouponSale sale = CouponSale.builder()
                 .orderId(orderId)
@@ -979,7 +996,13 @@ public class CouponOfferService {
         couponSaleRepository.save(sale);
 
         // Обновляем счётчики
-        option.setQuantitySold(option.getQuantitySold() + quantity);
+        if (optionId != 0L) {
+            CouponOption option = offer.getOptions().stream()
+                    .filter(opt -> opt.getId().equals(optionId))
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("Опция купона не найдена"));
+            option.setQuantitySold(option.getQuantitySold() + quantity);
+        }
         offer.setTotalSold(offer.getTotalSold() + quantity);
         offer.setTotalTurnover(offer.getTotalTurnover().add(amount != null ? amount : BigDecimal.ZERO));
 

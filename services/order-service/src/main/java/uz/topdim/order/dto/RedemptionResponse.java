@@ -16,6 +16,9 @@ public class RedemptionResponse {
     private String optionTitle;
     private String couponCode;
     private String redeemedByStaff;
+    private Long merchantLocationId;
+    private Long staffId;
+    private String redeemMethod;
     private String note;
     private LocalDateTime redeemedAt;
 }

@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import uz.topdim.order.dto.PartnerDashboardResponse;
 import uz.topdim.order.dto.PartnerStatsResponse;
 import uz.topdim.order.dto.RedemptionResponse;
 import uz.topdim.order.entity.PurchasedCouponStatus;
@@ -15,6 +16,8 @@ import uz.topdim.order.repository.PurchasedCouponRepository;
 import uz.topdim.order.repository.RedemptionRepository;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Сервис статистики и погашений для партнёра.
@@ -49,12 +52,64 @@ public class PartnerService {
     }
 
     /**
-     * История погашений по мерчанту.
+     * Дашборд партнёра — полная версия с KPI и последними погашениями.
+     */
+    @Transactional(readOnly = true)
+    public PartnerDashboardResponse getDashboard(Long merchantId) {
+        long totalCoupons = purchasedCouponRepository.countDistinctCouponOfferIdsByMerchantId(merchantId);
+        long totalSold = purchasedCouponRepository.countByMerchantId(merchantId);
+        long totalRedeemed = purchasedCouponRepository.countByMerchantIdAndStatus(
+                merchantId, PurchasedCouponStatus.USED);
+        long pendingRedemption = purchasedCouponRepository.countByMerchantIdAndStatus(
+                merchantId, PurchasedCouponStatus.ACTIVE);
+        long expired = purchasedCouponRepository.countByMerchantIdAndStatus(
+                merchantId, PurchasedCouponStatus.EXPIRED);
+        BigDecimal revenue = purchasedCouponRepository.sumRevenueByMerchantId(merchantId);
+
+        // Recent 10 redemptions
+        PageRequest recentPageable = PageRequest.of(0, 10, Sort.by("redeemedAt").descending());
+        List<PartnerDashboardResponse.RecentRedemption> recentRedemptions =
+                redemptionRepository.findByMerchantId(merchantId, recentPageable)
+                        .getContent().stream()
+                        .map(r -> PartnerDashboardResponse.RecentRedemption.builder()
+                                .couponTitle(r.getPurchasedCoupon() != null ? r.getPurchasedCoupon().getCouponTitle() : null)
+                                .couponCode(r.getPurchasedCoupon() != null ? r.getPurchasedCoupon().getCouponCode() : null)
+                                .merchantLocationId(r.getMerchantLocationId())
+                                .staffName(r.getRedeemedByStaff())
+                                .redeemMethod(r.getRedeemMethod())
+                                .redeemedAt(r.getRedeemedAt())
+                                .build())
+                        .collect(Collectors.toList());
+
+        return PartnerDashboardResponse.builder()
+                .totalCoupons(totalCoupons)
+                .activeCoupons(pendingRedemption)
+                .totalSold(totalSold)
+                .totalRedeemed(totalRedeemed)
+                .pendingRedemption(pendingRedemption)
+                .expired(expired)
+                .totalRevenue(revenue != null ? revenue : BigDecimal.ZERO)
+                .recentRedemptions(recentRedemptions)
+                .build();
+    }
+
+    /**
+     * История погашений по мерчанту (для Owner/Manager).
      */
     @Transactional(readOnly = true)
     public Page<RedemptionResponse> getRedemptions(Long merchantId, int page, int size) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by("redeemedAt").descending());
         return redemptionRepository.findByMerchantId(merchantId, pageable)
+                .map(this::mapToResponse);
+    }
+
+    /**
+     * История погашений конкретного кассира (для Cashier).
+     */
+    @Transactional(readOnly = true)
+    public Page<RedemptionResponse> getRedemptionsByStaff(Long merchantId, Long staffId, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("redeemedAt").descending());
+        return redemptionRepository.findByMerchantIdAndStaffId(merchantId, staffId, pageable)
                 .map(this::mapToResponse);
     }
 
@@ -65,6 +120,9 @@ public class PartnerService {
                 .optionTitle(r.getPurchasedCoupon() != null ? r.getPurchasedCoupon().getOptionTitle() : null)
                 .couponCode(r.getPurchasedCoupon() != null ? r.getPurchasedCoupon().getCouponCode() : null)
                 .redeemedByStaff(r.getRedeemedByStaff())
+                .merchantLocationId(r.getMerchantLocationId())
+                .staffId(r.getStaffId())
+                .redeemMethod(r.getRedeemMethod())
                 .note(r.getNote())
                 .redeemedAt(r.getRedeemedAt())
                 .build();

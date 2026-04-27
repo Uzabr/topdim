@@ -62,6 +62,9 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
+                        // Internal service-to-service endpoints (не маршрутизируются через Gateway)
+                        .requestMatchers("/api/v1/internal/**").permitAll()
+
                         // Admin endpoints: управление пользователями и заявками
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
