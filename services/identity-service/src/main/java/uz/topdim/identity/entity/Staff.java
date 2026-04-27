@@ -9,6 +9,9 @@ import java.time.LocalDateTime;
 /**
  * Сущность сотрудника партнёра.
  * Партнёр (userId) добавляет сотрудников, которые могут погашать его купоны.
+ * loginUserId — ID пользователя в таблице users для независимого входа кассира.
+ * merchantId — ID мерчанта из coupon-service.
+ * merchantLocationId — ID филиала, к которому привязан кассир.
  */
 @Entity
 @Table(name = "staff")
@@ -26,6 +29,18 @@ public class Staff {
     // ID партнёра-владельца
     @Column(name = "user_id", nullable = false)
     private Long userId;
+
+    // ID пользователя для самостоятельного логина кассира (ссылка на users.id)
+    @Column(name = "login_user_id")
+    private Long loginUserId;
+
+    // ID мерчанта из coupon-service
+    @Column(name = "merchant_id")
+    private Long merchantId;
+
+    // ID филиала (MerchantLocation) — обязателен для CASHIER
+    @Column(name = "merchant_location_id")
+    private Long merchantLocationId;
 
     @Column(nullable = false)
     private String name;

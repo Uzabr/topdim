@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
+import uz.topdim.order.client.PartnerAccessContext;
 import uz.topdim.order.dto.CreateRedemptionRequest;
 import uz.topdim.order.dto.PartnerStatsResponse;
 import uz.topdim.order.dto.QrRedemptionRequest;
@@ -14,12 +15,14 @@ import uz.topdim.order.dto.RedeemCouponResponse;
 import uz.topdim.order.dto.RedemptionResponse;
 import uz.topdim.order.entity.PurchasedCoupon;
 import uz.topdim.order.service.OrderService;
+import uz.topdim.order.service.PartnerAccessResolver;
 import uz.topdim.order.service.PartnerMerchantResolver;
 import uz.topdim.order.service.PartnerService;
 
 /**
  * Контроллер партнёра — погашение купонов, статистика и история.
- * merchantId резолвится из доверенного X-User-Id через coupon-service.
+ * Использует PartnerAccessResolver для определения роли (OWNER/CASHIER)
+ * и привязки к филиалу.
  */
 @RestController
 @RequestMapping("/api/v1/partner")
@@ -30,6 +33,7 @@ public class PartnerController {
     private final PartnerService partnerService;
     private final OrderService orderService;
     private final PartnerMerchantResolver partnerMerchantResolver;
+    private final PartnerAccessResolver partnerAccessResolver;
 
     /** Погашение купона по PIN-коду. */
     @PostMapping("/redemptions")
@@ -37,9 +41,10 @@ public class PartnerController {
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody CreateRedemptionRequest request
     ) {
-        Long merchantId = partnerMerchantResolver.resolveMerchantId(userId);
+        PartnerAccessContext ctx = partnerAccessResolver.resolveForRedemption(userId);
         String couponCode = request.getCouponCode().trim().toUpperCase();
-        PurchasedCoupon coupon = orderService.redeemCoupon(couponCode, merchantId, request.getStaffName());
+        String staffName = ctx.getStaffName() != null ? ctx.getStaffName() : request.getStaffName();
+        PurchasedCoupon coupon = orderService.redeemCoupon(couponCode, ctx.getMerchantId(), staffName);
         return ResponseEntity.ok(ApiResponse.success("Купон использован", orderService.mapToRedeemResponse(coupon)));
     }
 
@@ -49,9 +54,10 @@ public class PartnerController {
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody QrRedemptionRequest request
     ) {
-        Long merchantId = partnerMerchantResolver.resolveMerchantId(userId);
+        PartnerAccessContext ctx = partnerAccessResolver.resolveForRedemption(userId);
+        String staffName = ctx.getStaffName() != null ? ctx.getStaffName() : request.getStaffName();
         PurchasedCoupon coupon = orderService.redeemByQrToken(
-                request.getQrToken().trim(), merchantId, request.getStaffName());
+                request.getQrToken().trim(), ctx.getMerchantId(), staffName);
         return ResponseEntity.ok(ApiResponse.success("Купон использован по QR", orderService.mapToRedeemResponse(coupon)));
     }
 
@@ -60,8 +66,8 @@ public class PartnerController {
     public ResponseEntity<ApiResponse<PartnerStatsResponse>> getStats(
             @RequestHeader("X-User-Id") Long userId
     ) {
-        Long merchantId = partnerMerchantResolver.resolveMerchantId(userId);
-        return ResponseEntity.ok(ApiResponse.success(partnerService.getStats(merchantId)));
+        PartnerAccessContext ctx = partnerAccessResolver.resolveForDashboard(userId);
+        return ResponseEntity.ok(ApiResponse.success(partnerService.getStats(ctx.getMerchantId())));
     }
 
     /** История погашений. */
@@ -71,8 +77,8 @@ public class PartnerController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        Long merchantId = partnerMerchantResolver.resolveMerchantId(userId);
+        PartnerAccessContext ctx = partnerAccessResolver.resolve(userId);
         return ResponseEntity.ok(ApiResponse.success(
-                partnerService.getRedemptions(merchantId, page, size)));
+                partnerService.getRedemptions(ctx.getMerchantId(), page, size)));
     }
 }

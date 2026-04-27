@@ -12,5 +12,7 @@ public class PartnerStaffResponse {
     private String phone;
     private String role;
     private boolean active;
+    private Long merchantLocationId;
+    private String loginEmail;
     private LocalDateTime createdAt;
 }

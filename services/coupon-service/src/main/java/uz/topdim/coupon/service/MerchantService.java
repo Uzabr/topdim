@@ -57,6 +57,28 @@ public class MerchantService {
     }
 
     /**
+     * Возвращает активные локации мерчанта по userId владельца.
+     * Используется identity-service для валидации при создании кассира.
+     */
+    @Transactional(readOnly = true)
+    public List<MerchantLocationResponse> getLocationsByOwnerUserId(Long userId) {
+        Merchant merchant = merchantRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Мерчант для пользователя не найден"));
+
+        return merchantLocationRepository.findByMerchantIdAndActiveTrue(merchant.getId())
+                .stream().map(loc -> MerchantLocationResponse.builder()
+                        .id(loc.getId())
+                        .title(loc.getTitle())
+                        .address(loc.getAddress())
+                        .phone(loc.getPhone())
+                        .workingHours(loc.getWorkingHours())
+                        .primary(loc.isPrimary())
+                        .active(loc.isActive())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Создаёт мерчанта при partner onboarding (idempotent by userId).
      */
     @CacheEvict(value = "catalog", allEntries = true)
