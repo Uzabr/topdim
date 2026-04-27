@@ -288,36 +288,26 @@ export const CouponFormPage = () => {
                     label="Партнер (Мерчант)"
                     rules={[{ required: true, message: 'Партнёр обязателен' }]}
                   >
-                    {userRole === 'MODERATOR' ? (
-                      <Select 
-                        placeholder="Выберите партнера" 
-                        loading={isMerchantsLoading}
-                        allowClear
-                        showSearch
-                        optionFilterProp="children"
-                      >
-                        {merchants?.map((m: any) => (
-                          <Select.Option key={m.id} value={m.id}>{m.name}</Select.Option>
-                        ))}
-                      </Select>
-                    ) : (
-                      <Space.Compact style={{ width: '100%' }}>
-                        <Select 
-                          placeholder="Выберите партнера" 
-                          loading={isMerchantsLoading}
-                          allowClear
-                          showSearch
-                          optionFilterProp="children"
-                          style={{ width: 'calc(100% - 40px)' }}
-                        >
-                          {merchants?.map((m: any) => (
-                            <Select.Option key={m.id} value={m.id}>{m.name}</Select.Option>
-                          ))}
-                        </Select>
-                        <Button icon={<PlusOutlined />} onClick={() => setIsMerchantModalOpen(true)} title="Добавить нового партнера" />
-                      </Space.Compact>
-                    )}
+                    <Select 
+                      placeholder="Выберите партнера" 
+                      loading={isMerchantsLoading}
+                      allowClear
+                      showSearch
+                      optionFilterProp="children"
+                    >
+                      {merchants?.map((m: any) => (
+                        <Select.Option key={m.id} value={m.id}>{m.name}</Select.Option>
+                      ))}
+                    </Select>
                   </Form.Item>
+                  {userRole !== 'MODERATOR' && (
+                    <Button 
+                      icon={<PlusOutlined />} 
+                      onClick={() => setIsMerchantModalOpen(true)} 
+                      title="Добавить нового партнера" 
+                      style={{ marginTop: -24, marginBottom: 16 }}
+                    />
+                  )}
                 </Col>
 
                 {selectedMerchant && (

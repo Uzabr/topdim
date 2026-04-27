@@ -342,6 +342,7 @@ export default function CouponDetailPage() {
                     quantitySold: c.totalSold || 0,
                     status: 'ACTIVE',
                   }];
+              const hasFallbackOption = !c.options || c.options.length === 0;
 
               return displayOptions.map((opt) => {
                 const remaining = opt.quantityLimit ? opt.quantityLimit - opt.quantitySold : null;

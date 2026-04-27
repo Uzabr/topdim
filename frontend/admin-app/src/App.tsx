@@ -17,14 +17,11 @@ import { MerchantReviewPage } from './features/coupons/MerchantReviewPage';
 import { CategoriesPage } from './features/catalog/CategoriesPage';
 import { StaffPage } from './features/system/StaffPage';
 import { AuditLogPage } from './features/system/AuditLogPage';
-import { PartnerRedeemPage } from './features/partner-redemptions/PartnerRedeemPage';
 import { MerchantsPage } from './features/merchants/MerchantsPage';
 import { MerchantDetailPage } from './features/merchants/MerchantDetailPage';
-import { useAuthStore } from './store/authStore';
 
 function HomeRedirect() {
-  const role = useAuthStore((state) => state.user?.role);
-  return <Navigate to={role === 'PARTNER' ? '/partner/redeem' : '/dashboard'} replace />;
+  return <Navigate to="/dashboard" replace />;
 }
 
 const queryClient = new QueryClient({
@@ -95,12 +92,6 @@ function App() {
                 </Route>
               </Route>
 
-              {/* Партнёрские роуты */}
-              <Route element={<ProtectedRoute allowedRoles={['PARTNER']} />}>
-                <Route element={<AdminLayout />}>
-                  <Route path="/partner/redeem" element={<PartnerRedeemPage />} />
-                </Route>
-              </Route>
 
               {/* Корневой редирект */}
               <Route path="/" element={<HomeRedirect />} />
