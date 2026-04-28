@@ -164,4 +164,44 @@ class PartnerControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false));
     }
+
+    // ==================== Task 4: QR Redemption Trusted Context ====================
+
+    @Test
+    @DisplayName("POST /api/v1/partner/redemptions/qr: cashier uses trusted context and not request merchant data")
+    void redeemByQr_cashierUsesTrustedAccessContext() throws Exception {
+        PartnerAccessContext ctx = new PartnerAccessContext("CASHIER", 77L, 200L, 5L, "Кассир Али", false, true);
+        PurchasedCoupon coupon = PurchasedCoupon.builder()
+                .id(501L)
+                .couponTitle("SPA")
+                .optionTitle("Standard")
+                .couponCode("CP-TEST5678")
+                .merchantId(77L)
+                .merchantName("SPA Oasis")
+                .status(PurchasedCouponStatus.USED)
+                .usedAt(LocalDateTime.now())
+                .build();
+
+        when(partnerAccessResolver.resolveForRedemption(100L)).thenReturn(ctx);
+        when(orderService.redeemByQrToken("qr-token-abc", 77L, "Кассир Али", 200L, 5L)).thenReturn(coupon);
+        when(orderService.mapToRedeemResponse(coupon)).thenReturn(
+                uz.topdim.order.dto.RedeemCouponResponse.builder()
+                        .purchasedCouponId(501L).couponTitle("SPA").optionTitle("Standard")
+                        .couponCode("CP-TEST5678").status("USED")
+                        .merchantId(77L).merchantName("SPA Oasis")
+                        .usedAt(coupon.getUsedAt())
+                        .build()
+        );
+
+        mockMvc.perform(post("/api/v1/partner/redemptions/qr")
+                        .header("X-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"qrToken\":\"qr-token-abc\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("USED"))
+                .andExpect(jsonPath("$.data.couponCode").value("CP-TEST5678"));
+
+        verify(orderService).redeemByQrToken("qr-token-abc", 77L, "Кассир Али", 200L, 5L);
+    }
 }
+

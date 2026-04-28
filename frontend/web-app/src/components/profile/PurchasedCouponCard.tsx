@@ -44,8 +44,11 @@ function getStatusIcon(status: PurchasedCoupon['status']) {
 export default function PurchasedCouponCard({ coupon }: PurchasedCouponCardProps) {
   const isActive = coupon.status === 'ACTIVE';
 
-  const copyCode = async () => {
-    await navigator.clipboard.writeText(coupon.couponCode);
+  const copyText = async (value?: string) => {
+    if (!value) {
+      return;
+    }
+    await navigator.clipboard.writeText(value);
   };
 
   return (
@@ -68,12 +71,25 @@ export default function PurchasedCouponCard({ coupon }: PurchasedCouponCardProps
           <strong>{coupon.couponCode || 'Код недоступен'}</strong>
         </div>
         {isActive && coupon.couponCode ? (
-          <button type="button" onClick={copyCode}>
+          <button type="button" onClick={() => copyText(coupon.couponCode)}>
             <Copy size={16} />
             Скопировать
           </button>
         ) : null}
       </div>
+
+      {isActive && coupon.qrToken ? (
+        <div className="purchased-coupon-card__qr-box">
+          <div>
+            <span className="purchased-coupon-card__label">QR-токен для проверки</span>
+            <code>{coupon.qrToken}</code>
+          </div>
+          <button type="button" onClick={() => copyText(coupon.qrToken)}>
+            <Copy size={16} />
+            Скопировать QR
+          </button>
+        </div>
+      ) : null}
 
       <div className="purchased-coupon-card__usage">
         <div className="purchased-coupon-card__usage-item">
@@ -107,7 +123,7 @@ export default function PurchasedCouponCard({ coupon }: PurchasedCouponCardProps
         {coupon.qrToken ? (
           <div className="purchased-coupon-card__qr-note">
             <QrCode size={16} />
-            QR-токен доступен для проверки партнёром
+            QR можно показать партнёру или скопировать как токен
           </div>
         ) : null}
       </div>

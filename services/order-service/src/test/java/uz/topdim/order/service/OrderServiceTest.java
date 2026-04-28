@@ -829,4 +829,192 @@ class OrderServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("не найден");
     }
+
+    // ==================== Task 1: Checkout Revalidation Regression ====================
+
+    @Test
+    @DisplayName("Checkout: coupon-service returns empty snapshot -> rejects without creating order")
+    void createOrder_missingSnapshot_rejectsWithoutSideEffects() {
+        CartItem item = CartItem.builder()
+                .couponOfferId(5L).couponOptionId(3L)
+                .couponTitle("Old title").optionTitle("Old option")
+                .unitPrice(BigDecimal.valueOf(99000)).quantity(1)
+                .gift(false).build();
+        Cart cart = Cart.builder().id(1L).userId(10L)
+                .items(new ArrayList<>(List.of(item))).build();
+
+        when(cartRepository.findByUserId(10L)).thenReturn(Optional.of(cart));
+        when(couponClient.getPurchaseSnapshot(5L, 3L)).thenReturn(ApiResponse.success(null));
+
+        assertThatThrownBy(() -> orderService.createOrder(10L, "user@test.com", "+998901234567"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Купон недоступен для покупки");
+
+        verify(orderRepository, never()).save(any(Order.class));
+        verify(cartRepository, never()).save(argThat(savedCart -> savedCart.getItems().isEmpty()));
+        verify(rabbitTemplate, never()).convertAndSend(eq("order.exchange"), eq("order.created"), any(Object.class));
+    }
+
+    @Test
+    @DisplayName("Checkout: option became inactive -> rejects without creating order")
+    void createOrder_optionInactive_rejectsWithoutSideEffects() {
+        CartItem item = CartItem.builder()
+                .couponOfferId(5L).couponOptionId(3L)
+                .couponTitle("Old title").optionTitle("Old option")
+                .unitPrice(BigDecimal.valueOf(99000)).quantity(1)
+                .gift(false).build();
+        Cart cart = Cart.builder().id(1L).userId(10L)
+                .items(new ArrayList<>(List.of(item))).build();
+
+        CouponPurchaseSnapshot snapshot = activeSnapshot();
+        snapshot.setOptionStatus("INACTIVE");
+
+        when(cartRepository.findByUserId(10L)).thenReturn(Optional.of(cart));
+        when(couponClient.getPurchaseSnapshot(5L, 3L)).thenReturn(snapshotResponse(snapshot));
+
+        assertThatThrownBy(() -> orderService.createOrder(10L, "user@test.com", "+998901234567"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Опция купона недоступна для покупки");
+
+        verify(orderRepository, never()).save(any(Order.class));
+        verify(cartRepository, never()).save(argThat(savedCart -> savedCart.getItems().isEmpty()));
+        verify(rabbitTemplate, never()).convertAndSend(eq("order.exchange"), eq("order.created"), any(Object.class));
+    }
+
+    @Test
+    @DisplayName("Checkout: buyUntil already passed -> rejects without creating order")
+    void createOrder_buyUntilExpired_rejectsWithoutSideEffects() {
+        CartItem item = CartItem.builder()
+                .couponOfferId(5L).couponOptionId(3L)
+                .couponTitle("SPA").optionTitle("Standard")
+                .unitPrice(BigDecimal.valueOf(99000)).quantity(1)
+                .gift(false).build();
+        Cart cart = Cart.builder().id(1L).userId(10L)
+                .items(new ArrayList<>(List.of(item))).build();
+
+        CouponPurchaseSnapshot snapshot = activeSnapshot();
+        snapshot.setBuyUntil(LocalDateTime.now().minusMinutes(1));
+
+        when(cartRepository.findByUserId(10L)).thenReturn(Optional.of(cart));
+        when(couponClient.getPurchaseSnapshot(5L, 3L)).thenReturn(snapshotResponse(snapshot));
+
+        assertThatThrownBy(() -> orderService.createOrder(10L, "user@test.com", "+998901234567"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Срок покупки купона истёк");
+
+        verify(orderRepository, never()).save(any(Order.class));
+        verify(rabbitTemplate, never()).convertAndSend(eq("order.exchange"), eq("order.created"), any(Object.class));
+    }
+
+    @Test
+    @DisplayName("Checkout: requested quantity exceeds remaining limit -> rejects without creating order")
+    void createOrder_quantityLimitExceeded_rejectsWithoutSideEffects() {
+        CartItem item = CartItem.builder()
+                .couponOfferId(5L).couponOptionId(3L)
+                .couponTitle("SPA").optionTitle("Standard")
+                .unitPrice(BigDecimal.valueOf(99000)).quantity(9)
+                .gift(false).build();
+        Cart cart = Cart.builder().id(1L).userId(10L)
+                .items(new ArrayList<>(List.of(item))).build();
+
+        CouponPurchaseSnapshot snapshot = activeSnapshot();
+        snapshot.setQuantityLimit(10);
+        snapshot.setQuantitySold(2);
+
+        when(cartRepository.findByUserId(10L)).thenReturn(Optional.of(cart));
+        when(couponClient.getPurchaseSnapshot(5L, 3L)).thenReturn(snapshotResponse(snapshot));
+
+        assertThatThrownBy(() -> orderService.createOrder(10L, "user@test.com", "+998901234567"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Недостаточно купонов в наличии");
+
+        verify(orderRepository, never()).save(any(Order.class));
+        verify(rabbitTemplate, never()).convertAndSend(eq("order.exchange"), eq("order.created"), any(Object.class));
+    }
+
+    // ==================== Task 2: Coupon Generation & Sale Registration ====================
+
+    @Test
+    @DisplayName("Генерация купонов: registerSale failure logs but still returns created purchased coupons")
+    void generateCoupons_registerSaleFailure_stillReturnsPurchasedCoupons() {
+        OrderItem item = OrderItem.builder()
+                .couponOfferId(1L).couponOptionId(2L)
+                .couponTitle("SPA").optionTitle("Standard")
+                .unitPrice(BigDecimal.valueOf(150000)).quantity(1)
+                .merchantId(77L)
+                .expiresAt(LocalDateTime.now().plusDays(10))
+                .gift(false).build();
+        Order order = Order.builder().id(100L).userId(10L)
+                .userEmail("a@b.com").userPhone("+998901234567")
+                .items(List.of(item)).status(OrderStatus.PENDING).build();
+
+        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+        when(purchasedCouponRepository.findByOrderId(100L)).thenReturn(List.of());
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(purchasedCouponRepository.save(any(PurchasedCoupon.class))).thenAnswer(inv -> {
+            PurchasedCoupon coupon = inv.getArgument(0);
+            coupon.setId(501L);
+            return coupon;
+        });
+        doThrow(new RuntimeException("coupon-service unavailable"))
+                .when(couponClient)
+                .registerSale(eq(1L), eq(2L), any());
+
+        List<PurchasedCoupon> result = orderService.generatePurchasedCoupons(100L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getStatus()).isEqualTo(PurchasedCouponStatus.ACTIVE);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
+        verify(rabbitTemplate).convertAndSend(eq("coupon.exchange"), eq("coupon.purchased"), any(Object.class));
+    }
+
+    @Test
+    @DisplayName("Генерация купонов: existing purchased coupons skips registerSale to avoid duplicate sale count")
+    void generateCoupons_existingCoupons_skipsSaleRegistration() {
+        Order order = Order.builder().id(100L).userId(10L)
+                .status(OrderStatus.PAID).items(List.of()).build();
+        PurchasedCoupon existing = PurchasedCoupon.builder()
+                .id(1L)
+                .order(order)
+                .couponCode("CP-EXISTING")
+                .status(PurchasedCouponStatus.ACTIVE)
+                .build();
+
+        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+        when(purchasedCouponRepository.findByOrderId(100L)).thenReturn(List.of(existing));
+
+        List<PurchasedCoupon> result = orderService.generatePurchasedCoupons(100L);
+
+        assertThat(result).containsExactly(existing);
+        verify(couponClient, never()).registerSale(anyLong(), anyLong(), any());
+        verify(rabbitTemplate, never()).convertAndSend(eq("coupon.exchange"), eq("coupon.purchased"), any(Object.class));
+    }
+
+    // ==================== Task 4: Redemption Access Context ====================
+
+    @Test
+    @DisplayName("Погашение: сохраняет staffId, merchantLocationId and method from access context")
+    void redeemCoupon_withAccessContext_savesRedemptionContext() {
+        PurchasedCoupon coupon = PurchasedCoupon.builder()
+                .id(1L)
+                .couponCode("CP-CONTEXT1")
+                .merchantId(77L)
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .status(PurchasedCouponStatus.ACTIVE)
+                .build();
+
+        when(purchasedCouponRepository.findByCouponCode("CP-CONTEXT1")).thenReturn(Optional.of(coupon));
+        when(purchasedCouponRepository.save(any(PurchasedCoupon.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(redemptionRepository.save(any(Redemption.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        orderService.redeemCoupon("CP-CONTEXT1", 77L, "Кассир Али", 200L, 5L, "PIN");
+
+        verify(redemptionRepository).save(argThat(redemption ->
+                redemption.getMerchantId().equals(77L)
+                        && redemption.getMerchantLocationId().equals(200L)
+                        && redemption.getStaffId().equals(5L)
+                        && redemption.getRedeemedByStaff().equals("Кассир Али")
+                        && redemption.getRedeemMethod().equals("PIN")
+        ));
+    }
 }

@@ -145,4 +145,79 @@ class PaymentServiceTest {
         verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), any(Object.class));
         verify(paymentRepository, never()).save(any(Payment.class));
     }
+
+    // ─── Task 3: demoComplete tests ───
+
+    @Test
+    @DisplayName("demoComplete: pending payment -> COMPLETED and publishes PaymentCompletedEvent")
+    void demoComplete_pendingPayment_completesAndPublishesEvent() {
+        Payment pending = Payment.builder()
+                .id(1L)
+                .orderId(100L)
+                .userId(10L)
+                .amount(BigDecimal.valueOf(150000))
+                .currency("UZS")
+                .provider(PaymentProvider.PAYME)
+                .status(PaymentStatus.PENDING)
+                .build();
+
+        when(paymentRepository.findByOrderId(100L)).thenReturn(Optional.of(pending));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Payment result = paymentService.demoComplete(100L);
+
+        assertThat(result.getStatus()).isEqualTo(PaymentStatus.COMPLETED);
+        assertThat(result.getCompletedAt()).isNotNull();
+        assertThat(result.getTransactionId()).startsWith("DEMO-");
+        verify(rabbitTemplate).convertAndSend(eq("payment.exchange"), eq("payment.completed"), any(Object.class));
+    }
+
+    @Test
+    @DisplayName("demoComplete: already COMPLETED payment -> returns existing without republishing")
+    void demoComplete_completedPayment_doesNotRepublishEvent() {
+        Payment completed = Payment.builder()
+                .id(1L)
+                .orderId(100L)
+                .userId(10L)
+                .amount(BigDecimal.valueOf(150000))
+                .currency("UZS")
+                .provider(PaymentProvider.PAYME)
+                .status(PaymentStatus.COMPLETED)
+                .transactionId("DEMO-OLD123")
+                .completedAt(LocalDateTime.now().minusMinutes(5))
+                .build();
+
+        when(paymentRepository.findByOrderId(100L)).thenReturn(Optional.of(completed));
+
+        Payment result = paymentService.demoComplete(100L);
+
+        assertThat(result).isSameAs(completed);
+        assertThat(result.getTransactionId()).isEqualTo("DEMO-OLD123");
+        verify(paymentRepository, never()).save(any(Payment.class));
+        verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), any(Object.class));
+    }
+
+    @Test
+    @DisplayName("demoComplete: failed payment -> business error and no event")
+    void demoComplete_failedPayment_throwsWithoutPublishingEvent() {
+        Payment failed = Payment.builder()
+                .id(1L)
+                .orderId(100L)
+                .userId(10L)
+                .amount(BigDecimal.valueOf(150000))
+                .currency("UZS")
+                .provider(PaymentProvider.PAYME)
+                .status(PaymentStatus.FAILED)
+                .build();
+
+        when(paymentRepository.findByOrderId(100L)).thenReturn(Optional.of(failed));
+
+        assertThatThrownBy(() -> paymentService.demoComplete(100L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Невозможно завершить платёж");
+
+        verify(paymentRepository, never()).save(any(Payment.class));
+        verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), any(Object.class));
+    }
 }
+

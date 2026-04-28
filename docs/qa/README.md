@@ -10,6 +10,7 @@
 | [test-strategy.md](test-strategy.md) | стратегия unit/integration/backend тестов |
 | [purchase-flow-checklist.md](purchase-flow-checklist.md) | чеклист покупки купона |
 | [purchase-flow-walkthrough.md](purchase-flow-walkthrough.md) | пошаговый walkthrough purchase flow |
+| [buyer-purchase-redemption-checklist.md](buyer-purchase-redemption-checklist.md) | полный MVP чеклист покупки и погашения |
 | [../product/flows/coupon-flow.md](../product/flows/coupon-flow.md) | бизнес-правила купона |
 | [../product/roles.md](../product/roles.md) | роли и ожидаемые права доступа |
 
