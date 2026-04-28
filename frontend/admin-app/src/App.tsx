@@ -19,6 +19,7 @@ import { StaffPage } from './features/system/StaffPage';
 import { AuditLogPage } from './features/system/AuditLogPage';
 import { MerchantsPage } from './features/merchants/MerchantsPage';
 import { MerchantDetailPage } from './features/merchants/MerchantDetailPage';
+import { CouponRequestsPage } from './features/coupon-requests/CouponRequestsPage';
 
 function HomeRedirect() {
   return <Navigate to="/dashboard" replace />;
@@ -65,6 +66,7 @@ function App() {
                   <Route path="/moderation/coupons/create" element={<CouponFormPage />} />
                   <Route path="/moderation/coupons/edit/:id" element={<CouponFormPage />} />
                   <Route path="/moderation/coupons/review" element={<MerchantReviewPage />} />
+                  <Route path="/moderation/requests" element={<CouponRequestsPage />} />
                   
                   {/* Поддержка */}
                   {/* TODO: подключить ComplaintsPage, ReviewsPage */}

@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { Card, Table, Tag, Typography, Spin, Result, Space } from 'antd';
+import { useNavigate } from 'react-router-dom';
+import { Card, Table, Tag, Typography, Spin, Result, Space, Button, Tooltip } from 'antd';
 import {
   CheckCircleOutlined, ClockCircleOutlined, EditOutlined,
-  StopOutlined, FireOutlined, EyeOutlined
+  StopOutlined, FireOutlined, EyeOutlined, PlusOutlined,
+  ExclamationCircleOutlined, SendOutlined
 } from '@ant-design/icons';
 import api from '../api';
 
@@ -18,6 +20,8 @@ interface CouponItem {
   coverImageUrl?: string;
   status: string;
   totalSold: number;
+  revisionComment?: string;
+  createdAt?: string;
 }
 
 const fetchMyCoupons = async (): Promise<{ content: CouponItem[]; totalElements: number }> => {
@@ -26,18 +30,17 @@ const fetchMyCoupons = async (): Promise<{ content: CouponItem[]; totalElements:
 };
 
 const STATUS_CONFIG: Record<string, { color: string; label: string; icon: React.ReactNode }> = {
-  ACTIVE:             { color: 'green',   label: 'Активен',     icon: <CheckCircleOutlined /> },
-  LEAD:               { color: 'default', label: 'Заявка',      icon: <EditOutlined /> },
-  DRAFT:              { color: 'blue',    label: 'Черновик',     icon: <EditOutlined /> },
-  MODERATION:         { color: 'orange',  label: 'Модерация',   icon: <ClockCircleOutlined /> },
-  APPROVED:           { color: 'cyan',    label: 'Одобрен',     icon: <CheckCircleOutlined /> },
-  REVISION_REQUESTED: { color: 'warning', label: 'Доработка',   icon: <EditOutlined /> },
-  REJECTED:           { color: 'red',     label: 'Отклонён',    icon: <StopOutlined /> },
-  SOLD_OUT:           { color: 'volcano', label: 'Распродан',   icon: <FireOutlined /> },
-  PAUSED:             { color: 'gold',    label: 'Приостановлен',icon: <ClockCircleOutlined /> },
-  EXPIRED:            { color: 'default', label: 'Истёк',       icon: <StopOutlined /> },
-  ARCHIVED:           { color: 'default', label: 'Архив',       icon: <StopOutlined /> },
+  ACTIVE:                { color: 'green',   label: 'Опубликована',        icon: <CheckCircleOutlined /> },
+  LEAD:                  { color: 'purple',  label: 'Новая заявка',        icon: <SendOutlined /> },
+  DRAFT:                 { color: 'blue',    label: 'В работе у TopDim',   icon: <EditOutlined /> },
+  WAITING_FOR_MERCHANT:  { color: 'orange',  label: 'На согласовании',     icon: <ClockCircleOutlined /> },
+  REVISION_REQUESTED:    { color: 'gold',    label: 'Нужны уточнения',     icon: <ExclamationCircleOutlined /> },
+  SOLD_OUT:              { color: 'volcano', label: 'Распродан',           icon: <FireOutlined /> },
+  PAUSED:                { color: 'gold',    label: 'Приостановлен',       icon: <ClockCircleOutlined /> },
+  ARCHIVED:              { color: 'default', label: 'Отклонена/Архив',     icon: <StopOutlined /> },
 };
+
+const EDITABLE_STATUSES = new Set(['LEAD', 'DRAFT', 'REVISION_REQUESTED']);
 
 function formatPrice(value?: number) {
   if (!value) return '—';
@@ -45,6 +48,7 @@ function formatPrice(value?: number) {
 }
 
 export default function CouponsPage() {
+  const navigate = useNavigate();
   const { data, isLoading, error } = useQuery({
     queryKey: ['partner-coupons'],
     queryFn: fetchMyCoupons,
@@ -106,19 +110,55 @@ export default function CouponsPage() {
     },
     {
       title: 'Статус',
-      dataIndex: 'status',
       key: 'status',
-      width: 140,
-      render: (status: string) => {
-        const cfg = STATUS_CONFIG[status] || { color: 'default', label: status, icon: null };
-        return <Tag icon={cfg.icon} color={cfg.color}>{cfg.label}</Tag>;
+      width: 200,
+      render: (_: unknown, record: CouponItem) => {
+        const cfg = STATUS_CONFIG[record.status] || { color: 'default', label: record.status, icon: null };
+        return (
+          <Space direction="vertical" size={0}>
+            <Tag icon={cfg.icon} color={cfg.color}>{cfg.label}</Tag>
+            {record.status === 'REVISION_REQUESTED' && record.revisionComment && (
+              <Tooltip title={record.revisionComment}>
+                <Text type="warning" style={{ fontSize: 11, cursor: 'help' }}>
+                  💬 {record.revisionComment.substring(0, 40)}...
+                </Text>
+              </Tooltip>
+            )}
+            {record.status === 'ARCHIVED' && record.revisionComment && (
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Причина: {record.revisionComment.substring(0, 40)}
+              </Text>
+            )}
+          </Space>
+        );
       },
+    },
+    {
+      title: '',
+      key: 'actions',
+      width: 80,
+      render: (_: unknown, record: CouponItem) =>
+        EDITABLE_STATUSES.has(record.status) ? (
+          <Button type="link" icon={<EditOutlined />} size="small">
+            Изменить
+          </Button>
+        ) : null,
     },
   ];
 
   return (
     <div>
-      <Title level={3}>🎟️ Мои купоны</Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Title level={3} style={{ margin: 0 }}>🎟️ Мои акции</Title>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          size="large"
+          onClick={() => navigate('/coupons/new')}
+        >
+          Создать заявку
+        </Button>
+      </div>
       <Card style={{ borderRadius: 12 }}>
         <Table
           dataSource={coupons}
@@ -126,7 +166,7 @@ export default function CouponsPage() {
           rowKey="id"
           pagination={coupons.length > 10 ? { pageSize: 10 } : false}
           size="middle"
-          locale={{ emptyText: 'У вас пока нет купонов' }}
+          locale={{ emptyText: 'У вас пока нет акций. Создайте первую заявку!' }}
         />
       </Card>
     </div>

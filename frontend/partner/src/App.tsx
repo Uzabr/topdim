@@ -6,6 +6,7 @@ import PartnerLayout from './layouts/PartnerLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import CouponsPage from './pages/CouponsPage';
+import CouponRequestFormPage from './pages/CouponRequestFormPage';
 import RedeemPage from './pages/RedeemPage';
 import StaffPage from './pages/StaffPage';
 
@@ -74,6 +75,7 @@ export default function App() {
               >
                 <Route index element={<SmartHome />} />
                 <Route path="coupons" element={<OwnerOnly><CouponsPage /></OwnerOnly>} />
+                <Route path="coupons/new" element={<OwnerOnly><CouponRequestFormPage /></OwnerOnly>} />
                 <Route path="redeem" element={<RedeemPage />} />
                 <Route path="staff" element={<OwnerOnly><StaffPage /></OwnerOnly>} />
               </Route>
