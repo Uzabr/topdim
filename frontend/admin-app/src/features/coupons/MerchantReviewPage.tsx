@@ -197,7 +197,7 @@ export const MerchantReviewPage = () => {
       <div style={{ marginBottom: 24 }}>
         <Title level={4} style={{ margin: 0 }}>Ожидают подтверждения мерчанта</Title>
         <Text type="secondary">
-          Временный экран для ручного принятия решений (до интеграции Telegram-бота).
+          Support-only экран: используйте только если партнёр не может подтвердить купон в своём кабинете.
         </Text>
       </div>
 
@@ -206,7 +206,7 @@ export const MerchantReviewPage = () => {
         showIcon
         icon={<ClockCircleOutlined />}
         message="Как работает этот экран"
-        description="Нажмите «Подробнее» чтобы увидеть полный купон как мерчант. «Одобрить» → ACTIVE, «Отклонить» → REVISION_REQUESTED."
+        description="Основной MVP-флоу: партнёр подтверждает купон в partner cabinet. Этот экран нужен только как ручной support fallback."
         style={{ marginBottom: 24 }}
       />
 
