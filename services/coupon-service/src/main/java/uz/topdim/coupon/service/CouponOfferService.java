@@ -45,6 +45,7 @@ public class CouponOfferService {
     private final CouponRedemptionLedgerRepository couponRedemptionLedgerRepository;
     private final EntityManager entityManager;
     private final TelegramPreviewService telegramPreviewService;
+    private final CouponCoverFallbackService couponCoverFallbackService;
 
     // ==================== Public API ====================
 
@@ -302,6 +303,14 @@ public class CouponOfferService {
                     + ". Допустимые: DRAFT, REVISION_REQUESTED");
         }
 
+        // Ensure cover image is set before approval — apply category fallback if missing
+        if (offer.getCoverImageUrl() == null || offer.getCoverImageUrl().isBlank()) {
+            String categorySlug = offer.getCategory() != null ? offer.getCategory().getSlug() : null;
+            String fallback = couponCoverFallbackService.getFallbackCover(categorySlug);
+            offer.setCoverImageUrl(fallback);
+            log.info("Купон #{}: применена fallback обложка '{}' (категория: {})", id, fallback, categorySlug);
+        }
+
         offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
         offer.setRevisionComment(null);
         couponOfferRepository.save(offer);
@@ -349,6 +358,30 @@ public class CouponOfferService {
             );
         }
 
+        return mapToResponse(offer);
+    }
+
+    /**
+     * Отклонить заявку партнёра на акцию.
+     * Допустимые статусы: LEAD, DRAFT.
+     * Результат: статус → ARCHIVED, archiveReason записывается.
+     */
+    @Transactional
+    public CouponOfferResponse rejectPartnerRequest(Long id, String reason) {
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        if (offer.getStatus() != CouponStatus.LEAD && offer.getStatus() != CouponStatus.DRAFT) {
+            throw new IllegalStateException(
+                    "Отклонить можно только заявки в статусе LEAD или DRAFT. Текущий: " + offer.getStatus());
+        }
+
+        offer.setStatus(CouponStatus.ARCHIVED);
+        offer.setArchiveReason(reason);
+        offer.setArchivedAt(LocalDateTime.now());
+        couponOfferRepository.save(offer);
+
+        log.info("Заявка #{} отклонена. Причина: {}", id, reason);
         return mapToResponse(offer);
     }
 

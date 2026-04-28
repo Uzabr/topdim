@@ -9,12 +9,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.coupon.dto.CouponOfferResponse;
-import uz.topdim.coupon.dto.CreateCouponOfferRequest;
+import uz.topdim.coupon.dto.CreatePartnerCouponRequest;
 import uz.topdim.coupon.service.PartnerCouponService;
 
 /**
- * Контроллер партнёра — управление СВОИМИ купонами.
+ * Контроллер партнёра — управление заявками на акции и СВОИМИ купонами.
  * Требует роль PARTNER.
+ * Кассиры имеют роль PARTNER, но не имеют привязки Merchant.userId —
+ * создание/редактирование заявок для них заблокировано на уровне сервиса.
  */
 @RestController
 @RequestMapping("/api/v1/partner/coupons")
@@ -46,25 +48,25 @@ public class PartnerCouponController {
                 partnerCouponService.getMyCouponById(userId, id)));
     }
 
-    /** Создать купон → статус LEAD. */
+    /** Создать заявку на акцию → статус LEAD. Фото необязательны. */
     @PostMapping
-    public ResponseEntity<ApiResponse<CouponOfferResponse>> createCoupon(
+    public ResponseEntity<ApiResponse<CouponOfferResponse>> createCouponRequest(
             @RequestHeader("X-User-Id") Long userId,
-            @Valid @RequestBody CreateCouponOfferRequest request
+            @Valid @RequestBody CreatePartnerCouponRequest request
     ) {
-        CouponOfferResponse response = partnerCouponService.createCouponOffer(userId, request);
+        CouponOfferResponse response = partnerCouponService.createPartnerRequest(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Заявка на купон принята", response));
+                .body(ApiResponse.success("Заявка на акцию принята. TopDim свяжется с вами для оформления.", response));
     }
 
-    /** Обновить купон (только DRAFT/REVISION_REQUESTED). */
+    /** Обновить заявку/купон (только LEAD/DRAFT/REVISION_REQUESTED). */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<CouponOfferResponse>> updateCoupon(
             @RequestHeader("X-User-Id") Long userId,
             @PathVariable Long id,
-            @Valid @RequestBody CreateCouponOfferRequest request
+            @Valid @RequestBody CreatePartnerCouponRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Купон обновлён",
+        return ResponseEntity.ok(ApiResponse.success("Заявка обновлена",
                 partnerCouponService.updateMyCoupon(userId, id, request)));
     }
 }

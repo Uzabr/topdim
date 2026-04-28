@@ -7,15 +7,17 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import uz.topdim.coupon.dto.CouponOfferResponse;
-import uz.topdim.coupon.dto.CreateCouponOfferRequest;
+import uz.topdim.coupon.dto.*;
 import uz.topdim.coupon.entity.*;
 import uz.topdim.coupon.exception.ResourceNotFoundException;
 import uz.topdim.coupon.repository.CategoryRepository;
 import uz.topdim.coupon.repository.CouponOfferRepository;
 import uz.topdim.coupon.repository.MerchantRepository;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Сервис для партнёров — управление купонами.
@@ -32,15 +34,17 @@ public class PartnerCouponService {
     private final CategoryRepository categoryRepository;
 
     private static final Set<CouponStatus> EDITABLE_STATUSES = Set.of(
-            CouponStatus.DRAFT, CouponStatus.REVISION_REQUESTED
+            CouponStatus.LEAD, CouponStatus.DRAFT, CouponStatus.REVISION_REQUESTED
     );
 
     /**
      * Получает мерчанта текущего партнёра.
+     * Кассиры не имеют привязки Merchant.userId — им вернётся 404.
      */
-    private Merchant getMerchant(Long userId) {
+    private Merchant getMerchantForOwner(Long userId) {
         return merchantRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("У вас нет привязанного мерчанта"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "У вас нет привязанного мерчанта. Создание заявок доступно только владельцам и менеджерам."));
     }
 
     /**
@@ -48,7 +52,7 @@ public class PartnerCouponService {
      */
     @Transactional(readOnly = true)
     public Page<CouponOfferResponse> getMyCoupons(Long userId, String status, int page, int size) {
-        Merchant merchant = getMerchant(userId);
+        Merchant merchant = getMerchantForOwner(userId);
         PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         Page<CouponOffer> offers;
@@ -67,7 +71,7 @@ public class PartnerCouponService {
      */
     @Transactional(readOnly = true)
     public CouponOfferResponse getMyCouponById(Long userId, Long couponId) {
-        Merchant merchant = getMerchant(userId);
+        Merchant merchant = getMerchantForOwner(userId);
         CouponOffer offer = couponOfferRepository.findById(couponId)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
@@ -79,47 +83,92 @@ public class PartnerCouponService {
     }
 
     /**
-     * Создать купон (статус = LEAD).
+     * Создать заявку на акцию (статус = LEAD).
      * Партнёр не может опубликовать купон напрямую.
+     * Доступно только для owner/manager — кассиры не имеют Merchant.userId.
      */
     @Transactional
-    public CouponOfferResponse createCouponOffer(Long userId, CreateCouponOfferRequest request) {
-        Merchant merchant = getMerchant(userId);
+    public CouponOfferResponse createPartnerRequest(Long userId, CreatePartnerCouponRequest request) {
+        Merchant merchant = getMerchantForOwner(userId);
 
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
 
-        String offerDesc = request.getOfferDescription();
+        // Business validation: fromPrice must be less than oldPrice
+        if (request.getFromPrice().compareTo(request.getOldPrice()) >= 0) {
+            throw new IllegalArgumentException("Цена по акции должна быть ниже старой цены");
+        }
+
+        // Business validation: useUntil >= buyUntil
+        if (request.getUseUntil().isBefore(request.getBuyUntil())) {
+            throw new IllegalArgumentException("Срок использования не может быть раньше срока покупки");
+        }
+
+        // Determine cover image: explicit cover > first from imageUrls > null (admin will set later)
+        String coverImageUrl = request.getCoverImageUrl();
+        if ((coverImageUrl == null || coverImageUrl.isBlank()) &&
+                request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
+            coverImageUrl = request.getImageUrls().get(0);
+        }
 
         CouponOffer offer = CouponOffer.builder()
                 .title(request.getTitle())
-                .offerDescription(offerDesc)
-                // Legacy text fields no longer written — canonical offerDescription is source of truth
+                .offerDescription(request.getOfferDescription())
                 .merchant(merchant)
                 .category(category)
                 .oldPrice(request.getOldPrice())
                 .fromPrice(request.getFromPrice())
                 .discountPercent(request.getDiscountPercent())
-                .coverImageUrl(request.getCoverImageUrl())
+                .coverImageUrl(coverImageUrl)
                 .buyUntil(request.getBuyUntil())
                 .useUntil(request.getUseUntil())
-                // Contact fields live in merchant_locations
                 .giftAvailable(request.isGiftAvailable())
                 .status(CouponStatus.LEAD)
+                .options(new ArrayList<>())
+                .images(new ArrayList<>())
                 .build();
 
+        // Persist options
+        for (CreateCouponOptionRequest optReq : request.getOptions()) {
+            CouponOption option = CouponOption.builder()
+                    .couponOffer(offer)
+                    .title(optReq.getTitle())
+                    .regularPrice(optReq.getRegularPrice())
+                    .couponPrice(optReq.getCouponPrice())
+                    .quantityLimit(optReq.getQuantityLimit())
+                    .quantitySold(0)
+                    .status(CouponOptionStatus.ACTIVE)
+                    .build();
+            offer.getOptions().add(option);
+        }
+
+        // Persist images (if any)
+        if (request.getImageUrls() != null) {
+            int sortOrder = 0;
+            for (String imageUrl : request.getImageUrls()) {
+                if (imageUrl != null && !imageUrl.isBlank()) {
+                    CouponImage image = CouponImage.builder()
+                            .couponOffer(offer)
+                            .imageUrl(imageUrl)
+                            .sortOrder(sortOrder++)
+                            .build();
+                    offer.getImages().add(image);
+                }
+            }
+        }
+
         offer = couponOfferRepository.save(offer);
-        log.info("PARTNER: Пользователь {} создал купон {} (LEAD)", userId, offer.getId());
+        log.info("PARTNER: Пользователь {} создал заявку на акцию {} (LEAD)", userId, offer.getId());
 
         return mapToResponse(offer);
     }
 
     /**
-     * Обновить свой купон (только если DRAFT / REVISION_REQUESTED).
+     * Обновить свой купон (только если LEAD / DRAFT / REVISION_REQUESTED).
      */
     @Transactional
-    public CouponOfferResponse updateMyCoupon(Long userId, Long couponId, CreateCouponOfferRequest request) {
-        Merchant merchant = getMerchant(userId);
+    public CouponOfferResponse updateMyCoupon(Long userId, Long couponId, CreatePartnerCouponRequest request) {
+        Merchant merchant = getMerchantForOwner(userId);
         CouponOffer offer = couponOfferRepository.findById(couponId)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
@@ -134,23 +183,66 @@ public class PartnerCouponService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Категория не найдена"));
 
-        String offerDesc = request.getOfferDescription();
+        // Business validation
+        if (request.getFromPrice().compareTo(request.getOldPrice()) >= 0) {
+            throw new IllegalArgumentException("Цена по акции должна быть ниже старой цены");
+        }
+        if (request.getUseUntil().isBefore(request.getBuyUntil())) {
+            throw new IllegalArgumentException("Срок использования не может быть раньше срока покупки");
+        }
+
+        // Determine cover
+        String coverImageUrl = request.getCoverImageUrl();
+        if ((coverImageUrl == null || coverImageUrl.isBlank()) &&
+                request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
+            coverImageUrl = request.getImageUrls().get(0);
+        }
 
         offer.setTitle(request.getTitle());
-        offer.setOfferDescription(offerDesc);
-        // Legacy text fields no longer written — canonical offerDescription is source of truth
+        offer.setOfferDescription(request.getOfferDescription());
         offer.setCategory(category);
         offer.setOldPrice(request.getOldPrice());
         offer.setFromPrice(request.getFromPrice());
         offer.setDiscountPercent(request.getDiscountPercent());
-        offer.setCoverImageUrl(request.getCoverImageUrl());
+        offer.setCoverImageUrl(coverImageUrl);
         offer.setBuyUntil(request.getBuyUntil());
         offer.setUseUntil(request.getUseUntil());
-        // Contact fields live in merchant_locations
         offer.setGiftAvailable(request.isGiftAvailable());
-        // После редактирования отклонённого — снова на модерацию
+
+        // Replace options
+        offer.getOptions().clear();
+        for (CreateCouponOptionRequest optReq : request.getOptions()) {
+            CouponOption option = CouponOption.builder()
+                    .couponOffer(offer)
+                    .title(optReq.getTitle())
+                    .regularPrice(optReq.getRegularPrice())
+                    .couponPrice(optReq.getCouponPrice())
+                    .quantityLimit(optReq.getQuantityLimit())
+                    .quantitySold(0)
+                    .status(CouponOptionStatus.ACTIVE)
+                    .build();
+            offer.getOptions().add(option);
+        }
+
+        // Replace images
+        offer.getImages().clear();
+        if (request.getImageUrls() != null) {
+            int sortOrder = 0;
+            for (String imageUrl : request.getImageUrls()) {
+                if (imageUrl != null && !imageUrl.isBlank()) {
+                    CouponImage image = CouponImage.builder()
+                            .couponOffer(offer)
+                            .imageUrl(imageUrl)
+                            .sortOrder(sortOrder++)
+                            .build();
+                    offer.getImages().add(image);
+                }
+            }
+        }
+
+        // After editing revision-requested coupon — reset to LEAD for re-review
         if (offer.getStatus() == CouponStatus.REVISION_REQUESTED) {
-            offer.setStatus(CouponStatus.DRAFT);
+            offer.setStatus(CouponStatus.LEAD);
         }
 
         offer = couponOfferRepository.save(offer);
@@ -158,6 +250,23 @@ public class PartnerCouponService {
     }
 
     private CouponOfferResponse mapToResponse(CouponOffer offer) {
+        List<CouponOptionResponse> optionResponses = offer.getOptions() != null
+                ? offer.getOptions().stream().map(o -> CouponOptionResponse.builder()
+                        .id(o.getId())
+                        .title(o.getTitle())
+                        .regularPrice(o.getRegularPrice())
+                        .couponPrice(o.getCouponPrice())
+                        .quantityLimit(o.getQuantityLimit())
+                        .quantitySold(o.getQuantitySold())
+                        .status(o.getStatus().name())
+                        .build())
+                .collect(Collectors.toList())
+                : List.of();
+
+        List<String> imageUrls = offer.getImages() != null
+                ? offer.getImages().stream().map(CouponImage::getImageUrl).collect(Collectors.toList())
+                : List.of();
+
         return CouponOfferResponse.builder()
                 .id(offer.getId())
                 .title(offer.getTitle())
@@ -167,7 +276,14 @@ public class PartnerCouponService {
                 .discountPercent(offer.getDiscountPercent())
                 .coverImageUrl(offer.getCoverImageUrl())
                 .status(offer.getStatus().name())
+                .revisionComment(offer.getRevisionComment())
                 .totalSold(offer.getTotalSold())
+                .options(optionResponses)
+                .images(imageUrls)
+                .createdAt(offer.getCreatedAt())
+                .buyUntil(offer.getBuyUntil())
+                .useUntil(offer.getUseUntil())
+                .giftAvailable(offer.isGiftAvailable())
                 .build();
     }
 }

@@ -18,6 +18,8 @@ import uz.topdim.coupon.repository.CategoryRepository;
 import uz.topdim.coupon.repository.CouponImageRepository;
 import uz.topdim.coupon.repository.CouponOfferRepository;
 import uz.topdim.coupon.repository.CouponOptionRepository;
+import uz.topdim.coupon.repository.CouponSaleRepository;
+import uz.topdim.coupon.repository.CouponRedemptionLedgerRepository;
 import uz.topdim.coupon.repository.MerchantLocationRepository;
 import uz.topdim.coupon.repository.MerchantRepository;
 import uz.topdim.coupon.repository.ReviewRepository;
@@ -42,8 +44,11 @@ class CouponOfferServiceBusinessLogicTest {
     @Mock private MerchantLocationRepository merchantLocationRepository;
     @Mock private CategoryRepository categoryRepository;
     @Mock private ReviewRepository reviewRepository;
+    @Mock private CouponSaleRepository couponSaleRepository;
+    @Mock private CouponRedemptionLedgerRepository couponRedemptionLedgerRepository;
     @Mock private EntityManager entityManager;
     @Mock private TelegramPreviewService telegramPreviewService;
+    @Mock private CouponCoverFallbackService couponCoverFallbackService;
 
     @InjectMocks
     private CouponOfferService couponOfferService;
@@ -89,6 +94,7 @@ class CouponOfferServiceBusinessLogicTest {
         CouponOffer offer = createOffer(CouponStatus.REVISION_REQUESTED);
         when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(offer));
         when(couponOfferRepository.save(any(CouponOffer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(couponCoverFallbackService.getFallbackCover("food")).thenReturn("/defaults/covers/food.jpg");
 
         CouponOfferResponse result = couponOfferService.sendToApproval(10L);
 

@@ -3,6 +3,7 @@ package uz.topdim.coupon.service;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -10,7 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import uz.topdim.coupon.dto.CouponOfferResponse;
-import uz.topdim.coupon.dto.CreateCouponOfferRequest;
+import uz.topdim.coupon.dto.CreateCouponOptionRequest;
+import uz.topdim.coupon.dto.CreatePartnerCouponRequest;
 import uz.topdim.coupon.entity.*;
 import uz.topdim.coupon.exception.ResourceNotFoundException;
 import uz.topdim.coupon.repository.CategoryRepository;
@@ -19,11 +21,11 @@ import uz.topdim.coupon.repository.MerchantRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -49,19 +51,30 @@ class PartnerCouponServiceTest {
         return CouponOffer.builder()
                 .id(100L).title("Тест купон").merchant(merchant)
                 .category(createCategory()).fromPrice(BigDecimal.valueOf(50000))
-                .status(status).build();
+                .oldPrice(BigDecimal.valueOf(100000))
+                .status(status)
+                .options(new ArrayList<>())
+                .images(new ArrayList<>())
+                .build();
     }
 
-    private CreateCouponOfferRequest createRequest() {
-        CreateCouponOfferRequest req = new CreateCouponOfferRequest();
+    private CreatePartnerCouponRequest createRequest() {
+        CreatePartnerCouponRequest req = new CreatePartnerCouponRequest();
         req.setTitle("Новый купон");
         req.setOfferDescription("Описание оффера");
-        req.setMerchantId(1L);
         req.setCategoryId(1L);
+        req.setOldPrice(BigDecimal.valueOf(100000));
         req.setFromPrice(BigDecimal.valueOf(30000));
-        req.setCoverImageUrl("/cover.jpg");
         req.setBuyUntil(LocalDateTime.now().plusDays(30));
         req.setUseUntil(LocalDateTime.now().plusDays(60));
+
+        CreateCouponOptionRequest optionReq = new CreateCouponOptionRequest();
+        optionReq.setTitle("Базовый");
+        optionReq.setRegularPrice(BigDecimal.valueOf(100000));
+        optionReq.setCouponPrice(BigDecimal.valueOf(30000));
+        optionReq.setQuantityLimit(50);
+        req.setOptions(List.of(optionReq));
+
         return req;
     }
 
@@ -95,12 +108,13 @@ class PartnerCouponServiceTest {
     }
 
     @Test
-    @DisplayName("getMyCoupons: нет мерчанта → ResourceNotFoundException")
+    @DisplayName("getMyCoupons: нет мерчанта (кассир) → ResourceNotFoundException")
     void getMyCoupons_noMerchant_throws() {
         when(merchantRepository.findByUserId(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> partnerCouponService.getMyCoupons(99L, null, 0, 20))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("нет привязанного мерчанта");
     }
 
     // ==================== getMyCouponById ====================
@@ -130,11 +144,11 @@ class PartnerCouponServiceTest {
                 .hasMessageContaining("другому партнёру");
     }
 
-    // ==================== createCouponOffer ====================
+    // ==================== createPartnerRequest ====================
 
     @Test
-    @DisplayName("createCouponOffer: статус = LEAD")
-    void createCouponOffer_setsLead() {
+    @DisplayName("createPartnerRequest: создаёт LEAD с options и images")
+    void createPartnerRequest_createsLeadWithOptionsAndImages() {
         Merchant merchant = createMerchant();
         when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(createCategory()));
@@ -144,14 +158,26 @@ class PartnerCouponServiceTest {
             return offer;
         });
 
-        CouponOfferResponse result = partnerCouponService.createCouponOffer(10L, createRequest());
+        CreatePartnerCouponRequest req = createRequest();
+        req.setImageUrls(List.of("https://cdn.example.com/photo1.jpg", "https://cdn.example.com/photo2.jpg"));
+
+        CouponOfferResponse result = partnerCouponService.createPartnerRequest(10L, req);
 
         assertThat(result.getStatus()).isEqualTo("LEAD");
+        assertThat(result.getOptions()).hasSize(1);
+        assertThat(result.getImages()).hasSize(2);
+
+        ArgumentCaptor<CouponOffer> captor = ArgumentCaptor.forClass(CouponOffer.class);
+        verify(couponOfferRepository).save(captor.capture());
+        CouponOffer saved = captor.getValue();
+        assertThat(saved.getStatus()).isEqualTo(CouponStatus.LEAD);
+        assertThat(saved.getOptions()).hasSize(1);
+        assertThat(saved.getImages()).hasSize(2);
     }
 
     @Test
-    @DisplayName("createCouponOffer: сохраняет canonical offerDescription")
-    void createCouponOffer_persistsCanonicalOfferDescription() {
+    @DisplayName("createPartnerRequest: первое фото → coverImageUrl")
+    void createPartnerRequest_firstImageBecomesCover() {
         Merchant merchant = createMerchant();
         when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(createCategory()));
@@ -161,17 +187,112 @@ class PartnerCouponServiceTest {
             return offer;
         });
 
-        CreateCouponOfferRequest request = createRequest();
-        request.setOfferDescription("Canonical text");
+        CreatePartnerCouponRequest req = createRequest();
+        req.setCoverImageUrl(null); // no explicit cover
+        req.setImageUrls(List.of("https://cdn.example.com/auto-cover.jpg"));
 
-        partnerCouponService.createCouponOffer(10L, request);
+        CouponOfferResponse result = partnerCouponService.createPartnerRequest(10L, req);
 
-        org.mockito.ArgumentCaptor<CouponOffer> captor = forClass(CouponOffer.class);
-        verify(couponOfferRepository).save(captor.capture());
-        assertThat(captor.getValue().getOfferDescription()).isEqualTo("Canonical text");
+        assertThat(result.getCoverImageUrl()).isEqualTo("https://cdn.example.com/auto-cover.jpg");
+    }
+
+    @Test
+    @DisplayName("createPartnerRequest: без фото → coverImageUrl = null (OK)")
+    void createPartnerRequest_noImages_noCover() {
+        Merchant merchant = createMerchant();
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(createCategory()));
+        when(couponOfferRepository.save(any())).thenAnswer(inv -> {
+            CouponOffer offer = inv.getArgument(0);
+            offer.setId(103L);
+            return offer;
+        });
+
+        CreatePartnerCouponRequest req = createRequest();
+        req.setCoverImageUrl(null);
+        req.setImageUrls(null);
+
+        CouponOfferResponse result = partnerCouponService.createPartnerRequest(10L, req);
+
+        assertThat(result.getCoverImageUrl()).isNull();
+        assertThat(result.getImages()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("createPartnerRequest: fromPrice >= oldPrice → IllegalArgumentException")
+    void createPartnerRequest_invalidPrice_throws() {
+        Merchant merchant = createMerchant();
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(createCategory()));
+
+        CreatePartnerCouponRequest req = createRequest();
+        req.setFromPrice(BigDecimal.valueOf(150000)); // more than oldPrice=100000
+
+        assertThatThrownBy(() -> partnerCouponService.createPartnerRequest(10L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ниже старой цены");
+    }
+
+    @Test
+    @DisplayName("createPartnerRequest: useUntil < buyUntil → IllegalArgumentException")
+    void createPartnerRequest_invalidDates_throws() {
+        Merchant merchant = createMerchant();
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(createCategory()));
+
+        CreatePartnerCouponRequest req = createRequest();
+        req.setUseUntil(LocalDateTime.now().plusDays(5));
+        req.setBuyUntil(LocalDateTime.now().plusDays(30));
+
+        assertThatThrownBy(() -> partnerCouponService.createPartnerRequest(10L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("раньше срока покупки");
+    }
+
+    @Test
+    @DisplayName("createPartnerRequest: неизвестная категория → ResourceNotFoundException")
+    void createPartnerRequest_unknownCategory_throws() {
+        Merchant merchant = createMerchant();
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+        when(categoryRepository.findById(999L)).thenReturn(Optional.empty());
+
+        CreatePartnerCouponRequest req = createRequest();
+        req.setCategoryId(999L);
+
+        assertThatThrownBy(() -> partnerCouponService.createPartnerRequest(10L, req))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Категория не найдена");
+    }
+
+    @Test
+    @DisplayName("createPartnerRequest: кассир (нет мерчанта) → ResourceNotFoundException")
+    void createPartnerRequest_cashier_throws() {
+        when(merchantRepository.findByUserId(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> partnerCouponService.createPartnerRequest(99L, createRequest()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("владельцам и менеджерам");
     }
 
     // ==================== updateMyCoupon ====================
+
+    @Test
+    @DisplayName("updateMyCoupon: LEAD → обновляется")
+    void updateMyCoupon_lead_updates() {
+        Merchant merchant = createMerchant();
+        CouponOffer offer = createOffer(merchant, CouponStatus.LEAD);
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+        when(couponOfferRepository.findById(100L)).thenReturn(Optional.of(offer));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(createCategory()));
+        when(couponOfferRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        CreatePartnerCouponRequest req = createRequest();
+        req.setTitle("Обновлённый");
+
+        CouponOfferResponse result = partnerCouponService.updateMyCoupon(10L, 100L, req);
+
+        assertThat(result.getTitle()).isEqualTo("Обновлённый");
+    }
 
     @Test
     @DisplayName("updateMyCoupon: DRAFT → обновляется")
@@ -183,7 +304,7 @@ class PartnerCouponServiceTest {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(createCategory()));
         when(couponOfferRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        CreateCouponOfferRequest req = createRequest();
+        CreatePartnerCouponRequest req = createRequest();
         req.setTitle("Обновлённый");
 
         CouponOfferResponse result = partnerCouponService.updateMyCoupon(10L, 100L, req);
@@ -192,8 +313,8 @@ class PartnerCouponServiceTest {
     }
 
     @Test
-    @DisplayName("updateMyCoupon: REVISION_REQUESTED → ставит DRAFT")
-    void updateMyCoupon_revisionRequested_resubmits() {
+    @DisplayName("updateMyCoupon: REVISION_REQUESTED → ставит LEAD")
+    void updateMyCoupon_revisionRequested_resetsToLead() {
         Merchant merchant = createMerchant();
         CouponOffer offer = createOffer(merchant, CouponStatus.REVISION_REQUESTED);
         when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
@@ -203,7 +324,7 @@ class PartnerCouponServiceTest {
 
         CouponOfferResponse result = partnerCouponService.updateMyCoupon(10L, 100L, createRequest());
 
-        assertThat(result.getStatus()).isEqualTo("DRAFT");
+        assertThat(result.getStatus()).isEqualTo("LEAD");
     }
 
     @Test
@@ -217,5 +338,19 @@ class PartnerCouponServiceTest {
         assertThatThrownBy(() -> partnerCouponService.updateMyCoupon(10L, 100L, createRequest()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Нельзя редактировать");
+    }
+
+    @Test
+    @DisplayName("updateMyCoupon: чужой купон → IllegalStateException")
+    void updateMyCoupon_otherMerchant_throws() {
+        Merchant myMerchant = createMerchant();
+        Merchant other = Merchant.builder().id(2L).name("Другой").userId(20L).build();
+        CouponOffer offer = createOffer(other, CouponStatus.LEAD);
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(myMerchant));
+        when(couponOfferRepository.findById(100L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> partnerCouponService.updateMyCoupon(10L, 100L, createRequest()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("другому партнёру");
     }
 }

@@ -99,6 +99,17 @@ public class AdminCouponController {
                 "Купон отправлен на согласование", couponOfferService.sendToApproval(id)));
     }
 
+    /** Отклонить заявку партнёра (LEAD/DRAFT → ARCHIVED с причиной). */
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PostMapping("/coupons/{id}/reject-request")
+    public ResponseEntity<ApiResponse<CouponOfferResponse>> rejectRequest(
+            @PathVariable Long id,
+            @Valid @RequestBody RejectCouponRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Заявка отклонена", couponOfferService.rejectPartnerRequest(id, request.getReason())));
+    }
+
     /** Модератор берёт лид в работу (LEAD → DRAFT). */
     @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
     @PatchMapping("/coupons/{id}/take-to-work")
