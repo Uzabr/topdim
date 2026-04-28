@@ -22,6 +22,9 @@ public interface PurchasedCouponRepository extends JpaRepository<PurchasedCoupon
     Optional<PurchasedCoupon> findByCouponCode(String couponCode);
     Optional<PurchasedCoupon> findByQrToken(String qrToken);
 
+    Optional<PurchasedCoupon> findFirstByUserIdAndCouponOfferIdAndStatusOrderByUsedAtDesc(
+            Long userId, Long couponOfferId, PurchasedCouponStatus status);
+
     @Modifying
     @Query("""
             update PurchasedCoupon pc

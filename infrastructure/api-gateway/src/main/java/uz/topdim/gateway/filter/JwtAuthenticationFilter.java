@@ -60,7 +60,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final List<String> OPEN_ENDPOINTS = List.of(
             "/api/v1/coupons",
             "/api/v1/categories",
-            "/api/v1/reviews/coupon",
             "/api/v1/bazaars",
             "/api/v1/shops",
             "/api/v1/partners/applications",
@@ -188,6 +187,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         // Скачивание (GET) открыто для всех, Upload (POST) и Delete (DELETE) требуют токен
         if (path.startsWith("/api/v1/media")) {
             return "GET".equalsIgnoreCase(method);
+        }
+
+        // Reviews: /api/v1/reviews/coupon/{id} is public (approved reviews),
+        // but /api/v1/reviews/coupon/{id}/eligibility and POST /api/v1/reviews require auth
+        if (path.startsWith("/api/v1/reviews")) {
+            if (path.contains("/eligibility") || "POST".equalsIgnoreCase(method) || path.startsWith("/api/v1/reviews/my")) {
+                return false;
+            }
+            return "GET".equalsIgnoreCase(method) && path.startsWith("/api/v1/reviews/coupon");
         }
 
         return OPEN_ENDPOINTS.stream().anyMatch(path::startsWith);

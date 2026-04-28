@@ -18,6 +18,13 @@ export interface CreateReviewRequest {
   comment: string;
 }
 
+export interface ReviewEligibilityData {
+  eligible: boolean;
+  reason?: string;
+  purchasedCouponId?: number;
+  usedAt?: string;
+}
+
 interface PagedResponse<T> {
   content: T[];
   totalElements: number;
@@ -40,4 +47,7 @@ export const reviewsApi = {
     apiClient.get<ApiResponse<PagedResponse<ReviewData>>>('/api/v1/reviews/my', {
       params: { page, size },
     }),
+
+  getEligibility: (couponId: number) =>
+    apiClient.get<ApiResponse<ReviewEligibilityData>>(`/api/v1/reviews/coupon/${couponId}/eligibility`),
 };

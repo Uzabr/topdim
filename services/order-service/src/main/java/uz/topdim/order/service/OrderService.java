@@ -20,6 +20,7 @@ import uz.topdim.order.dto.CartResponse;
 import uz.topdim.order.dto.OrderResponse;
 import uz.topdim.order.dto.PurchasedCouponResponse;
 import uz.topdim.order.dto.RedeemCouponResponse;
+import uz.topdim.order.dto.ReviewEligibilityResponse;
 import uz.topdim.order.entity.*;
 import uz.topdim.order.repository.*;
 
@@ -783,5 +784,28 @@ public class OrderService {
                 .expiresAt(pc.getExpiresAt())
                 .usedAt(pc.getUsedAt())
                 .build();
+    }
+
+    // ==================== Review Eligibility ====================
+
+    /**
+     * Check if user can write a review for this couponOfferId.
+     * Only allowed when user has at least one USED purchased coupon.
+     */
+    @Transactional(readOnly = true)
+    public ReviewEligibilityResponse getReviewEligibility(Long userId, Long couponOfferId) {
+        return purchasedCouponRepository
+                .findFirstByUserIdAndCouponOfferIdAndStatusOrderByUsedAtDesc(
+                        userId, couponOfferId, PurchasedCouponStatus.USED)
+                .map(pc -> ReviewEligibilityResponse.builder()
+                        .eligible(true)
+                        .reason("USED_COUPON_FOUND")
+                        .purchasedCouponId(pc.getId())
+                        .usedAt(pc.getUsedAt())
+                        .build())
+                .orElseGet(() -> ReviewEligibilityResponse.builder()
+                        .eligible(false)
+                        .reason("REVIEW_ALLOWED_AFTER_COUPON_USAGE")
+                        .build());
     }
 }

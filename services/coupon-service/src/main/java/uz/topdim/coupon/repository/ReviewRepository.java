@@ -8,10 +8,16 @@ import org.springframework.data.repository.query.Param;
 import uz.topdim.coupon.entity.Review;
 import uz.topdim.coupon.entity.ReviewStatus;
 
+import java.util.Optional;
+
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     Page<Review> findByStatusOrderByCreatedAtDesc(ReviewStatus status, Pageable pageable);
     Page<Review> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
     Page<Review> findByCouponOfferIdAndStatusOrderByCreatedAtDesc(Long couponOfferId, ReviewStatus status, Pageable pageable);
+
+    Optional<Review> findFirstByUserIdAndCouponOfferIdOrderByCreatedAtDesc(Long userId, Long couponOfferId);
+
+    boolean existsByUserIdAndCouponOfferIdAndStatusIn(Long userId, Long couponOfferId, java.util.Collection<ReviewStatus> statuses);
 
     @Query("SELECT COALESCE(AVG(r.rating), 0) FROM Review r WHERE r.couponOffer.id = :couponId AND r.status = 'APPROVED'")
     double getAverageRatingByCouponId(@Param("couponId") Long couponId);

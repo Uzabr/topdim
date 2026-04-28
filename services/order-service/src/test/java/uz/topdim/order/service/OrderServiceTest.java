@@ -1024,4 +1024,65 @@ class OrderServiceTest {
                         && redemption.getRedeemMethod().equals("PIN")
         ));
     }
+
+    // ==================== Review Eligibility ====================
+
+    @Test
+    @DisplayName("Review eligibility: USED coupon → eligible with purchasedCouponId")
+    void getReviewEligibility_usedCoupon_returnsEligible() {
+        PurchasedCoupon pc = PurchasedCoupon.builder()
+                .id(42L).userId(10L).couponOfferId(5L)
+                .status(PurchasedCouponStatus.USED)
+                .usedAt(LocalDateTime.now().minusDays(1))
+                .build();
+
+        when(purchasedCouponRepository.findFirstByUserIdAndCouponOfferIdAndStatusOrderByUsedAtDesc(
+                10L, 5L, PurchasedCouponStatus.USED)).thenReturn(Optional.of(pc));
+
+        var result = orderService.getReviewEligibility(10L, 5L);
+
+        assertThat(result.isEligible()).isTrue();
+        assertThat(result.getReason()).isEqualTo("USED_COUPON_FOUND");
+        assertThat(result.getPurchasedCouponId()).isEqualTo(42L);
+        assertThat(result.getUsedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Review eligibility: ACTIVE coupon → not eligible (not used yet)")
+    void getReviewEligibility_activeCoupon_returnsNotEligible() {
+        // ACTIVE coupon exists but is not USED — query returns empty
+        when(purchasedCouponRepository.findFirstByUserIdAndCouponOfferIdAndStatusOrderByUsedAtDesc(
+                10L, 5L, PurchasedCouponStatus.USED)).thenReturn(Optional.empty());
+
+        var result = orderService.getReviewEligibility(10L, 5L);
+
+        assertThat(result.isEligible()).isFalse();
+        assertThat(result.getReason()).isEqualTo("REVIEW_ALLOWED_AFTER_COUPON_USAGE");
+        assertThat(result.getPurchasedCouponId()).isNull();
+    }
+
+    @Test
+    @DisplayName("Review eligibility: other user's USED coupon → not eligible")
+    void getReviewEligibility_otherUserCoupon_returnsNotEligible() {
+        // User 10 asks about coupon used by user 99
+        when(purchasedCouponRepository.findFirstByUserIdAndCouponOfferIdAndStatusOrderByUsedAtDesc(
+                10L, 5L, PurchasedCouponStatus.USED)).thenReturn(Optional.empty());
+
+        var result = orderService.getReviewEligibility(10L, 5L);
+
+        assertThat(result.isEligible()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Review eligibility: no purchased coupon at all → not eligible")
+    void getReviewEligibility_noPurchase_returnsNotEligible() {
+        when(purchasedCouponRepository.findFirstByUserIdAndCouponOfferIdAndStatusOrderByUsedAtDesc(
+                10L, 999L, PurchasedCouponStatus.USED)).thenReturn(Optional.empty());
+
+        var result = orderService.getReviewEligibility(10L, 999L);
+
+        assertThat(result.isEligible()).isFalse();
+        assertThat(result.getReason()).isEqualTo("REVIEW_ALLOWED_AFTER_COUPON_USAGE");
+    }
 }
+

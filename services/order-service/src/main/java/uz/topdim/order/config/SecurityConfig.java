@@ -43,6 +43,9 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
 
+                        // Internal inter-service calls (Feign: coupon-service → order-service)
+                        .requestMatchers("/api/v1/internal/**").permitAll()
+
                         // Admin endpoints — только ADMIN и SUPER_ADMIN
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
