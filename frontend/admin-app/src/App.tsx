@@ -20,6 +20,8 @@ import { AuditLogPage } from './features/system/AuditLogPage';
 import { MerchantsPage } from './features/merchants/MerchantsPage';
 import { MerchantDetailPage } from './features/merchants/MerchantDetailPage';
 import { CouponRequestsPage } from './features/coupon-requests/CouponRequestsPage';
+import { OrdersPage } from './features/orders/OrdersPage';
+import { PurchasedCouponLookupPage } from './features/orders/PurchasedCouponLookupPage';
 
 function HomeRedirect() {
   return <Navigate to="/dashboard" replace />;
@@ -78,7 +80,8 @@ function App() {
                   {/* TODO: подключить BazaarsPage, ShopsPage */}
 
                   {/* Заказы (только ADMIN, SUPER_ADMIN) */}
-                  {/* TODO: подключить OrdersPage, PromocodesPage */}
+                  <Route path="/orders/list" element={<OrdersPage />} />
+                  <Route path="/orders/coupon-lookup" element={<PurchasedCouponLookupPage />} />
 
                   {/* Пользователи (ADMIN, SUPER_ADMIN) */}
                   <Route path="/users/partner-applications" element={<PartnerApplicationsPage />} />

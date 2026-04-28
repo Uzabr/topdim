@@ -83,6 +83,7 @@ const allMenuItems: MenuItem[] = [
     roles: ['ADMIN', 'SUPER_ADMIN'],
     children: [
       { key: '/orders/list', icon: <FileTextOutlined />, label: 'Все заказы', roles: ['ADMIN', 'SUPER_ADMIN'] },
+      { key: '/orders/coupon-lookup', icon: <TagOutlined />, label: 'Поиск купона', roles: ['ADMIN', 'SUPER_ADMIN'] },
       { key: '/orders/promocodes', icon: <TagOutlined />, label: 'Промокоды', roles: ['ADMIN', 'SUPER_ADMIN'] },
     ],
   },

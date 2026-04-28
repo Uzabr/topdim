@@ -4,6 +4,27 @@ import { ScanOutlined, NumberOutlined, CheckCircleFilled, CameraOutlined, StopOu
 import { Html5Qrcode } from 'html5-qrcode';
 import api from '../api';
 
+/**
+ * Normalize backend error messages into cashier-friendly text.
+ * Raw backend messages may be technical — we translate them.
+ */
+function normalizeCashierError(backendMsg: string): string {
+  const lower = backendMsg.toLowerCase();
+  if (lower.includes('не найден') || lower.includes('not found')) {
+    return 'Код не найден. Проверьте PIN или попросите клиента показать QR.';
+  }
+  if (lower.includes('другому мерчанту') || lower.includes('wrong merchant') || lower.includes('не принадлежит')) {
+    return 'Этот купон относится к другому партнёру.';
+  }
+  if (lower.includes('used') || lower.includes('уже использован') || lower.includes('статус: used') || lower.includes('status: used')) {
+    return 'Этот купон уже был использован.';
+  }
+  if (lower.includes('истёк') || lower.includes('истек') || lower.includes('expired') || lower.includes('срок')) {
+    return 'Срок действия купона истёк.';
+  }
+  return backendMsg;
+}
+
 const { Title, Text } = Typography;
 
 interface RedeemResult {
@@ -33,6 +54,7 @@ export default function RedeemPage() {
   const [errorText, setErrorText] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [scannerError, setScannerError] = useState('');
+  const [redeemMethod, setRedeemMethod] = useState<'PIN' | 'QR'>('PIN');
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const stopScannerRef = useRef<(() => Promise<void>) | null>(null);
@@ -51,11 +73,14 @@ export default function RedeemPage() {
     try {
       const res = await api.post('/api/v1/partner/redemptions/qr', { qrToken: token });
       setResult(res.data.data);
+      setRedeemMethod('QR');
       message.success('Купон погашен по QR!');
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Ошибка погашения';
-      setErrorText(msg);
-      message.error(msg);
+      const raw = err.response?.data?.message || 'Ошибка погашения';
+      const friendly = normalizeCashierError(raw);
+      setErrorText(friendly);
+      message.error(friendly);
+      if (raw !== friendly) console.warn('[Redeem QR] Raw backend error:', raw);
     } finally {
       setLoading(false);
     }
@@ -140,12 +165,15 @@ export default function RedeemPage() {
     try {
       const res = await api.post('/api/v1/partner/redemptions', { couponCode: pinCode.trim() });
       setResult(res.data.data);
-      message.success('Купон погашен!');
+      setRedeemMethod('PIN');
+      message.success('Купон погашен по PIN!');
       setPinCode('');
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Ошибка погашения';
-      setErrorText(msg);
-      message.error(msg);
+      const raw = err.response?.data?.message || 'Ошибка погашения';
+      const friendly = normalizeCashierError(raw);
+      setErrorText(friendly);
+      message.error(friendly);
+      if (raw !== friendly) console.warn('[Redeem PIN] Raw backend error:', raw);
     } finally {
       setLoading(false);
     }
@@ -162,7 +190,7 @@ export default function RedeemPage() {
       <div style={{ maxWidth: 480, margin: '40px auto' }}>
         <Result
           icon={<CheckCircleFilled style={{ color: '#52c41a', fontSize: 72 }} />}
-          title="Купон погашен!"
+          title={redeemMethod === 'QR' ? 'Купон погашен по QR!' : 'Купон погашен по PIN!'}
           subTitle={
             <Space direction="vertical" size="small">
               <Text strong style={{ fontSize: 18 }}>{result.couponTitle}</Text>
