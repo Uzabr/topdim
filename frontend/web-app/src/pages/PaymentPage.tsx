@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, CheckCircle2, XCircle, ExternalLink, Clock, AlertCircle, ShieldCheck } from 'lucide-react';
 import { paymentsApi, type PaymentResponse } from '../api/payments';
 import { ordersApi } from '../api/orders';
@@ -29,6 +30,7 @@ export default function PaymentPage() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const lp = useLocalePath();
+  const queryClient = useQueryClient();
 
   const [state, setState] = useState<PaymentState>('polling');
   const [payment, setPayment] = useState<PaymentResponse | null>(null);
@@ -130,6 +132,9 @@ export default function PaymentPage() {
       const p = res.data.data;
       setPayment(p);
       setState('completed');
+      // Invalidate profile queries so coupons/orders refresh
+      queryClient.invalidateQueries({ queryKey: ['my-coupons'] });
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
     } catch (err: unknown) {
       const error = err as { response?: { status?: number, data?: { message?: string } } };
       const msg = error.response?.data?.message || 'Ошибка при подтверждении покупки';
@@ -300,10 +305,13 @@ export default function PaymentPage() {
               <p className="payment-transaction">ID транзакции: {payment.transactionId}</p>
             )}
             <div className="payment-success-info">
-              <p>Купоны доступны в вашем профиле в разделе «Мои покупки»</p>
+              <p>Купоны уже доступны в профиле.</p>
             </div>
-            <button className="primary-button" onClick={() => navigate(lp('/profile'))}>
-              Открыть мои покупки
+            <button className="primary-button" onClick={() => navigate(lp('/profile') + '?tab=coupons')}>
+              Открыть мои купоны
+            </button>
+            <button className="secondary-button" style={{ marginTop: 8 }} onClick={() => navigate(lp('/profile') + '?tab=orders')}>
+              История заказов
             </button>
           </div>
         )}
@@ -314,14 +322,14 @@ export default function PaymentPage() {
             <XCircle size={48} className="payment-icon payment-icon--error" />
             <h2>Ошибка</h2>
             <p className="payment-subtitle">
-              {error || 'Платёж не был завершён. Попробуйте ещё раз.'}
+              {error || 'Платёж не был завершён. Заказ сохранён, вы можете попробовать оплатить ещё раз.'}
             </p>
             <div className="payment-actions">
               <button className="primary-button" onClick={() => window.location.reload()}>
                 Попробовать снова
               </button>
-              <button className="secondary-button" onClick={() => navigate(lp('/profile'))}>
-                Перейти в профиль
+              <button className="secondary-button" onClick={() => navigate(lp('/profile') + '?tab=orders')}>
+                Мои заказы
               </button>
             </div>
           </div>
@@ -333,14 +341,14 @@ export default function PaymentPage() {
             <AlertCircle size={48} className="payment-icon payment-icon--warning" />
             <h2>Платёж не создан</h2>
             <p className="payment-subtitle">
-              Сервис оплаты временно недоступен. Пожалуйста, попробуйте позже.
+              Мы не смогли быстро получить платёж. Заказ сохранён в профиле, попробуйте продолжить оплату из раздела «Мои заказы».
             </p>
             <div className="payment-actions">
-              <button className="primary-button" onClick={() => window.location.reload()}>
-                Попробовать снова
+              <button className="primary-button" onClick={() => navigate(lp('/profile') + '?tab=orders')}>
+                Мои заказы
               </button>
-              <button className="secondary-button" onClick={() => navigate(lp('/profile'))}>
-                Перейти в профиль
+              <button className="secondary-button" onClick={() => window.location.reload()}>
+                Обновить статус
               </button>
             </div>
           </div>

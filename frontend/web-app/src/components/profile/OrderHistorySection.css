@@ -1,0 +1,139 @@
+.orders-loading {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.orders-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+  color: var(--danger);
+}
+
+.orders-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-3xl) var(--space-lg);
+  gap: var(--space-sm);
+}
+
+.orders-empty__icon {
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+.orders-empty h3 {
+  margin: 0;
+  font-size: var(--font-lg);
+  font-weight: 700;
+}
+
+.orders-empty p {
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-lg);
+  font-size: var(--font-sm);
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.order-card {
+  padding: var(--space-lg);
+}
+
+.order-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border);
+}
+
+.order-card__number {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+}
+
+.order-card__status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.order-card__status--pending {
+  background: rgba(255, 165, 0, 0.1);
+  color: #e67e22;
+}
+
+.order-card__status--paid,
+.order-card__status--completed {
+  background: rgba(52, 199, 89, 0.1);
+  color: var(--success);
+}
+
+.order-card__status--cancelled {
+  background: var(--bg-muted);
+  color: var(--text-muted);
+}
+
+.order-card__status--refund_requested,
+.order-card__status--refunded {
+  background: rgba(255, 59, 48, 0.08);
+  color: var(--danger);
+}
+
+.order-card__body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.order-card__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.order-card__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.order-card__value {
+  font-size: var(--font-base);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.order-card__actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.order-card__btn {
+  font-size: var(--font-sm);
+  padding: 8px 16px;
+}

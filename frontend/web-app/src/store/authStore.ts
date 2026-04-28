@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { authApi } from '../api/auth';
-import type { UserDto, LoginRequest, RegisterRequest } from '../api/auth';
+import type { UserDto, LoginRequest, RegisterRequest, UpdateProfileRequest } from '../api/auth';
 import { useCartStore } from './cartStore';
 
 interface AuthState {
@@ -11,6 +11,8 @@ interface AuthState {
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
   loadFromStorage: () => void;
+  refreshProfile: () => Promise<void>;
+  updateProfile: (data: UpdateProfileRequest) => Promise<UserDto>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -79,5 +81,24 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch {
       // Ignore
     }
+  },
+
+  refreshProfile: async () => {
+    try {
+      const response = await authApi.getMe();
+      const user = response.data.data;
+      localStorage.setItem('user', JSON.stringify(user));
+      set({ user });
+    } catch {
+      // If 401, apiClient interceptor handles auth cleanup
+    }
+  },
+
+  updateProfile: async (data: UpdateProfileRequest) => {
+    const response = await authApi.updateProfile(data);
+    const user = response.data.data;
+    localStorage.setItem('user', JSON.stringify(user));
+    set({ user });
+    return user;
   },
 }));

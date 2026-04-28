@@ -70,6 +70,15 @@ export interface PurchasedCoupon {
   usedAt?: string;
 }
 
+export interface PagedResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  last: boolean;
+}
+
 export const ordersApi = {
   getCart: () =>
     apiClient.get<ApiResponse<Cart>>('/api/v1/cart'),
@@ -89,8 +98,14 @@ export const ordersApi = {
   getOrder: (orderId: number) =>
     apiClient.get<ApiResponse<OrderResponse>>(`/api/v1/orders/${orderId}`),
 
+  getOrders: (page = 0, size = 20) =>
+    apiClient.get<ApiResponse<PagedResponse<OrderResponse>>>('/api/v1/orders', {
+      params: { page, size },
+    }),
+
   getMyCoupons: (status?: string) =>
     apiClient.get<ApiResponse<PurchasedCoupon[]>>('/api/v1/orders/my-coupons', {
       params: status ? { status } : {},
     }),
 };
+
