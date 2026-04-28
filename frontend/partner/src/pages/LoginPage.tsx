@@ -14,8 +14,23 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await api.post('/api/v1/auth/login', values);
-      const { accessToken } = res.data.data;
+      const { accessToken, user } = res.data.data;
       localStorage.setItem('token', accessToken);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      // Fetch partner access context to determine role (OWNER/CASHIER/MANAGER)
+      try {
+        const ctxRes = await api.get('/api/v1/partner/staff/me', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (ctxRes.data?.data) {
+          localStorage.setItem('partnerContext', JSON.stringify(ctxRes.data.data));
+        }
+      } catch {
+        // If access context fails, user is OWNER by default
+        localStorage.setItem('partnerContext', JSON.stringify({ role: 'OWNER', canViewDashboard: true, canRedeem: true }));
+      }
+
       message.success('Добро пожаловать!');
       navigate('/');
     } catch (err: any) {
