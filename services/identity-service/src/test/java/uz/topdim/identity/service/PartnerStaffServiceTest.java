@@ -197,6 +197,7 @@ class PartnerStaffServiceTest {
             request.setPhone("+998900000001");
             request.setLoginEmail("existing@test.com");
             request.setTemporaryPassword("temp123");
+            request.setMerchantLocationId(LOCATION_ID);
 
             when(userRepository.existsByEmailIgnoreCase("existing@test.com")).thenReturn(true);
 
@@ -225,6 +226,78 @@ class PartnerStaffServiceTest {
 
             assertThat(result.getRole()).isEqualTo("MANAGER");
             verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("Add cashier without merchantLocationId — rejected (beta rule)")
+        void addStaff_cashierWithoutLocation_throws() {
+            mockOwnerMerchantResolution();
+
+            CreateStaffRequest request = new CreateStaffRequest();
+            request.setName("Кассир Без Филиала");
+            request.setPhone("+998900000003");
+            request.setRole("CASHIER");
+            request.setLoginEmail("noloc@test.com");
+            request.setTemporaryPassword("password123");
+            request.setMerchantLocationId(null);
+
+            assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("привязан к филиалу");
+        }
+
+        @Test
+        @DisplayName("Add cashier without loginEmail — rejected (beta rule)")
+        void addStaff_cashierWithoutLoginEmail_throws() {
+            mockOwnerMerchantResolution();
+
+            CreateStaffRequest request = new CreateStaffRequest();
+            request.setName("Кассир Без Email");
+            request.setPhone("+998900000004");
+            request.setRole("CASHIER");
+            request.setMerchantLocationId(LOCATION_ID);
+            request.setTemporaryPassword("password123");
+            // loginEmail = null
+
+            assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("email для входа");
+        }
+
+        @Test
+        @DisplayName("Add cashier without temporaryPassword — rejected (beta rule)")
+        void addStaff_cashierWithoutTemporaryPassword_throws() {
+            mockOwnerMerchantResolution();
+
+            CreateStaffRequest request = new CreateStaffRequest();
+            request.setName("Кассир Без Пароля");
+            request.setPhone("+998900000005");
+            request.setRole("CASHIER");
+            request.setMerchantLocationId(LOCATION_ID);
+            request.setLoginEmail("nopass@test.com");
+            // temporaryPassword = null
+
+            assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("не короче 6 символов");
+        }
+
+        @Test
+        @DisplayName("Add cashier with short password (< 6 chars) — rejected (beta rule)")
+        void addStaff_cashierWithShortPassword_throws() {
+            mockOwnerMerchantResolution();
+
+            CreateStaffRequest request = new CreateStaffRequest();
+            request.setName("Кассир Короткий Пароль");
+            request.setPhone("+998900000006");
+            request.setRole("CASHIER");
+            request.setMerchantLocationId(LOCATION_ID);
+            request.setLoginEmail("short@test.com");
+            request.setTemporaryPassword("12345"); // only 5 chars
+
+            assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("не короче 6 символов");
         }
     }
 

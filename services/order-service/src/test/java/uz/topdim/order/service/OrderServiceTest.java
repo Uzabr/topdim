@@ -572,6 +572,9 @@ class OrderServiceTest {
         assertThatThrownBy(() -> orderService.redeemCoupon("CP-USED1234", 5L, "Анна"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("не может быть использован");
+
+        // Must NOT publish CouponRedeemedEvent
+        verify(rabbitTemplate, never()).convertAndSend(eq("coupon.exchange"), eq("coupon.redeemed"), any(Object.class));
     }
 
     @Test
@@ -592,6 +595,8 @@ class OrderServiceTest {
                 .hasMessageContaining("Купон принадлежит другому мерчанту");
 
         verify(redemptionRepository, never()).save(any(Redemption.class));
+        // Must NOT publish CouponRedeemedEvent
+        verify(rabbitTemplate, never()).convertAndSend(eq("coupon.exchange"), eq("coupon.redeemed"), any(Object.class));
     }
 
     @Test
@@ -634,6 +639,8 @@ class OrderServiceTest {
 
         assertThat(coupon.getStatus()).isEqualTo(PurchasedCouponStatus.EXPIRED);
         verify(redemptionRepository, never()).save(any(Redemption.class));
+        // Must NOT publish CouponRedeemedEvent
+        verify(rabbitTemplate, never()).convertAndSend(eq("coupon.exchange"), eq("coupon.redeemed"), any(Object.class));
     }
 
     // ==================== QR Token Redemption ====================

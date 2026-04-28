@@ -15,6 +15,7 @@ import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.order.client.CouponClient;
 import uz.topdim.order.client.CouponPurchaseSnapshot;
 import uz.topdim.order.client.RegisterSaleRequest;
+import uz.topdim.order.dto.AdminPurchasedCouponLookupResponse;
 import uz.topdim.order.dto.CartResponse;
 import uz.topdim.order.dto.OrderResponse;
 import uz.topdim.order.dto.PurchasedCouponResponse;
@@ -752,6 +753,35 @@ public class OrderService {
                 .purchasedAt(coupon.getPurchasedAt())
                 .expiresAt(coupon.getExpiresAt())
                 .usedAt(coupon.getUsedAt())
+                .build();
+    }
+
+    // ==================== Admin Lookup ====================
+
+    /**
+     * Admin-only lookup: find purchased coupon by coupon code.
+     * Does NOT return qrToken for security.
+     */
+    @Transactional(readOnly = true)
+    public AdminPurchasedCouponLookupResponse adminLookupByCouponCode(String couponCode) {
+        PurchasedCoupon pc = purchasedCouponRepository.findByCouponCode(couponCode.trim().toUpperCase())
+                .orElseThrow(() -> new IllegalArgumentException("Купон с кодом '" + couponCode + "' не найден"));
+        return AdminPurchasedCouponLookupResponse.builder()
+                .purchasedCouponId(pc.getId())
+                .orderId(pc.getOrder() != null ? pc.getOrder().getId() : null)
+                .userId(pc.getUserId())
+                .couponOfferId(pc.getCouponOfferId())
+                .couponOptionId(pc.getCouponOptionId())
+                .couponTitle(pc.getCouponTitle())
+                .optionTitle(pc.getOptionTitle())
+                .couponCode(pc.getCouponCode())
+                .status(pc.getStatus().name())
+                .merchantId(pc.getMerchantId())
+                .merchantName(pc.getMerchantName())
+                .merchantAddress(pc.getMerchantAddress())
+                .purchasedAt(pc.getPurchasedAt())
+                .expiresAt(pc.getExpiresAt())
+                .usedAt(pc.getUsedAt())
                 .build();
     }
 }

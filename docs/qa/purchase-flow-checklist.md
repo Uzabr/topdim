@@ -73,13 +73,23 @@
 ### RC-3: Profile
 - [ ] Email/phone из user объекта (не hardcoded)
 - [ ] Реальный count купонов (не mock 15)
-- [ ] "Скопировать ПИН-код" вместо "Показать QR-код"
+- [ ] PIN-код отображается в карточке купона
+- [ ] QR-код отображается как настоящее QR-изображение (НЕ текст qrToken)
 - [ ] Tabs (Активные/Использованные/Истёкшие) работают
 
-### RC-4: API contracts
+### RC-4: Redemption (Partner App)
+- [ ] PIN-погашение через `POST /api/v1/partner/redemptions` работает
+- [ ] QR-погашение через `POST /api/v1/partner/redemptions/qr` работает
+- [ ] Повторное погашение используемого купона → ошибка "Этот купон уже был использован."
+- [ ] Погашение чужого мерчанта → ошибка "Этот купон относится к другому партнёру."
+- [ ] Истёкший купон → ошибка "Срок действия купона истёк."
+- [ ] После погашения — статус в профиле покупателя меняется на `USED`
+
+### RC-5: API contracts
 - [ ] OrderController → CartResponse/OrderResponse DTOs
 - [ ] PaymentController → PaymentResponse DTO
 - [ ] GET /payments/order/{orderId} → 404 graceful (не exception)
+- [ ] Legacy `POST /api/v1/orders/redeem` — partner-only, requires X-Merchant-Id
 
 ---
 

@@ -40,6 +40,9 @@ public class PartnerStaffService {
         // Resolve merchant for this owner
         Long merchantId = resolveMerchantId(userId);
 
+        // Beta safety: validate cashier requirements
+        validateStaffRequest(request);
+
         Staff staff = Staff.builder()
                 .userId(userId)
                 .name(request.getName())
@@ -123,6 +126,25 @@ public class PartnerStaffService {
                 .canViewDashboard(true)
                 .canRedeem(true)
                 .build();
+    }
+
+    /**
+     * Beta safety: cashier must have location, login email, and temporary password.
+     * Without these, the cashier cannot log in or could redeem at the wrong branch.
+     */
+    private void validateStaffRequest(CreateStaffRequest request) {
+        String role = request.getRole() != null ? request.getRole().trim().toUpperCase() : "CASHIER";
+        if ("CASHIER".equals(role)) {
+            if (request.getMerchantLocationId() == null) {
+                throw new IllegalArgumentException("Кассир должен быть привязан к филиалу");
+            }
+            if (request.getLoginEmail() == null || request.getLoginEmail().isBlank()) {
+                throw new IllegalArgumentException("Для кассира обязателен email для входа");
+            }
+            if (request.getTemporaryPassword() == null || request.getTemporaryPassword().length() < 6) {
+                throw new IllegalArgumentException("Временный пароль кассира должен быть не короче 6 символов");
+            }
+        }
     }
 
     private Long resolveMerchantId(Long userId) {

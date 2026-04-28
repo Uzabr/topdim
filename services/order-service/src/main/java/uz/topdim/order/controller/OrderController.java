@@ -147,8 +147,19 @@ public class OrderController {
 
     // ==================== Redemption ====================
 
-    /** Погашение купона (legacy endpoint). Предпочтительный — POST /partner/redemptions. */
-    @PreAuthorize("hasAnyRole('PARTNER', 'ADMIN', 'SUPER_ADMIN')")
+    /**
+     * Legacy partner-only redemption endpoint.
+     * <p>
+     * This endpoint is kept for backward compatibility. The main MVP flow uses:
+     * - {@code POST /api/v1/partner/redemptions} (PIN-code)
+     * - {@code POST /api/v1/partner/redemptions/qr} (QR token)
+     * <p>
+     * Requires X-Merchant-Id header for partner context.
+     * Admins must NOT redeem customer coupons as merchants in MVP.
+     * If admin support needs redemption in the future, a separate audited
+     * support-mode plan is required — not this endpoint.
+     */
+    @PreAuthorize("hasAnyRole('PARTNER')")
     @PostMapping("/api/v1/orders/redeem")
     public ResponseEntity<ApiResponse<RedeemCouponResponse>> redeemCoupon(
             @RequestHeader("X-Merchant-Id") Long merchantId,
@@ -213,5 +224,24 @@ public class OrderController {
         boolean approved = "APPROVED".equals(request.get("status"));
         RefundRequest refund = orderService.resolveRefundRequest(id, approved, request.get("comment"));
         return ResponseEntity.ok(ApiResponse.success("Запрос обработан", refund));
+    }
+
+    /**
+     * Admin support: lookup purchased coupon by coupon code.
+     * Does NOT expose qrToken for security.
+     * Read-only — no redemption or modification.
+     */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @GetMapping("/api/v1/admin/purchased-coupons/lookup")
+    public ResponseEntity<ApiResponse<AdminPurchasedCouponLookupResponse>> lookupPurchasedCoupon(
+            @RequestParam String couponCode
+    ) {
+        try {
+            AdminPurchasedCouponLookupResponse response = orderService.adminLookupByCouponCode(couponCode);
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
     }
 }

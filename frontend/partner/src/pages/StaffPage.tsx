@@ -142,20 +142,20 @@ export default function StaffPage() {
           <Form.Item name="role" label="Роль" initialValue="CASHIER">
             <Select id="staff-role">
               <Option value="CASHIER">Кассир</Option>
-              <Option value="MANAGER">Менеджер</Option>
+              {/* MANAGER скрыт до полной поддержки (beta) */}
             </Select>
           </Form.Item>
-          <Form.Item name="merchantLocationId" label="Филиал">
-            <Select placeholder="Выберите филиал" allowClear id="staff-location">
+          <Form.Item name="merchantLocationId" label="Филиал (обязательно)" rules={[{ required: true, message: 'Кассир должен быть привязан к филиалу' }]}>
+            <Select placeholder="Выберите филиал" id="staff-location">
               {locations?.map((loc) => (
                 <Option key={loc.id} value={loc.id}>{loc.title} — {loc.address}</Option>
               ))}
             </Select>
           </Form.Item>
-          <Form.Item name="loginEmail" label="Email для входа (опционально)">
+          <Form.Item name="loginEmail" label="Email для входа (обязательно)" rules={[{ required: true, message: 'Email обязателен для кассира' }, { type: 'email', message: 'Некорректный email' }]}>
             <Input placeholder="cashier@example.com" id="staff-email" />
           </Form.Item>
-          <Form.Item name="temporaryPassword" label="Временный пароль (опционально)">
+          <Form.Item name="temporaryPassword" label="Временный пароль (обязательно)" rules={[{ required: true, message: 'Пароль обязателен' }, { min: 6, message: 'Минимум 6 символов' }]}>
             <Input.Password placeholder="Мин. 6 символов" id="staff-password" />
           </Form.Item>
         </Form>

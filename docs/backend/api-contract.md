@@ -177,4 +177,92 @@ api.interceptors.response.use(
 5. Теперь все ваши запросы из Swagger будут автоматически подписываться этим токеном.
 
 ---
-*Документ актуализирован 2026-04-26. Все новые эндпоинты, включая смену паролей, гостевой доступ, заявки мерчантов, Telegram webhooks и внутренние API теперь задокументированы непосредственно в коде контроллеров через springdoc-openapi.*
+
+## 5. Coupon Redemption API (Partner)
+
+### MVP Flow
+
+Погашение купонов выполняется партнёром (Owner или Cashier) через **Partner App** (`frontend/partner`).
+
+#### PIN-код погашение
+
+```http
+POST /api/v1/partner/redemptions
+Authorization: Bearer <partner JWT>
+Content-Type: application/json
+
+{ "couponCode": "CP-XXXX1234" }
+```
+
+#### QR-код погашение
+
+```http
+POST /api/v1/partner/redemptions/qr
+Authorization: Bearer <partner JWT>
+Content-Type: application/json
+
+{ "qrToken": "<extracted from QR>" }
+```
+
+> **Важно:** QR payload на стороне покупателя имеет формат `TOPDIM-QR:${qrToken}`. Парсинг выполняет Partner App.
+
+#### Legacy endpoint (backward compatibility)
+
+```http
+POST /api/v1/orders/redeem
+Authorization: Bearer <partner JWT>
+X-Merchant-Id: <merchantId>
+Content-Type: application/json
+
+{ "couponCode": "CP-XXXX1234" }
+```
+
+> `POST /api/v1/orders/redeem` — legacy partner-only compatibility.
+> Main MVP flow uses `POST /api/v1/partner/redemptions` and `POST /api/v1/partner/redemptions/qr`.
+> Admins must not redeem customer coupons as merchants in MVP.
+
+---
+
+## 6. Admin Support API
+
+### Purchased Coupon Lookup
+
+Поиск купленного купона по коду. Только для чтения, `qrToken` не возвращается.
+
+```http
+GET /api/v1/admin/purchased-coupons/lookup?couponCode=CP-XXXX1234
+Authorization: Bearer <admin JWT>
+```
+
+Ответ:
+
+```json
+{
+  "success": true,
+  "data": {
+    "purchasedCouponId": 42,
+    "orderId": 15,
+    "userId": 100,
+    "couponTitle": "SPA для двоих",
+    "optionTitle": "Стандарт",
+    "couponCode": "CP-XXXX1234",
+    "status": "ACTIVE",
+    "merchantId": 5,
+    "merchantName": "Relax SPA",
+    "merchantAddress": "ул. Навои, 55",
+    "purchasedAt": "2026-04-28T15:00:00",
+    "expiresAt": "2026-07-28T15:00:00",
+    "usedAt": null
+  }
+}
+```
+
+Если не найден → HTTP 404:
+
+```json
+{ "success": false, "message": "Купон с кодом 'CP-XXXX1234' не найден" }
+```
+
+---
+*Документ актуализирован 2026-04-29. Добавлены разделы: Redemption API, Admin Support API.*
+
