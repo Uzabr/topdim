@@ -46,9 +46,13 @@ apiClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return apiClient(originalRequest);
       } catch {
+        // Only redirect to login if user was previously authenticated
+        const hadToken = localStorage.getItem('accessToken');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        if (hadToken) {
+          window.location.href = '/login';
+        }
         return Promise.reject(error);
       }
     }
