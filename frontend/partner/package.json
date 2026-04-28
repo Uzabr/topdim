@@ -15,6 +15,7 @@
     "antd": "^6.3.5",
     "axios": "^1.14.1",
     "dayjs": "^1.11.20",
+    "html5-qrcode": "^2.3.8",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.2"
