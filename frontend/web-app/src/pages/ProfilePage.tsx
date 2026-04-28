@@ -1,34 +1,83 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, Settings, Clock, CheckCircle, Ticket, Wallet, AlertCircle } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { LogOut, Clock, CheckCircle, Ticket, AlertCircle, ShoppingBag, Settings, HelpCircle } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { ordersApi } from '../api/orders';
 import Tabs from '../components/ui/Tabs';
 import PurchasedCouponCard from '../components/profile/PurchasedCouponCard';
-import { formatPrice } from '../utils/format';
+import ProfileOverview from '../components/profile/ProfileOverview';
+import OrderHistorySection from '../components/profile/OrderHistorySection';
+import ProfileSettingsSection from '../components/profile/ProfileSettingsSection';
+import ProfileHelpSection from '../components/profile/ProfileHelpSection';
 import { useLocalePath } from '../hooks/useLocalePath';
 import './ProfilePage.css';
+
+export type ProfileTab = 'coupons' | 'orders' | 'profile' | 'help';
+
+function getInitialTab(search: string): ProfileTab {
+  const tab = new URLSearchParams(search).get('tab');
+  if (tab === 'orders' || tab === 'profile' || tab === 'help') return tab;
+  return 'coupons';
+}
+
+const SIDEBAR_ITEMS: { key: ProfileTab; label: string; icon: React.ReactNode }[] = [
+  { key: 'coupons', label: 'Мои купоны', icon: <Ticket size={18} /> },
+  { key: 'orders', label: 'Мои заказы', icon: <ShoppingBag size={18} /> },
+  { key: 'profile', label: 'Настройки', icon: <Settings size={18} /> },
+  { key: 'help', label: 'Помощь', icon: <HelpCircle size={18} /> },
+];
+
+const COUPON_TABS = [
+  { key: 'ACTIVE', label: 'Активные', icon: <Clock size={16} /> },
+  { key: 'USED', label: 'Использованные', icon: <CheckCircle size={16} /> },
+  { key: 'EXPIRED', label: 'Истёкшие', icon: <AlertCircle size={16} /> },
+];
 
 export default function ProfilePage() {
   const { user, logout, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const lp = useLocalePath();
-  const [activeTab, setActiveTab] = useState('ACTIVE');
 
-  // Fetch coupons from backend
-  const { data: coupons = [], isLoading } = useQuery({
-    queryKey: ['my-coupons', activeTab],
-    queryFn: () => ordersApi.getMyCoupons(activeTab),
+  const [activeHubTab, setActiveHubTab] = useState<ProfileTab>(() => getInitialTab(location.search));
+  const [couponSubTab, setCouponSubTab] = useState('ACTIVE');
+
+  const setTab = (tab: ProfileTab) => {
+    setActiveHubTab(tab);
+    navigate(`${location.pathname}?tab=${tab}`, { replace: true });
+  };
+
+  // Fetch coupons
+  const { data: coupons = [], isLoading: couponsLoading } = useQuery({
+    queryKey: ['my-coupons', couponSubTab],
+    queryFn: () => ordersApi.getMyCoupons(couponSubTab),
+    select: (res) => res.data.data,
+    enabled: isAuthenticated && activeHubTab === 'coupons',
+  });
+
+  // Fetch active + used counts for overview
+  const { data: activeCoupons = [] } = useQuery({
+    queryKey: ['my-coupons', 'ACTIVE'],
+    queryFn: () => ordersApi.getMyCoupons('ACTIVE'),
     select: (res) => res.data.data,
     enabled: isAuthenticated,
   });
 
-  const PROFILE_TABS = [
-    { key: 'ACTIVE', label: 'Активные', icon: <Clock size={16} /> },
-    { key: 'USED', label: 'Использованные', icon: <CheckCircle size={16} /> },
-    { key: 'EXPIRED', label: 'Истёкшие', icon: <AlertCircle size={16} /> },
-  ];
+  const { data: usedCoupons = [] } = useQuery({
+    queryKey: ['my-coupons', 'USED'],
+    queryFn: () => ordersApi.getMyCoupons('USED'),
+    select: (res) => res.data.data,
+    enabled: isAuthenticated,
+  });
+
+  // Orders count for overview
+  const { data: ordersData } = useQuery({
+    queryKey: ['my-orders'],
+    queryFn: () => ordersApi.getOrders(0, 1),
+    select: (res) => res.data.data,
+    enabled: isAuthenticated,
+  });
 
   if (!isAuthenticated) {
     return (
@@ -36,92 +85,112 @@ export default function ProfilePage() {
         <div className="profile-empty glass-card">
           <Ticket size={48} className="profile-empty-icon" />
           <h2>Привет!</h2>
-          <p>Войдите или зарегистрируйтесь, чтобы видеть свои купоны и историю возвратов.</p>
+          <p>Войдите или зарегистрируйтесь, чтобы видеть купоны, заказы и статус оплаты.</p>
           <Link to={lp('/login')} className="primary-button">Войти в профиль</Link>
         </div>
       </div>
     );
   }
 
-  const totalCouponsCount = coupons.length;
-  // Сумма экономии будет считаться из реальных данных в будущем
-  const savedAmount = 0;
-
   return (
     <div className="profile-page container">
-      {/* ═══ Header Section ═══ */}
-      <div className="profile-header glass-card">
-        <div className="profile-header__top">
-          <div className="profile-user">
-            <div className="profile-avatar">
-              {user?.firstName?.charAt(0)?.toUpperCase() || '?'}
-            </div>
-            <div className="profile-info">
-              <h1>{user?.firstName} {user?.lastName}</h1>
-              <p>{user?.email}{user?.phone ? ` • ${user.phone}` : ''}</p>
-            </div>
-          </div>
-          
-          <div className="profile-actions">
-            <button className="icon-button" aria-label="Настройки">
-              <Settings size={20} />
-            </button>
-            <button className="icon-button danger" aria-label="Выйти" onClick={logout}>
-              <LogOut size={20} />
-            </button>
+      {/* ═══ Two-column Layout ═══ */}
+      <div className="profile-layout">
+        {/* ═══ Main Content (left) ═══ */}
+        <div className="profile-main">
+          {/* Overview card */}
+          <ProfileOverview
+            activeCouponsCount={activeCoupons.length}
+            usedCouponsCount={usedCoupons.length}
+            ordersCount={ordersData?.totalElements ?? 0}
+            onTabChange={setTab}
+          />
+
+          {/* Tab Content */}
+          <div className="profile-content">
+            {activeHubTab === 'coupons' && (
+              <>
+                <h2 className="profile-section-title">Мои купоны</h2>
+                <Tabs
+                  tabs={COUPON_TABS}
+                  activeKey={couponSubTab}
+                  onChange={setCouponSubTab}
+                />
+                <div className="profile-coupons">
+                  {couponsLoading ? (
+                    <div className="profile-loading">Загрузка купонов...</div>
+                  ) : coupons.length === 0 ? (
+                    <div className="profile-coupons-empty glass-card">
+                      <span className="profile-empty-icon">😢</span>
+                      <h3>У вас пока нет {couponSubTab === 'ACTIVE' ? 'активных' : couponSubTab === 'USED' ? 'использованных' : 'истёкших'} купонов</h3>
+                      <p>Самое время порадовать себя отличной скидкой!</p>
+                      <button className="primary-button" onClick={() => navigate(lp('/coupons'))}>
+                        Перейти в каталог
+                      </button>
+                    </div>
+                  ) : (
+                    coupons.map((coupon) => (
+                      <PurchasedCouponCard key={coupon.id} coupon={coupon} />
+                    ))
+                  )}
+                </div>
+              </>
+            )}
+
+            {activeHubTab === 'orders' && (
+              <>
+                <h2 className="profile-section-title">Мои заказы</h2>
+                <OrderHistorySection onTabChange={setTab} />
+              </>
+            )}
+
+            {activeHubTab === 'profile' && (
+              <ProfileSettingsSection />
+            )}
+
+            {activeHubTab === 'help' && (
+              <ProfileHelpSection />
+            )}
           </div>
         </div>
 
-        <div className="profile-stats">
-          <div className="profile-stat-item">
-            <div className="profile-stat-icon" style={{ background: 'rgba(255,102,96,0.1)', color: 'var(--primary)' }}>
-              <Ticket size={24} />
+        {/* ═══ Sidebar (right) ═══ */}
+        <aside className="profile-sidebar">
+          <div className="profile-sidebar__card glass-card">
+            {/* User mini card */}
+            <div className="profile-sidebar__user">
+              <div className="profile-sidebar__avatar">
+                {user?.firstName?.charAt(0)?.toUpperCase() || '?'}
+              </div>
+              <div className="profile-sidebar__user-info">
+                <span className="profile-sidebar__name">{user?.firstName} {user?.lastName}</span>
+                <span className="profile-sidebar__email">{user?.email}</span>
+              </div>
             </div>
-            <div className="profile-stat-data">
-              <span className="profile-stat-label">Купонов куплено</span>
-              <span className="profile-stat-value">{totalCouponsCount}</span>
-            </div>
-          </div>
-          <div className="profile-stat-item">
-            <div className="profile-stat-icon" style={{ background: 'rgba(52,199,89,0.1)', color: 'var(--success)' }}>
-              <Wallet size={24} />
-            </div>
-            <div className="profile-stat-data">
-              <span className="profile-stat-label">Сэкономлено</span>
-              <span className="profile-stat-value">{savedAmount > 0 ? formatPrice(savedAmount) : '—'}</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* ═══ Content Section ═══ */}
-      <div className="profile-content">
-        <h2 className="profile-section-title">Мои купоны</h2>
-        
-        <Tabs 
-          tabs={PROFILE_TABS} 
-          activeKey={activeTab} 
-          onChange={setActiveTab} 
-        />
+            {/* Nav items */}
+            <nav className="profile-sidebar__nav">
+              {SIDEBAR_ITEMS.map((item) => (
+                <button
+                  key={item.key}
+                  className={`profile-sidebar__nav-item ${activeHubTab === item.key ? 'profile-sidebar__nav-item--active' : ''}`}
+                  onClick={() => setTab(item.key)}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </nav>
 
-        <div className="profile-coupons">
-          {isLoading ? (
-             <div className="profile-loading">Загрузка купонов...</div>
-          ) : coupons.length === 0 ? (
-            <div className="profile-coupons-empty glass-card">
-              <span className="profile-empty-icon">😢</span>
-              <h3>У вас пока нет {activeTab === 'ACTIVE' ? 'активных' : activeTab === 'USED' ? 'использованных' : 'истёкших'} купонов</h3>
-              <p>Самое время порадовать себя отличной скидкой!</p>
-              <button className="primary-button" onClick={() => navigate(lp('/coupons'))}>
-                Перейти в каталог
+            {/* Logout */}
+            <div className="profile-sidebar__footer">
+              <button className="profile-sidebar__logout" onClick={logout}>
+                <LogOut size={16} />
+                Выйти
               </button>
             </div>
-          ) : (
-            coupons.map((coupon) => (
-              <PurchasedCouponCard key={coupon.id} coupon={coupon} />
-            ))
-          )}
-        </div>
+          </div>
+        </aside>
       </div>
     </div>
   );

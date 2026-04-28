@@ -52,17 +52,44 @@ export default function CheckoutPage() {
   // Email и phone из профиля пользователя
   const userEmail = user?.email || '';
   const userPhone = user?.phone || '';
+  const missingContact = !userEmail || !userPhone;
+
+  // Blocking state: missing contact data
+  if (missingContact) {
+    return (
+      <div className="checkout-page container">
+        <div className="checkout-header">
+          <button className="checkout-back" onClick={() => navigate(-1)} aria-label="Назад">
+            <ChevronLeft size={24} />
+          </button>
+          <h1>Оформление заказа</h1>
+        </div>
+
+        <div className="checkout-missing-contact glass-card">
+          <AlertCircle size={40} className="checkout-missing-contact__icon" />
+          {!userEmail && (
+            <p className="checkout-missing-contact__text">
+              В профиле не указан email. Добавьте email в аккаунт или обратитесь в поддержку.
+            </p>
+          )}
+          {!userPhone && (
+            <p className="checkout-missing-contact__text">
+              В профиле не указан телефон. Добавьте телефон, чтобы мы могли связать заказ и купон с вашим аккаунтом.
+            </p>
+          )}
+          <button
+            className="primary-button"
+            onClick={() => navigate(lp('/profile') + '?tab=profile')}
+            id="checkout-fill-profile-btn"
+          >
+            Заполнить профиль
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handlePayment = async () => {
-    // Валидация: email и phone обязательны
-    if (!userEmail) {
-      setError('В профиле не указан email. Обновите данные в настройках.');
-      return;
-    }
-    if (!userPhone) {
-      setError('В профиле не указан телефон. Обновите данные в настройках.');
-      return;
-    }
 
     setIsLoading(true);
     setError('');

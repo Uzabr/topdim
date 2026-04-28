@@ -32,6 +32,13 @@ export interface AuthResponse {
   user: UserDto;
 }
 
+export interface UpdateProfileRequest {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  avatarUrl?: string;
+}
+
 export const authApi = {
   register: (data: RegisterRequest) =>
     apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/register', data),
@@ -47,4 +54,10 @@ export const authApi = {
 
   guestAuth: (data: { phone: string; name: string }) =>
     apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/guest', data),
+
+  getMe: () =>
+    apiClient.get<ApiResponse<UserDto>>('/api/v1/users/me'),
+
+  updateProfile: (data: UpdateProfileRequest) =>
+    apiClient.put<ApiResponse<UserDto>>('/api/v1/users/me', data),
 };

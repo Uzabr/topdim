@@ -332,6 +332,63 @@
   color: var(--text-primary);
 }
 
+/* ═══ Missing Contact Block ═══ */
+.checkout-missing-contact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-md);
+  padding: var(--space-3xl) var(--space-xl);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.checkout-missing-contact__icon {
+  color: #e67e22;
+}
+
+.checkout-missing-contact__text {
+  margin: 0;
+  font-size: var(--font-base);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ═══ Contact Info ═══ */
+.checkout-contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.checkout-contact-row {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.checkout-contact-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 80px;
+}
+
+.checkout-contact-value {
+  color: var(--text-primary);
+}
+
+.checkout-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--danger);
+  font-size: var(--font-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(255, 59, 48, 0.06);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+}
+
 /* ═══ Responsive ═══ */
 @media (max-width: 1024px) {
   .checkout-layout {
