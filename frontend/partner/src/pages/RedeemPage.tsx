@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Card, Input, Button, Typography, message, Result, Space, Tag, Tabs, Alert } from 'antd';
-import { ScanOutlined, NumberOutlined, CheckCircleFilled } from '@ant-design/icons';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Card, Button, Input, Typography, message, Result, Space, Tag, Tabs, Alert } from 'antd';
+import { ScanOutlined, NumberOutlined, CheckCircleFilled, CameraOutlined, StopOutlined } from '@ant-design/icons';
+import { Html5Qrcode } from 'html5-qrcode';
 import api from '../api';
 
 const { Title, Text } = Typography;
@@ -16,12 +17,121 @@ interface RedeemResult {
   usedAt?: string;
 }
 
+function parseTopDimQrPayload(value: string): string | null {
+  const prefix = 'TOPDIM-QR:';
+  if (!value.startsWith(prefix)) {
+    return null;
+  }
+  const token = value.slice(prefix.length).trim();
+  return token || null;
+}
+
 export default function RedeemPage() {
   const [pinCode, setPinCode] = useState('');
-  const [qrToken, setQrToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RedeemResult | null>(null);
   const [errorText, setErrorText] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+  const [scannerError, setScannerError] = useState('');
+
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const stopScannerRef = useRef<(() => Promise<void>) | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopScannerRef.current?.();
+    };
+  }, []);
+
+  const redeemQrToken = useCallback(async (token: string) => {
+    setLoading(true);
+    setErrorText('');
+    setScannerError('');
+    try {
+      const res = await api.post('/api/v1/partner/redemptions/qr', { qrToken: token });
+      setResult(res.data.data);
+      message.success('Купон погашен по QR!');
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Ошибка погашения';
+      setErrorText(msg);
+      message.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const stopScanner = useCallback(async () => {
+    try {
+      const scanner = scannerRef.current;
+      if (scanner) {
+        const state = scanner.getState();
+        // Html5QrcodeScannerState: 1 = NOT_STARTED, 2 = SCANNING, 3 = PAUSED
+        if (state === 2 || state === 3) {
+          await scanner.stop();
+        }
+      }
+    } catch {
+      // Scanner already stopped or not initialized
+    }
+    setIsScanning(false);
+  }, []);
+
+  const startScanner = useCallback(async () => {
+    setScannerError('');
+    setErrorText('');
+    setIsScanning(true);
+
+    // Small delay to let the DOM render the container
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const container = document.getElementById('topdim-qr-reader');
+    if (!container) {
+      setScannerError('Не удалось инициализировать сканер');
+      setIsScanning(false);
+      return;
+    }
+
+    const scanner = new Html5Qrcode('topdim-qr-reader');
+    scannerRef.current = scanner;
+
+    stopScannerRef.current = async () => {
+      try {
+        const state = scanner.getState();
+        if (state === 2 || state === 3) {
+          await scanner.stop();
+        }
+      } catch {
+        // Ignore
+      }
+      setIsScanning(false);
+    };
+
+    try {
+      await scanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        async (decodedText) => {
+          // Stop scanner first
+          await stopScannerRef.current?.();
+
+          const token = parseTopDimQrPayload(decodedText);
+          if (!token) {
+            setScannerError('Это не QR-код TopDim. Попробуйте снова или используйте PIN-код.');
+            return;
+          }
+
+          await redeemQrToken(token);
+        },
+        () => {
+          // Ignore continuous scan errors (no QR in frame)
+        }
+      );
+    } catch {
+      setScannerError('Не удалось открыть камеру. Проверьте разрешение браузера или используйте PIN-код.');
+      setIsScanning(false);
+    }
+  }, [redeemQrToken]);
 
   const handlePinRedeem = async () => {
     if (!pinCode.trim()) return message.warning('Введите код купона');
@@ -41,25 +151,11 @@ export default function RedeemPage() {
     }
   };
 
-  const handleQrRedeem = async () => {
-    if (!qrToken.trim()) return message.warning('Введите QR-токен');
-    setLoading(true);
+  const resetResult = () => {
+    setResult(null);
     setErrorText('');
-    try {
-      const res = await api.post('/api/v1/partner/redemptions/qr', { qrToken: qrToken.trim() });
-      setResult(res.data.data);
-      message.success('Купон погашен по QR!');
-      setQrToken('');
-    } catch (err: any) {
-      const msg = err.response?.data?.message || 'Ошибка погашения';
-      setErrorText(msg);
-      message.error(msg);
-    } finally {
-      setLoading(false);
-    }
+    setScannerError('');
   };
-
-  const resetResult = () => setResult(null);
 
   if (result) {
     return (
@@ -116,27 +212,48 @@ export default function RedeemPage() {
     },
     {
       key: 'qr',
-      label: <span><ScanOutlined /> QR-токен</span>,
+      label: <span><ScanOutlined /> Сканировать QR</span>,
       children: (
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <Text type="secondary">Отсканируйте QR-код клиента или введите токен</Text>
-          <Input
-            placeholder="QR-токен"
-            value={qrToken}
-            onChange={(e) => setQrToken(e.target.value)}
-            size="large"
-            style={{ fontSize: 18, textAlign: 'center' }}
-            onPressEnter={handleQrRedeem}
-            id="qr-input"
-          />
-          <Button
-            type="primary" size="large" block
-            loading={loading} onClick={handleQrRedeem}
-            icon={<ScanOutlined />}
-            id="qr-redeem-btn"
-          >
-            Погасить по QR
-          </Button>
+          <Text type="secondary">Наведите камеру на QR-код купона клиента</Text>
+
+          {isScanning ? (
+            <>
+              <div id="topdim-qr-reader" style={{ width: '100%', minHeight: 280 }} />
+              <Button
+                size="large" block danger
+                onClick={stopScanner}
+                icon={<StopOutlined />}
+                id="qr-stop-btn"
+              >
+                Остановить сканер
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="primary" size="large" block
+              loading={loading}
+              onClick={startScanner}
+              icon={<CameraOutlined />}
+              id="qr-start-btn"
+            >
+              Открыть камеру
+            </Button>
+          )}
+
+          {scannerError ? (
+            <Alert
+              type="warning"
+              showIcon
+              message="Ошибка сканирования"
+              description={scannerError}
+              action={
+                <Button size="small" onClick={startScanner}>
+                  Повторить
+                </Button>
+              }
+            />
+          ) : null}
         </Space>
       ),
     },
