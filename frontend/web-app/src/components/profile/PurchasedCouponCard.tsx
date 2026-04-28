@@ -1,4 +1,5 @@
 import { AlertCircle, CalendarClock, CheckCircle, Clock, Copy, MapPin, Phone, QrCode, Store } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import type { PurchasedCoupon } from '../../api/orders';
 import './PurchasedCouponCard.css';
 
@@ -41,14 +42,15 @@ function getStatusIcon(status: PurchasedCoupon['status']) {
   return <AlertCircle size={16} />;
 }
 
+function buildQrPayload(qrToken?: string): string {
+  return qrToken ? `TOPDIM-QR:${qrToken}` : '';
+}
+
 export default function PurchasedCouponCard({ coupon }: PurchasedCouponCardProps) {
   const isActive = coupon.status === 'ACTIVE';
 
-  const copyText = async (value?: string) => {
-    if (!value) {
-      return;
-    }
-    await navigator.clipboard.writeText(value);
+  const copyCode = async () => {
+    await navigator.clipboard.writeText(coupon.couponCode);
   };
 
   return (
@@ -71,7 +73,7 @@ export default function PurchasedCouponCard({ coupon }: PurchasedCouponCardProps
           <strong>{coupon.couponCode || 'Код недоступен'}</strong>
         </div>
         {isActive && coupon.couponCode ? (
-          <button type="button" onClick={() => copyText(coupon.couponCode)}>
+          <button type="button" onClick={copyCode}>
             <Copy size={16} />
             Скопировать
           </button>
@@ -80,14 +82,18 @@ export default function PurchasedCouponCard({ coupon }: PurchasedCouponCardProps
 
       {isActive && coupon.qrToken ? (
         <div className="purchased-coupon-card__qr-box">
-          <div>
-            <span className="purchased-coupon-card__label">QR-токен для проверки</span>
-            <code>{coupon.qrToken}</code>
+          <div className="purchased-coupon-card__qr-frame" aria-label="QR-код купона TopDim">
+            <QRCodeSVG
+              value={buildQrPayload(coupon.qrToken)}
+              size={164}
+              level="M"
+              includeMargin
+            />
           </div>
-          <button type="button" onClick={() => copyText(coupon.qrToken)}>
-            <Copy size={16} />
-            Скопировать QR
-          </button>
+          <div className="purchased-coupon-card__qr-copy">
+            <span className="purchased-coupon-card__label">QR-код купона</span>
+            <p>Покажите этот QR-код кассиру партнёра для погашения.</p>
+          </div>
         </div>
       ) : null}
 
@@ -123,7 +129,7 @@ export default function PurchasedCouponCard({ coupon }: PurchasedCouponCardProps
         {coupon.qrToken ? (
           <div className="purchased-coupon-card__qr-note">
             <QrCode size={16} />
-            QR можно показать партнёру или скопировать как токен
+            QR-код доступен для проверки партнёром
           </div>
         ) : null}
       </div>

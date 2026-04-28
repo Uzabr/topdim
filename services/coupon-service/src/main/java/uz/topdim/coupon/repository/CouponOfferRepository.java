@@ -34,6 +34,49 @@ public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> 
     @Query("SELECT c FROM CouponOffer c WHERE c.status = 'ACTIVE' ORDER BY c.totalSold DESC")
     List<CouponOffer> findTopSelling(Pageable pageable);
 
+    @Query("""
+            SELECT c FROM CouponOffer c
+             WHERE c.status = :status
+               AND (c.buyUntil IS NULL OR c.buyUntil >= :now)
+            """)
+    Page<CouponOffer> findPublicByStatus(@Param("status") CouponStatus status,
+                                          @Param("now") java.time.LocalDateTime now,
+                                          Pageable pageable);
+
+    @Query("""
+            SELECT c FROM CouponOffer c
+             WHERE c.status = :status
+               AND c.category.id = :categoryId
+               AND (c.buyUntil IS NULL OR c.buyUntil >= :now)
+            """)
+    Page<CouponOffer> findPublicByStatusAndCategoryId(@Param("status") CouponStatus status,
+                                                       @Param("categoryId") Long categoryId,
+                                                       @Param("now") java.time.LocalDateTime now,
+                                                       Pageable pageable);
+
+    @Query("""
+            SELECT c FROM CouponOffer c
+             WHERE c.status = :status
+               AND (c.buyUntil IS NULL OR c.buyUntil >= :now)
+               AND (
+                    LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(c.offerDescription) LIKE LOWER(CONCAT('%', :search, '%'))
+               )
+            """)
+    Page<CouponOffer> searchPublicByTitleOrDescription(@Param("status") CouponStatus status,
+                                                        @Param("search") String search,
+                                                        @Param("now") java.time.LocalDateTime now,
+                                                        Pageable pageable);
+
+    @Query("""
+            SELECT c FROM CouponOffer c
+             WHERE c.status = 'ACTIVE'
+               AND (c.buyUntil IS NULL OR c.buyUntil >= :now)
+             ORDER BY c.totalSold DESC
+            """)
+    List<CouponOffer> findPublicTopSelling(@Param("now") java.time.LocalDateTime now,
+                                            Pageable pageable);
+
     List<CouponOffer> findByMerchantIdAndStatus(Long merchantId, CouponStatus status);
 
     Optional<CouponOffer> findByIdAndStatus(Long id, CouponStatus status);
