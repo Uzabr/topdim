@@ -22,6 +22,7 @@ import { MerchantDetailPage } from './features/merchants/MerchantDetailPage';
 import { CouponRequestsPage } from './features/coupon-requests/CouponRequestsPage';
 import { OrdersPage } from './features/orders/OrdersPage';
 import { PurchasedCouponLookupPage } from './features/orders/PurchasedCouponLookupPage';
+import { ReviewsPage } from './features/support/ReviewsPage';
 
 function HomeRedirect() {
   return <Navigate to="/dashboard" replace />;
@@ -71,7 +72,7 @@ function App() {
                   <Route path="/moderation/requests" element={<CouponRequestsPage />} />
                   
                   {/* Поддержка */}
-                  {/* TODO: подключить ComplaintsPage, ReviewsPage */}
+                  <Route path="/support/reviews" element={<ReviewsPage />} />
 
                   {/* Справочники (только ADMIN, SUPER_ADMIN) */}
                   <Route path="/catalog/categories" element={<CategoriesPage />} />

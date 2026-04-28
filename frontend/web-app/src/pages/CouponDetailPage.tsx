@@ -8,6 +8,7 @@ import type { CouponOption } from '../api/coupons';
 import { reviewsApi } from '../api/reviews';
 import { useCartStore } from '../store/cartStore';
 import { useFavoritesStore } from '../store/favoritesStore';
+import { useAuthStore } from '../store/authStore';
 import { formatPrice, daysUntil, formatDate } from '../utils/format';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import ImageSlider from '../components/ui/ImageSlider';
@@ -22,12 +23,14 @@ import CouponUnavailableState from '../components/coupon/CouponUnavailableState'
 import CouponVariantsSection from '../components/coupon-detail/CouponVariantsSection';
 import CouponImportantInfoSection from '../components/coupon-detail/CouponImportantInfoSection';
 import MerchantInfoSection from '../components/coupon-detail/MerchantInfoSection';
+import ReviewForm from '../components/coupon-detail/ReviewForm';
 import './CouponDetailPage.css';
 
 export default function CouponDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { addToCart } = useCartStore();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
+  const { isAuthenticated } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'info' | 'reviews'>('info');
   const [toastMessage, setToastMessage] = useState('');
   const optionsRef = useRef<HTMLDivElement>(null);
@@ -68,6 +71,16 @@ export default function CouponDetailPage() {
   const reviews = reviewsData?.content ?? [];
   const reviewCount = coupon?.reviewCount ?? reviews.length;
   const avgRating = coupon?.averageRating ?? (reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0);
+
+  // Eligibility check (only for authenticated users)
+  const { data: eligibilityData } = useQuery({
+    queryKey: ['review-eligibility', Number(id)],
+    queryFn: () => reviewsApi.getEligibility(Number(id)),
+    select: (res) => res.data.data,
+    enabled: !!id && isAuthenticated,
+    retry: false,
+  });
+  const canReview = eligibilityData?.eligible ?? false;
 
   useEffect(() => {
     if (!coupon || typeof document === 'undefined') return;
@@ -291,6 +304,25 @@ export default function CouponDetailPage() {
 
         {activeTab === 'reviews' && (
           <div className="detail-reviews-tab">
+            {/* Review Form / Notice */}
+            {!isAuthenticated ? (
+              <div className="review-notice">
+                <div className="review-notice__icon">✍️</div>
+                <p className="review-notice__text">
+                  <a href="/login" className="review-notice__link">Войдите</a>, чтобы оставить отзыв после использования купона
+                </p>
+              </div>
+            ) : canReview ? (
+              <ReviewForm couponOfferId={c.id} />
+            ) : (
+              <div className="review-notice">
+                <div className="review-notice__icon">📋</div>
+                <p className="review-notice__text">
+                  Оставить отзыв можно после использования купона
+                </p>
+              </div>
+            )}
+
             {reviews.length === 0 ? (
               <div className="reviews-empty">
                 <div className="reviews-empty__icon">⭐</div>
