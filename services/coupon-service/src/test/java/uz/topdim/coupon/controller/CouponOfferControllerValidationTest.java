@@ -86,6 +86,20 @@ class CouponOfferControllerValidationTest {
         verifyNoInteractions(partnerCouponService);
     }
 
+    @Test
+    @DisplayName("Partner requestRevision: пустой comment возвращает 400 и не вызывает сервис")
+    void partnerRequestRevision_blankComment_returnsBadRequest() throws Exception {
+        partnerMockMvc.perform(post("/api/v1/partner/coupons/100/request-revision")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-User-Id", 77)
+                        .content("{\"comment\":\"   \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Ошибка валидации"));
+
+        verifyNoInteractions(partnerCouponService);
+    }
+
     private Validator createValidator() {
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();

@@ -32,6 +32,7 @@ public class PartnerCouponService {
     private final CouponOfferRepository couponOfferRepository;
     private final MerchantRepository merchantRepository;
     private final CategoryRepository categoryRepository;
+    private final CouponOfferService couponOfferService;
 
     private static final Set<CouponStatus> EDITABLE_STATUSES = Set.of(
             CouponStatus.LEAD, CouponStatus.DRAFT, CouponStatus.REVISION_REQUESTED
@@ -45,6 +46,21 @@ public class PartnerCouponService {
         return merchantRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "У вас нет привязанного мерчанта. Создание заявок доступно только владельцам и менеджерам."));
+    }
+
+    /**
+     * Получает купон и проверяет, что он принадлежит мерчанту текущего пользователя.
+     */
+    private CouponOffer getOwnedOffer(Long userId, Long couponId) {
+        Merchant merchant = getMerchantForOwner(userId);
+        CouponOffer offer = couponOfferRepository.findById(couponId)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        if (offer.getMerchant() == null || !offer.getMerchant().getId().equals(merchant.getId())) {
+            throw new IllegalStateException("Купон принадлежит другому партнёру");
+        }
+
+        return offer;
     }
 
     /**
@@ -71,15 +87,8 @@ public class PartnerCouponService {
      */
     @Transactional(readOnly = true)
     public CouponOfferResponse getMyCouponById(Long userId, Long couponId) {
-        Merchant merchant = getMerchantForOwner(userId);
-        CouponOffer offer = couponOfferRepository.findById(couponId)
-                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
-
-        if (!offer.getMerchant().getId().equals(merchant.getId())) {
-            throw new IllegalStateException("Купон принадлежит другому партнёру");
-        }
-
-        return mapToResponse(offer);
+        CouponOffer offer = getOwnedOffer(userId, couponId);
+        return couponOfferService.mapToResponse(offer);
     }
 
     /**
@@ -168,13 +177,7 @@ public class PartnerCouponService {
      */
     @Transactional
     public CouponOfferResponse updateMyCoupon(Long userId, Long couponId, CreatePartnerCouponRequest request) {
-        Merchant merchant = getMerchantForOwner(userId);
-        CouponOffer offer = couponOfferRepository.findById(couponId)
-                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
-
-        if (!offer.getMerchant().getId().equals(merchant.getId())) {
-            throw new IllegalStateException("Купон принадлежит другому партнёру");
-        }
+        CouponOffer offer = getOwnedOffer(userId, couponId);
 
         if (!EDITABLE_STATUSES.contains(offer.getStatus())) {
             throw new IllegalStateException("Нельзя редактировать купон в статусе " + offer.getStatus());
@@ -247,6 +250,42 @@ public class PartnerCouponService {
 
         offer = couponOfferRepository.save(offer);
         return mapToResponse(offer);
+    }
+
+    /**
+     * Партнёр одобряет свой купон после подготовки TopDim.
+     * Доступно только владельцу мерчанта в MVP.
+     */
+    @Transactional
+    public CouponOfferResponse approveMyCoupon(Long userId, Long couponId) {
+        CouponOffer offer = getOwnedOffer(userId, couponId);
+
+        if (offer.getStatus() != CouponStatus.WAITING_FOR_MERCHANT) {
+            throw new IllegalStateException(
+                    "Одобрить можно только купон в статусе WAITING_FOR_MERCHANT. Текущий: " + offer.getStatus());
+        }
+
+        return couponOfferService.approveByMerchant(couponId);
+    }
+
+    /**
+     * Партнёр возвращает свой купон на доработку с обязательным комментарием.
+     */
+    @Transactional
+    public CouponOfferResponse requestRevisionForMyCoupon(Long userId, Long couponId, String comment) {
+        CouponOffer offer = getOwnedOffer(userId, couponId);
+
+        if (offer.getStatus() != CouponStatus.WAITING_FOR_MERCHANT) {
+            throw new IllegalStateException(
+                    "Запросить правки можно только из статуса WAITING_FOR_MERCHANT. Текущий: " + offer.getStatus());
+        }
+
+        String trimmedComment = comment == null ? "" : comment.trim();
+        if (trimmedComment.isBlank()) {
+            throw new IllegalArgumentException("Комментарий к правкам обязателен");
+        }
+
+        return couponOfferService.requestRevisionByMerchant(couponId, trimmedComment);
     }
 
     private CouponOfferResponse mapToResponse(CouponOffer offer) {

@@ -129,6 +129,11 @@ export default function CouponsPage() {
                 Причина: {record.revisionComment.substring(0, 40)}
               </Text>
             )}
+            {record.status === 'WAITING_FOR_MERCHANT' && (
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Откройте preview и подтвердите запуск
+              </Text>
+            )}
           </Space>
         );
       },
@@ -136,13 +141,31 @@ export default function CouponsPage() {
     {
       title: '',
       key: 'actions',
-      width: 80,
-      render: (_: unknown, record: CouponItem) =>
-        EDITABLE_STATUSES.has(record.status) ? (
-          <Button type="link" icon={<EditOutlined />} size="small">
-            Изменить
-          </Button>
-        ) : null,
+      width: 120,
+      render: (_: unknown, record: CouponItem) => {
+        if (record.status === 'WAITING_FOR_MERCHANT') {
+          return (
+            <Button
+              type="link"
+              icon={<EyeOutlined />}
+              size="small"
+              onClick={() => navigate(`/coupons/${record.id}/review`)}
+            >
+              Согласовать
+            </Button>
+          );
+        }
+
+        if (EDITABLE_STATUSES.has(record.status)) {
+          return (
+            <Button type="link" icon={<EditOutlined />} size="small">
+              Изменить
+            </Button>
+          );
+        }
+
+        return null;
+      },
     },
   ];
 

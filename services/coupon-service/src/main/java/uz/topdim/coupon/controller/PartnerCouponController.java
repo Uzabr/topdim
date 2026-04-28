@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.coupon.dto.CouponOfferResponse;
 import uz.topdim.coupon.dto.CreatePartnerCouponRequest;
+import uz.topdim.coupon.dto.RequestCouponRevisionRequest;
 import uz.topdim.coupon.service.PartnerCouponService;
 
 /**
@@ -68,5 +69,28 @@ public class PartnerCouponController {
     ) {
         return ResponseEntity.ok(ApiResponse.success("Заявка обновлена",
                 partnerCouponService.updateMyCoupon(userId, id, request)));
+    }
+
+    /** Одобрить подготовленный купон → ACTIVE. */
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<ApiResponse<CouponOfferResponse>> approveCoupon(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Купон одобрен и опубликован",
+                partnerCouponService.approveMyCoupon(userId, id)));
+    }
+
+    /** Запросить правки по подготовленному купону → REVISION_REQUESTED. */
+    @PostMapping("/{id}/request-revision")
+    public ResponseEntity<ApiResponse<CouponOfferResponse>> requestRevision(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long id,
+            @Valid @RequestBody RequestCouponRevisionRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Купон возвращён на доработку",
+                partnerCouponService.requestRevisionForMyCoupon(userId, id, request.getComment())));
     }
 }

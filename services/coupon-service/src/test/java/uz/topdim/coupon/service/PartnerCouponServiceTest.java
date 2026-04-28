@@ -35,6 +35,7 @@ class PartnerCouponServiceTest {
     @Mock private CouponOfferRepository couponOfferRepository;
     @Mock private MerchantRepository merchantRepository;
     @Mock private CategoryRepository categoryRepository;
+    @Mock private CouponOfferService couponOfferService;
 
     @InjectMocks
     private PartnerCouponService partnerCouponService;
@@ -76,6 +77,14 @@ class PartnerCouponServiceTest {
         req.setOptions(List.of(optionReq));
 
         return req;
+    }
+
+    private CouponOfferResponse response(Long id, String status) {
+        return CouponOfferResponse.builder()
+                .id(id)
+                .title("Тест купон")
+                .status(status)
+                .build();
     }
 
     // ==================== getMyCoupons ====================
@@ -123,12 +132,44 @@ class PartnerCouponServiceTest {
     @DisplayName("getMyCouponById: свой купон → OK")
     void getMyCouponById_ownCoupon_returnsIt() {
         Merchant merchant = createMerchant();
+        CouponOffer offer = createOffer(merchant, CouponStatus.ACTIVE);
         when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
-        when(couponOfferRepository.findById(100L)).thenReturn(Optional.of(createOffer(merchant, CouponStatus.ACTIVE)));
+        when(couponOfferRepository.findById(100L)).thenReturn(Optional.of(offer));
+        when(couponOfferService.mapToResponse(offer)).thenReturn(response(100L, "ACTIVE"));
 
         CouponOfferResponse result = partnerCouponService.getMyCouponById(10L, 100L);
 
         assertThat(result.getId()).isEqualTo(100L);
+    }
+
+    @Test
+    @DisplayName("getMyCouponById: detail response использует canonical mapper с merchant/category")
+    void getMyCouponById_usesCanonicalMapperForMerchantPreviewData() {
+        Merchant merchant = createMerchant();
+        CouponOffer offer = createOffer(merchant, CouponStatus.WAITING_FOR_MERCHANT);
+        CouponOfferResponse canonicalResponse = response(100L, "WAITING_FOR_MERCHANT");
+        canonicalResponse.setMerchant(CouponOfferResponse.MerchantSummary.builder()
+                .id(1L)
+                .name("Тест мерчант")
+                .description("Описание бизнеса")
+                .build());
+        canonicalResponse.setCategory(CouponOfferResponse.CategorySummary.builder()
+                .id(1L)
+                .name("Еда")
+                .slug("eda")
+                .build());
+
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+        when(couponOfferRepository.findById(100L)).thenReturn(Optional.of(offer));
+        when(couponOfferService.mapToResponse(offer)).thenReturn(canonicalResponse);
+
+        CouponOfferResponse result = partnerCouponService.getMyCouponById(10L, 100L);
+
+        assertThat(result.getMerchant()).isNotNull();
+        assertThat(result.getMerchant().getName()).isEqualTo("Тест мерчант");
+        assertThat(result.getCategory()).isNotNull();
+        assertThat(result.getCategory().getSlug()).isEqualTo("eda");
+        verify(couponOfferService).mapToResponse(offer);
     }
 
     @Test
@@ -142,6 +183,88 @@ class PartnerCouponServiceTest {
         assertThatThrownBy(() -> partnerCouponService.getMyCouponById(10L, 200L))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("другому партнёру");
+    }
+
+    // ==================== approveMyCoupon ====================
+
+    @Test
+    @DisplayName("approveMyCoupon: свой WAITING_FOR_MERCHANT → делегирует approveByMerchant")
+    void approveMyCoupon_ownWaitingCoupon_delegatesToCanonicalService() {
+        Merchant merchant = createMerchant();
+        CouponOffer offer = createOffer(merchant, CouponStatus.WAITING_FOR_MERCHANT);
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+        when(couponOfferRepository.findById(100L)).thenReturn(Optional.of(offer));
+        when(couponOfferService.approveByMerchant(100L)).thenReturn(response(100L, "ACTIVE"));
+
+        CouponOfferResponse result = partnerCouponService.approveMyCoupon(10L, 100L);
+
+        assertThat(result.getStatus()).isEqualTo("ACTIVE");
+        verify(couponOfferService).approveByMerchant(100L);
+    }
+
+    @Test
+    @DisplayName("approveMyCoupon: чужой купон → IllegalStateException и не публикует")
+    void approveMyCoupon_otherMerchant_throwsBeforeDelegation() {
+        Merchant myMerchant = createMerchant();
+        Merchant other = Merchant.builder().id(2L).name("Другой").userId(20L).build();
+        CouponOffer offer = createOffer(other, CouponStatus.WAITING_FOR_MERCHANT);
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(myMerchant));
+        when(couponOfferRepository.findById(100L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> partnerCouponService.approveMyCoupon(10L, 100L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("другому партнёру");
+
+        verifyNoInteractions(couponOfferService);
+    }
+
+    @Test
+    @DisplayName("approveMyCoupon: DRAFT → IllegalStateException")
+    void approveMyCoupon_draft_throws() {
+        Merchant merchant = createMerchant();
+        CouponOffer offer = createOffer(merchant, CouponStatus.DRAFT);
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+        when(couponOfferRepository.findById(100L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> partnerCouponService.approveMyCoupon(10L, 100L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("WAITING_FOR_MERCHANT");
+
+        verifyNoInteractions(couponOfferService);
+    }
+
+    // ==================== requestRevisionForMyCoupon ====================
+
+    @Test
+    @DisplayName("requestRevisionForMyCoupon: свой WAITING_FOR_MERCHANT → сохраняет trimmed comment")
+    void requestRevisionForMyCoupon_ownWaitingCoupon_delegatesWithTrimmedComment() {
+        Merchant merchant = createMerchant();
+        CouponOffer offer = createOffer(merchant, CouponStatus.WAITING_FOR_MERCHANT);
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+        when(couponOfferRepository.findById(100L)).thenReturn(Optional.of(offer));
+        when(couponOfferService.requestRevisionByMerchant(100L, "Исправить цену"))
+                .thenReturn(response(100L, "REVISION_REQUESTED"));
+
+        CouponOfferResponse result = partnerCouponService.requestRevisionForMyCoupon(
+                10L, 100L, "  Исправить цену  ");
+
+        assertThat(result.getStatus()).isEqualTo("REVISION_REQUESTED");
+        verify(couponOfferService).requestRevisionByMerchant(100L, "Исправить цену");
+    }
+
+    @Test
+    @DisplayName("requestRevisionForMyCoupon: пустой комментарий → IllegalArgumentException")
+    void requestRevisionForMyCoupon_blankComment_throws() {
+        Merchant merchant = createMerchant();
+        CouponOffer offer = createOffer(merchant, CouponStatus.WAITING_FOR_MERCHANT);
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+        when(couponOfferRepository.findById(100L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> partnerCouponService.requestRevisionForMyCoupon(10L, 100L, "   "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Комментарий");
+
+        verifyNoInteractions(couponOfferService);
     }
 
     // ==================== createPartnerRequest ====================
