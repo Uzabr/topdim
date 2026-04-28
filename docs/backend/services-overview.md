@@ -78,7 +78,7 @@ payment-service ──publish──▶ payment.exchange / payment.completed
 |---|---|---|---|
 | GET  | `/api/v1/super/staff` | ✅ SUPER_ADMIN | Список персонала |
 | POST | `/api/v1/super/admins` | ✅ SUPER_ADMIN | Назначение нового сотрудника |
-| PATCH | `/api/v1/super/users/{id}/role` | ✅ SUPER_ADMIN | Изменение роли |
+| PATCH | `/api/v1/super/users/{id}/role` | ✅ SUPER_ADMIN | Изменение роли (доступны: ADMIN, MODERATOR, PARTNER, PARTNER_CASHIER, USER) |
 | PATCH | `/api/v1/super/users/{id}/block` | ✅ SUPER_ADMIN | Блокировка/разблокировка |
 | GET  | `/api/v1/super/audit-logs` | ✅ SUPER_ADMIN | Аудит логи |
 
@@ -217,7 +217,7 @@ payment-service ──publish──▶ payment.exchange / payment.completed
 |---|---|---|---|
 | GET | `/api/v1/partner/coupons` | ✅ PARTNER | Мои купоны (фильтр по статусу) |
 | GET | `/api/v1/partner/coupons/{id}` | ✅ PARTNER | Детали моего купона |
-| POST | `/api/v1/partner/coupons` | ✅ PARTNER | Создать купон (статус LEAD) |
+| POST | `/api/v1/partner/coupons/requests` | ✅ PARTNER | Подать заявку на публикацию (создает LEAD) |
 | PUT | `/api/v1/partner/coupons/{id}` | ✅ PARTNER | Обновить купон (только DRAFT/REVISION_REQUESTED) |
 
 #### Bot API (`/api/v1/bot/coupons`)

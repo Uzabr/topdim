@@ -70,8 +70,8 @@ sequenceDiagram
 ### Документация
 | Файл | Действие |
 |------|----------|
-| `docs/execution-status.md` | Обновлён (9/9 stages done) |
-| `docs/purchase-flow-qa-checklist.md` | NEW |
+| `docs/archive/implemented/execution-status.md` | Обновлён (9/9 stages done) |
+| `docs/qa/purchase-flow-checklist.md` | NEW |
 
 ---
 

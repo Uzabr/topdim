@@ -25,7 +25,11 @@ npm install
 npm run dev     # Автоматически запустит сервер на http://localhost:5173
 ```
 
-## Структура проекта
+## Структура репозитория
+
+В монорепозитории лежат два React-приложения:
+- `frontend/web-app/` — основной клиентский портал (магазин, каталог, карта, базары). Запускается на порту `5173` (dev) / `80` (prod).
+- `frontend/admin-app/` — панель управления для `ADMIN`, `MODERATOR` и `PARTNER`. Запускается на порту `3001`. Документация ниже сфокусирована на `web-app`, так как он имеет более сложную структуру стейта и SSR/SEO-требования.
 
 ```text
 frontend/web-app/src/
@@ -54,7 +58,7 @@ frontend/web-app/src/
 ├── pages/           # Страницы Маршрутизатора
 │   ├── HomePage.tsx           # Главная страница
 │   ├── CouponCatalogPage.tsx  # Каталог с фильтрацией
-│   ├── CouponDetailPage.tsx   # Детальная страница купона
+│   ├── CouponDetailPage.tsx   # Детальная страница купона (состоит из Hero, Info, Variants, Reviews)
 │   ├── CartPage.tsx           # Корзина покупок
 │   ├── CheckoutPage.tsx       # Оформление заказа
 │   ├── ProfilePage.tsx        # Профиль и мои приобретенные купоны
@@ -92,7 +96,8 @@ frontend/web-app/src/
 // Base URL: извлекается из import.meta.env, либо fallback на "http://localhost:8080/api/v1"
 // Interceptors:
 //   - Request: Добавляет `Authorization: Bearer {token}` если юзер залогинен из localStorage
-//   - Response: Перехватчик ошибок для обработки Token Expiration и логики рефреша
+//   - Response: 
+//       - 401 Unauthorized: Проверяет, был ли у пользователя токен до этого. Если токена не было (гость), то перехватчик игнорирует ошибку, чтобы не прерывать просмотр публичных страниц (например, отзывов на купон). Если токен был — пытается сделать refresh или разлогинивает.
 ```
 
 ## State Management
