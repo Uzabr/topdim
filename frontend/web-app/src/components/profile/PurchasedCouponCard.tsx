@@ -1,4 +1,5 @@
 import { AlertCircle, CalendarClock, CheckCircle, Clock, Copy, MapPin, Phone, QrCode, Store } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import type { PurchasedCoupon } from '../../api/orders';
 import './PurchasedCouponCard.css';
 
@@ -41,6 +42,10 @@ function getStatusIcon(status: PurchasedCoupon['status']) {
   return <AlertCircle size={16} />;
 }
 
+function buildQrPayload(qrToken?: string): string {
+  return qrToken ? `TOPDIM-QR:${qrToken}` : '';
+}
+
 export default function PurchasedCouponCard({ coupon }: PurchasedCouponCardProps) {
   const isActive = coupon.status === 'ACTIVE';
 
@@ -75,6 +80,23 @@ export default function PurchasedCouponCard({ coupon }: PurchasedCouponCardProps
         ) : null}
       </div>
 
+      {isActive && coupon.qrToken ? (
+        <div className="purchased-coupon-card__qr-box">
+          <div className="purchased-coupon-card__qr-frame" aria-label="QR-код купона TopDim">
+            <QRCodeSVG
+              value={buildQrPayload(coupon.qrToken)}
+              size={164}
+              level="M"
+              includeMargin
+            />
+          </div>
+          <div className="purchased-coupon-card__qr-copy">
+            <span className="purchased-coupon-card__label">QR-код купона</span>
+            <p>Покажите этот QR-код кассиру партнёра для погашения.</p>
+          </div>
+        </div>
+      ) : null}
+
       <div className="purchased-coupon-card__usage">
         <div className="purchased-coupon-card__usage-item">
           <Store size={16} />
@@ -107,7 +129,7 @@ export default function PurchasedCouponCard({ coupon }: PurchasedCouponCardProps
         {coupon.qrToken ? (
           <div className="purchased-coupon-card__qr-note">
             <QrCode size={16} />
-            QR-токен доступен для проверки партнёром
+            QR-код доступен для проверки партнёром
           </div>
         ) : null}
       </div>

@@ -65,15 +65,16 @@ public class CouponOfferService {
     @Transactional(readOnly = true)
     public Page<CouponOfferResponse> getCatalog(Long categoryId, String search, String sortBy, int page, int size) {
         Pageable pageable = createPageable(sortBy, page, size);
+        LocalDateTime now = LocalDateTime.now();
 
         Page<CouponOffer> offers;
 
         if (search != null && !search.isBlank()) {
-            offers = couponOfferRepository.searchByTitleOrDescription(CouponStatus.ACTIVE, search, pageable);
+            offers = couponOfferRepository.searchPublicByTitleOrDescription(CouponStatus.ACTIVE, search, now, pageable);
         } else if (categoryId != null) {
-            offers = couponOfferRepository.findByStatusAndCategoryId(CouponStatus.ACTIVE, categoryId, pageable);
+            offers = couponOfferRepository.findPublicByStatusAndCategoryId(CouponStatus.ACTIVE, categoryId, now, pageable);
         } else {
-            offers = couponOfferRepository.findByStatus(CouponStatus.ACTIVE, pageable);
+            offers = couponOfferRepository.findPublicByStatus(CouponStatus.ACTIVE, now, pageable);
         }
 
         return offers.map(this::mapToResponse);
@@ -93,6 +94,11 @@ public class CouponOfferService {
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
         if (offer.getStatus() != CouponStatus.ACTIVE) {
+            throw new ResourceNotFoundException("Купон не найден");
+        }
+
+        // Hide coupons with expired purchase deadline from public view
+        if (offer.getBuyUntil() != null && offer.getBuyUntil().isBefore(LocalDateTime.now())) {
             throw new ResourceNotFoundException("Купон не найден");
         }
 
@@ -193,7 +199,7 @@ public class CouponOfferService {
     // @Cacheable(value = "topSelling", key = "#limit")
     @Transactional(readOnly = true)
     public List<CouponOfferResponse> getTopSelling(int limit) {
-        return couponOfferRepository.findTopSelling(PageRequest.of(0, limit))
+        return couponOfferRepository.findPublicTopSelling(LocalDateTime.now(), PageRequest.of(0, limit))
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());

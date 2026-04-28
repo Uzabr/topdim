@@ -38,8 +38,11 @@ class CouponOfferServiceTest {
     @Mock private CategoryRepository categoryRepository;
     @Mock private ReviewRepository reviewRepository;
     @Mock private CouponImageRepository couponImageRepository;
+    @Mock private CouponSaleRepository couponSaleRepository;
+    @Mock private CouponRedemptionLedgerRepository couponRedemptionLedgerRepository;
     @Mock private EntityManager entityManager;
     @Mock private TelegramPreviewService telegramPreviewService;
+    @Mock private CouponCoverFallbackService couponCoverFallbackService;
 
     @InjectMocks
     private CouponOfferService couponOfferService;
@@ -66,7 +69,7 @@ class CouponOfferServiceTest {
     void getCatalog_noFilter_returnsAllActive() {
         CouponOffer offer = createTestOffer();
         Page<CouponOffer> page = new PageImpl<>(List.of(offer));
-        when(couponOfferRepository.findByStatus(eq(CouponStatus.ACTIVE), any(Pageable.class))).thenReturn(page);
+        when(couponOfferRepository.findPublicByStatus(eq(CouponStatus.ACTIVE), any(java.time.LocalDateTime.class), any(Pageable.class))).thenReturn(page);
 
         Page<CouponOfferResponse> result = couponOfferService.getCatalog(null, null, "popular", 0, 20);
 
@@ -79,12 +82,12 @@ class CouponOfferServiceTest {
     void getCatalog_withCategory_filtersCorrectly() {
         CouponOffer offer = createTestOffer();
         Page<CouponOffer> page = new PageImpl<>(List.of(offer));
-        when(couponOfferRepository.findByStatusAndCategoryId(eq(CouponStatus.ACTIVE), eq(1L), any(Pageable.class))).thenReturn(page);
+        when(couponOfferRepository.findPublicByStatusAndCategoryId(eq(CouponStatus.ACTIVE), eq(1L), any(java.time.LocalDateTime.class), any(Pageable.class))).thenReturn(page);
 
         Page<CouponOfferResponse> result = couponOfferService.getCatalog(1L, null, "new", 0, 10);
 
         assertThat(result.getContent()).hasSize(1);
-        verify(couponOfferRepository).findByStatusAndCategoryId(eq(CouponStatus.ACTIVE), eq(1L), any());
+        verify(couponOfferRepository).findPublicByStatusAndCategoryId(eq(CouponStatus.ACTIVE), eq(1L), any(java.time.LocalDateTime.class), any(Pageable.class));
     }
 
     // ==================== GetById ====================
@@ -684,5 +687,51 @@ class CouponOfferServiceTest {
         assertThat(result.getMerchantAddress()).isEqualTo("\u0422\u0430\u0448\u043a\u0435\u043d\u0442, \u0443\u043b. \u0410\u043c\u0438\u0440\u0430 \u0422\u0435\u043c\u0443\u0440\u0430, 10");
         assertThat(result.getMerchantPhone()).isEqualTo("+998901234567");
         assertThat(result.getMerchantWorkingHours()).isEqualTo("10:00-22:00");
+    }
+
+    // ==================== BuyUntil Public Visibility ====================
+
+    @Test
+    @DisplayName("Каталог: публичный список запрашивает только ACTIVE купоны с buyUntil в будущем")
+    void getCatalog_noFilter_usesPublicVisibilityQuery() {
+        CouponOffer offer = createTestOffer();
+        Page<CouponOffer> page = new PageImpl<>(List.of(offer));
+        when(couponOfferRepository.findPublicByStatus(eq(CouponStatus.ACTIVE), any(java.time.LocalDateTime.class), any(Pageable.class)))
+                .thenReturn(page);
+
+        Page<CouponOfferResponse> result = couponOfferService.getCatalog(null, null, "popular", 0, 20);
+
+        assertThat(result.getContent()).hasSize(1);
+        verify(couponOfferRepository).findPublicByStatus(eq(CouponStatus.ACTIVE), any(java.time.LocalDateTime.class), any(Pageable.class));
+        verify(couponOfferRepository, never()).findByStatus(eq(CouponStatus.ACTIVE), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("Public getById: ACTIVE coupon with expired buyUntil returns not found")
+    void getById_activeButBuyUntilExpired_throwsNotFound() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.ACTIVE);
+        offer.setBuyUntil(java.time.LocalDateTime.now().minusMinutes(1));
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.getById(1L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("не найден");
+
+        verify(couponOfferRepository, never()).incrementViewCount(anyLong());
+    }
+
+    @Test
+    @DisplayName("Top selling: excludes ACTIVE coupons with expired buyUntil")
+    void getTopSelling_usesPublicTopSellingQuery() {
+        CouponOffer offer = createTestOffer();
+        when(couponOfferRepository.findPublicTopSelling(any(java.time.LocalDateTime.class), any(Pageable.class)))
+                .thenReturn(List.of(offer));
+
+        List<CouponOfferResponse> result = couponOfferService.getTopSelling(10);
+
+        assertThat(result).hasSize(1);
+        verify(couponOfferRepository).findPublicTopSelling(any(java.time.LocalDateTime.class), any(Pageable.class));
+        verify(couponOfferRepository, never()).findTopSelling(any(Pageable.class));
     }
 }
