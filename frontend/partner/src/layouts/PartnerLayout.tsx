@@ -1,27 +1,87 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Button } from 'antd';
+import { Layout, Menu, Button, Tag } from 'antd';
 import {
   DashboardOutlined, ScanOutlined, TeamOutlined,
   LogoutOutlined, ShopOutlined, GiftOutlined
 } from '@ant-design/icons';
+import { useMemo } from 'react';
 
 const { Header, Sider, Content } = Layout;
+
+interface PartnerContext {
+  role?: string;
+  canViewDashboard?: boolean;
+  canRedeem?: boolean;
+  staffName?: string;
+  merchantId?: number;
+  merchantLocationId?: number;
+}
+
+function getPartnerContext(): PartnerContext {
+  try {
+    const raw = localStorage.getItem('partnerContext');
+    return raw ? JSON.parse(raw) : { role: 'OWNER', canViewDashboard: true, canRedeem: true };
+  } catch {
+    return { role: 'OWNER', canViewDashboard: true, canRedeem: true };
+  }
+}
+
+function getUserName(): string {
+  try {
+    const raw = localStorage.getItem('user');
+    if (raw) {
+      const u = JSON.parse(raw);
+      return u.firstName || u.email || 'Партнёр';
+    }
+  } catch { /* ignore */ }
+  return 'Партнёр';
+}
 
 export default function PartnerLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const ctx = useMemo(() => getPartnerContext(), []);
+  const userName = useMemo(() => getUserName(), []);
 
-  const menuItems = [
-    { key: '/', icon: <DashboardOutlined />, label: 'Дашборд' },
-    { key: '/coupons', icon: <GiftOutlined />, label: 'Мои купоны' },
-    { key: '/redeem', icon: <ScanOutlined />, label: 'Погашение' },
-    { key: '/staff', icon: <TeamOutlined />, label: 'Сотрудники' },
-  ];
+  const isCashier = ctx.role === 'CASHIER';
+  const isOwner = ctx.role === 'OWNER' || (!ctx.role);
+
+  const menuItems = useMemo(() => {
+    const items = [];
+
+    // Dashboard — only for Owner and Manager
+    if (ctx.canViewDashboard || isOwner) {
+      items.push({ key: '/', icon: <DashboardOutlined />, label: 'Дашборд' });
+    }
+
+    // My Coupons — only for Owner and Manager
+    if (isOwner || ctx.canViewDashboard) {
+      items.push({ key: '/coupons', icon: <GiftOutlined />, label: 'Мои купоны' });
+    }
+
+    // Redeem — for all (cashier, manager, owner)
+    if (ctx.canRedeem !== false) {
+      items.push({ key: '/redeem', icon: <ScanOutlined />, label: 'Погашение' });
+    }
+
+    // Staff management — only for Owner
+    if (isOwner) {
+      items.push({ key: '/staff', icon: <TeamOutlined />, label: 'Сотрудники' });
+    }
+
+    return items;
+  }, [ctx, isOwner]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('partnerContext');
     navigate('/login');
   };
+
+  // Determine the role label
+  const roleLabel = isCashier ? 'Кассир' : isOwner ? 'Владелец' : ctx.role || 'Партнёр';
+  const roleColor = isCashier ? 'blue' : isOwner ? 'green' : 'purple';
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -52,8 +112,13 @@ export default function PartnerLayout() {
         <Header style={{
           background: '#fff', padding: '0 24px',
           display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
+          gap: 12,
           boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
         }}>
+          <span style={{ fontSize: 14, color: '#666' }}>
+            {ctx.staffName || userName}
+          </span>
+          <Tag color={roleColor} style={{ margin: 0 }}>{roleLabel}</Tag>
           <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout} id="logout-btn">
             Выйти
           </Button>

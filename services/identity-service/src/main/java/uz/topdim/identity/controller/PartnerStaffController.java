@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.identity.dto.PartnerStaffResponse;
+import uz.topdim.identity.dto.PartnerAccessContextResponse;
 import uz.topdim.identity.dto.CreateStaffRequest;
 import uz.topdim.identity.service.PartnerStaffService;
 import java.util.List;
@@ -19,6 +20,13 @@ import java.util.List;
 public class PartnerStaffController {
 
     private final PartnerStaffService partnerStaffService;
+
+    /** Возвращает контекст доступа текущего партнёра (роль, права, привязка). */
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<PartnerAccessContextResponse>> getMyAccessContext(
+            @RequestHeader("X-User-Id") Long userId) {
+        return ResponseEntity.ok(ApiResponse.success(partnerStaffService.resolveAccessContext(userId)));
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<PartnerStaffResponse>>> getMyStaff(

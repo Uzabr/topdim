@@ -581,7 +581,9 @@ public class CouponOfferService {
             case DRAFT -> current == CouponStatus.LEAD;
             case WAITING_FOR_MERCHANT -> current == CouponStatus.DRAFT
                     || current == CouponStatus.REVISION_REQUESTED;
-            case ACTIVE -> current == CouponStatus.WAITING_FOR_MERCHANT;
+            case ACTIVE -> current == CouponStatus.WAITING_FOR_MERCHANT
+                    || current == CouponStatus.PAUSED;
+            case PAUSED -> current == CouponStatus.ACTIVE;
             case REVISION_REQUESTED -> current == CouponStatus.WAITING_FOR_MERCHANT;
             case LEAD -> false;
             case SOLD_OUT -> false; // Устанавливается автоматически через registerSale

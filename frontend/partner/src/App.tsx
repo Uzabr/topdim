@@ -21,6 +21,32 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function SmartHome() {
+  try {
+    const raw = localStorage.getItem('partnerContext');
+    if (raw) {
+      const ctx = JSON.parse(raw);
+      if (ctx.role === 'CASHIER') {
+        return <Navigate to="/redeem" replace />;
+      }
+    }
+  } catch { /* ignore */ }
+  return <DashboardPage />;
+}
+
+function OwnerOnly({ children }: { children: React.ReactNode }) {
+  try {
+    const raw = localStorage.getItem('partnerContext');
+    if (raw) {
+      const ctx = JSON.parse(raw);
+      if (ctx.role === 'CASHIER') {
+        return <Navigate to="/redeem" replace />;
+      }
+    }
+  } catch { /* ignore */ }
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -46,10 +72,10 @@ export default function App() {
                   </PrivateRoute>
                 }
               >
-                <Route index element={<DashboardPage />} />
-                <Route path="coupons" element={<CouponsPage />} />
+                <Route index element={<SmartHome />} />
+                <Route path="coupons" element={<OwnerOnly><CouponsPage /></OwnerOnly>} />
                 <Route path="redeem" element={<RedeemPage />} />
-                <Route path="staff" element={<StaffPage />} />
+                <Route path="staff" element={<OwnerOnly><StaffPage /></OwnerOnly>} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
