@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Input, Button, Typography, message, Result, Space, Tag, Tabs } from 'antd';
+import { Card, Input, Button, Typography, message, Result, Space, Tag, Tabs, Alert } from 'antd';
 import { ScanOutlined, NumberOutlined, CheckCircleFilled } from '@ant-design/icons';
 import api from '../api';
 
@@ -12,6 +12,8 @@ interface RedeemResult {
   couponCode: string;
   merchantName: string;
   status: string;
+  expiresAt?: string;
+  usedAt?: string;
 }
 
 export default function RedeemPage() {
@@ -19,17 +21,21 @@ export default function RedeemPage() {
   const [qrToken, setQrToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RedeemResult | null>(null);
+  const [errorText, setErrorText] = useState('');
 
   const handlePinRedeem = async () => {
     if (!pinCode.trim()) return message.warning('Введите код купона');
     setLoading(true);
+    setErrorText('');
     try {
       const res = await api.post('/api/v1/partner/redemptions', { couponCode: pinCode.trim() });
       setResult(res.data.data);
       message.success('Купон погашен!');
       setPinCode('');
     } catch (err: any) {
-      message.error(err.response?.data?.message || 'Ошибка погашения');
+      const msg = err.response?.data?.message || 'Ошибка погашения';
+      setErrorText(msg);
+      message.error(msg);
     } finally {
       setLoading(false);
     }
@@ -38,13 +44,16 @@ export default function RedeemPage() {
   const handleQrRedeem = async () => {
     if (!qrToken.trim()) return message.warning('Введите QR-токен');
     setLoading(true);
+    setErrorText('');
     try {
       const res = await api.post('/api/v1/partner/redemptions/qr', { qrToken: qrToken.trim() });
       setResult(res.data.data);
       message.success('Купон погашен по QR!');
       setQrToken('');
     } catch (err: any) {
-      message.error(err.response?.data?.message || 'Ошибка погашения');
+      const msg = err.response?.data?.message || 'Ошибка погашения';
+      setErrorText(msg);
+      message.error(msg);
     } finally {
       setLoading(false);
     }
@@ -64,6 +73,8 @@ export default function RedeemPage() {
               <Text type="secondary">{result.optionTitle}</Text>
               <Tag color="blue" style={{ fontSize: 14 }}>{result.couponCode}</Tag>
               <Text type="secondary">Мерчант: {result.merchantName}</Text>
+              {result.usedAt ? <Text type="secondary">Использован: {new Date(result.usedAt).toLocaleString('ru-RU')}</Text> : null}
+              {result.expiresAt ? <Text type="secondary">Действовал до: {new Date(result.expiresAt).toLocaleString('ru-RU')}</Text> : null}
             </Space>
           }
           extra={
@@ -136,6 +147,15 @@ export default function RedeemPage() {
       <Title level={3} style={{ textAlign: 'center' }}>🎟️ Погашение купона</Title>
       <Card style={{ borderRadius: 16, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
         <Tabs items={tabItems} centered size="large" />
+        {errorText ? (
+          <Alert
+            style={{ marginTop: 16 }}
+            type="error"
+            showIcon
+            message="Не удалось погасить купон"
+            description={errorText}
+          />
+        ) : null}
       </Card>
     </div>
   );
