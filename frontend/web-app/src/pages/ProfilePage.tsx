@@ -1,29 +1,38 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, Clock, CheckCircle, Ticket, AlertCircle, ShoppingBag, Settings, HelpCircle } from 'lucide-react';
+import { LogOut, Clock, CheckCircle, Ticket, AlertCircle, ShoppingBag, Settings, HelpCircle, RotateCcw, MessageSquare, Bell } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { ordersApi } from '../api/orders';
+import type { PurchasedCoupon } from '../api/orders';
 import Tabs from '../components/ui/Tabs';
 import PurchasedCouponCard from '../components/profile/PurchasedCouponCard';
 import ProfileOverview from '../components/profile/ProfileOverview';
 import OrderHistorySection from '../components/profile/OrderHistorySection';
 import ProfileSettingsSection from '../components/profile/ProfileSettingsSection';
 import ProfileHelpSection from '../components/profile/ProfileHelpSection';
+import RefundsSection from '../components/profile/RefundsSection';
+import ComplaintsSection from '../components/profile/ComplaintsSection';
+import NotificationsSection from '../components/profile/NotificationsSection';
+import RefundRequestModal from '../components/profile/RefundRequestModal';
+import ComplaintModal from '../components/profile/ComplaintModal';
 import { useLocalePath } from '../hooks/useLocalePath';
 import './ProfilePage.css';
 
-export type ProfileTab = 'coupons' | 'orders' | 'profile' | 'help';
+export type ProfileTab = 'coupons' | 'orders' | 'profile' | 'help' | 'refunds' | 'complaints' | 'notifications';
 
 function getInitialTab(search: string): ProfileTab {
   const tab = new URLSearchParams(search).get('tab');
-  if (tab === 'orders' || tab === 'profile' || tab === 'help') return tab;
+  if (['orders', 'profile', 'help', 'refunds', 'complaints', 'notifications'].includes(tab || '')) return tab as ProfileTab;
   return 'coupons';
 }
 
 const SIDEBAR_ITEMS: { key: ProfileTab; label: string; icon: React.ReactNode }[] = [
   { key: 'coupons', label: 'Мои купоны', icon: <Ticket size={18} /> },
   { key: 'orders', label: 'Мои заказы', icon: <ShoppingBag size={18} /> },
+  { key: 'refunds', label: 'Возвраты', icon: <RotateCcw size={18} /> },
+  { key: 'complaints', label: 'Обращения', icon: <MessageSquare size={18} /> },
+  { key: 'notifications', label: 'Уведомления', icon: <Bell size={18} /> },
   { key: 'profile', label: 'Настройки', icon: <Settings size={18} /> },
   { key: 'help', label: 'Помощь', icon: <HelpCircle size={18} /> },
 ];
@@ -42,6 +51,10 @@ export default function ProfilePage() {
 
   const [activeHubTab, setActiveHubTab] = useState<ProfileTab>(() => getInitialTab(location.search));
   const [couponSubTab, setCouponSubTab] = useState('ACTIVE');
+
+  // Modal state
+  const [refundCoupon, setRefundCoupon] = useState<PurchasedCoupon | null>(null);
+  const [complaintCoupon, setComplaintCoupon] = useState<PurchasedCoupon | null>(null);
 
   const setTab = (tab: ProfileTab) => {
     setActiveHubTab(tab);
@@ -130,7 +143,12 @@ export default function ProfilePage() {
                     </div>
                   ) : (
                     coupons.map((coupon) => (
-                      <PurchasedCouponCard key={coupon.id} coupon={coupon} />
+                      <PurchasedCouponCard
+                        key={coupon.id}
+                        coupon={coupon}
+                        onRefundRequest={setRefundCoupon}
+                        onComplaintRequest={setComplaintCoupon}
+                      />
                     ))
                   )}
                 </div>
@@ -141,6 +159,27 @@ export default function ProfilePage() {
               <>
                 <h2 className="profile-section-title">Мои заказы</h2>
                 <OrderHistorySection onTabChange={setTab} />
+              </>
+            )}
+
+            {activeHubTab === 'refunds' && (
+              <>
+                <h2 className="profile-section-title">Возвраты</h2>
+                <RefundsSection />
+              </>
+            )}
+
+            {activeHubTab === 'complaints' && (
+              <>
+                <h2 className="profile-section-title">Обращения</h2>
+                <ComplaintsSection />
+              </>
+            )}
+
+            {activeHubTab === 'notifications' && (
+              <>
+                <h2 className="profile-section-title">Уведомления</h2>
+                <NotificationsSection />
               </>
             )}
 
@@ -192,6 +231,14 @@ export default function ProfilePage() {
           </div>
         </aside>
       </div>
+
+      {/* ═══ Modals ═══ */}
+      {refundCoupon && (
+        <RefundRequestModal coupon={refundCoupon} onClose={() => setRefundCoupon(null)} />
+      )}
+      {complaintCoupon && (
+        <ComplaintModal coupon={complaintCoupon} onClose={() => setComplaintCoupon(null)} />
+      )}
     </div>
   );
 }

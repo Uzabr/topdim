@@ -8,8 +8,23 @@
 
 .purchased-coupon-card--used,
 .purchased-coupon-card--expired,
-.purchased-coupon-card--cancelled {
+.purchased-coupon-card--cancelled,
+.purchased-coupon-card--refunded {
   opacity: 0.78;
+}
+
+.purchased-coupon-card--refund_pending {
+  border-color: rgba(255, 165, 0, 0.3);
+}
+
+.purchased-coupon-card__status--refund_pending {
+  color: #e67e22;
+  background: rgba(255, 165, 0, 0.14);
+}
+
+.purchased-coupon-card__status--refunded {
+  color: #2980b9;
+  background: rgba(52, 152, 219, 0.14);
 }
 
 .purchased-coupon-card__header {
@@ -47,6 +62,7 @@
   font-weight: 700;
   background: rgba(120, 120, 120, 0.12);
   white-space: nowrap;
+  font-size: 13px;
 }
 
 .purchased-coupon-card__status--active {
@@ -138,6 +154,56 @@
   background: rgba(251, 146, 60, 0.14);
 }
 
+.purchased-coupon-card__refund-info {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: var(--font-sm);
+  color: #2980b9;
+  background: rgba(52, 152, 219, 0.08);
+  border: 1px solid rgba(52, 152, 219, 0.15);
+}
+
+/* ── Action Buttons ── */
+.purchased-coupon-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.purchased-coupon-card__action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.purchased-coupon-card__action-btn--refund {
+  color: #e67e22;
+  border-color: rgba(255, 165, 0, 0.3);
+}
+
+.purchased-coupon-card__action-btn--refund:hover {
+  background: rgba(255, 165, 0, 0.08);
+}
+
+.purchased-coupon-card__action-btn--complaint {
+  color: var(--text-secondary);
+}
+
+.purchased-coupon-card__action-btn--complaint:hover {
+  background: var(--bg-muted);
+}
+
 /* ── QR Code Block ── */
 
 .purchased-coupon-card__qr-box {
@@ -182,3 +248,4 @@
     text-align: center;
   }
 }
+
