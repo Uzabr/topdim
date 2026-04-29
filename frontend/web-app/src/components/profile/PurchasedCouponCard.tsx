@@ -1,10 +1,12 @@
-import { AlertCircle, CalendarClock, CheckCircle, Clock, Copy, MapPin, Phone, QrCode, Store } from 'lucide-react';
+import { AlertCircle, CalendarClock, CheckCircle, Clock, Copy, MapPin, Phone, QrCode, Store, RotateCcw, MessageSquare, Loader2, Ban } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import type { PurchasedCoupon } from '../../api/orders';
 import './PurchasedCouponCard.css';
 
 interface PurchasedCouponCardProps {
   coupon: PurchasedCoupon;
+  onRefundRequest?: (coupon: PurchasedCoupon) => void;
+  onComplaintRequest?: (coupon: PurchasedCoupon) => void;
 }
 
 function formatDate(date?: string): string {
@@ -23,6 +25,10 @@ function getStatusLabel(status: PurchasedCoupon['status']): string {
       return 'Использовано';
     case 'EXPIRED':
       return 'Истекло';
+    case 'REFUND_PENDING':
+      return 'Возврат на рассмотрении';
+    case 'REFUNDED':
+      return 'Возвращён';
     case 'CANCELLED':
       return 'Отменено';
     default:
@@ -31,14 +37,11 @@ function getStatusLabel(status: PurchasedCoupon['status']): string {
 }
 
 function getStatusIcon(status: PurchasedCoupon['status']) {
-  if (status === 'ACTIVE') {
-    return <Clock size={16} />;
-  }
-
-  if (status === 'USED') {
-    return <CheckCircle size={16} />;
-  }
-
+  if (status === 'ACTIVE') return <Clock size={16} />;
+  if (status === 'USED') return <CheckCircle size={16} />;
+  if (status === 'REFUND_PENDING') return <Loader2 size={16} />;
+  if (status === 'REFUNDED') return <RotateCcw size={16} />;
+  if (status === 'CANCELLED') return <Ban size={16} />;
   return <AlertCircle size={16} />;
 }
 
@@ -46,12 +49,16 @@ function buildQrPayload(qrToken?: string): string {
   return qrToken ? `TOPDIM-QR:${qrToken}` : '';
 }
 
-export default function PurchasedCouponCard({ coupon }: PurchasedCouponCardProps) {
+export default function PurchasedCouponCard({ coupon, onRefundRequest, onComplaintRequest }: PurchasedCouponCardProps) {
   const isActive = coupon.status === 'ACTIVE';
 
   const copyCode = async () => {
     await navigator.clipboard.writeText(coupon.couponCode);
   };
+
+  // Determine available actions
+  const canRefund = coupon.status === 'ACTIVE';
+  const canComplain = ['ACTIVE', 'USED', 'EXPIRED'].includes(coupon.status);
 
   return (
     <article className={`purchased-coupon-card purchased-coupon-card--${coupon.status.toLowerCase()}`}>
@@ -124,9 +131,13 @@ export default function PurchasedCouponCard({ coupon }: PurchasedCouponCardProps
         <div>
           {coupon.status === 'USED' && coupon.usedAt
             ? `Использован: ${formatDate(coupon.usedAt)}`
+            : coupon.status === 'REFUNDED'
+            ? 'Возврат завершён'
+            : coupon.status === 'REFUND_PENDING'
+            ? 'Ожидает рассмотрения'
             : `Действует до: ${formatDate(coupon.expiresAt)}`}
         </div>
-        {coupon.qrToken ? (
+        {coupon.qrToken && isActive ? (
           <div className="purchased-coupon-card__qr-note">
             <QrCode size={16} />
             QR-код доступен для проверки партнёром
@@ -134,7 +145,30 @@ export default function PurchasedCouponCard({ coupon }: PurchasedCouponCardProps
         ) : null}
       </div>
 
-      {isActive ? (
+      {/* Refund expected date info */}
+      {coupon.status === 'REFUND_PENDING' && coupon.refundStatus === 'APPROVED_PROCESSING' && coupon.refundExpectedAt && (
+        <div className="purchased-coupon-card__refund-info">
+          Возврат одобрен. Деньги вернутся до {formatDate(coupon.refundExpectedAt)}.
+        </div>
+      )}
+
+      {/* Action buttons */}
+      {(canRefund || canComplain) && (onRefundRequest || onComplaintRequest) && (
+        <div className="purchased-coupon-card__actions">
+          {canRefund && onRefundRequest && (
+            <button className="purchased-coupon-card__action-btn purchased-coupon-card__action-btn--refund" onClick={() => onRefundRequest(coupon)}>
+              <RotateCcw size={14} /> Запросить возврат
+            </button>
+          )}
+          {canComplain && onComplaintRequest && (
+            <button className="purchased-coupon-card__action-btn purchased-coupon-card__action-btn--complaint" onClick={() => onComplaintRequest(coupon)}>
+              <MessageSquare size={14} /> Сообщить о проблеме
+            </button>
+          )}
+        </div>
+      )}
+
+      {isActive && !onRefundRequest ? (
         <div className="purchased-coupon-card__help">
           Если партнёр не принимает купон, покажите этот экран и обратитесь в поддержку TopDim.
         </div>

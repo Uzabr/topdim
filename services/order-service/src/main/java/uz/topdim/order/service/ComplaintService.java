@@ -10,11 +10,10 @@ import uz.topdim.common.events.NotificationEvent;
 import uz.topdim.order.dto.ComplaintResponse;
 import uz.topdim.order.dto.CreateComplaintRequest;
 import uz.topdim.order.dto.ResolveComplaintRequest;
-import uz.topdim.order.entity.Complaint;
-import uz.topdim.order.entity.ComplaintStatus;
-import uz.topdim.order.entity.Order;
+import uz.topdim.order.entity.*;
 import uz.topdim.order.repository.ComplaintRepository;
 import uz.topdim.order.repository.OrderRepository;
+import uz.topdim.order.repository.PurchasedCouponRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -22,26 +21,55 @@ public class ComplaintService {
 
     private final ComplaintRepository complaintRepository;
     private final OrderRepository orderRepository;
+    private final PurchasedCouponRepository purchasedCouponRepository;
     private final RabbitTemplate rabbitTemplate;
 
     @Transactional
     public Long createComplaint(Long userId, CreateComplaintRequest request) {
-        Order order = orderRepository.findById(request.getOrderId())
-                .orElseThrow(() -> new RuntimeException("Заказ не найден"));
+        Order order;
+        PurchasedCoupon purchasedCoupon = null;
 
-        if (!order.getUserId().equals(userId)) {
-            throw new RuntimeException("Нет доступа к этому заказу");
+        if (request.getPurchasedCouponId() != null) {
+            // Per-coupon complaint flow
+            purchasedCoupon = purchasedCouponRepository.findById(request.getPurchasedCouponId())
+                    .orElseThrow(() -> new RuntimeException("Купон не найден"));
+
+            if (!purchasedCoupon.getUserId().equals(userId)) {
+                throw new RuntimeException("Купон не принадлежит пользователю");
+            }
+
+            order = purchasedCoupon.getOrder();
+            if (order == null) {
+                throw new RuntimeException("Заказ для купона не найден");
+            }
+        } else if (request.getOrderId() != null) {
+            // Legacy order-level complaint flow
+            order = orderRepository.findById(request.getOrderId())
+                    .orElseThrow(() -> new RuntimeException("Заказ не найден"));
+
+            if (!order.getUserId().equals(userId)) {
+                throw new RuntimeException("Нет доступа к этому заказу");
+            }
+        } else {
+            throw new RuntimeException("Укажите purchasedCouponId или orderId");
         }
 
         Complaint complaint = Complaint.builder()
                 .userId(userId)
                 .order(order)
+                .purchasedCoupon(purchasedCoupon)
                 .subject(request.getSubject())
                 .description(request.getDescription())
                 .status(ComplaintStatus.PENDING)
                 .build();
-        
-        return complaintRepository.save(complaint).getId();
+
+        Long complaintId = complaintRepository.save(complaint).getId();
+
+        sendNotification(userId, "Обращение создано",
+                "Ваше обращение «" + request.getSubject() + "» принято и находится на рассмотрении.",
+                "INFO");
+
+        return complaintId;
     }
 
     @Transactional(readOnly = true)
@@ -88,7 +116,7 @@ public class ComplaintService {
     }
 
     private ComplaintResponse mapToResponse(Complaint c) {
-        return ComplaintResponse.builder()
+        ComplaintResponse.ComplaintResponseBuilder builder = ComplaintResponse.builder()
                 .id(c.getId())
                 .userId(c.getUserId())
                 .orderId(c.getOrder().getId())
@@ -96,7 +124,17 @@ public class ComplaintService {
                 .description(c.getDescription())
                 .status(c.getStatus())
                 .resolution(c.getResolution())
-                .createdAt(c.getCreatedAt())
-                .build();
+                .createdAt(c.getCreatedAt());
+
+        if (c.getPurchasedCoupon() != null) {
+            PurchasedCoupon pc = c.getPurchasedCoupon();
+            builder.purchasedCouponId(pc.getId())
+                    .couponTitle(pc.getCouponTitle())
+                    .optionTitle(pc.getOptionTitle())
+                    .couponCode(pc.getCouponCode())
+                    .merchantName(pc.getMerchantName());
+        }
+
+        return builder.build();
     }
 }

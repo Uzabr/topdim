@@ -1,5 +1,7 @@
 package uz.topdim.coupon.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -127,7 +129,7 @@ public class PartnerCouponService {
                 .category(category)
                 .oldPrice(request.getOldPrice())
                 .fromPrice(request.getFromPrice())
-                .discountPercent(request.getDiscountPercent())
+                .discountPercent(resolveDiscountPercent(request.getDiscountPercent(), request.getOldPrice(), request.getFromPrice()))
                 .coverImageUrl(coverImageUrl)
                 .buyUntil(request.getBuyUntil())
                 .useUntil(request.getUseUntil())
@@ -206,7 +208,7 @@ public class PartnerCouponService {
         offer.setCategory(category);
         offer.setOldPrice(request.getOldPrice());
         offer.setFromPrice(request.getFromPrice());
-        offer.setDiscountPercent(request.getDiscountPercent());
+        offer.setDiscountPercent(resolveDiscountPercent(request.getDiscountPercent(), request.getOldPrice(), request.getFromPrice()));
         offer.setCoverImageUrl(coverImageUrl);
         offer.setBuyUntil(request.getBuyUntil());
         offer.setUseUntil(request.getUseUntil());
@@ -324,5 +326,23 @@ public class PartnerCouponService {
                 .useUntil(offer.getUseUntil())
                 .giftAvailable(offer.isGiftAvailable())
                 .build();
+    }
+
+    /**
+     * Если discountPercent не указан, вычисляет автоматически из oldPrice и fromPrice.
+     * Формула: round((oldPrice - fromPrice) / oldPrice * 100)
+     */
+    private Integer resolveDiscountPercent(Integer explicit, BigDecimal oldPrice, BigDecimal fromPrice) {
+        if (explicit != null && explicit > 0) {
+            return explicit;
+        }
+        if (oldPrice != null && fromPrice != null && oldPrice.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal diff = oldPrice.subtract(fromPrice);
+            int calc = diff.multiply(BigDecimal.valueOf(100))
+                    .divide(oldPrice, 0, RoundingMode.HALF_UP)
+                    .intValue();
+            return Math.max(1, Math.min(calc, 99));
+        }
+        return null;
     }
 }

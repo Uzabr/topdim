@@ -20,6 +20,7 @@ import uz.topdim.order.dto.CartResponse;
 import uz.topdim.order.dto.OrderResponse;
 import uz.topdim.order.dto.PurchasedCouponResponse;
 import uz.topdim.order.dto.RedeemCouponResponse;
+import uz.topdim.order.dto.RefundRequestResponse;
 import uz.topdim.order.dto.ReviewEligibilityResponse;
 import uz.topdim.order.entity.*;
 import uz.topdim.order.repository.*;
@@ -555,15 +556,207 @@ public class OrderService {
         return coupon;
     }
 
-    // ==================== Refund Requests ====================
+    // ==================== Refund Requests (per-coupon) ====================
 
     /**
-     * Создаёт запрос на возврат средств.
-     *
-     * @param userId ID пользователя
-     * @param orderId ID заказа для возврата
-     * @param reason причина возврата
-     * @return созданный RefundRequest (статус: PENDING)
+     * Создаёт запрос на возврат per purchased coupon.
+     * Бизнес-правила:
+     * - только ACTIVE и не просроченный
+     * - только свой купон
+     * - блокировка дублей (PENDING, APPROVED_PROCESSING, REFUNDED)
+     * - переводит купон в REFUND_PENDING
+     */
+    @Transactional
+    public RefundRequestResponse createCouponRefundRequest(Long userId, Long purchasedCouponId, String reason) {
+        expireOverduePurchasedCoupons();
+
+        PurchasedCoupon coupon = purchasedCouponRepository.findById(purchasedCouponId)
+                .orElseThrow(() -> new IllegalArgumentException("Купон не найден"));
+
+        if (!coupon.getUserId().equals(userId)) {
+            throw new IllegalStateException("Купон не принадлежит пользователю");
+        }
+
+        // Check expiry first
+        if (coupon.getExpiresAt() != null && coupon.getExpiresAt().isBefore(LocalDateTime.now())) {
+            if (coupon.getStatus() == PurchasedCouponStatus.ACTIVE) {
+                coupon.setStatus(PurchasedCouponStatus.EXPIRED);
+                purchasedCouponRepository.save(coupon);
+            }
+            throw new IllegalStateException("Возврат доступен только для активного неиспользованного купона");
+        }
+
+        if (coupon.getStatus() != PurchasedCouponStatus.ACTIVE) {
+            throw new IllegalStateException("Возврат доступен только для активного неиспользованного купона");
+        }
+
+        // Block duplicate
+        boolean hasDuplicate = refundRequestRepository.existsByPurchasedCouponIdAndStatusIn(
+                purchasedCouponId,
+                List.of(RefundRequest.RefundStatus.PENDING,
+                        RefundRequest.RefundStatus.APPROVED_PROCESSING,
+                        RefundRequest.RefundStatus.REFUNDED)
+        );
+        if (hasDuplicate) {
+            throw new IllegalStateException("Заявка на возврат для этого купона уже существует");
+        }
+
+        // Calculate refund amount from order item
+        BigDecimal refundAmount = BigDecimal.ZERO;
+        if (coupon.getOrder() != null && coupon.getOrder().getItems() != null) {
+            refundAmount = coupon.getOrder().getItems().stream()
+                    .filter(i -> i.getCouponOfferId().equals(coupon.getCouponOfferId())
+                            && i.getCouponOptionId().equals(coupon.getCouponOptionId()))
+                    .map(OrderItem::getUnitPrice)
+                    .findFirst()
+                    .orElse(BigDecimal.ZERO);
+        }
+
+        RefundRequest refund = RefundRequest.builder()
+                .order(coupon.getOrder())
+                .purchasedCoupon(coupon)
+                .userId(userId)
+                .reason(reason.trim())
+                .refundAmount(refundAmount)
+                .build();
+
+        coupon.setStatus(PurchasedCouponStatus.REFUND_PENDING);
+        purchasedCouponRepository.save(coupon);
+        refund = refundRequestRepository.save(refund);
+
+        sendNotification(userId, "Заявка на возврат создана",
+                "Ваша заявка на возврат купона «" + coupon.getCouponTitle() + "» принята и находится на рассмотрении.",
+                "INFO");
+
+        return mapToRefundResponse(refund);
+    }
+
+    /**
+     * Получает запросы на возврат пользователя (новая версия, sorted DESC).
+     */
+    @Transactional(readOnly = true)
+    public List<RefundRequestResponse> getUserCouponRefundRequests(Long userId) {
+        return refundRequestRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::mapToRefundResponse)
+                .toList();
+    }
+
+    /**
+     * Получает запросы на возврат для админа с пагинацией.
+     */
+    @Transactional(readOnly = true)
+    public Page<RefundRequestResponse> getAdminRefundRequests(RefundRequest.RefundStatus status, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size);
+        Page<RefundRequest> result = status != null
+                ? refundRequestRepository.findByStatusOrderByCreatedAtDesc(status, pageable)
+                : refundRequestRepository.findAllByOrderByCreatedAtDesc(pageable);
+        return result.map(this::mapToRefundResponse);
+    }
+
+    /**
+     * Одобряет возврат (PENDING → APPROVED_PROCESSING).
+     * Купон остаётся REFUND_PENDING.
+     * Устанавливает expectedRefundAt = +5 рабочих дней.
+     */
+    @Transactional
+    public RefundRequestResponse approveRefundRequest(Long requestId, String adminComment) {
+        RefundRequest request = refundRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Запрос не найден"));
+
+        if (request.getStatus() != RefundRequest.RefundStatus.PENDING) {
+            throw new IllegalStateException("Одобрение возможно только из статуса PENDING");
+        }
+
+        request.setStatus(RefundRequest.RefundStatus.APPROVED_PROCESSING);
+        request.setAdminComment(adminComment);
+        request.setResolvedAt(LocalDateTime.now());
+        request.setExpectedRefundAt(addWorkingDays(LocalDateTime.now(), 5));
+        refundRequestRepository.save(request);
+
+        sendNotification(request.getUserId(), "Возврат одобрен",
+                "Ваш возврат за купон «" + getCouponTitle(request) + "» одобрен. Деньги вернутся в течение до 5 рабочих дней.",
+                "SUCCESS");
+
+        return mapToRefundResponse(request);
+    }
+
+    /**
+     * Отклоняет возврат (PENDING → REJECTED).
+     * Возвращает купон в ACTIVE (если не истёк) или EXPIRED.
+     */
+    @Transactional
+    public RefundRequestResponse rejectRefundRequest(Long requestId, String adminComment) {
+        RefundRequest request = refundRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Запрос не найден"));
+
+        if (request.getStatus() != RefundRequest.RefundStatus.PENDING) {
+            throw new IllegalStateException("Отклонение возможно только из статуса PENDING");
+        }
+
+        request.setStatus(RefundRequest.RefundStatus.REJECTED);
+        request.setAdminComment(adminComment);
+        request.setResolvedAt(LocalDateTime.now());
+        refundRequestRepository.save(request);
+
+        // Restore coupon status
+        PurchasedCoupon coupon = request.getPurchasedCoupon();
+        if (coupon != null && coupon.getStatus() == PurchasedCouponStatus.REFUND_PENDING) {
+            if (coupon.getExpiresAt() != null && coupon.getExpiresAt().isBefore(LocalDateTime.now())) {
+                coupon.setStatus(PurchasedCouponStatus.EXPIRED);
+            } else {
+                coupon.setStatus(PurchasedCouponStatus.ACTIVE);
+            }
+            purchasedCouponRepository.save(coupon);
+        }
+
+        sendNotification(request.getUserId(), "Возврат отклонён",
+                "Ваш возврат за купон «" + getCouponTitle(request) + "» был отклонён."
+                        + (adminComment != null ? " Комментарий: " + adminComment : ""),
+                "INFO");
+
+        return mapToRefundResponse(request);
+    }
+
+    /**
+     * Завершает возврат (APPROVED_PROCESSING → REFUNDED).
+     * Помечает купон как REFUNDED.
+     */
+    @Transactional
+    public RefundRequestResponse completeRefundRequest(Long requestId, String adminComment) {
+        RefundRequest request = refundRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Запрос не найден"));
+
+        if (request.getStatus() != RefundRequest.RefundStatus.APPROVED_PROCESSING) {
+            throw new IllegalStateException("Завершение возможно только из статуса APPROVED_PROCESSING");
+        }
+
+        request.setStatus(RefundRequest.RefundStatus.REFUNDED);
+        request.setCompletedAt(LocalDateTime.now());
+        if (request.getResolvedAt() == null) {
+            request.setResolvedAt(LocalDateTime.now());
+        }
+        if (adminComment != null && !adminComment.isBlank()) {
+            request.setAdminComment(adminComment);
+        }
+        refundRequestRepository.save(request);
+
+        PurchasedCoupon coupon = request.getPurchasedCoupon();
+        if (coupon != null) {
+            coupon.setStatus(PurchasedCouponStatus.REFUNDED);
+            purchasedCouponRepository.save(coupon);
+        }
+
+        sendNotification(request.getUserId(), "Возврат завершён",
+                "Возврат за купон «" + getCouponTitle(request) + "» завершён. Деньги зачислены.",
+                "SUCCESS");
+
+        return mapToRefundResponse(request);
+    }
+
+    // ==================== Legacy Refund (order-level, backward compat) ====================
+
+    /**
+     * Создаёт запрос на возврат средств (legacy order-level).
      */
     @Transactional
     public RefundRequest createRefundRequest(Long userId, Long orderId, String reason) {
@@ -582,10 +775,7 @@ public class OrderService {
     }
 
     /**
-     * Получает запросы на возврат пользователя.
-     *
-     * @param userId ID пользователя
-     * @return список RefundRequest
+     * Получает запросы на возврат пользователя (legacy).
      */
     @Transactional(readOnly = true)
     public List<RefundRequest> getUserRefundRequests(Long userId) {
@@ -593,22 +783,76 @@ public class OrderService {
     }
 
     /**
-     * Одобряет или отклоняет запрос на возврат (Admin).
-     *
-     * @param requestId ID запроса на возврат
-     * @param approved true = одобрить, false = отклонить
-     * @param adminComment комментарий администратора
-     * @return обновлённый RefundRequest
+     * Одобряет или отклоняет запрос на возврат (legacy Admin).
      */
     @Transactional
     public RefundRequest resolveRefundRequest(Long requestId, boolean approved, String adminComment) {
         RefundRequest request = refundRequestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Запрос не найден"));
 
-        request.setStatus(approved ? RefundRequest.RefundStatus.APPROVED : RefundRequest.RefundStatus.REJECTED);
+        // Legacy only supports APPROVED/REJECTED (old status names mapped)
+        request.setStatus(approved ? RefundRequest.RefundStatus.APPROVED_PROCESSING : RefundRequest.RefundStatus.REJECTED);
         request.setAdminComment(adminComment);
         request.setResolvedAt(LocalDateTime.now());
         return refundRequestRepository.save(request);
+    }
+
+    // ==================== Refund Helpers ====================
+
+    private LocalDateTime addWorkingDays(LocalDateTime start, int workingDays) {
+        LocalDateTime result = start;
+        int added = 0;
+        while (added < workingDays) {
+            result = result.plusDays(1);
+            java.time.DayOfWeek day = result.getDayOfWeek();
+            if (day != java.time.DayOfWeek.SATURDAY && day != java.time.DayOfWeek.SUNDAY) {
+                added++;
+            }
+        }
+        return result;
+    }
+
+    private String getCouponTitle(RefundRequest request) {
+        if (request.getPurchasedCoupon() != null) {
+            return request.getPurchasedCoupon().getCouponTitle();
+        }
+        return "купон";
+    }
+
+    private void sendNotification(Long userId, String title, String message, String type) {
+        try {
+            uz.topdim.common.events.NotificationEvent event = uz.topdim.common.events.NotificationEvent.builder()
+                    .userId(userId)
+                    .title(title)
+                    .message(message)
+                    .type(type)
+                    .build();
+            rabbitTemplate.convertAndSend("notification.exchange", "notification.sent", event);
+        } catch (Exception e) {
+            log.warn("Не удалось отправить уведомление userId={}: {}", userId, e.getMessage());
+        }
+    }
+
+    private RefundRequestResponse mapToRefundResponse(RefundRequest r) {
+        PurchasedCoupon coupon = r.getPurchasedCoupon();
+        return RefundRequestResponse.builder()
+                .id(r.getId())
+                .orderId(r.getOrder() != null ? r.getOrder().getId() : null)
+                .purchasedCouponId(coupon != null ? coupon.getId() : null)
+                .userId(r.getUserId())
+                .couponTitle(coupon != null ? coupon.getCouponTitle() : null)
+                .optionTitle(coupon != null ? coupon.getOptionTitle() : null)
+                .couponCode(coupon != null ? coupon.getCouponCode() : null)
+                .merchantName(coupon != null ? coupon.getMerchantName() : null)
+                .refundAmount(r.getRefundAmount())
+                .reason(r.getReason())
+                .status(r.getStatus())
+                .adminComment(r.getAdminComment())
+                .createdAt(r.getCreatedAt())
+                .resolvedAt(r.getResolvedAt())
+                .expectedRefundAt(r.getExpectedRefundAt())
+                .completedAt(r.getCompletedAt())
+                .build();
     }
 
     // ==================== Helpers ====================
@@ -717,7 +961,7 @@ public class OrderService {
      * Исключает JPA-связи (Order) из сериализации.
      */
     public PurchasedCouponResponse mapToCouponResponse(PurchasedCoupon coupon) {
-        return PurchasedCouponResponse.builder()
+        PurchasedCouponResponse.PurchasedCouponResponseBuilder builder = PurchasedCouponResponse.builder()
                 .id(coupon.getId())
                 .couponOfferId(coupon.getCouponOfferId())
                 .couponOptionId(coupon.getCouponOptionId())
@@ -733,8 +977,19 @@ public class OrderService {
                 .merchantWorkingHours(coupon.getMerchantWorkingHours())
                 .purchasedAt(coupon.getPurchasedAt())
                 .expiresAt(coupon.getExpiresAt())
-                .usedAt(coupon.getUsedAt())
-                .build();
+                .usedAt(coupon.getUsedAt());
+
+        // Enrich with latest refund request data
+        List<RefundRequest> refunds = refundRequestRepository
+                .findByPurchasedCouponIdOrderByCreatedAtDesc(coupon.getId());
+        if (!refunds.isEmpty()) {
+            RefundRequest latest = refunds.get(0);
+            builder.refundRequestId(latest.getId())
+                    .refundStatus(latest.getStatus().name())
+                    .refundExpectedAt(latest.getExpectedRefundAt());
+        }
+
+        return builder.build();
     }
 
     /**

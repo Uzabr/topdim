@@ -25,6 +25,10 @@ public class Complaint {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "purchased_coupon_id")
+    private PurchasedCoupon purchasedCoupon;
+
     @Column(nullable = false)
     private String subject;
 

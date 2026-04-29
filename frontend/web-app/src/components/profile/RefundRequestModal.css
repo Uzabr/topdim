@@ -1,0 +1,17 @@
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000;padding:var(--space-lg);animation:fadeIn .15s ease}
+.modal-card{width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:var(--space-xl)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)}
+.modal-header h3{margin:0;font-size:var(--font-xl);font-weight:800}
+.modal-close{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px}
+.modal-coupon-info{display:flex;flex-direction:column;gap:4px;padding:var(--space-md);background:var(--bg-base);border-radius:var(--radius-md);margin-bottom:var(--space-md);border:1px solid var(--border)}
+.modal-coupon-title{font-weight:700;font-size:var(--font-sm)}
+.modal-coupon-code{font-family:monospace;font-weight:800;letter-spacing:.1em;color:var(--text-secondary);font-size:var(--font-sm)}
+.modal-coupon-merchant{font-size:12px;color:var(--text-muted)}
+.modal-warning{display:flex;align-items:flex-start;gap:var(--space-sm);padding:var(--space-md);background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.2);border-radius:var(--radius-md);margin-bottom:var(--space-lg);font-size:var(--font-sm);color:#e67e22}
+.modal-label{display:block;font-size:var(--font-sm);font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+.modal-textarea{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:var(--font-base);font-family:inherit;background:var(--bg-base);color:var(--text-primary);resize:vertical;min-height:80px}
+.modal-textarea:focus{outline:none;border-color:var(--primary)}
+.modal-char-count{text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px}
+.modal-error{color:var(--danger);font-size:var(--font-sm);padding:var(--space-sm);background:rgba(255,59,48,.06);border-radius:var(--radius-md);margin-top:var(--space-sm)}
+.modal-actions{display:flex;gap:var(--space-sm);justify-content:flex-end;margin-top:var(--space-lg)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}

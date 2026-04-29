@@ -111,6 +111,19 @@ export default function CouponRequestFormPage() {
     setUploadedUrls(prev => prev.filter((_, i) => i !== idx));
   };
 
+  /** Автоматический расчёт % скидки из старой и новой цены. */
+  const autoCalcDiscount = () => {
+    // setTimeout чтобы дать antd обновить значения формы
+    setTimeout(() => {
+      const oldPrice = form.getFieldValue('oldPrice');
+      const fromPrice = form.getFieldValue('fromPrice');
+      if (oldPrice && fromPrice && oldPrice > 0 && fromPrice < oldPrice) {
+        const pct = Math.round(((oldPrice - fromPrice) / oldPrice) * 100);
+        form.setFieldValue('discountPercent', Math.max(1, Math.min(pct, 99)));
+      }
+    }, 0);
+  };
+
   const onFinish = (values: any) => {
     const payload = {
       title: values.title,
@@ -118,7 +131,7 @@ export default function CouponRequestFormPage() {
       offerDescription: values.offerDescription,
       oldPrice: values.oldPrice,
       fromPrice: values.fromPrice,
-      discountPercent: values.discountPercent || null,
+      discountPercent: values.discountPercent && values.discountPercent > 0 ? values.discountPercent : null,
       buyUntil: values.buyUntil?.toISOString(),
       useUntil: values.useUntil?.toISOString(),
       giftAvailable: values.giftAvailable || false,
@@ -180,17 +193,29 @@ export default function CouponRequestFormPage() {
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item name="oldPrice" label="Обычная цена" rules={[{ required: true, message: 'Укажите цену' }]}>
-                <InputNumber min={1} style={{ width: '100%' }} placeholder="100 000" addonAfter="сум" />
+                <InputNumber
+                  min={1}
+                  style={{ width: '100%' }}
+                  placeholder="100 000"
+                  addonAfter="сум"
+                  onChange={() => autoCalcDiscount()}
+                />
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item name="fromPrice" label="Цена по акции" rules={[{ required: true, message: 'Укажите цену' }]}>
-                <InputNumber min={1} style={{ width: '100%' }} placeholder="50 000" addonAfter="сум" />
+                <InputNumber
+                  min={1}
+                  style={{ width: '100%' }}
+                  placeholder="50 000"
+                  addonAfter="сум"
+                  onChange={() => autoCalcDiscount()}
+                />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="discountPercent" label="Скидка %">
-                <InputNumber min={1} max={99} style={{ width: '100%' }} placeholder="50" addonAfter="%" />
+              <Form.Item name="discountPercent" label="Скидка %" help="Рассчитывается автоматически">
+                <InputNumber min={1} max={99} style={{ width: '100%' }} placeholder="авто" addonAfter="%" />
               </Form.Item>
             </Col>
           </Row>
@@ -230,54 +255,52 @@ export default function CouponRequestFormPage() {
             <Card
               key={opt.key}
               size="small"
+              title={`Вариант ${idx + 1}`}
               style={{ marginBottom: 12, background: '#fafafa', borderRadius: 8 }}
               extra={options.length > 1 ? (
                 <Button type="text" danger icon={<DeleteOutlined />} onClick={() => removeOption(opt.key)} />
               ) : null}
             >
-              <Row gutter={12}>
-                <Col span={8}>
-                  <Form.Item label={idx === 0 ? "Название" : undefined} style={{ marginBottom: 8 }}>
-                    <Input
-                      placeholder="Базовый / VIP"
-                      value={opt.title}
-                      onChange={e => updateOption(opt.key, 'title', e.target.value)}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={5}>
-                  <Form.Item label={idx === 0 ? "Обычная цена" : undefined} style={{ marginBottom: 8 }}>
-                    <InputNumber
-                      min={1} style={{ width: '100%' }}
-                      placeholder="100 000"
-                      value={opt.regularPrice}
-                      onChange={v => updateOption(opt.key, 'regularPrice', v)}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={5}>
-                  <Form.Item label={idx === 0 ? "Цена по купону" : undefined} style={{ marginBottom: 8 }}>
-                    <InputNumber
-                      min={1} style={{ width: '100%' }}
-                      placeholder="50 000"
-                      value={opt.couponPrice}
-                      onChange={v => updateOption(opt.key, 'couponPrice', v)}
-                    />
-                  </Form.Item>
+              <Row gutter={16} align="top">
+                <Col span={6}>
+                  <div style={{ marginBottom: 4, fontSize: 13, color: '#555' }}>Название</div>
+                  <Input
+                    placeholder="Базовый / VIP"
+                    value={opt.title}
+                    onChange={e => updateOption(opt.key, 'title', e.target.value)}
+                  />
                 </Col>
                 <Col span={6}>
-                  <Form.Item label={idx === 0 ? "Лимит" : undefined} style={{ marginBottom: 8 }}>
-                    <InputNumber
-                      min={1} style={{ width: '100%' }}
-                      placeholder="100"
-                      value={opt.quantityLimit}
-                      onChange={v => updateOption(opt.key, 'quantityLimit', v)}
-                    />
-                  </Form.Item>
+                  <div style={{ marginBottom: 4, fontSize: 13, color: '#555' }}>Обычная цена (сум)</div>
+                  <InputNumber
+                    min={1} style={{ width: '100%' }}
+                    placeholder="100 000"
+                    value={opt.regularPrice}
+                    onChange={v => updateOption(opt.key, 'regularPrice', v)}
+                  />
+                </Col>
+                <Col span={6}>
+                  <div style={{ marginBottom: 4, fontSize: 13, color: '#555' }}>Цена по купону (сум)</div>
+                  <InputNumber
+                    min={1} style={{ width: '100%' }}
+                    placeholder="50 000"
+                    value={opt.couponPrice}
+                    onChange={v => updateOption(opt.key, 'couponPrice', v)}
+                  />
+                </Col>
+                <Col span={6}>
+                  <div style={{ marginBottom: 4, fontSize: 13, color: '#555' }}>Лимит (шт.)</div>
+                  <InputNumber
+                    min={1} style={{ width: '100%' }}
+                    placeholder="100"
+                    value={opt.quantityLimit}
+                    onChange={v => updateOption(opt.key, 'quantityLimit', v)}
+                  />
                 </Col>
               </Row>
             </Card>
           ))}
+
 
           <Button type="dashed" block icon={<PlusOutlined />} onClick={addOption} style={{ marginBottom: 24 }}>
             Добавить вариант

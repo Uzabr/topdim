@@ -60,6 +60,7 @@ const allMenuItems: MenuItem[] = [
     label: 'Поддержка',
     roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'],
     children: [
+      { key: '/support/refunds', icon: <ShoppingCartOutlined />, label: 'Возвраты', roles: ['ADMIN', 'SUPER_ADMIN'] },
       { key: '/support/complaints', icon: <CommentOutlined />, label: 'Жалобы', roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'] },
       { key: '/support/reviews', icon: <StarOutlined />, label: 'Отзывы', roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'] },
     ],

@@ -59,7 +59,7 @@ export interface PurchasedCoupon {
   optionTitle: string;
   couponCode: string;
   qrToken: string;
-  status: 'ACTIVE' | 'USED' | 'EXPIRED' | 'CANCELLED';
+  status: 'ACTIVE' | 'USED' | 'EXPIRED' | 'REFUND_PENDING' | 'REFUNDED' | 'CANCELLED';
   merchantId?: number;
   merchantName?: string;
   merchantAddress?: string;
@@ -68,6 +68,9 @@ export interface PurchasedCoupon {
   purchasedAt: string;
   expiresAt?: string;
   usedAt?: string;
+  refundRequestId?: number;
+  refundStatus?: string;
+  refundExpectedAt?: string;
 }
 
 export interface PagedResponse<T> {

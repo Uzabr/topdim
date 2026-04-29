@@ -32,4 +32,9 @@ public class PurchasedCouponResponse {
     private LocalDateTime purchasedAt;
     private LocalDateTime expiresAt;
     private LocalDateTime usedAt;
+
+    // Refund fields (null when no refund request)
+    private Long refundRequestId;
+    private String refundStatus;
+    private LocalDateTime refundExpectedAt;
 }

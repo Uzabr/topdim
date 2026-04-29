@@ -173,9 +173,31 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success("Купон использован", orderService.mapToRedeemResponse(coupon)));
     }
 
-    // ==================== Refund Requests ====================
+    // ==================== Per-Coupon Refund (new) ====================
 
-    /** Создать запрос на возврат. */
+    /** Создать заявку на возврат per-coupon. */
+    @PostMapping("/api/v1/refunds")
+    public ResponseEntity<ApiResponse<RefundRequestResponse>> createCouponRefund(
+            @RequestHeader("X-User-Id") Long userId,
+            @Valid @RequestBody CreateCouponRefundRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
+                "Заявка на возврат создана",
+                orderService.createCouponRefundRequest(userId, request.getPurchasedCouponId(), request.getReason())
+        ));
+    }
+
+    /** Мои заявки на возврат (per-coupon). */
+    @GetMapping("/api/v1/refunds/my")
+    public ResponseEntity<ApiResponse<List<RefundRequestResponse>>> getMyRefunds(
+            @RequestHeader("X-User-Id") Long userId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(orderService.getUserCouponRefundRequests(userId)));
+    }
+
+    // ==================== Legacy Refund (order-level) ====================
+
+    /** Создать запрос на возврат (legacy). */
     @PostMapping("/api/v1/orders/{orderId}/refund")
     public ResponseEntity<ApiResponse<RefundRequest>> createRefund(
             @RequestHeader("X-User-Id") Long userId,
@@ -186,7 +208,7 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Запрос на возврат создан", refund));
     }
 
-    /** Мои запросы на возврат. */
+    /** Мои запросы на возврат (legacy). */
     @GetMapping("/api/v1/orders/refunds")
     public ResponseEntity<ApiResponse<List<RefundRequest>>> getUserRefunds(
             @RequestHeader("X-User-Id") Long userId
@@ -194,7 +216,7 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(orderService.getUserRefundRequests(userId)));
     }
 
-    // ==================== Admin ====================
+    // ==================== Admin Refunds ====================
 
     /** Все заказы с пагинацией и фильтром (Admin). */
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
@@ -214,7 +236,57 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(orderService.getOrderByIdAdmin(id)));
     }
 
-    /** Решение по возврату (Admin). */
+    /** Список заявок на возврат с фильтром по статусу (Admin). */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @GetMapping("/api/v1/admin/refunds")
+    public ResponseEntity<ApiResponse<Page<RefundRequestResponse>>> getAdminRefunds(
+            @RequestParam(required = false) RefundRequest.RefundStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(orderService.getAdminRefundRequests(status, page, size)));
+    }
+
+    /** Одобрить возврат (Admin). */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PatchMapping("/api/v1/admin/refunds/{id}/approve")
+    public ResponseEntity<ApiResponse<RefundRequestResponse>> approveRefund(
+            @PathVariable Long id,
+            @RequestBody RefundDecisionRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Возврат одобрен",
+                orderService.approveRefundRequest(id, request.getAdminComment())
+        ));
+    }
+
+    /** Отклонить возврат (Admin). */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PatchMapping("/api/v1/admin/refunds/{id}/reject")
+    public ResponseEntity<ApiResponse<RefundRequestResponse>> rejectRefund(
+            @PathVariable Long id,
+            @RequestBody RefundDecisionRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Возврат отклонён",
+                orderService.rejectRefundRequest(id, request.getAdminComment())
+        ));
+    }
+
+    /** Завершить возврат (Admin). */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PatchMapping("/api/v1/admin/refunds/{id}/complete")
+    public ResponseEntity<ApiResponse<RefundRequestResponse>> completeRefund(
+            @PathVariable Long id,
+            @RequestBody RefundDecisionRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Возврат завершён",
+                orderService.completeRefundRequest(id, request.getAdminComment())
+        ));
+    }
+
+    /** Решение по возврату — legacy (Admin). */
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PatchMapping("/api/v1/admin/refunds/{id}")
     public ResponseEntity<ApiResponse<RefundRequest>> resolveRefund(
