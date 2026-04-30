@@ -224,22 +224,24 @@ function BentoCard({ children, className = "" }: { children: React.ReactNode, cl
 export default function PartnerLandingPage() {
   return (
     <ReactLenis root options={{ lerp: 0.05, duration: 2, smoothWheel: true }}>
-      <div className="canvas-container">
-        <Canvas camera={{ position: [0, 0, 5], fov: 60 }} dpr={[1, 2]}>
-          <ParticleGalaxy />
-        </Canvas>
-      </div>
+      <div className="partner-page-root">
+        <div className="canvas-container">
+          <Canvas camera={{ position: [0, 0, 5], fov: 60 }} dpr={[1, 2]}>
+            <ParticleGalaxy />
+          </Canvas>
+        </div>
 
-      <NavBar />
+        <NavBar />
 
-      <div className="premium-lp">
-        <HeroSection />
-        <ImpactMarquee />
-        <CategoriesSection />
-        <StorySection />
-        <BentoSection />
-        <FormSection />
-        <FaqSection />
+        <div className="premium-lp">
+          <HeroSection />
+          <ImpactMarquee />
+          <CategoriesSection />
+          <StorySection />
+          <BentoSection />
+          <FormSection />
+          <FaqSection />
+        </div>
       </div>
     </ReactLenis>
   );
