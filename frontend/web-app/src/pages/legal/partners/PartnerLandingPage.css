@@ -19,7 +19,6 @@
   background-color: var(--bg-page);
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
 }
 
 /* ── WebGL Canvas Layer ── */
