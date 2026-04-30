@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useMotionValueEvent } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { ReactLenis } from 'lenis/react';
 import { Canvas, useFrame } from '@react-three/fiber';
@@ -332,9 +332,9 @@ function StorySection() {
 
   const [current, setCurrent] = useState(0);
 
-  useEffect(() => {
-    return activeStep.onChange((latest) => setCurrent(latest));
-  }, [activeStep]);
+  useMotionValueEvent(activeStep, "change", (latest) => {
+    setCurrent(latest);
+  });
 
   const stepsData = [
     { t: 'Оставьте заявку', d: 'Заполнение формы занимает 1 минуту. Мы свяжемся с вами в тот же день.' },
