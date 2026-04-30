@@ -222,6 +222,16 @@ function BentoCard({ children, className = "" }: { children: React.ReactNode, cl
 
 /* ── MAIN COMPONENT ── */
 export default function PartnerLandingPage() {
+  useEffect(() => {
+    // TopDim's global index.css sets overflow-x: hidden on body, which breaks position: sticky.
+    // We temporarily remove it for this page so the Algorithm section works correctly.
+    const originalOverflow = document.body.style.overflowX;
+    document.body.style.overflowX = 'visible';
+    return () => {
+      document.body.style.overflowX = originalOverflow;
+    };
+  }, []);
+
   return (
     <ReactLenis root options={{ lerp: 0.05, duration: 2, smoothWheel: true }}>
       <div className="partner-page-root">
