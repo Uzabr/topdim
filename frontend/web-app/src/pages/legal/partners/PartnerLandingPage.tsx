@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { ReactLenis } from 'lenis/react';
 import { Canvas, useFrame } from '@react-three/fiber';
@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import {
   ArrowRight, CheckCircle2,
   MapPin, Play, Users, BarChart3, 
-  ShieldCheck, Eye, Zap, Layers, Plus
+  ShieldCheck, Eye, Zap, Layers, Plus, ChevronDown
 } from 'lucide-react';
 import { submitPartnerApplication } from '../../../api/partners';
 import type { PartnerApplicationData } from '../../../api/partners';
@@ -102,12 +102,12 @@ function NavBar() {
           TopDim
         </a>
         <div className="hidden md:flex gap-4">
-          <button className="btn-outline" onClick={() => document.getElementById('steps')?.scrollIntoView({ behavior: 'smooth' })}>
+          <a href="#steps" className="btn-outline" style={{ textDecoration: 'none' }}>
             Алгоритм
-          </button>
-          <button className="btn-primary" onClick={() => document.getElementById('lead')?.scrollIntoView({ behavior: 'smooth' })}>
+          </a>
+          <a href="#lead" className="btn-primary" style={{ textDecoration: 'none' }}>
             Стать партнёром
-          </button>
+          </a>
         </div>
       </div>
     </nav>
@@ -128,6 +128,53 @@ const schema = z.object({
 });
 type FormValues = z.infer<typeof schema>;
 
+/* ── CUSTOM SELECT ── */
+function CustomSelect({ options, value, onChange, placeholder }: { options: string[], value: string, onChange: (val: string) => void, placeholder: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="custom-select-wrap" ref={ref}>
+      <div className={`custom-select-trigger ${open ? 'open' : ''} ${value ? 'has-value' : ''}`} onClick={() => setOpen(!open)}>
+        <span>{value || placeholder}</span>
+        <ChevronDown size={20} style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }} />
+      </div>
+      <AnimatePresence>
+        {open && (
+          <motion.ul 
+            className="custom-select-menu"
+            data-lenis-prevent="true"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            {options.map((opt) => (
+              <li 
+                key={opt} 
+                className={value === opt ? 'selected' : ''}
+                onClick={() => { onChange(opt); setOpen(false); }}
+              >
+                {opt}
+              </li>
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // Blur reveal animation variant
 const blurReveal: Variants = {
   hidden: { opacity: 0, y: 30, filter: "blur(20px)" },
@@ -137,6 +184,41 @@ const staggerChildren: Variants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
 };
+
+/* ── INTERACTIVE BENTO CARD ── */
+function BentoCard({ children, className = "" }: { children: React.ReactNode, className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [opacity, setOpacity] = useState(0);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  return (
+    <motion.div 
+      ref={ref}
+      className={`b-card ${className}`}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setOpacity(1)}
+      onMouseLeave={() => setOpacity(0)}
+      variants={blurReveal}
+    >
+      <div 
+        className="b-card-spotlight" 
+        style={{ 
+          opacity,
+          background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(255, 0, 60, 0.12), transparent 40%)`
+        }} 
+      />
+      <div className="b-card-content">
+        {children}
+      </div>
+    </motion.div>
+  );
+}
 
 /* ── MAIN COMPONENT ── */
 export default function PartnerLandingPage() {
@@ -178,12 +260,12 @@ function HeroSection() {
           </motion.p>
           
           <motion.div className="flex gap-6 items-center justify-center" variants={blurReveal}>
-            <button className="btn-primary" onClick={() => document.getElementById('lead')?.scrollIntoView({ behavior: 'smooth' })}>
+            <a href="#lead" className="btn-primary" style={{ textDecoration: 'none' }}>
               Стать партнёром <ArrowRight size={18} />
-            </button>
-            <button className="btn-outline" onClick={() => document.getElementById('steps')?.scrollIntoView({ behavior: 'smooth' })}>
+            </a>
+            <a href="#steps" className="btn-outline" style={{ textDecoration: 'none' }}>
               Как это работает <Play size={18} />
-            </button>
+            </a>
           </motion.div>
         </motion.div>
       </div>
@@ -234,8 +316,24 @@ function CategoriesSection() {
   );
 }
 
-/* ── 4. STORY ── */
+/* ── 4. STORY (PINNED SCROLL) ── */
 function StorySection() {
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
+
+  const activeStep = useTransform(scrollYProgress, (p) => {
+    if (p < 0.25) return 0;
+    if (p < 0.5) return 1;
+    if (p < 0.75) return 2;
+    return 3;
+  });
+
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    return activeStep.onChange((latest) => setCurrent(latest));
+  }, [activeStep]);
+
   const stepsData = [
     { t: 'Оставьте заявку', d: 'Заполнение формы занимает 1 минуту. Мы свяжемся с вами в тот же день.' },
     { t: 'Настройка акции', d: 'Вместе придумываем сочный оффер: скидка, подарок или 2 по цене 1.' },
@@ -244,31 +342,41 @@ function StorySection() {
   ];
 
   return (
-    <section className="spacer-section" id="steps">
-      <div className="mx w-full">
-        <div className="story-wrap">
-          <motion.div className="story-l" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={blurReveal}>
-            <h2 className="sec-title">Алгоритм<br/>Успеха</h2>
-            <p className="sec-desc mt-6">Весь путь от первого контакта до потока новых клиентов занимает минимум вашего времени.</p>
-          </motion.div>
-          <div className="story-r">
+    <section className="story-wrap-pinned" ref={containerRef} id="steps">
+      <div className="story-sticky">
+        <div className="story-grid">
+          
+          <div className="story-l-sticky">
+            <h2 className="sec-title" style={{ marginBottom: 0 }}>Алгоритм<br/>Успеха</h2>
+            <div className="story-big-num-wrap">
+              <AnimatePresence>
+                {stepsData.map((_, i) => (
+                  current === i && (
+                    <motion.div
+                      key={i}
+                      className="story-big-num active"
+                      initial={{ opacity: 0, y: 50, rotateX: -90 }}
+                      animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                      exit={{ opacity: 0, y: -50, rotateX: 90 }}
+                      transition={{ duration: 0.5, type: 'spring' }}
+                    >
+                      0{i+1}
+                    </motion.div>
+                  )
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          <div className="story-r-list">
             {stepsData.map((s, i) => (
-              <motion.div 
-                key={i} 
-                className="step-item"
-                initial={{ opacity: 0, y: 50, filter: "blur(10px)" }}
-                whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                viewport={{ once: true, margin: "-20%" }}
-                transition={{ duration: 0.8 }}
-              >
-                <div className="step-num">0{i+1}</div>
-                <div>
-                  <h3>{s.t}</h3>
-                  <p>{s.d}</p>
-                </div>
-              </motion.div>
+              <div key={i} className={`step-item ${current === i ? 'active' : ''}`}>
+                <h3>{s.t}</h3>
+                <p>{s.d}</p>
+              </div>
             ))}
           </div>
+
         </div>
       </div>
     </section>
@@ -285,26 +393,26 @@ function BentoSection() {
         </motion.div>
         
         <motion.div className="bento" variants={staggerChildren} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
-          <motion.div className="b-card wide" variants={blurReveal}>
+          <BentoCard className="wide">
             <div className="b-icon"><Users size={60} strokeWidth={1} /></div>
             <h3>Новые клиенты</h3>
             <p>Привлекайте аудиторию, которая целенаправленно ищет скидки и новые места в вашем городе.</p>
-          </motion.div>
-          <motion.div className="b-card tall" variants={blurReveal}>
+          </BentoCard>
+          <BentoCard className="tall">
             <div className="b-icon"><BarChart3 size={60} strokeWidth={1} /></div>
             <h3>Прозрачность</h3>
             <p>Полная аналитика просмотров и использований купонов в реальном времени. Измеряйте ROI без сложных настроек рекламных кабинетов.</p>
-          </motion.div>
-          <motion.div className="b-card" variants={blurReveal}>
+          </BentoCard>
+          <BentoCard>
             <div className="b-icon"><MapPin size={60} strokeWidth={1} /></div>
             <h3>Локальность</h3>
             <p>Показываем ваш бизнес людям рядом с вами.</p>
-          </motion.div>
-          <motion.div className="b-card" variants={blurReveal}>
+          </BentoCard>
+          <BentoCard>
             <div className="b-icon"><Zap size={60} strokeWidth={1} /></div>
             <h3>Мотивация</h3>
             <p>Ограниченный срок купона стимулирует к быстрой покупке.</p>
-          </motion.div>
+          </BentoCard>
         </motion.div>
       </div>
     </section>
@@ -315,7 +423,10 @@ function BentoSection() {
 function FormSection() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(schema) });
+
+  const selectedCity = watch('city');
+  const selectedCategory = watch('businessCategory');
 
   const onSubmit = handleSubmit(async (values) => {
     setSubmitting(true);
@@ -378,18 +489,22 @@ function FormSection() {
                   <div className="flex gap-6">
                     <div className="f-group w-1/2">
                       <label>Город</label>
-                      <select {...register('city')}>
-                        <option value="" className="text-black">Выбрать</option>
-                        {cities.map(c => <option key={c} value={c} className="text-black">{c}</option>)}
-                      </select>
+                      <CustomSelect 
+                        placeholder="Выбрать"
+                        options={cities}
+                        value={selectedCity || ''}
+                        onChange={(val) => setValue('city', val, { shouldValidate: true })}
+                      />
                       {errors.city && <span className="text-red-500 text-xs mt-2 block" role="alert">{errors.city.message}</span>}
                     </div>
                     <div className="f-group w-1/2">
                       <label>Категория</label>
-                      <select {...register('businessCategory')}>
-                        <option value="" className="text-black">Выбрать</option>
-                        {bizCats.map(c => <option key={c} value={c} className="text-black">{c}</option>)}
-                      </select>
+                      <CustomSelect 
+                        placeholder="Выбрать"
+                        options={bizCats}
+                        value={selectedCategory || ''}
+                        onChange={(val) => setValue('businessCategory', val, { shouldValidate: true })}
+                      />
                       {errors.businessCategory && <span className="text-red-500 text-xs mt-2 block" role="alert">{errors.businessCategory.message}</span>}
                     </div>
                   </div>
@@ -447,9 +562,9 @@ function FaqSection() {
       
       <div className="mx w-full text-center pb-40">
         <h2 className="final-title">READY TO GROW?</h2>
-        <button className="btn-primary" style={{ transform: 'scale(1.2)' }} onClick={() => document.getElementById('lead')?.scrollIntoView({ behavior: 'smooth' })}>
+        <a href="#lead" className="btn-primary" style={{ textDecoration: 'none', transform: 'scale(1.2)', display: 'inline-flex' }}>
           Стать партнёром
-        </button>
+        </a>
       </div>
     </section>
   );
