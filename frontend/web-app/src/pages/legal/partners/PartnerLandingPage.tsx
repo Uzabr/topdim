@@ -271,7 +271,7 @@ function HeroSection() {
             TopDim объединяет лучшие предложения города в одном месте. Мы приводим клиентов, которые ищут именно вас, без сложных настроек рекламы.
           </motion.p>
           
-          <motion.div className="flex gap-6 items-center justify-center" variants={blurReveal}>
+          <motion.div className="flex flex-wrap gap-4 items-center justify-center" variants={blurReveal}>
             <a href="#lead" className="btn-primary" style={{ textDecoration: 'none' }}>
               Стать партнёром <ArrowRight size={18} />
             </a>
@@ -485,7 +485,7 @@ function FormSection() {
                 </motion.div>
               ) : (
                 <motion.form key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onSubmit={onSubmit} noValidate>
-                  <div className="flex gap-6">
+                  <div className="flex gap-6 form-row">
                     <div className="f-group w-1/2">
                       <label>Имя</label>
                       <input {...register('name')} placeholder="Азиза" />
@@ -498,7 +498,7 @@ function FormSection() {
                     </div>
                   </div>
                   
-                  <div className="flex gap-6">
+                  <div className="flex gap-6 form-row">
                     <div className="f-group w-1/2">
                       <label>Город</label>
                       <CustomSelect 
