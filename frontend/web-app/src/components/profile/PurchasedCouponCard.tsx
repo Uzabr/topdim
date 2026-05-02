@@ -1,4 +1,5 @@
-import { AlertCircle, CalendarClock, CheckCircle, Clock, Copy, MapPin, Phone, QrCode, Store, RotateCcw, MessageSquare, Loader2, Ban } from 'lucide-react';
+import { useState } from 'react';
+import { AlertCircle, CalendarClock, CheckCircle, Clock, Copy, MapPin, Phone, RotateCcw, MessageSquare, Loader2, Ban, ChevronDown, Store } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import type { PurchasedCoupon } from '../../api/orders';
 import './PurchasedCouponCard.css';
@@ -10,29 +11,19 @@ interface PurchasedCouponCardProps {
 }
 
 function formatDate(date?: string): string {
-  if (!date) {
-    return 'не указан';
-  }
-
+  if (!date) return 'не указан';
   return new Date(date).toLocaleDateString('ru-RU');
 }
 
 function getStatusLabel(status: PurchasedCoupon['status']): string {
   switch (status) {
-    case 'ACTIVE':
-      return 'Активно';
-    case 'USED':
-      return 'Использовано';
-    case 'EXPIRED':
-      return 'Истекло';
-    case 'REFUND_PENDING':
-      return 'Возврат на рассмотрении';
-    case 'REFUNDED':
-      return 'Возвращён';
-    case 'CANCELLED':
-      return 'Отменено';
-    default:
-      return status;
+    case 'ACTIVE': return 'Активно';
+    case 'USED': return 'Использовано';
+    case 'EXPIRED': return 'Истекло';
+    case 'REFUND_PENDING': return 'Возврат на рассмотрении';
+    case 'REFUNDED': return 'Возвращён';
+    case 'CANCELLED': return 'Отменено';
+    default: return status;
   }
 }
 
@@ -49,130 +40,175 @@ function buildQrPayload(qrToken?: string): string {
   return qrToken ? `TOPDIM-QR:${qrToken}` : '';
 }
 
+function getStatusMeta(coupon: PurchasedCoupon): string {
+  if (coupon.status === 'USED' && coupon.usedAt) {
+    return `Использован: ${formatDate(coupon.usedAt)}`;
+  }
+  if (coupon.status === 'REFUNDED') {
+    return 'Возврат завершён';
+  }
+  if (coupon.status === 'REFUND_PENDING') {
+    if (coupon.refundStatus === 'APPROVED_PROCESSING' && coupon.refundExpectedAt) {
+      return `Одобрено. Ожидайте до ${formatDate(coupon.refundExpectedAt)}`;
+    }
+    return 'Ждёт решения партнёра';
+  }
+  if (coupon.status === 'EXPIRED') {
+    return 'Срок действия истёк';
+  }
+  if (coupon.status === 'CANCELLED') {
+    return 'Купон отменён';
+  }
+  return `Действует до: ${formatDate(coupon.expiresAt)}`;
+}
+
 export default function PurchasedCouponCard({ coupon, onRefundRequest, onComplaintRequest }: PurchasedCouponCardProps) {
-  const isActive = coupon.status === 'ACTIVE';
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const copyCode = async () => {
+    if (!coupon.couponCode) return;
     await navigator.clipboard.writeText(coupon.couponCode);
   };
 
-  // Determine available actions
+  const isActive = coupon.status === 'ACTIVE';
+  const canShowPass = isActive && Boolean(coupon.qrToken || coupon.couponCode);
   const canRefund = coupon.status === 'ACTIVE';
   const canComplain = ['ACTIVE', 'USED', 'EXPIRED'].includes(coupon.status);
 
   return (
-    <article className={`purchased-coupon-card purchased-coupon-card--${coupon.status.toLowerCase()}`}>
-      <div className="purchased-coupon-card__header">
-        <div>
-          <p className="purchased-coupon-card__eyebrow">Купон #{coupon.id}</p>
-          <h3>{coupon.couponTitle}</h3>
-          <p>{coupon.optionTitle}</p>
+    <article className={`coupon-ticket coupon-ticket--${coupon.status.toLowerCase()} ${isExpanded ? 'is-expanded' : ''}`}>
+      
+      {/* ── ТЕЛО БИЛЕТА (Верхняя часть) ── */}
+      <div className="coupon-ticket__header">
+        <div className="coupon-ticket__topline">
+          <span className={`coupon-ticket__badge coupon-ticket__badge--${coupon.status.toLowerCase()}`}>
+            {getStatusIcon(coupon.status)}
+            {getStatusLabel(coupon.status)}
+          </span>
+          <span className="coupon-ticket__meta">{getStatusMeta(coupon)}</span>
         </div>
-        <span className={`purchased-coupon-card__status purchased-coupon-card__status--${coupon.status.toLowerCase()}`}>
-          {getStatusIcon(coupon.status)}
-          {getStatusLabel(coupon.status)}
-        </span>
-      </div>
 
-      <div className="purchased-coupon-card__code-box">
-        <div>
-          <span className="purchased-coupon-card__label">Покажите сотруднику</span>
-          <strong>{coupon.couponCode || 'Код недоступен'}</strong>
-        </div>
-        {isActive && coupon.couponCode ? (
-          <button type="button" onClick={copyCode}>
-            <Copy size={16} />
-            Скопировать
-          </button>
-        ) : null}
-      </div>
-
-      {isActive && coupon.qrToken ? (
-        <div className="purchased-coupon-card__qr-box">
-          <div className="purchased-coupon-card__qr-frame" aria-label="QR-код купона TopDim">
-            <QRCodeSVG
-              value={buildQrPayload(coupon.qrToken)}
-              size={164}
-              level="M"
-              includeMargin
-            />
-          </div>
-          <div className="purchased-coupon-card__qr-copy">
-            <span className="purchased-coupon-card__label">QR-код купона</span>
-            <p>Покажите этот QR-код кассиру партнёра для погашения.</p>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="purchased-coupon-card__usage">
-        <div className="purchased-coupon-card__usage-item">
+        <h3 className="coupon-ticket__title">{coupon.couponTitle}</h3>
+        {coupon.optionTitle && <p className="coupon-ticket__option">{coupon.optionTitle}</p>}
+        
+        <div className="coupon-ticket__merchant-info">
           <Store size={16} />
-          <span>{coupon.merchantName || 'Название партнёра недоступно'}</span>
+          <span>{coupon.merchantName || 'Партнёр TopDim'}</span>
         </div>
-        <div className="purchased-coupon-card__usage-item">
-          <MapPin size={16} />
-          <span>{coupon.merchantAddress || 'Адрес партнёра уточните перед визитом'}</span>
-        </div>
-        {coupon.merchantPhone ? (
-          <a className="purchased-coupon-card__usage-item" href={`tel:${coupon.merchantPhone}`}>
-            <Phone size={16} />
-            <span>{coupon.merchantPhone}</span>
-          </a>
-        ) : null}
-        {coupon.merchantWorkingHours ? (
-          <div className="purchased-coupon-card__usage-item">
-            <CalendarClock size={16} />
-            <span>{coupon.merchantWorkingHours}</span>
-          </div>
-        ) : null}
       </div>
 
-      <div className="purchased-coupon-card__footer">
-        <div>
-          {coupon.status === 'USED' && coupon.usedAt
-            ? `Использован: ${formatDate(coupon.usedAt)}`
-            : coupon.status === 'REFUNDED'
-            ? 'Возврат завершён'
-            : coupon.status === 'REFUND_PENDING'
-            ? 'Ожидает рассмотрения'
-            : `Действует до: ${formatDate(coupon.expiresAt)}`}
-        </div>
-        {coupon.qrToken && isActive ? (
-          <div className="purchased-coupon-card__qr-note">
-            <QrCode size={16} />
-            QR-код доступен для проверки партнёром
-          </div>
-        ) : null}
+      {/* ── ЛИНИЯ ОТРЫВА (Перфорация) ── */}
+      <div className="coupon-ticket__separator">
+        <div className="coupon-ticket__notch coupon-ticket__notch--left"></div>
+        <div className="coupon-ticket__dash"></div>
+        <div className="coupon-ticket__notch coupon-ticket__notch--right"></div>
       </div>
 
-      {/* Refund expected date info */}
-      {coupon.status === 'REFUND_PENDING' && coupon.refundStatus === 'APPROVED_PROCESSING' && coupon.refundExpectedAt && (
-        <div className="purchased-coupon-card__refund-info">
-          Возврат одобрен. Деньги вернутся до {formatDate(coupon.refundExpectedAt)}.
-        </div>
-      )}
+      {/* ── КНОПКА РАСКРЫТИЯ ── */}
+      <button 
+        className="coupon-ticket__toggle" 
+        onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+      >
+        <span>{isExpanded ? 'Скрыть детали' : 'QR-код и детали'}</span>
+        <ChevronDown size={18} className="coupon-ticket__toggle-icon" />
+      </button>
 
-      {/* Action buttons */}
-      {(canRefund || canComplain) && (onRefundRequest || onComplaintRequest) && (
-        <div className="purchased-coupon-card__actions">
-          {canRefund && onRefundRequest && (
-            <button className="purchased-coupon-card__action-btn purchased-coupon-card__action-btn--refund" onClick={() => onRefundRequest(coupon)}>
-              <RotateCcw size={14} /> Запросить возврат
-            </button>
-          )}
-          {canComplain && onComplaintRequest && (
-            <button className="purchased-coupon-card__action-btn purchased-coupon-card__action-btn--complaint" onClick={() => onComplaintRequest(coupon)}>
-              <MessageSquare size={14} /> Сообщить о проблеме
-            </button>
-          )}
-        </div>
-      )}
+      {/* ── РАСКРЫВАЮЩАЯСЯ ЧАСТЬ (Анимация через Grid) ── */}
+      <div className="coupon-ticket__drawer">
+        <div className="coupon-ticket__drawer-inner">
+          
+          {/* QR и ПИН */}
+          {canShowPass && (
+            <div className="coupon-ticket__pass-section">
+              {coupon.qrToken && (
+                <div className="coupon-ticket__qr-container">
+                  <div className="coupon-ticket__qr-frame">
+                    <QRCodeSVG
+                      value={buildQrPayload(coupon.qrToken)}
+                      size={160}
+                      level="M"
+                      includeMargin
+                    />
+                  </div>
+                  <p className="coupon-ticket__qr-hint">Покажите QR-код кассиру</p>
+                </div>
+              )}
 
-      {isActive && !onRefundRequest ? (
-        <div className="purchased-coupon-card__help">
-          Если партнёр не принимает купон, покажите этот экран и обратитесь в поддержку TopDim.
+              <div className="coupon-ticket__pin-container">
+                <span className="coupon-ticket__pin-label">или продиктуйте код</span>
+                <div className="coupon-ticket__pin-value">
+                  <strong>{coupon.couponCode || '—'}</strong>
+                  {coupon.couponCode && (
+                    <button type="button" onClick={copyCode} className="coupon-ticket__copy-btn" title="Скопировать">
+                      <Copy size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Детали партнера */}
+          <div className="coupon-ticket__details-grid">
+            {coupon.merchantAddress && (
+              <div className="coupon-ticket__detail-item">
+                <MapPin size={16} />
+                <div>
+                  <span>Адрес</span>
+                  <p>{coupon.merchantAddress}</p>
+                </div>
+              </div>
+            )}
+            {coupon.merchantPhone && (
+              <a href={`tel:${coupon.merchantPhone}`} className="coupon-ticket__detail-item is-link">
+                <Phone size={16} />
+                <div>
+                  <span>Телефон</span>
+                  <p>{coupon.merchantPhone}</p>
+                </div>
+              </a>
+            )}
+            {coupon.merchantWorkingHours && (
+              <div className="coupon-ticket__detail-item">
+                <CalendarClock size={16} />
+                <div>
+                  <span>Время работы</span>
+                  <p>{coupon.merchantWorkingHours}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Действия: Возврат / Жалоба */}
+          {((canRefund && onRefundRequest) || (canComplain && onComplaintRequest)) && (
+            <div className="coupon-ticket__actions">
+              {canRefund && onRefundRequest && (
+                <button
+                  type="button"
+                  className="coupon-ticket__action-btn coupon-ticket__action-btn--refund"
+                  onClick={() => onRefundRequest(coupon)}
+                >
+                  <RotateCcw size={15} />
+                  Оформить возврат
+                </button>
+              )}
+              {canComplain && onComplaintRequest && (
+                <button
+                  type="button"
+                  className="coupon-ticket__action-btn coupon-ticket__action-btn--complain"
+                  onClick={() => onComplaintRequest(coupon)}
+                >
+                  <MessageSquare size={15} />
+                  Проблема с купоном?
+                </button>
+              )}
+            </div>
+          )}
+          
         </div>
-      ) : null}
+      </div>
+      
     </article>
   );
 }

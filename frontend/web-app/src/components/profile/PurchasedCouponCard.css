@@ -1,251 +1,381 @@
-.purchased-coupon-card {
-  border: 1px solid rgba(20, 20, 20, 0.08);
-  border-radius: 24px;
-  padding: 20px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(245, 249, 255, 0.9));
-  box-shadow: 0 18px 45px rgba(19, 33, 68, 0.08);
+.coupon-ticket {
+  position: relative;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  margin-bottom: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.purchased-coupon-card--used,
-.purchased-coupon-card--expired,
-.purchased-coupon-card--cancelled,
-.purchased-coupon-card--refunded {
-  opacity: 0.78;
+/* Modifiers for statuses */
+.coupon-ticket--used,
+.coupon-ticket--expired,
+.coupon-ticket--refunded,
+.coupon-ticket--cancelled {
+  opacity: 0.85;
+  filter: grayscale(0.2);
 }
 
-.purchased-coupon-card--refund_pending {
+.coupon-ticket--refund_pending {
   border-color: rgba(255, 165, 0, 0.3);
 }
 
-.purchased-coupon-card__status--refund_pending {
+/* ── HEADER (Top Section) ── */
+.coupon-ticket__header {
+  padding: 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #fcfdfe 100%);
+}
+
+.coupon-ticket__topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.coupon-ticket__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 700;
+  font-size: 13px;
+  background: rgba(120, 120, 120, 0.1);
+  color: #555;
+}
+
+.coupon-ticket__badge--active {
+  color: #0f7a45;
+  background: rgba(34, 197, 94, 0.14);
+}
+.coupon-ticket__badge--used {
+  color: #1f5fbf;
+  background: rgba(59, 130, 246, 0.14);
+}
+.coupon-ticket__badge--expired,
+.coupon-ticket__badge--cancelled {
+  color: #9a3412;
+  background: rgba(249, 115, 22, 0.14);
+}
+.coupon-ticket__badge--refund_pending {
   color: #e67e22;
   background: rgba(255, 165, 0, 0.14);
 }
-
-.purchased-coupon-card__status--refunded {
+.coupon-ticket__badge--refunded {
   color: #2980b9;
   background: rgba(52, 152, 219, 0.14);
 }
 
-.purchased-coupon-card__header {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.purchased-coupon-card__eyebrow,
-.purchased-coupon-card__label {
-  margin: 0 0 4px;
-  color: var(--text-tertiary);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.purchased-coupon-card h3 {
-  margin: 0 0 6px;
-  font-size: 20px;
-}
-
-.purchased-coupon-card p {
-  margin: 0;
-  color: var(--text-secondary);
-}
-
-.purchased-coupon-card__status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 999px;
-  padding: 8px 12px;
-  font-weight: 700;
-  background: rgba(120, 120, 120, 0.12);
-  white-space: nowrap;
+.coupon-ticket__meta {
   font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
 }
 
-.purchased-coupon-card__status--active {
-  color: #0f7a45;
-  background: rgba(34, 197, 94, 0.14);
+.coupon-ticket__title {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
 }
 
-.purchased-coupon-card__status--used {
-  color: #1f5fbf;
-  background: rgba(59, 130, 246, 0.14);
+.coupon-ticket__option {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #475569;
 }
 
-.purchased-coupon-card__status--expired,
-.purchased-coupon-card__status--cancelled {
-  color: #9a3412;
-  background: rgba(249, 115, 22, 0.14);
-}
-
-.purchased-coupon-card__code-box {
+.coupon-ticket__merchant-info {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  margin: 18px 0;
-  border-radius: 18px;
-  padding: 16px;
-  background: #111827;
-  color: #fff;
-}
-
-.purchased-coupon-card__code-box strong {
-  display: block;
-  font-size: 28px;
-  letter-spacing: 0.08em;
-}
-
-.purchased-coupon-card__code-box button {
-  display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 0;
-  border-radius: 999px;
-  padding: 10px 14px;
-  color: #111827;
-  background: #fff;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.purchased-coupon-card__usage {
-  display: grid;
-  gap: 10px;
-}
-
-.purchased-coupon-card__usage-item {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  color: var(--text-primary);
-  text-decoration: none;
-}
-
-.purchased-coupon-card__usage-item svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  color: var(--primary);
-}
-
-.purchased-coupon-card__footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 18px;
-  color: var(--text-secondary);
+  color: #0f7a45;
+  font-weight: 600;
   font-size: 14px;
 }
 
-.purchased-coupon-card__qr-note {
-  display: inline-flex;
-  gap: 6px;
+/* ── SEPARATOR (Perforated Line) ── */
+.coupon-ticket__separator {
+  position: relative;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+}
+
+.coupon-ticket__dash {
+  flex-grow: 1;
+  height: 1px;
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.15) 50%, transparent 50%);
+  background-size: 12px 1px;
+  background-repeat: repeat-x;
+}
+
+.coupon-ticket__notch {
+  width: 20px;
+  height: 20px;
+  background-color: #f3f4f6; /* Should match the page background color ideally */
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.05);
+}
+
+.coupon-ticket__notch--left {
+  left: -10px;
+}
+
+.coupon-ticket__notch--right {
+  right: -10px;
+}
+
+/* ── TOGGLE BUTTON ── */
+.coupon-ticket__toggle {
+  width: 100%;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  color: #334155;
+  transition: background 0.2s, color 0.2s;
+}
+
+.coupon-ticket__toggle:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.coupon-ticket__toggle-icon {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #94a3b8;
+}
+
+.coupon-ticket.is-expanded .coupon-ticket__toggle-icon {
+  transform: rotate(180deg);
+}
+
+/* ── DRAWER (Accordion) ── */
+.coupon-ticket__drawer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #f8fafc;
+}
+
+.coupon-ticket.is-expanded .coupon-ticket__drawer {
+  grid-template-rows: 1fr;
+}
+
+.coupon-ticket__drawer-inner {
+  overflow: hidden;
+  padding: 0 24px; /* Vertical padding added in expanded state to avoid jump */
+  opacity: 0;
+  transition: opacity 0.3s ease, padding 0.3s ease;
+}
+
+.coupon-ticket.is-expanded .coupon-ticket__drawer-inner {
+  padding: 12px 24px 24px;
+  opacity: 1;
+}
+
+/* ── PASS SECTION (QR / PIN) ── */
+.coupon-ticket__pass-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 20px;
+}
+
+.coupon-ticket__qr-container {
+  display: flex;
+  flex-direction: column;
   align-items: center;
 }
 
-.purchased-coupon-card__help {
-  margin-top: 14px;
-  border-radius: 14px;
+.coupon-ticket__qr-frame {
   padding: 12px;
-  color: #7c2d12;
-  background: rgba(251, 146, 60, 0.14);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.purchased-coupon-card__refund-info {
-  margin-top: 10px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: var(--font-sm);
-  color: #2980b9;
-  background: rgba(52, 152, 219, 0.08);
-  border: 1px solid rgba(52, 152, 219, 0.15);
+.coupon-ticket__qr-hint {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: #64748b;
+  text-align: center;
 }
 
-/* ── Action Buttons ── */
-.purchased-coupon-card__actions {
+.coupon-ticket__pin-container {
   display: flex;
-  gap: 8px;
-  margin-top: 14px;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.coupon-ticket__pin-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.coupon-ticket__pin-value {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+}
+
+.coupon-ticket__pin-value strong {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #0f172a;
+  font-family: monospace;
+}
+
+.coupon-ticket__copy-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coupon-ticket__copy-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* ── DETAILS GRID ── */
+.coupon-ticket__details-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.coupon-ticket__detail-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  color: #334155;
+  text-decoration: none;
+}
+
+.coupon-ticket__detail-item.is-link {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.coupon-ticket__detail-item.is-link:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.coupon-ticket__detail-item svg {
+  flex-shrink: 0;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.coupon-ticket__detail-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.coupon-ticket__detail-item span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.coupon-ticket__detail-item p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.4;
+}
+
+/* ── SECONDARY ACTIONS ── */
+.coupon-ticket__actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
   flex-wrap: wrap;
 }
 
-.purchased-coupon-card__action-btn {
+.coupon-ticket__action-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: none;
+  padding: 10px 16px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  transition: all 0.2s;
 }
 
-.purchased-coupon-card__action-btn--refund {
-  color: #e67e22;
-  border-color: rgba(255, 165, 0, 0.3);
+.coupon-ticket__action-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
 }
 
-.purchased-coupon-card__action-btn--refund:hover {
-  background: rgba(255, 165, 0, 0.08);
+.coupon-ticket__action-btn--refund {
+  color: #ea580c; /* orange-600 */
+}
+.coupon-ticket__action-btn--refund:hover {
+  background: #fff7ed; /* orange-50 */
+  border-color: #fed7aa; /* orange-200 */
+  color: #c2410c; /* orange-700 */
 }
 
-.purchased-coupon-card__action-btn--complaint {
-  color: var(--text-secondary);
-}
-
-.purchased-coupon-card__action-btn--complaint:hover {
-  background: var(--bg-muted);
-}
-
-/* ── QR Code Block ── */
-
-.purchased-coupon-card__qr-box {
-  margin-top: 0.75rem;
-  padding: 1rem;
-  border: 1px solid rgba(34, 197, 94, 0.24);
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(255, 255, 255, 0.72));
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.purchased-coupon-card__qr-frame {
-  width: 184px;
-  height: 184px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: 18px;
-  background: #fff;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
-}
-
-.purchased-coupon-card__qr-copy p {
-  margin: 0.35rem 0 0;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-
-@media (max-width: 640px) {
-  .purchased-coupon-card__header,
-  .purchased-coupon-card__code-box,
-  .purchased-coupon-card__footer {
+@media (max-width: 576px) {
+  .coupon-ticket__topline {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
+    gap: 8px;
   }
-
-  .purchased-coupon-card__qr-box {
-    align-items: center;
+  
+  .coupon-ticket__actions {
     flex-direction: column;
-    text-align: center;
+  }
+  
+  .coupon-ticket__action-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
-
