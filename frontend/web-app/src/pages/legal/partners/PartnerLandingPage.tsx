@@ -333,7 +333,7 @@ function StorySection() {
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
 
-  const activeStep = useTransform(scrollYProgress, (p) => {
+  const activeStep = useTransform(scrollYProgress, (p: number) => {
     if (p < 0.25) return 0;
     if (p < 0.5) return 1;
     if (p < 0.75) return 2;
@@ -342,7 +342,7 @@ function StorySection() {
 
   const [current, setCurrent] = useState(0);
 
-  useMotionValueEvent(activeStep, "change", (latest) => {
+  useMotionValueEvent(activeStep, "change", (latest: number) => {
     setCurrent(latest);
   });
 
