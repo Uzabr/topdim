@@ -1,0 +1,326 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: topdim_auth
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+      - ./docker/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    networks:
+      - backend
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    networks:
+      - backend
+
+  discovery-server:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      args:
+        MODULE_PATH: infrastructure:discovery-server
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8761
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+    expose:
+      - "8761"
+    networks:
+      - backend
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      args:
+        MODULE_PATH: infrastructure:api-gateway
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_HOST: discovery-server
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CORS_ORIGIN_1: ${CORS_ORIGIN_1}
+      CORS_ORIGIN_2: ${CORS_ORIGIN_2}
+      CORS_ORIGIN_3: ${CORS_ORIGIN_3}
+    depends_on:
+      discovery-server:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+      - edge
+
+  identity-service:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      args:
+        MODULE_PATH: services:identity-service
+    restart: unless-stopped
+    environment: &backend_env
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_HOST: discovery-server
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on: &backend_depends_on
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+    expose:
+      - "8081"
+    networks:
+      - backend
+
+  coupon-service:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      args:
+        MODULE_PATH: services:coupon-service
+    restart: unless-stopped
+    environment:
+      <<: *backend_env
+      BOT_API_KEY: ${BOT_API_KEY}
+      BOT_PREVIEW_URL: ${BOT_PREVIEW_URL}
+      BOT_PREVIEW_TOKEN: ${BOT_PREVIEW_TOKEN}
+    depends_on: *backend_depends_on
+    expose:
+      - "8083"
+    networks:
+      - backend
+
+  order-service:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      args:
+        MODULE_PATH: services:order-service
+    restart: unless-stopped
+    environment: *backend_env
+    depends_on: *backend_depends_on
+    expose:
+      - "8084"
+    networks:
+      - backend
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      args:
+        MODULE_PATH: services:payment-service
+    restart: unless-stopped
+    environment:
+      <<: *backend_env
+      PAYMENT_MODE: ${PAYMENT_MODE}
+    depends_on: *backend_depends_on
+    expose:
+      - "8085"
+    networks:
+      - backend
+
+  bazaar-service:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      args:
+        MODULE_PATH: services:bazaar-service
+    restart: unless-stopped
+    environment: *backend_env
+    depends_on: *backend_depends_on
+    expose:
+      - "8086"
+    networks:
+      - backend
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      args:
+        MODULE_PATH: services:notification-service
+    restart: unless-stopped
+    environment:
+      <<: *backend_env
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+    depends_on: *backend_depends_on
+    expose:
+      - "8087"
+    networks:
+      - backend
+
+  media-service:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      args:
+        MODULE_PATH: services:media-service
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_HOST: discovery-server
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+    depends_on:
+      minio:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+    expose:
+      - "8088"
+    networks:
+      - backend
+
+  web-app:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      args:
+        APP_PATH: frontend/web-app
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - edge
+
+  admin-app:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      args:
+        APP_PATH: frontend/admin-app
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    networks:
+      - edge
+
+  partner-app:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      args:
+        APP_PATH: frontend/partner
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    restart: unless-stopped
+    ports:
+      - "3002:80"
+    networks:
+      - edge
+
+  telegram-bot:
+    build:
+      context: .
+      dockerfile: telegram-bot/Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_WEBHOOK_URL: ${TELEGRAM_WEBHOOK_URL}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET}
+      USER_SERVICE_BASE_URL: http://api-gateway:8080
+      COUPON_SERVICE_BASE_URL: http://api-gateway:8080
+      COUPON_SERVICE_BOT_API_KEY: ${BOT_API_KEY}
+      PREVIEW_WEBHOOK_TOKEN: ${PREVIEW_WEBHOOK_TOKEN}
+      FRONTEND_WEB_APP_URL: ${FRONTEND_WEB_APP_URL}
+      BACKEND_TIMEOUT_MS: 10000
+      SESSION_TTL_MINUTES: 60
+    depends_on:
+      api-gateway:
+        condition: service_started
+    ports:
+      - "3010:3000"
+    networks:
+      - edge
+      - backend
+
+networks:
+  edge:
+  backend:
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
