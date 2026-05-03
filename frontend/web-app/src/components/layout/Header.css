@@ -145,6 +145,19 @@
   align-items: center;
 }
 
+.notification-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #fff;
+  pointer-events: none;
+  z-index: 2;
+}
+
 /* BURGER */
 .mobile-menu-btn {
   display: none;

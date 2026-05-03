@@ -55,6 +55,10 @@ export default function RefundRequestModal({ coupon, onClose }: Props) {
           <span>После отправки заявки купон будет временно заблокирован от использования.</span>
         </div>
 
+        <div className="modal-info">
+          <p>Возврат не происходит мгновенно. Мы рассмотрим заявку, и если возврат будет одобрен, деньги вернутся в течение до 5 рабочих дней.</p>
+        </div>
+
         <form onSubmit={handleSubmit}>
           <label className="modal-label">Причина возврата *</label>
           <textarea

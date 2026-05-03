@@ -14,4 +14,6 @@
 .modal-char-count{text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px}
 .modal-error{color:var(--danger);font-size:var(--font-sm);padding:var(--space-sm);background:rgba(255,59,48,.06);border-radius:var(--radius-md);margin-top:var(--space-sm)}
 .modal-actions{display:flex;gap:var(--space-sm);justify-content:flex-end;margin-top:var(--space-lg)}
+.modal-info{padding:var(--space-md);background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.12);border-radius:var(--radius-md);margin-bottom:var(--space-md);font-size:var(--font-sm);color:#3b82f6;line-height:1.5}
+.modal-info p{margin:0}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}

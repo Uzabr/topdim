@@ -57,6 +57,10 @@ export default function ComplaintModal({ coupon, onClose }: Props) {
           <span className="modal-coupon-code">{coupon.couponCode}</span>
         </div>
 
+        <div className="modal-info">
+          <p>Опишите проблему с купоном. Поддержка проверит обращение и ответит в этом разделе.</p>
+        </div>
+
         <form onSubmit={handleSubmit}>
           <label className="modal-label">Тема *</label>
           <select

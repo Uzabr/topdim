@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Heart, MapPinned, Menu, Search, ShoppingBag, Ticket, User, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
@@ -6,6 +7,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useLocalePath } from '../../hooks/useLocalePath';
+import { notificationsApi } from '../../api/notifications';
 import LanguageSelector from '../ui/LanguageSelector';
 import './Header.css';
 
@@ -17,6 +19,16 @@ export default function Header() {
   const { isAuthenticated, user } = useAuthStore();
   const { t } = useTranslation();
   const lp = useLocalePath();
+
+  // Unread notifications badge
+  const { data: hasUnread = false } = useQuery({
+    queryKey: ['unread-notifications-badge'],
+    queryFn: () => notificationsApi.getMine(true, 0, 1),
+    select: (res) => (res.data.data?.totalElements ?? 0) > 0,
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+    retry: false,
+  });
 
   const isActive = (path: string) =>
     location.pathname.endsWith(path) || location.pathname === lp(path);
@@ -72,8 +84,11 @@ export default function Header() {
 
           <LanguageSelector />
 
-          <Link to={lp(isAuthenticated ? '/profile' : '/login')} className="account-pill">
-            <User size={18} />
+          <Link to={lp(isAuthenticated ? '/profile?tab=notifications' : '/login')} className="account-pill">
+            <span className="badge-wrapper">
+              <User size={18} />
+              {hasUnread && <span className="notification-dot" />}
+            </span>
             <span>{isAuthenticated ? user?.firstName ?? 'Profile' : t('header.login')}</span>
           </Link>
 

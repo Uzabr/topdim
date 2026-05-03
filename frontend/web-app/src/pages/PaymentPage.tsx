@@ -304,8 +304,13 @@ export default function PaymentPage() {
             {payment?.transactionId && (
               <p className="payment-transaction">ID транзакции: {payment.transactionId}</p>
             )}
-            <div className="payment-success-info">
-              <p>Купоны уже доступны в профиле.</p>
+            <div className="payment-next-steps">
+              <h3>Что дальше?</h3>
+              <ol>
+                <li>Откройте купон в профиле.</li>
+                <li>Покажите QR или PIN кассиру партнёра.</li>
+                <li>После использования вы сможете оставить отзыв.</li>
+              </ol>
             </div>
             <button className="primary-button" onClick={() => navigate(lp('/profile') + '?tab=coupons')}>
               Открыть мои купоны
