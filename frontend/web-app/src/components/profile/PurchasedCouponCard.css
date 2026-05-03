@@ -363,6 +363,17 @@
   color: #c2410c; /* orange-700 */
 }
 
+.coupon-ticket__action-btn--review {
+  color: #0f7a45;
+  border-color: rgba(34, 197, 94, 0.3);
+  text-decoration: none;
+}
+.coupon-ticket__action-btn--review:hover {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
+}
+
 @media (max-width: 576px) {
   .coupon-ticket__topline {
     flex-direction: column;

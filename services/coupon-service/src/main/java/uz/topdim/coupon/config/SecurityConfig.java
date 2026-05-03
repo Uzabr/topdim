@@ -45,7 +45,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/merchants/**").permitAll()
 
                         // Публичные отзывы (только approved, только чтение)
-                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/coupon/**").permitAll()
+                        // NB: eligibility is user-specific — must be authenticated
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/coupon/*/eligibility").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/coupon/*").permitAll()
 
                         // Admin/Moderator endpoints (модаратору теперь тоже можно работать с контентом)
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "MODERATOR")

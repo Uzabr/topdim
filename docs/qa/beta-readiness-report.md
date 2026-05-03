@@ -104,3 +104,16 @@ cd frontend/admin-app && npm run build
 
 ---
 *Документ создан: 2026-04-29*
+*Обновлён: 2026-05-02*
+
+## User Flow Gap Closure
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Coupon status tabs | ✅ | ACTIVE, REFUND_PENDING, USED, EXPIRED, REFUNDED |
+| Post-payment guidance | ✅ | "Что дальше?" block on success screen |
+| Used coupon review CTA | ✅ | "Оставить отзыв" → detail page reviews tab |
+| Notification badge | ✅ | Unread dot on header profile + sidebar |
+| Refund/complaint guidance | ✅ | Pre-submit timing copy, improved empty states |
+| Review eligibility security | ✅ | /eligibility requires auth, /coupon/* stays public |
+| Guest cart/favorites sync | ⬜ | Manual QA needed |

@@ -24,7 +24,7 @@ export default function RefundsSection() {
       <div className="refunds-empty glass-card">
         <span style={{ fontSize: '2rem' }}>📋</span>
         <h3>Нет заявок на возврат</h3>
-        <p>Здесь будут ваши заявки на возврат средств.</p>
+        <p>Запросить возврат можно в карточке активного купона.</p>
       </div>
     );
   }

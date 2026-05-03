@@ -5,6 +5,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { ordersApi } from '../api/orders';
 import type { PurchasedCoupon } from '../api/orders';
+import { notificationsApi } from '../api/notifications';
 import Tabs from '../components/ui/Tabs';
 import PurchasedCouponCard from '../components/profile/PurchasedCouponCard';
 import ProfileOverview from '../components/profile/ProfileOverview';
@@ -39,9 +40,34 @@ const SIDEBAR_ITEMS: { key: ProfileTab; label: string; icon: React.ReactNode }[]
 
 const COUPON_TABS = [
   { key: 'ACTIVE', label: 'Активные', icon: <Clock size={16} /> },
+  { key: 'REFUND_PENDING', label: 'На возврате', icon: <RotateCcw size={16} /> },
   { key: 'USED', label: 'Использованные', icon: <CheckCircle size={16} /> },
   { key: 'EXPIRED', label: 'Истёкшие', icon: <AlertCircle size={16} /> },
+  { key: 'REFUNDED', label: 'Возвращённые', icon: <RotateCcw size={16} /> },
 ];
+
+const EMPTY_COUPON_COPY: Record<string, { title: string; text: string }> = {
+  ACTIVE: {
+    title: 'У вас пока нет активных купонов',
+    text: 'Выберите предложение в каталоге и купон появится здесь после оплаты.',
+  },
+  REFUND_PENDING: {
+    title: 'Нет купонов на возврате',
+    text: 'Когда вы запросите возврат, его статус появится здесь.',
+  },
+  USED: {
+    title: 'Пока нет использованных купонов',
+    text: 'После визита к партнёру использованные купоны будут здесь.',
+  },
+  EXPIRED: {
+    title: 'Нет истёкших купонов',
+    text: 'Купоны с истёкшим сроком будут отображаться в этом разделе.',
+  },
+  REFUNDED: {
+    title: 'Нет возвращённых купонов',
+    text: 'Завершённые возвраты будут отображаться здесь.',
+  },
+};
 
 export default function ProfilePage() {
   const { user, logout, isAuthenticated } = useAuthStore();
@@ -67,6 +93,16 @@ export default function ProfilePage() {
     queryFn: () => ordersApi.getMyCoupons(couponSubTab),
     select: (res) => res.data.data,
     enabled: isAuthenticated && activeHubTab === 'coupons',
+  });
+
+  // Unread notifications badge
+  const { data: hasUnread = false } = useQuery({
+    queryKey: ['unread-notifications-badge'],
+    queryFn: () => notificationsApi.getMine(true, 0, 1),
+    select: (res) => (res.data.data?.totalElements ?? 0) > 0,
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+    retry: false,
   });
 
   // Fetch active + used counts for overview
@@ -134,12 +170,14 @@ export default function ProfilePage() {
                     <div className="profile-loading">Загрузка купонов...</div>
                   ) : coupons.length === 0 ? (
                     <div className="profile-coupons-empty glass-card">
-                      <span className="profile-empty-icon">😢</span>
-                      <h3>У вас пока нет {couponSubTab === 'ACTIVE' ? 'активных' : couponSubTab === 'USED' ? 'использованных' : 'истёкших'} купонов</h3>
-                      <p>Самое время порадовать себя отличной скидкой!</p>
-                      <button className="primary-button" onClick={() => navigate(lp('/coupons'))}>
-                        Перейти в каталог
-                      </button>
+                      <span className="profile-empty-icon">📋</span>
+                      <h3>{EMPTY_COUPON_COPY[couponSubTab]?.title || 'Нет купонов'}</h3>
+                      <p>{EMPTY_COUPON_COPY[couponSubTab]?.text || 'Купоны появятся здесь.'}</p>
+                      {couponSubTab === 'ACTIVE' && (
+                        <button className="primary-button" onClick={() => navigate(lp('/coupons'))}>
+                          Перейти в каталог
+                        </button>
+                      )}
                     </div>
                   ) : (
                     coupons.map((coupon) => (
@@ -217,6 +255,9 @@ export default function ProfilePage() {
                 >
                   {item.icon}
                   <span>{item.label}</span>
+                  {item.key === 'notifications' && hasUnread && (
+                    <span className="sidebar-unread-dot" />
+                  )}
                 </button>
               ))}
             </nav>

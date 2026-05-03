@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Gift, TrendingUp, Calendar, Clock, MapPin, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -31,7 +31,14 @@ export default function CouponDetailPage() {
   const { addToCart } = useCartStore();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
   const { isAuthenticated } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'info' | 'reviews'>('info');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'reviews' ? 'reviews' : 'info';
+  const [activeTab, setActiveTab] = useState<'info' | 'reviews'>(initialTab);
+
+  const changeTab = (tab: 'info' | 'reviews') => {
+    setActiveTab(tab);
+    setSearchParams(tab === 'reviews' ? { tab: 'reviews' } : {});
+  };
   const [toastMessage, setToastMessage] = useState('');
   const optionsRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -244,13 +251,13 @@ export default function CouponDetailPage() {
           <div className="detail-tabs-row">
             <button
               className={`detail-tab-btn ${activeTab === 'info' ? 'detail-tab-btn--active' : ''}`}
-              onClick={() => setActiveTab('info')}
+              onClick={() => changeTab('info')}
             >
               Информация
             </button>
             <button
               className={`detail-tab-btn ${activeTab === 'reviews' ? 'detail-tab-btn--active' : ''}`}
-              onClick={() => setActiveTab('reviews')}
+              onClick={() => changeTab('reviews')}
             >
               Отзывы {reviewCount > 0 && <span className="detail-tab-badge">{reviewCount}</span>}
             </button>

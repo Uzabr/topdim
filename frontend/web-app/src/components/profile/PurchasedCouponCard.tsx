@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { AlertCircle, CalendarClock, CheckCircle, Clock, Copy, MapPin, Phone, RotateCcw, MessageSquare, Loader2, Ban, ChevronDown, Store } from 'lucide-react';
+import { AlertCircle, CalendarClock, CheckCircle, Clock, Copy, MapPin, Phone, RotateCcw, MessageSquare, Loader2, Ban, ChevronDown, Store, Star } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import type { PurchasedCoupon } from '../../api/orders';
+import { Link } from 'react-router-dom';
+import { useLocalePath } from '../../hooks/useLocalePath';
 import './PurchasedCouponCard.css';
 
 interface PurchasedCouponCardProps {
@@ -64,6 +66,7 @@ function getStatusMeta(coupon: PurchasedCoupon): string {
 
 export default function PurchasedCouponCard({ coupon, onRefundRequest, onComplaintRequest }: PurchasedCouponCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const lp = useLocalePath();
 
   const copyCode = async () => {
     if (!coupon.couponCode) return;
@@ -183,6 +186,15 @@ export default function PurchasedCouponCard({ coupon, onRefundRequest, onComplai
           {/* Действия: Возврат / Жалоба */}
           {((canRefund && onRefundRequest) || (canComplain && onComplaintRequest)) && (
             <div className="coupon-ticket__actions">
+              {coupon.status === 'USED' && (
+                <Link
+                  className="coupon-ticket__action-btn coupon-ticket__action-btn--review"
+                  to={lp(`/coupons/${coupon.couponOfferId}`) + '?tab=reviews'}
+                >
+                  <Star size={15} />
+                  Оставить отзыв
+                </Link>
+              )}
               {canRefund && onRefundRequest && (
                 <button
                   type="button"

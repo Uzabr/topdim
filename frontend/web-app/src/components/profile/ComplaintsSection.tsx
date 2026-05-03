@@ -26,7 +26,7 @@ export default function ComplaintsSection() {
       <div className="complaints-empty glass-card">
         <span style={{ fontSize: '2rem' }}>📨</span>
         <h3>Нет обращений</h3>
-        <p>Здесь будут ваши обращения о проблемах.</p>
+        <p>Сообщить о проблеме можно в карточке купона.</p>
       </div>
     );
   }

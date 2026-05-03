@@ -203,19 +203,34 @@
   text-align: center;
 }
 
-.payment-success-info {
+.payment-next-steps {
   width: 100%;
-  padding: 1rem 1.25rem;
+  padding: 1.25rem;
   border-radius: 12px;
   background: rgba(34, 197, 94, 0.08);
   border: 1px solid rgba(34, 197, 94, 0.15);
   margin: 0.5rem 0;
+  text-align: left;
 }
 
-.payment-success-info p {
-  margin: 0;
-  font-size: 0.9rem;
+.payment-next-steps h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
   color: #86efac;
+}
+
+.payment-next-steps ol {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.payment-next-steps li {
+  font-size: 0.9rem;
+  color: #d1fae5;
   line-height: 1.5;
 }
 
