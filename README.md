@@ -160,3 +160,38 @@ topdim/
 ├── start-all.sh
 └── .gitignore
 ```
+
+## Production deploy через EasyPanel
+
+Production Docker artifacts:
+
+- `docker/backend/Dockerfile` — generic Spring Boot image, configured with `MODULE_PATH`.
+- `docker/frontend/Dockerfile` — generic Vite/Nginx image, configured with `APP_PATH`.
+- `telegram-bot/Dockerfile` — Telegram bot image.
+- `docker-compose.prod.yml` — production Compose stack.
+- `.env.prod.example` — production env template.
+
+Минимальный порядок:
+
+1. Скопировать `.env.prod.example` в EasyPanel Environment и заменить все `CHANGE_ME_*`.
+2. Настроить домены:
+   - `api.example.com` -> `api-gateway`, port `8080`
+   - `app.example.com` -> `web-app`, port `80`
+   - `admin.example.com` -> `admin-app`, port `80`
+   - `partner.example.com` -> `partner-app`, port `80`
+   - `bot.example.com` -> `telegram-bot`, port `3000`
+3. Указать frontend build args:
+   - `VITE_API_URL=https://api.example.com`
+   - `VITE_API_BASE_URL=https://api.example.com`
+4. В backend env использовать Docker service names:
+   - `DB_HOST=postgres`
+   - `REDIS_HOST=redis`
+   - `RABBITMQ_HOST=rabbitmq`
+   - `MINIO_URL=http://minio:9000`
+   - `EUREKA_HOST=discovery-server`
+5. Запустить stack и проверить:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d
+docker compose --env-file .env.prod -f docker-compose.prod.yml ps
+```
