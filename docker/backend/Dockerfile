@@ -13,7 +13,7 @@ COPY services ./services
 ARG MODULE_PATH
 RUN test -n "$MODULE_PATH"
 RUN chmod +x ./gradlew \
-    && ./gradlew ":${MODULE_PATH}:bootJar" --no-daemon --console=plain \
+    && ./gradlew ":${MODULE_PATH}:bootJar" -Dorg.gradle.java.home="$JAVA_HOME" --no-daemon --console=plain \
     && MODULE_DIR="$(echo "$MODULE_PATH" | tr ':' '/')" \
     && JAR_PATH="$(find "$MODULE_DIR/build/libs" -type f -name "*.jar" ! -name "*plain.jar" | head -n 1)" \
     && test -n "$JAR_PATH" \
