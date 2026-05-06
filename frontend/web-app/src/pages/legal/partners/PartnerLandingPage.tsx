@@ -18,20 +18,22 @@ import type { PartnerApplicationData } from '../../../api/partners';
 import './PartnerLandingPage.css';
 
 /* ── 3D PARTICLE GALAXY ── */
+
 function ParticleGalaxy() {
   const ref = useRef<THREE.Points>(null);
   
-  // Generate a spherical distribution of particles
   const [positions, colors] = useMemo(() => {
     const count = 3000;
     const pos = new Float32Array(count * 3);
     const cols = new Float32Array(count * 3);
     
-    const colorRed = new THREE.Color("#ff003c");
-    const colorWhite = new THREE.Color("#ffffff");
+    // Корпоративные цвета
+    const colorPrimary = new THREE.Color("#2563eb");   // синий
+    const colorSecondary = new THREE.Color("#10b981"); // зелёный
+    const colorAccent = new THREE.Color("#f59e0b");    // акцент (опционально)
     
     for (let i = 0; i < count; i++) {
-      // Spherical distribution
+      // Сферическое распределение
       const r = 10 * Math.cbrt(Math.random());
       const theta = Math.random() * 2 * Math.PI;
       const phi = Math.acos(2 * Math.random() - 1);
@@ -44,9 +46,19 @@ function ParticleGalaxy() {
       pos[i * 3 + 1] = y;
       pos[i * 3 + 2] = z;
       
-      // Mix colors based on distance or random
-      const mixRatio = Math.random();
-      const mixedColor = colorWhite.clone().lerp(colorRed, mixRatio > 0.8 ? 1 : 0); // 20% red particles
+      // Градиент между цветами с вариативностью
+      const rand = Math.random();
+      let mixedColor;
+      if (rand < 0.6) {
+        // 60% — основной синий с вариациями
+        mixedColor = colorPrimary.clone().lerp(colorSecondary, Math.random() * 0.3);
+      } else if (rand < 0.9) {
+        // 30% — вторичный зелёный
+        mixedColor = colorSecondary.clone().lerp(colorPrimary, Math.random() * 0.2);
+      } else {
+        // 10% — акцентный янтарный для глубины
+        mixedColor = colorAccent.clone();
+      }
       
       cols[i * 3] = mixedColor.r;
       cols[i * 3 + 1] = mixedColor.g;
@@ -57,11 +69,9 @@ function ParticleGalaxy() {
 
   useFrame((_, delta) => {
     if (ref.current) {
-      // Slow constant rotation
       ref.current.rotation.x -= delta / 10;
       ref.current.rotation.y -= delta / 15;
       
-      // Scroll-based Z movement to feel like traveling through space
       const scrollY = window.scrollY;
       ref.current.position.z = (scrollY * 0.005) % 10;
     }
@@ -259,10 +269,19 @@ export default function PartnerLandingPage() {
 
 /* ── 1. HERO ── */
 function HeroSection() {
+  const { scrollY } = useScroll();
+  const y = useTransform(scrollY, [0, 800], [0, 200]); // текст уходит вверх на 200px при скролле 800px
+  const opacity = useTransform(scrollY, [0, 600], [1, 0]); // плавное исчезновение 
+
   return (
     <section className="spacer-section" style={{ minHeight: '100vh' }}>
       <div className="mx">
-        <motion.div className="hero-content" variants={staggerChildren} initial="hidden" animate="visible">
+        <motion.div 
+          className="hero-content" 
+          variants={staggerChildren} 
+          initial="hidden" 
+          animate="visible"
+          style={{ y, opacity }}>
           <motion.h1 className="hero-title" variants={blurReveal}>
             Будущее<br/>локального бизнеса
           </motion.h1>
@@ -271,12 +290,12 @@ function HeroSection() {
             TopDim объединяет лучшие предложения города в одном месте. Мы приводим клиентов, которые ищут именно вас, без сложных настроек рекламы.
           </motion.p>
           
-          <motion.div className="flex flex-wrap gap-4 items-center justify-center" variants={blurReveal}>
-            <a href="#lead" className="btn-primary" style={{ textDecoration: 'none' }}>
+          <motion.div className="flex flex-row gap-8 items-center justify-center" variants={blurReveal}>
+            <a href="#lead" className="btn-primary inline-flex items-center justify-center gap-[10px]" style={{ textDecoration: 'none' }}>
               Стать партнёром <ArrowRight size={18} />
             </a>
-            <a href="#steps" className="btn-outline" style={{ textDecoration: 'none' }}>
-              Как это работает <Play size={18} />
+            <a href="#steps" className="btn-outline inline-flex items-center justify-center gap-[10px]" style={{ textDecoration: 'none' }}>
+              <span>Как это работает</span><Play size={18} />
             </a>
           </motion.div>
         </motion.div>
