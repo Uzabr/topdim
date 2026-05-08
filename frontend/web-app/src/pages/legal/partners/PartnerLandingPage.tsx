@@ -111,7 +111,7 @@ function NavBar() {
         <a href="/" className="nav-logo">
           TopDim
         </a>
-        <div className="hidden md:flex gap-4">
+        <div className="hidden md:flex gap-8" style={{ display: 'flex', gap: '8px'}}>
           <a href="#steps" className="btn-outline" style={{ textDecoration: 'none' }}>
             Алгоритм
           </a>
@@ -290,12 +290,12 @@ function HeroSection() {
             TopDim объединяет лучшие предложения города в одном месте. Мы приводим клиентов, которые ищут именно вас, без сложных настроек рекламы.
           </motion.p>
           
-          <motion.div className="flex flex-row gap-8 items-center justify-center" variants={blurReveal}>
+          <motion.div className="flex flex-row gap-8 items-center justify-center" variants={blurReveal} style={{ display: 'flex', gap: '8px', justifyContent: 'center'}}>
             <a href="#lead" className="btn-primary inline-flex items-center justify-center gap-[10px]" style={{ textDecoration: 'none' }}>
               Стать партнёром <ArrowRight size={18} />
             </a>
             <a href="#steps" className="btn-outline inline-flex items-center justify-center gap-[10px]" style={{ textDecoration: 'none' }}>
-              <span>Как это работает</span><Play size={18} />
+              <span>Как это работает</span>
             </a>
           </motion.div>
         </motion.div>
@@ -437,7 +437,7 @@ function BentoSection() {
           <BentoCard>
             <div className="b-icon"><MapPin size={60} strokeWidth={1} /></div>
             <h3>Локальность</h3>
-            <p>Показываем ваш бизнес людям рядом с вами.</p>
+            <p>Рекламируем ваш бизнес людям рядом с вами.</p>
           </BentoCard>
           <BentoCard>
             <div className="b-icon"><Zap size={60} strokeWidth={1} /></div>
@@ -593,7 +593,7 @@ function FaqSection() {
       
       <div className="mx w-full text-center pb-40">
         <h2 className="final-title">READY TO GROW?</h2>
-        <a href="#lead" className="btn-primary" style={{ textDecoration: 'none', transform: 'scale(1.2)', display: 'inline-flex' }}>
+        <a href="#lead" className="btn-primary" style={{ textDecoration: 'none', transform: 'scale(1.2)', margin: '20px auto', display: 'flex', maxWidth: '240px', justifyContent: 'center' }}>
           Стать партнёром
         </a>
       </div>
