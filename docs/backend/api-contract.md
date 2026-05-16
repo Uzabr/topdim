@@ -151,8 +151,8 @@ api.interceptors.response.use(
 
 ## 4. Документация API (Swagger / OpenAPI)
 
-Вместо ручного описания всех эндпоинтов, проект использует **автоматически генерируемую спецификацию OpenAPI (Swagger)**.
-Это гарантирует, что документация всегда на 100% соответствует реальному коду микросервисов.
+Проект использует **автоматически генерируемую спецификацию OpenAPI (Swagger)**.
+Для точных endpoint signatures Swagger важнее ручных markdown-таблиц: markdown фиксирует бизнес-контекст, а Swagger показывает текущий код микросервисов.
 
 ### Как получить доступ к Swagger UI:
 
@@ -165,9 +165,24 @@ api.interceptors.response.use(
   [http://localhost:8081/swagger-ui/index.html](http://localhost:8081/swagger-ui/index.html)
   *(Альтернативно: `http://localhost:8081/v3/api-docs` для получения JSON-спецификации)*
 
-- **Coupon Service (Coupons, Merchants, Categories, Reviews, Bazaars):**
-  [http://localhost:8082/swagger-ui/index.html](http://localhost:8082/swagger-ui/index.html)
-  *(Альтернативно: `http://localhost:8082/v3/api-docs` для получения JSON-спецификации)*
+- **Coupon Service (Coupons, Merchants, Categories, Reviews, Directory):**
+  [http://localhost:8083/swagger-ui/index.html](http://localhost:8083/swagger-ui/index.html)
+  *(Альтернативно: `http://localhost:8083/v3/api-docs` для получения JSON-спецификации)*
+
+- **Order Service (Cart, Orders, Purchased Coupons, Refunds, Complaints, Partner Redemptions):**
+  [http://localhost:8084/swagger-ui/index.html](http://localhost:8084/swagger-ui/index.html)
+
+- **Payment Service:**
+  [http://localhost:8085/swagger-ui/index.html](http://localhost:8085/swagger-ui/index.html)
+
+- **Bazaar Service:**
+  [http://localhost:8086/swagger-ui/index.html](http://localhost:8086/swagger-ui/index.html)
+
+- **Notification Service:**
+  [http://localhost:8087/swagger-ui/index.html](http://localhost:8087/swagger-ui/index.html)
+
+- **Media Service:**
+  [http://localhost:8088/swagger-ui/index.html](http://localhost:8088/swagger-ui/index.html)
 
 ### Как тестировать защищенные запросы в Swagger:
 1. Выполните логин через `/api/v1/auth/login` (в Identity Service Swagger UI).
@@ -219,11 +234,41 @@ Content-Type: application/json
 
 > `POST /api/v1/orders/redeem` — legacy partner-only compatibility.
 > Main MVP flow uses `POST /api/v1/partner/redemptions` and `POST /api/v1/partner/redemptions/qr`.
-> Admins must not redeem customer coupons as merchants in MVP.
+> Admins must not redeem customer coupons as merchants in MVP. API Gateway also strips client-supplied internal headers, so external clients should not build new UI on `X-Merchant-Id`.
 
 ---
 
-## 6. Admin Support API
+## 6. Refund API
+
+Новый пользовательский flow создаёт возврат по конкретному купленному купону:
+
+```http
+POST /api/v1/refunds
+Authorization: Bearer <user JWT>
+Content-Type: application/json
+
+{ "purchasedCouponId": 42, "reason": "Не смог воспользоваться" }
+```
+
+```http
+GET /api/v1/refunds/my
+Authorization: Bearer <user JWT>
+```
+
+Admin processing:
+
+```http
+GET /api/v1/admin/refunds?status=PENDING&page=0&size=20
+PATCH /api/v1/admin/refunds/{id}/approve
+PATCH /api/v1/admin/refunds/{id}/reject
+PATCH /api/v1/admin/refunds/{id}/complete
+```
+
+Статусы: `PENDING → APPROVED_PROCESSING → REFUNDED` или `PENDING → REJECTED`.
+
+---
+
+## 7. Admin Support API
 
 ### Purchased Coupon Lookup
 
@@ -264,5 +309,16 @@ Authorization: Bearer <admin JWT>
 ```
 
 ---
-*Документ актуализирован 2026-04-29. Добавлены разделы: Redemption API, Admin Support API.*
 
+## 8. Payment Mode
+
+Локальная разработка сейчас использует `payment.mode=demo`: после checkout пользователь попадает на payment page и завершает покупку через:
+
+```http
+POST /api/v1/payments/order/{orderId}/demo-complete
+```
+
+В `payment.mode=provider` этот endpoint должен быть недоступен, а frontend должен работать через `paymentUrl` и provider callback.
+
+---
+*Документ актуализирован 2026-05-16. Исправлены Swagger-порты, partner redemption, refund API и payment mode.*

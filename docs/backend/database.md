@@ -8,7 +8,7 @@
 |---|---|
 | СУБД | PostgreSQL 16 |
 | Кэш | Redis 7 |
-| Поиск | Elasticsearch 8.12 (CQRS) |
+| Поиск | PostgreSQL indexes сейчас; Elasticsearch/CQRS описан как будущий контур и не поднят в текущем compose |
 | Миграции | Flyway |
 | Пул соединений | HikariCP (30 max) |
 
@@ -58,12 +58,18 @@ erDiagram
         varchar company_name
         text comment
         varchar status "PENDING|APPROVED|REJECTED"
+        varchar login_email
+        varchar city
+        varchar business_address
         timestamp created_at
         timestamp updated_at
     }
     staff {
         bigint id PK
         bigint user_id "ID партнёра-владельца"
+        bigint login_user_id "identity user кассира"
+        bigint merchant_id
+        bigint merchant_location_id
         varchar name
         varchar phone
         varchar role "default: CASHIER"
@@ -176,7 +182,7 @@ erDiagram
         bigint assigned_moderator_id
         varchar assigned_moderator_name
         text revision_comment
-        varchar status "LEAD|DRAFT|WAITING_FOR_MERCHANT|REVISION_REQUESTED|ACTIVE|SOLD_OUT"
+        varchar status "LEAD|DRAFT|WAITING_FOR_MERCHANT|REVISION_REQUESTED|ACTIVE|PAUSED|SOLD_OUT|ARCHIVED"
         int total_sold
         int redeemed_count
         int view_count
@@ -313,7 +319,13 @@ erDiagram
         bigint order_id FK
         varchar coupon_code UK
         varchar qr_token UK
-        varchar status "ACTIVE|USED|EXPIRED|CANCELLED"
+        varchar status "ACTIVE|USED|EXPIRED|REFUND_PENDING|REFUNDED|CANCELLED"
+        bigint merchant_id
+        varchar merchant_name
+        varchar merchant_address
+        varchar merchant_phone
+        varchar merchant_working_hours
+        boolean is_gift
         timestamp purchased_at
         timestamp expires_at
         timestamp used_at
@@ -323,16 +335,23 @@ erDiagram
         bigint purchased_coupon_id FK
         varchar redemption_code UK
         bigint merchant_id
+        bigint merchant_location_id
+        bigint staff_id
+        varchar redeem_method "PIN|QR|LEGACY"
         varchar redeemed_by_staff
         timestamp redeemed_at
     }
     refund_requests {
         bigint id PK
         bigint order_id FK
+        bigint purchased_coupon_id FK
         bigint user_id
         varchar reason
-        varchar status "PENDING|APPROVED|REJECTED"
+        varchar status "PENDING|APPROVED_PROCESSING|REFUNDED|REJECTED"
         varchar admin_comment
+        decimal refund_amount "12,2"
+        timestamp expected_refund_at
+        timestamp completed_at
         timestamp created_at
         timestamp resolved_at
     }
@@ -340,9 +359,11 @@ erDiagram
         bigint id PK
         bigint order_id FK
         bigint user_id
-        text reason
+        bigint purchased_coupon_id FK
+        varchar subject
+        text description
         varchar status
-        text resolution_comment
+        text resolution
         timestamp created_at
         timestamp resolved_at
     }
@@ -445,7 +466,7 @@ erDiagram
 | `staff` | ~15 000 | Сотрудники партнёров (кассиры) |
 | `favorites` | ~10 000 000 | Избранные купоны пользователей |
 
-### Coupon Service (topdim_coupon) — 9 таблиц
+### Coupon Service (topdim_coupon) — 10 таблиц
 
 | Таблица | Строк | Описание |
 |---|---|---|
@@ -557,8 +578,8 @@ hikari:
 ### 5. PostgreSQL Tuning
 `docker/postgresql.conf` — оптимизировано для 16GB RAM, SSD, replication.
 
-### 6. CQRS (Elasticsearch)
-Каталог купонов синхронизируется в Elasticsearch для мгновенного поиска.
+### 6. Поиск и будущий CQRS
+В текущей локальной конфигурации Elasticsearch не поднимается. Каталог и справочник работают через PostgreSQL индексы/GIN там, где они есть. Elasticsearch/CQRS оставлен как будущая production-оптимизация, а не как активная зависимость проекта.
 
 ---
 
@@ -583,10 +604,10 @@ Shard 3: user_id 4,000,001 — 6,000,000
 
 | Сервис | Миграции |
 |---|---|
-| identity | V1 (users), V2 (refresh_tokens), V3 (audit_logs), V4 (favorites), V5 (staff), V6 (partner_applications), V7 (indexes), V8 (security_version), V9 (auth_action_tokens) |
-| coupon | V1 (tables), V2 (indexes), V3 (reviews & promos), V4 (GIN search), V5 (soft delete), V6 (merchant nullable), V7 (username reviews), V8 (bazaar/shop tables), V9 (merchant telegram + draft logic), V10 (assigned moderator), V11 (category nullable), V12 (redeemed_count, total_turnover, SOLD_OUT status) |
-| order | V1 (tables), V2 (redemptions), V3 (refunds), V4 (indexes), V5 (audit), V6 (partitioning), V7 (complaints) |
-| payment | V1 (tables), V2 (indexes), V3 (audit) |
+| identity | V1 (users), V2 (refresh_tokens), V3 (audit_logs), V4 (favorites), V5 (staff), V6 (partner_applications), V7 (indexes), V8 (security_version), V9 (auth_action_tokens), V10 (partner onboarding fields), V11 (staff cabinet fields) |
+| coupon | V1-V12 (base tables, indexes, reviews/promos, search, soft delete, draft/status/statistics), V13-V18 (merchant locations, offer_description, phone normalization, archive fields), V19-V20 (sales/redemption ledgers) |
+| order | V1 (tables), V2 (redemptions), V3 (refunds), V4 (indexes), V5 (audit), V6 (partitioning), V7 (complaints), V8-V9 (purchased coupon lifecycle/snapshot), V10 (branch/staff redemption), V11 (per-coupon refunds/complaints) |
+| payment | V1 (tables), V2 (indexes), V3 (audit), V4 (unique order_id) |
 | bazaar | V1 (tables), V2 (indexes), V3 (audit), V4 (GIN search), V5 (user id to shops) |
 | notification | V1 (notifications table) |
 

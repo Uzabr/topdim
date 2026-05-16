@@ -7,7 +7,7 @@
 | Компонент | Технология | Версия |
 |---|---|---|
 | Framework | React | 19.2 |
-| Build Tool | Vite | 6.x |
+| Build Tool | Vite | 8.x |
 | Routing | React Router DOM | 6.30 |
 | State | Zustand | 5.0 |
 | Server State | TanStack React Query | 5.94 |
@@ -27,14 +27,17 @@ npm run dev     # Автоматически запустит сервер на 
 
 ## Структура репозитория
 
-В монорепозитории лежат два React-приложения:
+В монорепозитории лежат три актуальных React-приложения:
 - `frontend/web-app/` — основной клиентский портал (магазин, каталог, карта, базары). Запускается на порту `5173` (dev) / `80` (prod).
-- `frontend/admin-app/` — панель управления для `ADMIN`, `MODERATOR` и `PARTNER`. Запускается на порту `3001`. Документация ниже сфокусирована на `web-app`, так как он имеет более сложную структуру стейта и SSR/SEO-требования.
+- `frontend/admin-app/` — панель управления для `MODERATOR`, `ADMIN`, `SUPER_ADMIN`. Запускается на порту `3001`.
+- `frontend/partner/` — партнёрский портал для владельца и кассира. Запускается на порту `3002`.
+
+`frontend/web-app.bak/` — backup и не является источником актуального frontend-кода. Документация ниже сфокусирована на `web-app`, так как он имеет более сложную структуру стейта и публичный buyer flow.
 
 ```text
 frontend/web-app/src/
 ├── api/             # API клиенты (Axios)
-│   ├── _client.ts   # Axios instance (baseURL, interceptors). Обрабатывает JWT.
+│   ├── client.ts    # Axios instance (baseURL, interceptors). Обрабатывает JWT.
 │   ├── auth.ts      # Авторизация: register, login
 │   ├── bazaars.ts   # Работа со справочником (базары, магазины)
 │   ├── coupons.ts   # Запросы к купонам и категориям
@@ -51,9 +54,8 @@ frontend/web-app/src/
 ├── hooks/
 │   └── useLocalePath.ts # Хук для локализации параметров роутинга
 │
-├── locales/         # JSON-файлы с переводами 
-│   ├── ru.json
-│   └── uz.json
+├── i18n.ts          # react-i18next init
+├── i18n/config.ts   # RU/UZ resources
 │
 ├── pages/           # Страницы Маршрутизатора
 │   ├── HomePage.tsx           # Главная страница
@@ -61,7 +63,8 @@ frontend/web-app/src/
 │   ├── CouponDetailPage.tsx   # Детальная страница купона (состоит из Hero, Info, Variants, Reviews)
 │   ├── CartPage.tsx           # Корзина покупок
 │   ├── CheckoutPage.tsx       # Оформление заказа
-│   ├── ProfilePage.tsx        # Профиль и мои приобретенные купоны
+│   ├── PaymentPage.tsx        # Demo/provider payment UX
+│   ├── ProfilePage.tsx        # Профиль, купоны, заказы, возвраты, жалобы, уведомления
 │   ├── FavoritesPage.tsx      # Избранные купоны
 │   ├── BazaarMapPage.tsx      # Карта базаров (2GIS) со списком
 │   ├── BazaarDetailPage.tsx   # Детали базара и список магазинов
@@ -91,9 +94,11 @@ frontend/web-app/src/
 
 ## API Layer (`api/`)
 
-### _client.ts — Axios Instance
+### client.ts — Axios Instance
 ```typescript
-// Base URL: извлекается из import.meta.env, либо fallback на "http://localhost:8080/api/v1"
+// Base URL: import.meta.env.VITE_API_URL || ''
+// В dev обычно задаётся VITE_API_URL=http://localhost:8080.
+// Без env запросы идут same-origin, что удобно для prod за Nginx/API gateway.
 // Interceptors:
 //   - Request: Добавляет `Authorization: Bearer {token}` если юзер залогинен из localStorage
 //   - Response: 
@@ -113,7 +118,7 @@ frontend/web-app/src/
 Состояние UI, которое не связано с кэшированием API:
 - **`authStore`**: токен аутентификации, статус `isLoading`, пользовательские данные.
 - **`cartStore`**: товары в корзине, общая стоимость, сохраняется в localStorage.
-- **`favoritesStore`**: список избранного, ограничение 5 товаров для неавторизованных пользователей.
+- **`favoritesStore`**: список избранного, ограничение 10 товаров для гостя и 50 для авторизованного пользователя; после login localStorage избранное синхронизируется в backend.
 - **`cityStore`**: выбор города (Ташкент).
 - **`directoryStore`**: кэш базаров и магазинов для справочника.
 - **`marketplaceStore`**: состояние фильтров и сортировки в каталоге купонов.
@@ -129,7 +134,8 @@ frontend/web-app/src/
 | `/:lang/coupons` | CouponCatalogPage | ❌ |
 | `/:lang/coupons/:id` | CouponDetailPage | ❌ |
 | `/:lang/cart` | CartPage | ❌ |
-| `/:lang/checkout` | CheckoutPage | ❌ |
+| `/:lang/checkout` | CheckoutPage | ✅ |
+| `/:lang/payment/:orderId` | PaymentPage | ✅ |
 | `/:lang/profile` | ProfilePage | ✅ |
 | `/:lang/favorites` | FavoritesPage | ❌ |
 | `/:lang/bazaar` | BazaarMapPage | ❌ |

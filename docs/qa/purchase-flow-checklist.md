@@ -89,7 +89,7 @@
 - [ ] OrderController → CartResponse/OrderResponse DTOs
 - [ ] PaymentController → PaymentResponse DTO
 - [ ] GET /payments/order/{orderId} → 404 graceful (не exception)
-- [ ] Legacy `POST /api/v1/orders/redeem` — partner-only, requires X-Merchant-Id
+- [ ] Legacy `POST /api/v1/orders/redeem` — support-only compatibility; новый UI не должен зависеть от `X-Merchant-Id`
 
 ---
 

@@ -22,7 +22,7 @@
 | order-service | `8084` | cart, orders, purchased coupons, redemption |
 | payment-service | `8085` | payments, callbacks, demo complete |
 | bazaar-service | `8086` | bazaar/directory контур |
-| notification-service | `8087` | email/events notifications |
+| notification-service | `8087` | in-app notifications, events, email/SMS stub/real mode |
 | media-service | `8088` | uploads, MinIO, media metadata |
 
 ## Локальные skills
@@ -81,4 +81,3 @@
 - boundary values;
 - external dependency failure;
 - transaction/idempotency risk.
-

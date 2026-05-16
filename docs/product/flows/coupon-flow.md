@@ -35,8 +35,10 @@ POST /api/v1/admin/coupons
 Роль: MODERATOR, ADMIN, SUPER_ADMIN
 Контроллер: AdminCouponController
 Сервис: CouponOfferService.create()
-Результат: status = DRAFT
+Результат: status = LEAD
 ```
+
+После этого модератор берёт купон в работу через `PATCH /api/v1/admin/coupons/{id}/take-to-work`, и только тогда купон переходит в `DRAFT`.
 
 ---
 
@@ -59,11 +61,19 @@ POST /api/v1/bot/coupons/{id}/approve
 Внутренний вызов: Telegram-бот
 Сервис: CouponOfferService.approveByMerchant()
 Результат: status = ACTIVE (купон в каталоге)
+```
+
+Альтернативный путь из partner app:
+
+```
+POST /api/v1/partner/coupons/{id}/approve
+Роль: PARTNER owner
+Результат: status = ACTIVE
+```
 
 ⚠ Публикация требует publication-ready мерчанта:
   - у мерчанта есть active primary location с заполненным адресом.
   - если мерчант не готов — возвращается 409 Conflict с бизнес-причиной.
-```
 
 ### Мерчант просит правки → REVISION_REQUESTED
 
@@ -73,6 +83,14 @@ POST /api/v1/bot/coupons/{id}/reject
 Body: { "comment": "Поправьте цену" }
 Сервис: CouponOfferService.requestRevisionByMerchant()
 Результат: status = REVISION_REQUESTED → модератор получает задачу
+```
+
+Альтернативный путь из partner app:
+
+```
+POST /api/v1/partner/coupons/{id}/request-revision
+Body: { "comment": "Поправьте цену" }
+Результат: status = REVISION_REQUESTED
 ```
 
 ### Модератор пересогласовывает купон
@@ -107,6 +125,7 @@ PATCH /api/v1/admin/coupons/{id}/status?status=ACTIVE
 | `WAITING_FOR_MERCHANT`   | Модератор         | ❌                | Отправлен мерчанту на согласование          |
 | `REVISION_REQUESTED`     | Мерчант           | ❌                | Мерчант запросил правки                     |
 | `ACTIVE`                 | Мерчант/Модератор | ✅                | Опубликован, можно купить. Immutable.       |
+| `PAUSED`                 | Staff             | ❌                | Временно снят с продажи                     |
 | `SOLD_OUT`               | Система           | ❌                | Все сертификаты распроданы. Immutable.       |
 | `ARCHIVED`               | Staff             | ❌                | Снят с продажи. Купленные купоны не меняются. |
 
@@ -118,7 +137,7 @@ PATCH /api/v1/admin/coupons/{id}/status?status=ACTIVE
 ```
 LEAD → DRAFT → WAITING_FOR_MERCHANT → ACTIVE → SOLD_OUT
                                      ↘ REVISION_REQUESTED → DRAFT → ...
-                                              ACTIVE → ARCHIVED
+                                              ACTIVE → PAUSED/ARCHIVED
                                            SOLD_OUT → ARCHIVED
 ```
 
@@ -131,7 +150,7 @@ GET /api/v1/coupons?categoryId=1&search=пицца&sortBy=popular&page=0&size=20
 Роль: публичный (без авторизации)
 Контроллер: CouponController
 Сервис: CouponOfferService.getCatalog()
-Фильтр: только ACTIVE купоны
+Фильтр: только ACTIVE купоны, с учётом `buyUntil`, лимитов и доступных options
 ```
 
 Сортировка: `popular`, `new`, `priceAsc`, `priceDesc`, `discount`
@@ -185,19 +204,26 @@ GET /api/v1/orders/my-coupons?status=ACTIVE
 ## 6. Погашение купона
 
 ```
-POST /api/v1/orders/redeem
-Роль: PARTNER, ADMIN, SUPER_ADMIN
-Headers: X-Merchant-Id: 5
-Body: { "couponCode": "CP-A1B2C3D4", "staffName": "Иван" }
-Сервис: OrderService.redeemCoupon()
+POST /api/v1/partner/redemptions
+Роль: PARTNER owner/cashier
+Body: { "couponCode": "CP-A1B2C3D4" }
+Сервис: OrderService.redeemCouponForPartnerContext()
+```
+
+```
+POST /api/v1/partner/redemptions/qr
+Роль: PARTNER owner/cashier
+Body: { "qrToken": "uuid-from-qr" }
+Сервис: OrderService.redeemCouponByQrForPartnerContext()
 ```
 
 ### Логика:
 
-1. Ищет `PurchasedCoupon` по `couponCode`
+1. Ищет `PurchasedCoupon` по `couponCode` или `qrToken`
 2. Проверяет что статус = `ACTIVE` (иначе ошибка)
-3. Меняет статус → `USED`, ставит `usedAt = now()`
-4. Создаёт запись `Redemption` (кто, когда, где погасил)
+3. Проверяет, что купон принадлежит merchant context текущего партнёра/кассира
+4. Меняет статус → `USED`, ставит `usedAt = now()`
+5. Создаёт запись `Redemption` (кто, когда, где погасил, метод PIN/QR)
 
 ### Статусы купленного купона
 
@@ -206,6 +232,8 @@ Body: { "couponCode": "CP-A1B2C3D4", "staffName": "Иван" }
 | `ACTIVE`   | Можно использовать       |
 | `USED`     | Погашён партнёром        |
 | `EXPIRED`  | Истёк срок действия      |
+| `REFUND_PENDING` | По купону открыт возврат |
+| `REFUNDED` | Возврат завершён |
 | `CANCELLED` | Отменён                 |
 
 ---
@@ -215,18 +243,19 @@ Body: { "couponCode": "CP-A1B2C3D4", "staffName": "Иван" }
 ### Запрос от пользователя
 
 ```
-POST /api/v1/orders/{orderId}/refund
+POST /api/v1/refunds
 Роль: USER
-Body: { "reason": "Не смог воспользоваться" }
+Body: { "purchasedCouponId": 42, "reason": "Не смог воспользоваться" }
 Результат: RefundRequest (PENDING)
 ```
 
 ### Решение админа
 
 ```
-PATCH /api/v1/admin/refunds/{id}
-Body: { "status": "APPROVED" | "REJECTED", "comment": "..." }
-Результат: статус обновлен, resolvedAt = now()
+PATCH /api/v1/admin/refunds/{id}/approve
+PATCH /api/v1/admin/refunds/{id}/reject
+PATCH /api/v1/admin/refunds/{id}/complete
+Результат: PENDING → APPROVED_PROCESSING → REFUNDED или PENDING → REJECTED
 ```
 
 ---
@@ -234,13 +263,17 @@ Body: { "status": "APPROVED" | "REJECTED", "comment": "..." }
 ## 8. Партнёрская статистика
 
 ```
-GET /api/v1/partner/stats?couponOfferIds=1,2,3
+GET /api/v1/partner/stats
 Роль: PARTNER
 Ответ: { totalCoupons, totalSold, totalRedeemed, totalRevenue }
 
 GET /api/v1/partner/redemptions?page=0&size=20
 Роль: PARTNER
 Ответ: история погашений с пагинацией
+
+GET /api/v1/partner/dashboard
+Роль: PARTNER
+Ответ: агрегаты для partner dashboard
 ```
 
 ---
@@ -249,10 +282,10 @@ GET /api/v1/partner/redemptions?page=0&size=20
 
 | Функция | Описание |
 |---------|----------|
-| auto-EXPIRED | Нет Scheduled-задачи для автоматического истечения купонов |
-| Payment интеграция | `generatePurchasedCoupons()` вызывается, но нет реальной оплаты |
-| Уведомления | Событие уходит в RabbitMQ, но notification-service не полностью обрабатывает |
-| QR-сканер на фронте | Нет страницы/приложения для партнёра, чтобы сканировать QR |
+| Scheduled auto-EXPIRED | Есть lazy-expire при чтении/операциях, но нет отдельного scheduler job |
+| Реальная payment integration | Есть demo/provider mode и callbacks, но Payme/Click/Uzum provider ещё не доведён до production |
+| Email/SMS delivery | notification-service работает и хранит in-app notifications, но email/SMS по умолчанию в stub mode |
+| Admin menu gaps | В admin-app часть пунктов меню ещё без маршрутов (`bazaars`, `shops`, `promocodes`, `users/list`) |
 
 ## Обработка бизнес-ошибок (coupon flow)
 

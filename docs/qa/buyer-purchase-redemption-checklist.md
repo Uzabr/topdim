@@ -1,6 +1,6 @@
 # Buyer Purchase To Redemption Checklist
 
-Дата: 2026-04-28.
+Дата: 2026-05-16.
 
 Цель: вручную пройти полный MVP flow покупки и погашения купона.
 
@@ -8,7 +8,7 @@
 
 - Есть активный покупатель `USER`.
 - Есть активный партнёр `PARTNER`.
-- Есть кассир `PARTNER_CASHIER`, привязанный к merchant/location.
+- Есть кассир как `staff.role=CASHIER`, привязанный к merchant/location; его login-user имеет JWT роль `PARTNER`.
 - Есть ACTIVE купон с минимум одним ACTIVE вариантом.
 - У купона есть merchantId, useUntil, buyUntil и лимиты, достаточные для покупки.
 - Payment service работает в demo mode или доступен demo-complete endpoint.
@@ -58,7 +58,9 @@
 - payment transactionId;
 - purchasedCouponId;
 - couponCode;
+- qrToken;
 - merchantId;
+- merchantLocationId;
 - cashier userId;
 - screenshot/profile before redemption;
 - screenshot/redeem success;

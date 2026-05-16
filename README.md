@@ -6,8 +6,8 @@
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌────────────────────────────────┐
-│  Frontend   │────▶│  API Gateway │────▶│  Microservices (Eureka)        │
-│  React/Vite │     │  :8080       │     │                                │
+│ Frontend x3 │────▶│  API Gateway │────▶│  Microservices (Eureka)        │
+│ React/Vite  │     │  :8080       │     │                                │
 └─────────────┘     └──────────────┘     │  identity-service   :8081      │
                           │              │  coupon-service     :8083      │
                     JWT Validation       │  order-service      :8084      │
@@ -47,7 +47,7 @@
 ### Требования
 - Java 21+
 - Docker & Docker Compose
-- Node.js 18+
+- Node.js 22+ (рекомендуется для текущих Vite 8 приложений)
 
 ### 1. Запуск инфраструктуры
 ```bash
@@ -81,6 +81,14 @@ chmod +x start-all.sh
 cd frontend/web-app
 npm install
 npm run dev     # http://localhost:5173
+
+cd ../admin-app
+npm install
+npm run dev     # http://localhost:3001
+
+cd ../partner
+npm install
+npm run dev     # http://localhost:3002
 ```
 
 ## Базы данных
@@ -129,33 +137,33 @@ topdim/
 ├── services/
 │   ├── identity-service/     # Аутентификация, JWT, профиль, партнёрские заявки
 │   ├── coupon-service/       # Купоны, категории, партнёры, справочник базаров
-│   ├── order-service/        # Корзина, заказы, погашение купонов, возвраты
-│   ├── payment-service/      # Платежи (Payme, Click)
-│   ├── notification-service/ # Email/SMS уведомления
+│   ├── order-service/        # Корзина, заказы, купленные купоны, погашение, возвраты, жалобы
+│   ├── payment-service/      # Платежи, demo/provider mode
+│   ├── notification-service/ # In-app уведомления, Email/SMS stub/real mode
 │   ├── media-service/        # Загрузка файлов (MinIO)
 │   └── bazaar-service/       # Базары, магазины, геолокация
 ├── shared/
 │   ├── common-dto/           # ApiResponse<T>, общие DTO
 │   └── common-events/        # RabbitMQ events
 ├── frontend/
-│   └── web-app/              # React + Vite SPA
+│   ├── web-app/              # Покупательский React + Vite SPA
+│   ├── admin-app/            # Админка и модерация
+│   ├── partner/              # Партнёрский портал
+│   └── web-app.bak/          # Backup, не считать текущим приложением
 ├── docker/
 │   ├── init-databases.sql    # Инициализация БД
 │   ├── postgresql.conf        # Оптимизация PostgreSQL
 │   ├── prometheus.yml         # Конфиг Prometheus
 │   └── loki.yml              # Конфиг Loki
 ├── docs/
-│   ├── BACKEND.md            # Документация бекенд-сервисов
-│   ├── FRONTEND.md           # Документация фронтенда
-│   ├── DATABASE.md           # Схема БД и ERD
-│   ├── ROLES.md              # Роли и права доступа
-│   ├── API_CONTRACT.md       # API контракты
-│   ├── COUPON_FLOW.md        # Жизненный цикл купона
-│   ├── COUPON_CREATION_FLOW.md # Процесс создания купона
-│   ├── TESTING.md            # Тест-планы
-│   ├── PROGRESS.md           # Прогресс разработки
-│   ├── TASKS.md              # Задачи
-│   └── implementation_plan.md
+│   ├── README.md             # Навигация по актуальной документации
+│   ├── documentation-audit.md # Что было сверено и какие docs ещё рискованные
+│   ├── backend/              # services overview, API contract, database
+│   ├── frontend/             # web/admin/partner apps
+│   ├── product/              # роли, PRD, бизнес-флоу
+│   ├── qa/                   # ручные тест-планы и стратегия
+│   ├── superpowers/          # рабочие планы для AI/agent
+│   └── archive/              # исторические документы, не источник правды
 ├── docker-compose.yml
 ├── start-all.sh
 └── .gitignore

@@ -6,9 +6,11 @@
 
 | App | Путь | Назначение | Основной стек |
 |---|---|---|---|
-| Web app | `frontend/web-app` | публичный сайт, каталог, покупка, профиль пользователя | React 19, Vite, React Router 6, Zustand, React Query, Zod |
-| Admin app | `frontend/admin-app` | админка, модерация, merchant operations | React 19, Vite, React Router 7, Ant Design, React Query |
-| Partner app | `frontend/partner` | отдельный партнёрский портал | React 19, Vite, React Router 7, Ant Design, React Query |
+| Web app | `frontend/web-app` | публичный сайт, каталог, покупка, профиль пользователя | React 19, Vite 8, React Router 6, Zustand, React Query, Zod |
+| Admin app | `frontend/admin-app` | админка, модерация, merchant operations | React 19, Vite 8, React Router 7, Ant Design, React Query |
+| Partner app | `frontend/partner` | отдельный партнёрский портал | React 19, Vite 8, React Router 7, Ant Design, React Query |
+
+`frontend/web-app.bak` — backup старого web-app. Его нельзя считать актуальным приложением при ревью фич и документации.
 
 Подробная документация по `web-app` сохранена в [web-app.md](web-app.md).
 
@@ -58,6 +60,7 @@ npm run lint
 6. Подтверждает demo/payment.
 7. Видит купон в профиле.
 8. Показывает партнёру PIN/QR.
+9. При необходимости создаёт отзыв, жалобу или запрос на возврат и видит уведомления.
 
 ### Партнёр
 
@@ -68,6 +71,13 @@ npm run lint
 5. Смотрит статус модерации.
 6. Согласовывает готовый купон или просит правки.
 7. Кассир гасит купоны по PIN/QR.
+
+## Известные frontend gaps
+
+- В `admin-app` меню содержит пункты `/catalog/bazaars`, `/catalog/shops`, `/orders/promocodes`, `/users/list`, но маршруты для них ещё не подключены.
+- В `web-app` checkout/profile/payment flow реализован, но перед релизом нужен e2e smoke: каталог → корзина → checkout → demo payment → profile coupons → partner redemption.
+- В `web-app` избранное синхронизируется localStorage ↔ backend; при правках auth/favorites обязательно проверять merge guest favorites после login.
+- Во всех трёх приложениях пока нет полноценного frontend test suite, поэтому минимум перед сдачей — `npm run build` в изменённом app и ручной smoke основного маршрута.
 
 ### Админ / модератор
 

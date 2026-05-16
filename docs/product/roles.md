@@ -1,7 +1,7 @@
 # Роли и функционал — TopDim
 
-> Этот документ — **единственный источник правды** по ролям и их правам.
-> Все изменения в функционале должны сначала отражаться здесь.
+> Этот документ — продуктовый справочник по ролям и ожидаемому поведению.
+> Для точных endpoint-контрактов всегда дополнительно сверяй Swagger и `docs/backend/api-contract.md`.
 
 ---
 
@@ -11,7 +11,11 @@
 GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 ```
 
-Каждая следующая роль **наследует** все права предыдущей.
+JWT роли перечислены в `Role`: `GUEST`, `USER`, `PARTNER`, `MODERATOR`, `ADMIN`, `SUPER_ADMIN`.
+
+Важно: наследование прав не универсальное для всех сервисов. Gateway прокидывает `X-User-Role`, а дальше каждый сервис применяет свои правила. Например, некоторые coupon admin endpoints допускают `ADMIN/SUPER_ADMIN`, а order-service partner endpoints рассчитаны на реальный `PARTNER` context.
+
+Отдельной JWT-роли `PARTNER_CASHIER` сейчас нет. Кассир — это запись `staff.role=CASHIER`; его login-user имеет роль `PARTNER`, а ограничения применяются через `PartnerAccessContext`.
 
 ---
 
@@ -60,8 +64,9 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 | Выйти из системы | `POST /api/v1/auth/logout` | ✅ |
 | Загрузить аватар | `POST /api/v1/media/upload` | ✅ |
 | Удалить аккаунт | `DELETE /api/v1/users/me` | ❌ |
-| Верификация email | `POST /api/v1/auth/verify-email` | ❌ |
-| Верификация телефона | `POST /api/v1/auth/verify-phone` | ❌ |
+| Запрос кода верификации email | `POST /api/v1/auth/confirm/request` | ✅ |
+| Подтверждение email | `POST /api/v1/auth/confirm/email` | ✅ |
+| Верификация телефона | — | ❌ |
 
 ### Избранное
 | Функция | Endpoint | Статус |
@@ -75,6 +80,7 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 |---------|----------|--------|
 | Просмотр корзины | `GET /api/v1/cart` | ✅ |
 | Добавить в корзину | `POST /api/v1/cart/items` | ✅ |
+| Изменить количество | `PATCH /api/v1/cart/items/{id}` | ✅ |
 | Удалить из корзины | `DELETE /api/v1/cart/items/{id}` | ✅ |
 | Очистить корзину | `DELETE /api/v1/cart` | ✅ |
 
@@ -90,7 +96,7 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 |---------|----------|--------|
 | Все мои купоны | `GET /api/v1/orders/my-coupons` | ✅ |
 | Купоны конкретного заказа | `GET /api/v1/orders/{orderId}/coupons` | ✅ |
-| QR-код купона | — (генерируется на фронте) | ❌ |
+| QR-код купона | — (генерируется на фронте из `TOPDIM-QR:${qrToken}`) | ✅ |
 | Подарить купон другу | — | ❌ |
 
 ### Платежи
@@ -103,8 +109,9 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 ### Возвраты
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Запрос на возврат | `POST /api/v1/orders/{orderId}/refund` | ✅ |
-| Мои возвраты | `GET /api/v1/orders/refunds` | ✅ |
+| Запрос на возврат купленного купона | `POST /api/v1/refunds` | ✅ |
+| Мои возвраты | `GET /api/v1/refunds/my` | ✅ |
+| Legacy order-level возврат | `POST /api/v1/orders/{orderId}/refund` | ✅ |
 
 ### Уведомления
 | Функция | Endpoint | Статус |
@@ -117,7 +124,9 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
 | Оставить отзыв | `POST /api/v1/reviews` | ✅ |
-| Мои отзывы | `GET /api/v1/reviews/me` | ✅ |
+| Одобренные отзывы купона | `GET /api/v1/reviews/coupon/{couponId}` | ✅ |
+| Можно ли оставить отзыв | `GET /api/v1/reviews/coupon/{couponId}/eligibility` | ✅ |
+| Мои отзывы | `GET /api/v1/reviews/my` | ✅ |
 
 ---
 
@@ -128,7 +137,9 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 ### Погашение купонов
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Погасить купон (QR/код) | `POST /api/v1/orders/redeem` | ✅ |
+| Погасить купон по PIN/code | `POST /api/v1/partner/redemptions` | ✅ |
+| Погасить купон по QR token | `POST /api/v1/partner/redemptions/qr` | ✅ |
+| Legacy погашение | `POST /api/v1/orders/redeem` | ✅ |
 
 ### Мои предложения
 | Функция | Endpoint | Статус |
@@ -136,17 +147,21 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 | Мои купоны-предложения | `GET /api/v1/partner/coupons` | ✅ |
 | Создать предложение (на модерацию) | `POST /api/v1/partner/coupons` | ✅ |
 | Редактировать предложение | `PUT /api/v1/partner/coupons/{id}` | ✅ |
-| Мой магазин | `GET /api/v1/partner/shops` | ✅ |
+| Одобрить подготовленный купон | `POST /api/v1/partner/coupons/{id}/approve` | ✅ |
+| Запросить правки | `POST /api/v1/partner/coupons/{id}/request-revision` | ✅ |
+| Мой merchant context | `GET /api/v1/partner/merchant/me` | ✅ |
 
 ### Статистика
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
 | Статистика (продажи, погашения, выручка) | `GET /api/v1/partner/stats` | ✅ |
 | История погашений | `GET /api/v1/partner/redemptions` | ✅ |
+| Dashboard партнёра | `GET /api/v1/partner/dashboard` | ✅ |
 
 ### Команда
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
+| Мой access context | `GET /api/v1/partner/staff/me` | ✅ |
 | Мои сотрудники | `GET /api/v1/partner/staff` | ✅ |
 | Добавить сотрудника | `POST /api/v1/partner/staff` | ✅ |
 | Удалить сотрудника | `DELETE /api/v1/partner/staff/{id}` | ✅ |
@@ -164,8 +179,8 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 | Обновить купон / статус | `PATCH /api/v1/admin/coupons/{id}/status` | ✅ |
 | Список жалоб | `GET /api/v1/mod/complaints` | ✅ |
 | Решение по жалобе | `PATCH /api/v1/mod/complaints/{id}/resolve` | ✅ |
-| Блокировка отзыва | `PATCH /api/v1/mod/reviews/{id}/status` | ✅ |
-| Заявки на партнерство | `GET /api/v1/admin/partners/applications` | ✅ |
+| Решение по отзыву | `PATCH /api/v1/mod/reviews/{id}/review` | ✅ |
+| Заявки на партнерство | `GET /api/v1/admin/partner-applications` | ✅ |
 
 ---
 
@@ -185,9 +200,12 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
 | Список мерчантов | `GET /api/v1/admin/merchants` | ✅ |
+| Пагинированный список мерчантов | `GET /api/v1/admin/merchants/page` | ✅ |
 | Детали мерчанта | `GET /api/v1/admin/merchants/{id}` | ✅ |
 | Создать мерчанта | `POST /api/v1/admin/merchants` | ✅ |
 | Редактировать мерчанта | `PUT /api/v1/admin/merchants/{id}` | ✅ |
+| Активировать/деактивировать мерчанта | `PATCH /api/v1/admin/merchants/{id}/active` | ✅ |
+| Купоны мерчанта | `GET /api/v1/admin/merchants/{id}/coupons` | ✅ |
 
 ### Базары и магазины
 | Функция | Endpoint | Статус |
@@ -201,7 +219,11 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 ### Возвраты
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Решение по возврату | `PATCH /api/v1/admin/refunds/{id}` | ✅ |
+| Список возвратов | `GET /api/v1/admin/refunds` | ✅ |
+| Принять возврат в обработку | `PATCH /api/v1/admin/refunds/{id}/approve` | ✅ |
+| Отклонить возврат | `PATCH /api/v1/admin/refunds/{id}/reject` | ✅ |
+| Завершить возврат | `PATCH /api/v1/admin/refunds/{id}/complete` | ✅ |
+| Legacy решение по возврату | `PATCH /api/v1/admin/refunds/{id}` | ✅ |
 
 ### Категории
 | Функция | Endpoint | Статус |
@@ -248,14 +270,16 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 
 ## Сводка: Текущее состояние
 
-| Роль | ✅ Готово | ❌ Нет | % готовности |
-|------|----------|--------|-------------|
-| **GUEST** | 10 | 0 | **100%** |
-| **USER** | 25 | 4 | **86%** |
-| **PARTNER** | 10 | 0 | **100%** |
-| **MODERATOR** | 7 | 0 | **100%** |
-| **ADMIN** | 26 | 1 | **96%** |
-| **SUPER_ADMIN** | 3 | 2 | **60%** |
+Ручные проценты готовности больше не поддерживаются в этом документе: они быстро устаревают и создают ложную уверенность. Актуальный статус по ролям:
+
+| Роль | Состояние |
+|------|-----------|
+| **GUEST** | Каталог, категории, public reviews, directory и партнёрская заявка доступны без JWT |
+| **USER** | Покупка, профиль, избранное, заказы, purchased coupons, reviews, refunds, complaints, notifications реализованы |
+| **PARTNER** | Partner app, заявки на купоны, approval/revision, staff, stats, PIN/QR redemption реализованы |
+| **MODERATOR** | Модерация купонов, отзывов и жалоб реализована |
+| **ADMIN** | Merchant/catalog/order/support контуры реализованы; часть пунктов меню admin-app ещё не подключена к маршрутам |
+| **SUPER_ADMIN** | Staff, roles, blocking и audit реализованы; системные настройки/финансы ещё вне MVP |
 
 ---
 
@@ -275,7 +299,7 @@ GUEST → USER → PARTNER → MODERATOR → ADMIN → SUPER_ADMIN
 | ✅ **P0** | Защитить admin/partner endpoints `@PreAuthorize` (Выполнено) |
 | ✅ **P0** | Добавить `SUPER_ADMIN`, `MODERATOR` в Role enum (Выполнено) |
 | ✅ **P1** | PARTNER: погашения + статистика (Выполнено) |
-| ✅ **P2** | MODERATOR: модерация купонов и жалоб (Выполнено) |
-| 🟡 **P1** | USER: верификация email/телефон |
-| 🟢 **P2** | USER: QR-код для предъявления купона, отзывы |
+| ✅ **P2** | MODERATOR: модерация купонов, отзывов и жалоб (Выполнено) |
+| ✅ **P2** | USER: email confirmation, QR/PIN, отзывы, возвраты, жалобы, уведомления |
+| 🟡 **P1** | USER: телефонная верификация и production payment provider |
 | ⚪ **P3** | SUPER_ADMIN: аудит, финансы, системные настройки |
