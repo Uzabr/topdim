@@ -9,6 +9,17 @@ import type { ColumnsType } from 'antd/es/table';
 
 const { Title } = Typography;
 
+interface StaffMember {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  role: string;
+  enabled: boolean;
+  createdAt: string;
+}
+
 export const StaffPage = () => {
   const [activeTab, setActiveTab] = useState('ADMIN');
   const [page, setPage] = useState(0);
@@ -23,7 +34,7 @@ export const StaffPage = () => {
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['staff', activeTab, page],
     queryFn: async () => {
-      const res = await api.get<ApiResponse<PageResponse<any>>>(
+      const res = await api.get<ApiResponse<PageResponse<StaffMember>>>(
         '/api/v1/super/staff',
         { params: { role: activeTab, page, size: 20 } }
       );
@@ -38,21 +49,23 @@ export const StaffPage = () => {
       message.success(res.data.message || 'Статус обновлен');
       queryClient.invalidateQueries({ queryKey: ['staff'] });
     },
-    onError: (err: any) => {
-      message.error(err.response?.data?.message || 'Ошибка обновления статуса');
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { message?: string } } };
+      message.error(error.response?.data?.message || 'Ошибка обновления статуса');
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: (values: any) => api.post('/api/v1/super/admins', values),
+    mutationFn: (values: Record<string, unknown>) => api.post('/api/v1/super/admins', values),
     onSuccess: () => {
       message.success('Сотрудник успешно создан');
       setIsModalOpen(false);
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['staff'] });
     },
-    onError: (err: any) => {
-      message.error(err.response?.data?.message || 'Ошибка создания сотрудника');
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { message?: string } } };
+      message.error(error.response?.data?.message || 'Ошибка создания сотрудника');
     },
   });
 
@@ -66,8 +79,9 @@ export const StaffPage = () => {
       roleForm.resetFields();
       queryClient.invalidateQueries({ queryKey: ['staff'] });
     },
-    onError: (err: any) => {
-      message.error(err.response?.data?.message || 'Ошибка смены роли');
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { message?: string } } };
+      message.error(error.response?.data?.message || 'Ошибка смены роли');
     },
   });
 
@@ -91,7 +105,7 @@ export const StaffPage = () => {
     setRoleModalVisible(true);
   };
 
-  const columns: ColumnsType<any> = [
+  const columns: ColumnsType<StaffMember> = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     {
       title: 'Сотрудник',

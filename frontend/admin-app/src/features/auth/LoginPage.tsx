@@ -46,8 +46,9 @@ export const LoginPage = () => {
       login(accessToken, refreshToken, user);
       message.success(`Добро пожаловать, ${user.firstName}!`);
       navigate('/dashboard');
-    } catch (err: any) {
-      message.error(err.response?.data?.message || 'Ошибка входа');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      message.error(error.response?.data?.message || 'Ошибка входа');
     } finally {
       setLoading(false);
     }

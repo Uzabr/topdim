@@ -33,8 +33,9 @@ export default function LoginPage() {
 
       message.success('Добро пожаловать!');
       navigate('/');
-    } catch (err: any) {
-      message.error(err.response?.data?.message || 'Ошибка входа');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      message.error(e.response?.data?.message || 'Ошибка входа');
     } finally {
       setLoading(false);
     }

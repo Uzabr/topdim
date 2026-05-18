@@ -17,43 +17,40 @@ import { submitPartnerApplication } from '../../../api/partners';
 import type { PartnerApplicationData } from '../../../api/partners';
 import './PartnerLandingPage.css';
 
+/* ── PARTICLE DATA (generated once at module load, not during render) ── */
+function generateParticleData() {
+  const count = 3000;
+  const pos = new Float32Array(count * 3);
+  const cols = new Float32Array(count * 3);
+
+  const colorRed = new THREE.Color("#ff003c");
+  const colorWhite = new THREE.Color("#ffffff");
+
+  for (let i = 0; i < count; i++) {
+    const r = 10 * Math.cbrt(Math.random());
+    const theta = Math.random() * 2 * Math.PI;
+    const phi = Math.acos(2 * Math.random() - 1);
+
+    pos[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+    pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+    pos[i * 3 + 2] = r * Math.cos(phi);
+
+    const mixRatio = Math.random();
+    const mixedColor = colorWhite.clone().lerp(colorRed, mixRatio > 0.8 ? 1 : 0);
+    cols[i * 3]     = mixedColor.r;
+    cols[i * 3 + 1] = mixedColor.g;
+    cols[i * 3 + 2] = mixedColor.b;
+  }
+  return [pos, cols] as const;
+}
+
+const PARTICLE_DATA = generateParticleData();
+
 /* ── 3D PARTICLE GALAXY ── */
 function ParticleGalaxy() {
   const ref = useRef<THREE.Points>(null);
   
-  // Generate a spherical distribution of particles
-  const [positions, colors] = useMemo(() => {
-    const count = 3000;
-    const pos = new Float32Array(count * 3);
-    const cols = new Float32Array(count * 3);
-    
-    const colorRed = new THREE.Color("#ff003c");
-    const colorWhite = new THREE.Color("#ffffff");
-    
-    for (let i = 0; i < count; i++) {
-      // Spherical distribution
-      const r = 10 * Math.cbrt(Math.random());
-      const theta = Math.random() * 2 * Math.PI;
-      const phi = Math.acos(2 * Math.random() - 1);
-      
-      const x = r * Math.sin(phi) * Math.cos(theta);
-      const y = r * Math.sin(phi) * Math.sin(theta);
-      const z = r * Math.cos(phi);
-      
-      pos[i * 3] = x;
-      pos[i * 3 + 1] = y;
-      pos[i * 3 + 2] = z;
-      
-      // Mix colors based on distance or random
-      const mixRatio = Math.random();
-      const mixedColor = colorWhite.clone().lerp(colorRed, mixRatio > 0.8 ? 1 : 0); // 20% red particles
-      
-      cols[i * 3] = mixedColor.r;
-      cols[i * 3 + 1] = mixedColor.g;
-      cols[i * 3 + 2] = mixedColor.b;
-    }
-    return [pos, cols];
-  }, []);
+  const [positions, colors] = useMemo(() => PARTICLE_DATA, []);
 
   useFrame((_, delta) => {
     if (ref.current) {

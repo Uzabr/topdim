@@ -9,13 +9,23 @@ import type { ColumnsType } from 'antd/es/table';
 
 const { Title } = Typography;
 
+interface AuditLog {
+  id: number;
+  adminId: number;
+  adminEmail: string;
+  action: string;
+  details: string;
+  ipAddress: string;
+  createdAt: string;
+}
+
 export const AuditLogPage = () => {
   const [page, setPage] = useState(0);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['audit-logs', page],
     queryFn: async () => {
-      const res = await api.get<ApiResponse<PageResponse<any>>>(
+      const res = await api.get<ApiResponse<PageResponse<AuditLog>>>(
         '/api/v1/super/audit-logs',
         { params: { page, size: 20 } }
       );
@@ -23,7 +33,7 @@ export const AuditLogPage = () => {
     },
   });
 
-  const columns: ColumnsType<any> = [
+  const columns: ColumnsType<AuditLog> = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     { 
       title: 'Администратор', 

@@ -9,6 +9,7 @@ import { PlusOutlined, UploadOutlined, SendOutlined, DeleteOutlined } from '@ant
 import type { RcFile } from 'antd/es/upload';
 import api from '../api';
 import dayjs from 'dayjs';
+import type { Dayjs } from 'dayjs';
 
 const { Title, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -25,6 +26,18 @@ interface OptionField {
   regularPrice: number | null;
   couponPrice: number | null;
   quantityLimit: number | null;
+}
+
+interface CouponFormValues {
+  title: string;
+  categoryId: number;
+  offerDescription: string;
+  oldPrice: number;
+  fromPrice: number;
+  discountPercent?: number;
+  buyUntil: Dayjs;
+  useUntil: Dayjs;
+  giftAvailable?: boolean;
 }
 
 const fetchCategories = async (): Promise<CategoryItem[]> => {
@@ -60,8 +73,9 @@ export default function CouponRequestFormPage() {
       queryClient.invalidateQueries({ queryKey: ['partner-coupons'] });
       navigate('/coupons');
     },
-    onError: (err: any) => {
-      const msg = err.response?.data?.message || 'Ошибка при создании заявки';
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      const msg = e.response?.data?.message || 'Ошибка при создании заявки';
       antMessage.error(msg);
     },
   });
@@ -124,7 +138,7 @@ export default function CouponRequestFormPage() {
     }, 0);
   };
 
-  const onFinish = (values: any) => {
+  const onFinish = (values: CouponFormValues) => {
     const payload = {
       title: values.title,
       categoryId: values.categoryId,

@@ -79,8 +79,8 @@ export const CouponFormPage = () => {
         giftAvailable: existingCoupon.giftAvailable || false,
         images: existingCoupon.images || [],
         options: existingCoupon.options
-          ?.filter((o: any) => o.status === 'ACTIVE')
-          ?.map((o: any) => ({
+          ?.filter((o: { status: string }) => o.status === 'ACTIVE')
+          ?.map((o: { title: string; regularPrice: number; couponPrice: number; quantityLimit: number }) => ({
             title: o.title,
             regularPrice: o.regularPrice,
             couponPrice: o.couponPrice,
@@ -121,7 +121,7 @@ export const CouponFormPage = () => {
       const qsMerchantId = searchParams.get('merchantId');
       if (qsMerchantId) {
         const mid = Number(qsMerchantId);
-        const found = merchants.find((m: any) => m.id === mid);
+        const found = merchants.find((m: { id: number }) => m.id === mid);
         if (found) {
           form.setFieldValue('merchantId', mid);
         } else {
@@ -131,13 +131,13 @@ export const CouponFormPage = () => {
     }
   }, [merchants, isEditMode, searchParams, form, message]);
 
-  const selectedMerchant = merchants?.find((m: any) => m.id === selectedMerchantId);
+  const selectedMerchant = merchants?.find((m: { id: number }) => m.id === selectedMerchantId);
   const readiness = getPublicationReadiness(selectedMerchant);
 
   // Быстрое создание мерчанта (с primary location)
   const createMerchantMutation = useMutation({
     mutationFn: async (values: { name: string; address?: string; phone?: string; workingHours?: string }) => {
-      const payload: any = { name: values.name };
+      const payload: { name: string; locations?: unknown[] } = { name: values.name };
       // Send contact data exclusively via locations[]
       const hasLocation = values.address || values.phone || values.workingHours;
       if (hasLocation) {
@@ -182,8 +182,9 @@ export const CouponFormPage = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
       navigate('/moderation/coupons/kanban');
     },
-    onError: (err: any) => {
-      message.error(err.response?.data?.message || 'Ошибка создания купона');
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { message?: string } } };
+      message.error(error.response?.data?.message || 'Ошибка создания купона');
     }
   });
 
@@ -205,8 +206,9 @@ export const CouponFormPage = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-coupon', id] });
       navigate('/moderation/coupons');
     },
-    onError: (err: any) => {
-      message.error(err.response?.data?.message || 'Ошибка обновления купона');
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { message?: string } } };
+      message.error(error.response?.data?.message || 'Ошибка обновления купона');
     }
   });
 
@@ -295,7 +297,7 @@ export const CouponFormPage = () => {
                       showSearch
                       optionFilterProp="children"
                     >
-                      {merchants?.map((m: any) => (
+                      {merchants?.map((m: { id: number; name: string }) => (
                         <Select.Option key={m.id} value={m.id}>{m.name}</Select.Option>
                       ))}
                     </Select>
@@ -335,7 +337,7 @@ export const CouponFormPage = () => {
                     extra="Определяет раздел в клиентском каталоге."
                   >
                     <Select placeholder="Выберите категорию" loading={isCategoriesLoading} showSearch optionFilterProp="children">
-                      {categories?.map((c: any) => (
+                      {categories?.map((c: { id: number; name: string }) => (
                         <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>
                       ))}
                     </Select>

@@ -30,8 +30,9 @@ export default function ComplaintModal({ coupon, onClose }: Props) {
       queryClient.invalidateQueries({ queryKey: ['my-complaints'] });
       onClose();
     },
-    onError: (err: any) => {
-      setError(err.response?.data?.message || 'Ошибка создания обращения');
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message || 'Ошибка создания обращения');
     },
   });
 

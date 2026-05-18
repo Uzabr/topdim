@@ -23,29 +23,24 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function SmartHome() {
+function isCashierRole(): boolean {
   try {
     const raw = localStorage.getItem('partnerContext');
     if (raw) {
-      const ctx = JSON.parse(raw);
-      if (ctx.role === 'CASHIER') {
-        return <Navigate to="/redeem" replace />;
-      }
+      const ctx = JSON.parse(raw) as { role?: string };
+      return ctx.role === 'CASHIER';
     }
   } catch { /* ignore */ }
+  return false;
+}
+
+function SmartHome() {
+  if (isCashierRole()) return <Navigate to="/redeem" replace />;
   return <DashboardPage />;
 }
 
 function OwnerOnly({ children }: { children: React.ReactNode }) {
-  try {
-    const raw = localStorage.getItem('partnerContext');
-    if (raw) {
-      const ctx = JSON.parse(raw);
-      if (ctx.role === 'CASHIER') {
-        return <Navigate to="/redeem" replace />;
-      }
-    }
-  } catch { /* ignore */ }
+  if (isCashierRole()) return <Navigate to="/redeem" replace />;
   return <>{children}</>;
 }
 

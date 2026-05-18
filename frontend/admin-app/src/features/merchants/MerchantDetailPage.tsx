@@ -44,8 +44,9 @@ export const MerchantDetailPage = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-merchant', merchantId] });
       queryClient.invalidateQueries({ queryKey: ['admin-merchants'] });
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message || err.message || 'Ошибка';
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { message?: string } }, message?: string };
+      const msg = error.response?.data?.message || error.message || 'Ошибка';
       message.error(msg);
     },
   });
@@ -99,7 +100,7 @@ export const MerchantDetailPage = () => {
     setEditOpen(true);
   };
 
-  const couponColumns: ColumnsType<Record<string, any>> = [
+  const couponColumns: ColumnsType<Record<string, unknown>> = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     { title: 'Название', dataIndex: 'title', ellipsis: true },
     {
@@ -119,7 +120,7 @@ export const MerchantDetailPage = () => {
     {
       title: 'Действия',
       width: 100,
-      render: (_, record: any) => (
+      render: (_, record: Record<string, unknown>) => (
         <Button type="link" size="small" onClick={() => navigate(`/moderation/coupons/edit/${record.id}`)}>
           Открыть
         </Button>

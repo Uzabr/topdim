@@ -102,7 +102,10 @@ export default function CouponApprovalPage() {
       await queryClient.invalidateQueries({ queryKey: ['partner-coupons'] });
       navigate('/coupons');
     },
-    onError: (err: any) => message.error(err.response?.data?.message || 'Не удалось одобрить купон'),
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      message.error(e.response?.data?.message || 'Не удалось одобрить купон');
+    },
   });
 
   const revisionMutation = useMutation({
@@ -113,7 +116,10 @@ export default function CouponApprovalPage() {
       await queryClient.invalidateQueries({ queryKey: ['partner-coupons'] });
       navigate('/coupons');
     },
-    onError: (err: any) => message.error(err.response?.data?.message || 'Не удалось отправить правки'),
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      message.error(e.response?.data?.message || 'Не удалось отправить правки');
+    },
   });
 
   const handleApprove = () => {
