@@ -47,14 +47,17 @@ export default function StaffPage() {
   const { data: locations } = useQuery({ queryKey: ['locations'], queryFn: fetchLocations });
 
   const addMutation = useMutation({
-    mutationFn: (values: any) => api.post('/api/v1/partner/staff', values),
+    mutationFn: (values: Record<string, unknown>) => api.post('/api/v1/partner/staff', values),
     onSuccess: () => {
       message.success('Сотрудник добавлен');
       queryClient.invalidateQueries({ queryKey: ['staff'] });
       setModalOpen(false);
       form.resetFields();
     },
-    onError: (err: any) => message.error(err.response?.data?.message || 'Ошибка'),
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      message.error(e.response?.data?.message || 'Ошибка');
+    },
   });
 
   const deleteMutation = useMutation({
@@ -63,7 +66,10 @@ export default function StaffPage() {
       message.success('Сотрудник деактивирован');
       queryClient.invalidateQueries({ queryKey: ['staff'] });
     },
-    onError: (err: any) => message.error(err.response?.data?.message || 'Ошибка'),
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      message.error(e.response?.data?.message || 'Ошибка');
+    },
   });
 
   if (isLoading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
@@ -91,7 +97,7 @@ export default function StaffPage() {
     },
     {
       title: '', key: 'actions',
-      render: (_: any, record: Staff) => record.active ? (
+      render: (_: unknown, record: Staff) => record.active ? (
         <Popconfirm
           title="Деактивировать сотрудника?"
           onConfirm={() => deleteMutation.mutate(record.id)}

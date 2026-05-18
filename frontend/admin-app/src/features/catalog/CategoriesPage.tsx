@@ -34,15 +34,16 @@ export const CategoriesPage = () => {
 
   // Создание одной категории вручную
   const createMutation = useMutation({
-    mutationFn: (values: any) => api.post('/api/v1/admin/categories', values),
+    mutationFn: (values: Record<string, unknown>) => api.post('/api/v1/admin/categories', values),
     onSuccess: () => {
       message.success('Категория успешно создана');
       setIsModalOpen(false);
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
-    onError: (err: any) => {
-      message.error(err.response?.data?.message || 'Ошибка создания категории');
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { message?: string } } };
+      message.error(error.response?.data?.message || 'Ошибка создания категории');
     },
   });
 
@@ -119,7 +120,7 @@ export const CategoriesPage = () => {
     { title: 'Сортировка', dataIndex: 'sortOrder', width: 100 },
     {
       title: 'Действия',
-      render: (_: unknown, _record: Category) => (
+      render: () => (
         <Space>
            {/* Кнопки редактирования пока заглушки */}
           <Button type="link" size="small">Изменить иконку</Button>

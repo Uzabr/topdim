@@ -22,8 +22,9 @@ export default function RefundRequestModal({ coupon, onClose }: Props) {
       queryClient.invalidateQueries({ queryKey: ['my-refunds'] });
       onClose();
     },
-    onError: (err: any) => {
-      setError(err.response?.data?.message || 'Ошибка создания заявки');
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message || 'Ошибка создания заявки');
     },
   });
 

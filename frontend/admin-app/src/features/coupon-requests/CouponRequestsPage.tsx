@@ -65,7 +65,10 @@ export function CouponRequestsPage() {
       antMessage.success('Заявка взята в работу');
       queryClient.invalidateQueries({ queryKey: ['admin-coupon-requests'] });
     },
-    onError: (e: any) => antMessage.error(e.response?.data?.message || 'Ошибка'),
+    onError: (e: unknown) => {
+      const err = e as { response?: { data?: { message?: string } } };
+      antMessage.error(err.response?.data?.message || 'Ошибка');
+    },
   });
 
   const sendToApprovalMutation = useMutation({
@@ -74,7 +77,10 @@ export function CouponRequestsPage() {
       antMessage.success('Отправлено на согласование мерчанту');
       queryClient.invalidateQueries({ queryKey: ['admin-coupon-requests'] });
     },
-    onError: (e: any) => antMessage.error(e.response?.data?.message || 'Ошибка'),
+    onError: (e: unknown) => {
+      const err = e as { response?: { data?: { message?: string } } };
+      antMessage.error(err.response?.data?.message || 'Ошибка');
+    },
   });
 
   const rejectMutation = useMutation({
@@ -84,7 +90,10 @@ export function CouponRequestsPage() {
       antMessage.success('Заявка отклонена');
       queryClient.invalidateQueries({ queryKey: ['admin-coupon-requests'] });
     },
-    onError: (e: any) => antMessage.error(e.response?.data?.message || 'Ошибка'),
+    onError: (e: unknown) => {
+      const err = e as { response?: { data?: { message?: string } } };
+      antMessage.error(err.response?.data?.message || 'Ошибка');
+    },
   });
 
   const handleReject = (id: number) => {

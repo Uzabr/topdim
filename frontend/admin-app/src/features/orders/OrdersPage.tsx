@@ -38,7 +38,7 @@ export function OrdersPage() {
     },
     {
       title: 'Пользователь', key: 'user',
-      render: (_: any, r: AdminOrder) => (
+      render: (_: unknown, r: AdminOrder) => (
         <span>#{r.userId} — {r.userEmail || '—'}</span>
       ),
     },

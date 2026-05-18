@@ -43,8 +43,9 @@ export default function ProfileSettingsSection() {
       });
       setSuccess('Профиль обновлён');
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      const msg = err.response?.data?.message || 'Ошибка обновления профиля';
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      const msg = e.response?.data?.message || 'Ошибка обновления профиля';
       setError(msg);
     } finally {
       setIsLoading(false);

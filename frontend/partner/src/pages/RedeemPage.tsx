@@ -75,8 +75,9 @@ export default function RedeemPage() {
       setResult(res.data.data);
       setRedeemMethod('QR');
       message.success('Купон погашен по QR!');
-    } catch (err: any) {
-      const raw = err.response?.data?.message || 'Ошибка погашения';
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      const raw = e.response?.data?.message || 'Ошибка погашения';
       const friendly = normalizeCashierError(raw);
       setErrorText(friendly);
       message.error(friendly);
@@ -168,8 +169,9 @@ export default function RedeemPage() {
       setRedeemMethod('PIN');
       message.success('Купон погашен по PIN!');
       setPinCode('');
-    } catch (err: any) {
-      const raw = err.response?.data?.message || 'Ошибка погашения';
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      const raw = e.response?.data?.message || 'Ошибка погашения';
       const friendly = normalizeCashierError(raw);
       setErrorText(friendly);
       message.error(friendly);

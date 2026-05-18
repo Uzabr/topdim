@@ -34,8 +34,9 @@ export function PurchasedCouponLookupPage() {
     try {
       const data = await lookupPurchasedCoupon(searchCode);
       setResult(data);
-    } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || 'Купон не найден');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setErrorMsg(error.response?.data?.message || 'Купон не найден');
     } finally {
       setLoading(false);
     }

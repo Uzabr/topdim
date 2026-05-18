@@ -23,8 +23,9 @@ export default function ReviewForm({ couponOfferId }: ReviewFormProps) {
       queryClient.invalidateQueries({ queryKey: ['coupon-reviews', String(couponOfferId)] });
       queryClient.invalidateQueries({ queryKey: ['review-eligibility', couponOfferId] });
     },
-    onError: (err: any) => {
-      const msg = err.response?.data?.message || 'Не удалось отправить отзыв';
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      const msg = e.response?.data?.message || 'Не удалось отправить отзыв';
       setError(msg);
     },
   });

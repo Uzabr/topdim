@@ -37,7 +37,7 @@ export interface PageResponse<T> {
 }
 
 export async function fetchAdminOrders(page = 0, size = 20, status?: string): Promise<PageResponse<AdminOrder>> {
-  const params: Record<string, any> = { page, size };
+  const params: Record<string, string | number> = { page, size };
   if (status) params.status = status;
   const res = await api.get('/api/v1/admin/orders', { params });
   return res.data.data;

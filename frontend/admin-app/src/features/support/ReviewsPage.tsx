@@ -53,7 +53,7 @@ export function ReviewsPage() {
     },
     {
       title: 'Автор', key: 'author',
-      render: (_: any, r: AdminReview) => (
+      render: (_: unknown, r: AdminReview) => (
         <span>{r.userName || 'Пользователь'} <Text type="secondary">(#{r.userId})</Text></span>
       ),
     },
@@ -75,7 +75,7 @@ export function ReviewsPage() {
     },
     {
       title: 'Действия', key: 'actions', width: 200,
-      render: (_: any, r: AdminReview) => (
+      render: (_: unknown, r: AdminReview) => (
         <Space>
           <Button
             type="primary" size="small"
