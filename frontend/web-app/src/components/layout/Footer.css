@@ -5,7 +5,6 @@
 .app-footer {
   border-top: 1px solid var(--border);
   background: var(--bg-surface);
-  padding-bottom: calc(var(--bottom-nav-height) + 16px);
 }
 
 .footer-content {
