@@ -46,3 +46,4 @@ postgres_data/
 redis_data/
 rabbitmq_data/
 minio_data/
+gradle.properties.local
