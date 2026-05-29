@@ -139,17 +139,11 @@ jobs:
 
             for svc in discovery-server config-server api-gateway \
                        identity-service coupon-service order-service \
-                       payment-service bazaar-service notification-service media-service; do
+                       payment-service bazaar-service notification-service media-service \
+                       web-app admin-app partner; do
               echo "Updating topdim_${svc}..."
               docker service update --image "${REGISTRY}/${svc}:latest" \
-                "topdim_${svc}" --with-registry-auth \
-                && echo "  OK: ${svc}" || echo "  SKIP: ${svc} (not found)"
-            done
-
-            for svc in web-app admin-app partner; do
-              echo "Updating topdim_${svc}..."
-              docker service update --image "${REGISTRY}/${svc}:latest" \
-                "topdim_${svc}" --with-registry-auth \
+                "topdim_${svc}" --with-registry-auth --detach \
                 && echo "  OK: ${svc}" || echo "  SKIP: ${svc} (not found)"
             done
 
