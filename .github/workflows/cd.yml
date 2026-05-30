@@ -84,10 +84,13 @@ jobs:
         include:
           - service: web-app
             app_path: frontend/web-app
+            api_url: https://api.sizbiz.uz
           - service: admin-app
             app_path: frontend/admin-app
+            api_url: https://api.sizbiz.uz
           - service: partner
             app_path: frontend/partner
+            api_url: https://api.sizbiz.uz
 
     steps:
       - name: Checkout
@@ -114,6 +117,7 @@ jobs:
             ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:sha-${{ github.sha }}
           build-args: |
             APP_PATH=${{ matrix.app_path }}
+            VITE_API_URL=${{ matrix.api_url }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
