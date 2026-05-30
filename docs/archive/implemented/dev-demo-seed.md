@@ -1,4 +1,8 @@
-# Dev Demo Seed — Руководство
+# Dev Demo Seed — Руководство (v3 — Realistic Tashkent Data)
+
+> **v3 Update:** Seed-данные теперь содержат реальные заведения Ташкента (Caravan, Besh Qozon,
+> Coffee Nation, Shavi, Santander Barberia, Manor SPA, BeFit, Galaxy Bowling, Najot Ta'lim и др.)
+> с настоящими адресами и рыночными ценами в UZS на основе данных 2025 года.
 
 ## Что создаёт seed
 
