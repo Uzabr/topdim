@@ -59,7 +59,7 @@ public class OrderService {
      * @param userId ID пользователя из JWT
      * @return корзина с товарами
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public Cart getCartByUserId(Long userId) {
         return cartRepository.findByUserId(userId)
                 .orElseGet(() -> {
