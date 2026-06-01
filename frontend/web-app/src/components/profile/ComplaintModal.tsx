@@ -1,17 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { complaintsApi } from '../../api/complaints';
 import { X } from 'lucide-react';
 import type { PurchasedCoupon } from '../../api/orders';
 import './RefundRequestModal.css';
-
-const SUBJECTS = [
-  'Партнёр не принял купон',
-  'QR/PIN не сработал',
-  'Адрес или контакты неверные',
-  'Условия не совпали',
-  'Другое',
-];
 
 interface Props {
   coupon: PurchasedCoupon;
@@ -19,27 +12,37 @@ interface Props {
 }
 
 export default function ComplaintModal({ coupon, onClose }: Props) {
-  const [subject, setSubject] = useState(SUBJECTS[0]);
+  const { t } = useTranslation();
+  const subjects = useMemo(() => [
+    t('profile.complaintModal.topics.notAccepted'),
+    t('profile.complaintModal.topics.qrFailed'),
+    t('profile.complaintModal.topics.wrongAddress'),
+    t('profile.complaintModal.topics.termsMismatch'),
+    t('profile.complaintModal.topics.other'),
+  ], [t]);
+  const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const queryClient = useQueryClient();
 
+  const activeSubject = subject || subjects[0];
+
   const mutation = useMutation({
-    mutationFn: () => complaintsApi.create({ purchasedCouponId: coupon.id, subject, description }),
+    mutationFn: () => complaintsApi.create({ purchasedCouponId: coupon.id, subject: activeSubject, description }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-complaints'] });
       onClose();
     },
     onError: (err: unknown) => {
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Ошибка создания обращения');
+      setError(e.response?.data?.message || t('profile.complaintModal.error'));
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (description.trim().length < 10) {
-      setError('Описание должно содержать минимум 10 символов');
+      setError(t('profile.complaintModal.descMin'));
       return;
     }
     mutation.mutate();
@@ -49,7 +52,7 @@ export default function ComplaintModal({ coupon, onClose }: Props) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card glass-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Сообщить о проблеме</h3>
+          <h3>{t('profile.complaintModal.title')}</h3>
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
 
@@ -59,26 +62,26 @@ export default function ComplaintModal({ coupon, onClose }: Props) {
         </div>
 
         <div className="modal-info">
-          <p>Опишите проблему с купоном. Поддержка проверит обращение и ответит в этом разделе.</p>
+          <p>{t('profile.complaintModal.desc')}</p>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <label className="modal-label">Тема *</label>
+          <label className="modal-label">{t('profile.complaintModal.topicLabel')}</label>
           <select
             className="modal-textarea"
             style={{ minHeight: 'auto' }}
-            value={subject}
+            value={activeSubject}
             onChange={(e) => setSubject(e.target.value)}
           >
-            {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
+            {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
 
-          <label className="modal-label" style={{ marginTop: 12 }}>Описание проблемы *</label>
+          <label className="modal-label" style={{ marginTop: 12 }}>{t('profile.complaintModal.descLabel')}</label>
           <textarea
             className="modal-textarea"
             value={description}
             onChange={(e) => { setDescription(e.target.value); setError(''); }}
-            placeholder="Подробно опишите проблему (минимум 10 символов)"
+            placeholder={t('profile.complaintModal.descPlaceholder')}
             rows={4}
             maxLength={2000}
           />
@@ -86,9 +89,9 @@ export default function ComplaintModal({ coupon, onClose }: Props) {
           {error && <div className="modal-error">{error}</div>}
 
           <div className="modal-actions">
-            <button type="button" className="secondary-button" onClick={onClose}>Отмена</button>
+            <button type="button" className="secondary-button" onClick={onClose}>{t('common.cancel')}</button>
             <button type="submit" className="primary-button" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Отправка...' : 'Отправить обращение'}
+              {mutation.isPending ? t('common.submitting') : t('profile.complaintModal.submit')}
             </button>
           </div>
         </form>

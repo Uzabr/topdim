@@ -92,7 +92,7 @@ export default function Header() {
               <User size={18} />
               {hasUnread && <span className="notification-dot" />}
             </span>
-            <span>{isAuthenticated ? user?.firstName ?? 'Profile' : t('header.login')}</span>
+            <span>{isAuthenticated ? user?.firstName ?? t('header.profile') : t('header.login')}</span>
           </Link>
 
           {/* BURGER */}

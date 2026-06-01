@@ -27,25 +27,25 @@ export default function Footer() {
 
         {/* User links */}
         <div className="footer-column">
-          <h3>Пользователям</h3>
+          <h3>{t('footer.usersTitle')}</h3>
           <ul>
-            <li><Link to={lp('/coupons')}>Каталог купонов</Link></li>
-            <li><Link to={lp('/favorites')}>Избранное</Link></li>
+            <li><Link to={lp('/coupons')}>{t('footer.catalog')}</Link></li>
+            <li><Link to={lp('/favorites')}>{t('footer.favorites')}</Link></li>
             {BAZAAR_NAV_ENABLED && (
-              <li><Link to={lp('/bazaar')}>Онлайн базар</Link></li>
+              <li><Link to={lp('/bazaar')}>{t('footer.bazaar')}</Link></li>
             )}
-            <li><Link to={lp('/profile')}>Мои купоны</Link></li>
+            <li><Link to={lp('/profile')}>{t('footer.myCoupons')}</Link></li>
           </ul>
         </div>
 
         {/* Partners */}
         <div className="footer-column">
-          <h3>Партнёрам</h3>
+          <h3>{t('footer.partnersTitle')}</h3>
           <ul>
             <li><Link to={lp('/partners')}>{t('footer.business')}</Link></li>
             <li><Link to={lp('/faq')}>{t('footer.faq')}</Link></li>
             <li><Link to={lp('/terms')}>{t('footer.terms')}</Link></li>
-            <li><Link to={lp('/privacy')}>Политика конфиденциальности</Link></li>
+            <li><Link to={lp('/privacy')}>{t('footer.privacy')}</Link></li>
           </ul>
         </div>
 
@@ -63,22 +63,22 @@ export default function Footer() {
                 <Phone size={15} /> +998 71 200 00 00
               </a>
             </li>
-            <li><MapPin size={15} /> г. Ташкент</li>
+            <li><MapPin size={15} /> {t('common.city')}</li>
           </ul>
           <div className="footer-apps">
-            <h4>Мобильное приложение</h4>
+            <h4>{t('footer.mobileApp')}</h4>
             <div className="footer-app-badges">
               <button className="footer-app-badge footer-app-badge--disabled" disabled>
                 <Smartphone size={18} />
                 <div>
-                  <span className="footer-app-badge__label">Скоро в</span>
+                  <span className="footer-app-badge__label">{t('common.soonIn')}</span>
                   <span className="footer-app-badge__store">App Store</span>
                 </div>
               </button>
               <button className="footer-app-badge footer-app-badge--disabled" disabled>
                 <Smartphone size={18} />
                 <div>
-                  <span className="footer-app-badge__label">Скоро в</span>
+                  <span className="footer-app-badge__label">{t('common.soonIn')}</span>
                   <span className="footer-app-badge__store">Google Play</span>
                 </div>
               </button>

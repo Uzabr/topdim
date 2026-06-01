@@ -1,15 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { MapPin, Store, Clock } from 'lucide-react';
 import type { Bazaar } from '../../api/bazaars';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import './DirectoryCards.css';
-
-const TYPE_LABELS: Record<string, string> = {
-  BAZAAR: 'Базар',
-  SHOPPING_CENTER: 'ТЦ',
-  MARKET: 'Рынок',
-  TRADE_COMPLEX: 'Торговый комплекс',
-};
 
 interface Props {
   bazaar: Bazaar;
@@ -17,7 +11,14 @@ interface Props {
 }
 
 export default function DirectoryBazaarCard({ bazaar, compact = false }: Props) {
+  const { t } = useTranslation();
   const lp = useLocalePath();
+  const typeLabels: Record<string, string> = {
+    BAZAAR: t('directory.types.bazaar'),
+    SHOPPING_CENTER: t('directory.types.shoppingCenter'),
+    MARKET: t('directory.types.market'),
+    TRADE_COMPLEX: t('directory.types.tradeComplexFull'),
+  };
   return (
     <Link to={lp(`/bazaar/${bazaar.id}`)} className={`dir-card dir-card--bazaar ${compact ? 'dir-card--compact' : ''}`}>
       {bazaar.coverImageUrl && !compact && (
@@ -27,7 +28,7 @@ export default function DirectoryBazaarCard({ bazaar, compact = false }: Props) 
       )}
       <div className="dir-card__body">
         <div className="dir-card__badges">
-          <span className="dir-card__type">{TYPE_LABELS[bazaar.type] || bazaar.type}</span>
+          <span className="dir-card__type">{typeLabels[bazaar.type] || bazaar.type}</span>
           {bazaar.shopCount > 0 && (
             <span className="dir-card__shop-count">
               <Store size={12} /> {bazaar.shopCount} магазинов

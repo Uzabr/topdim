@@ -1,4 +1,5 @@
 import { Heart } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import './FavoriteButton.css';
 
@@ -7,6 +8,7 @@ interface FavoriteButtonProps {
 }
 
 export default function FavoriteButton({ couponId }: FavoriteButtonProps) {
+  const { t } = useTranslation();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
   const fav = isFavorite(couponId);
 
@@ -18,7 +20,7 @@ export default function FavoriteButton({ couponId }: FavoriteButtonProps) {
         e.stopPropagation();
         toggleFavorite(couponId);
       }}
-      aria-label="В избранное"
+      aria-label={t('couponDetail.favorite')}
     >
       <Heart size={16} fill={fav ? 'currentColor' : 'none'} />
     </button>

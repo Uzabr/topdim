@@ -1,6 +1,7 @@
 import type { CouponOffer } from '../../api/coupons';
 import ReactMarkdown from 'react-markdown';
 import { MapPin, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import RevealPhone from '../ui/RevealPhone';
 
 interface MerchantInfoSectionProps {
@@ -8,6 +9,7 @@ interface MerchantInfoSectionProps {
 }
 
 export default function MerchantInfoSection({ coupon }: MerchantInfoSectionProps) {
+  const { t } = useTranslation();
   const m = coupon.merchant;
   if (!m) return null;
 
@@ -15,7 +17,7 @@ export default function MerchantInfoSection({ coupon }: MerchantInfoSectionProps
 
   return (
     <div className="detail-block merchant-info-section">
-      <h2 className="detail-section-title">О партнёре</h2>
+      <h2 className="detail-section-title">{t('couponDetail.merchantSection')}</h2>
 
       <div className="merchant-info-header">
         {m.logoUrl ? (

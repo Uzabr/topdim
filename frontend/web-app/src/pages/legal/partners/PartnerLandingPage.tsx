@@ -13,6 +13,7 @@ import {
   MapPin, Play, Users, BarChart3, 
   ShieldCheck, Eye, Zap, Layers, Plus, ChevronDown
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { submitPartnerApplication } from '../../../api/partners';
 import type { PartnerApplicationData } from '../../../api/partners';
 import './PartnerLandingPage.css';
@@ -95,6 +96,7 @@ function ParticleGalaxy() {
 
 /* ── NAVBAR ── */
 function NavBar() {
+  const { t } = useTranslation();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -113,10 +115,10 @@ function NavBar() {
         </a>
         <div className="hidden md:flex gap-8" style={{ display: 'flex', gap: '8px'}}>
           <a href="#steps" className="btn-outline" style={{ textDecoration: 'none' }}>
-            Алгоритм
+            {t('partners.navAlgorithm')}
           </a>
           <a href="#lead" className="btn-primary" style={{ textDecoration: 'none' }}>
-            Стать партнёром
+            {t('partners.navJoin')}
           </a>
         </div>
       </div>
@@ -124,19 +126,14 @@ function NavBar() {
   );
 }
 
-/* ── DATA ── */
-const cities = ['Ташкент', 'Самарканд', 'Бухара', 'Наманган', 'Андижан', 'Фергана', 'Нукус', 'Хива'];
-const bizCats = ['Кафе / Ресторан', 'Beauty / SPA', 'Фитнес', 'Образование', 'Развлечения', 'Магазин', 'Услуги'];
-
-const schema = z.object({
-  name: z.string().trim().min(2, 'Укажите имя'),
-  phone: z.string().trim().regex(/^\+?998\s?\d{2}\s?\d{3}\s?\d{2}\s?\d{2}$/, 'Формат: +998 XX XXX XX XX'),
-  city: z.string().trim().min(1, 'Выберите город'),
-  businessCategory: z.string().trim().min(1, 'Выберите категорию'),
-  businessName: z.string().trim().optional().or(z.literal('')),
-  comment: z.string().trim().optional().or(z.literal('')),
-});
-type FormValues = z.infer<typeof schema>;
+type FormValues = {
+  name: string;
+  phone: string;
+  city: string;
+  businessCategory: string;
+  businessName?: string;
+  comment?: string;
+};
 
 /* ── CUSTOM SELECT ── */
 function CustomSelect({ options, value, onChange, placeholder }: { options: string[], value: string, onChange: (val: string) => void, placeholder: string }) {
@@ -269,6 +266,7 @@ export default function PartnerLandingPage() {
 
 /* ── 1. HERO ── */
 function HeroSection() {
+  const { t } = useTranslation();
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 800], [0, 200]); // текст уходит вверх на 200px при скролле 800px
   const opacity = useTransform(scrollY, [0, 600], [1, 0]); // плавное исчезновение 
@@ -283,19 +281,19 @@ function HeroSection() {
           animate="visible"
           style={{ y, opacity }}>
           <motion.h1 className="hero-title" variants={blurReveal}>
-            Будущее<br/>локального бизнеса
+            {t('partners.heroTitleLine1')}<br/>{t('partners.heroTitleLine2')}
           </motion.h1>
           
           <motion.p className="hero-desc" variants={blurReveal}>
-            TopDim объединяет лучшие предложения города в одном месте. Мы приводим клиентов, которые ищут именно вас, без сложных настроек рекламы.
+            {t('partners.heroDesc')}
           </motion.p>
           
           <motion.div className="flex flex-row gap-8 items-center justify-center" variants={blurReveal} style={{ display: 'flex', gap: '8px', justifyContent: 'center'}}>
             <a href="#lead" className="btn-primary inline-flex items-center justify-center gap-[10px]" style={{ textDecoration: 'none' }}>
-              Стать партнёром <ArrowRight size={18} />
+              {t('partners.ctaJoin')} <ArrowRight size={18} />
             </a>
             <a href="#steps" className="btn-outline inline-flex items-center justify-center gap-[10px]" style={{ textDecoration: 'none' }}>
-              <span>Как это работает</span>
+              <span>{t('partners.howItWorks')}</span>
             </a>
           </motion.div>
         </motion.div>
@@ -318,17 +316,18 @@ function ImpactMarquee() {
 
 /* ── 3. CATEGORIES ── */
 function CategoriesSection() {
+  const { t } = useTranslation();
   const cats = [
-    { n: 'Кафе / Рестораны', i: Zap }, { n: 'Салоны красоты', i: Eye },
-    { n: 'Фитнес-клубы', i: Users }, { n: 'Магазины', i: MapPin },
-    { n: 'Развлечения', i: Play }, { n: 'Услуги', i: Layers }
+    { n: t('partners.audience.cafe'), i: Zap }, { n: t('partners.audience.beauty'), i: Eye },
+    { n: t('partners.audience.fitness'), i: Users }, { n: t('partners.audience.shops'), i: MapPin },
+    { n: t('partners.audience.entertainment'), i: Play }, { n: t('partners.audience.services'), i: Layers }
   ];
   return (
     <section className="spacer-section">
       <div className="mx w-full">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={blurReveal}>
-          <h2 className="sec-title">Для кого <span>TopDim</span></h2>
-          <p className="sec-desc">Наша платформа адаптирована для локального бизнеса любых форматов.</p>
+          <h2 className="sec-title">{t('partners.audienceTitle')} <span>TopDim</span></h2>
+          <p className="sec-desc">{t('partners.audienceDesc')}</p>
         </motion.div>
         
         <motion.div className="cat-grid" variants={staggerChildren} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}>
@@ -349,6 +348,7 @@ function CategoriesSection() {
 
 /* ── 4. STORY (PINNED SCROLL) ── */
 function StorySection() {
+  const { t } = useTranslation();
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
 
@@ -366,10 +366,10 @@ function StorySection() {
   });
 
   const stepsData = [
-    { t: 'Оставьте заявку', d: 'Заполнение формы занимает 1 минуту. Мы свяжемся с вами в тот же день.' },
-    { t: 'Настройка акции', d: 'Вместе придумываем сочный оффер: скидка, подарок или 2 по цене 1.' },
-    { t: 'Купон в эфире', d: 'Ваше предложение видят тысячи людей в вашем городе через приложение TopDim.' },
-    { t: 'Поток клиентов', d: 'Гости приходят и показывают QR или говорят PIN-код кассиру для погашения.' },
+    { title: t('partners.steps.apply.title'), desc: t('partners.steps.apply.desc') },
+    { title: t('partners.steps.setup.title'), desc: t('partners.steps.setup.desc') },
+    { title: t('partners.steps.live.title'), desc: t('partners.steps.live.desc') },
+    { title: t('partners.steps.clients.title'), desc: t('partners.steps.clients.desc') },
   ];
 
   return (
@@ -378,7 +378,7 @@ function StorySection() {
         <div className="story-grid">
           
           <div className="story-l-sticky">
-            <h2 className="sec-title" style={{ marginBottom: 0 }}>Алгоритм<br/>Успеха</h2>
+            <h2 className="sec-title" style={{ marginBottom: 0 }}>{t('partners.algorithmTitleLine1')}<br/>{t('partners.algorithmTitleLine2')}</h2>
             <div className="story-big-num-wrap">
               <AnimatePresence>
                 {stepsData.map((_, i) => (
@@ -402,8 +402,8 @@ function StorySection() {
           <div className="story-r-list">
             {stepsData.map((s, i) => (
               <div key={i} className={`step-item ${current === i ? 'active' : ''}`}>
-                <h3>{s.t}</h3>
-                <p>{s.d}</p>
+                <h3>{s.title}</h3>
+                <p>{s.desc}</p>
               </div>
             ))}
           </div>
@@ -416,33 +416,34 @@ function StorySection() {
 
 /* ── 5. BENTO ── */
 function BentoSection() {
+  const { t } = useTranslation();
   return (
     <section className="spacer-section">
       <div className="mx w-full">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={blurReveal}>
-          <h2 className="sec-title">Аналитика и Выгода</h2>
+          <h2 className="sec-title">{t('partners.benefitsTitle')}</h2>
         </motion.div>
         
         <motion.div className="bento" variants={staggerChildren} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-10%" }}>
           <BentoCard className="wide">
             <div className="b-icon"><Users size={60} strokeWidth={1} /></div>
-            <h3>Новые клиенты</h3>
-            <p>Привлекайте аудиторию, которая целенаправленно ищет скидки и новые места в вашем городе.</p>
+            <h3>{t('partners.benefitNewClients')}</h3>
+            <p>{t('partners.benefitNewClientsDesc')}</p>
           </BentoCard>
           <BentoCard className="tall">
             <div className="b-icon"><BarChart3 size={60} strokeWidth={1} /></div>
-            <h3>Прозрачность</h3>
-            <p>Полная аналитика просмотров и использований купонов в реальном времени. Измеряйте ROI без сложных настроек рекламных кабинетов.</p>
+            <h3>{t('partners.benefitTransparency')}</h3>
+            <p>{t('partners.benefitTransparencyDesc')}</p>
           </BentoCard>
           <BentoCard>
             <div className="b-icon"><MapPin size={60} strokeWidth={1} /></div>
-            <h3>Локальность</h3>
-            <p>Рекламируем ваш бизнес людям рядом с вами.</p>
+            <h3>{t('partners.benefitLocal')}</h3>
+            <p>{t('partners.benefitLocalDesc')}</p>
           </BentoCard>
           <BentoCard>
             <div className="b-icon"><Zap size={60} strokeWidth={1} /></div>
-            <h3>Мотивация</h3>
-            <p>Ограниченный срок купона стимулирует к быстрой покупке.</p>
+            <h3>{t('partners.benefitMotivation')}</h3>
+            <p>{t('partners.benefitMotivationDesc')}</p>
           </BentoCard>
         </motion.div>
       </div>
@@ -452,8 +453,31 @@ function BentoSection() {
 
 /* ── 6. FORM ── */
 function FormSection() {
+  const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const schema = useMemo(() => z.object({
+    name: z.string().trim().min(2, t('partners.validation.name')),
+    phone: z.string().trim().regex(/^\+?998\s?\d{2}\s?\d{3}\s?\d{2}\s?\d{2}$/, t('partners.validation.phone')),
+    city: z.string().trim().min(1, t('partners.validation.city')),
+    businessCategory: z.string().trim().min(1, t('partners.validation.category')),
+    businessName: z.string().trim().optional().or(z.literal('')),
+    comment: z.string().trim().optional().or(z.literal('')),
+  }), [t]);
+
+  const cities = useMemo(() => [
+    t('partners.cities.tashkent'), t('partners.cities.samarkand'), t('partners.cities.bukhara'),
+    t('partners.cities.namangan'), t('partners.cities.andijan'), t('partners.cities.fergana'),
+    t('partners.cities.nukus'), t('partners.cities.khiva'),
+  ], [t]);
+
+  const bizCats = useMemo(() => [
+    t('partners.bizCategories.cafe'), t('partners.bizCategories.beauty'), t('partners.bizCategories.fitness'),
+    t('partners.bizCategories.education'), t('partners.bizCategories.entertainment'),
+    t('partners.bizCategories.shop'), t('partners.bizCategories.services'),
+  ], [t]);
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   const selectedCity = watch('city');
@@ -469,12 +493,12 @@ function FormSection() {
         companyName: values.businessName || `${values.businessCategory}, ${values.city}`,
         city: values.city,
         businessCategory: values.businessCategory,
-        comment: values.comment || 'Заявка с Landing Page'
+        comment: values.comment || t('partners.commentDefault')
       };
       await submitPartnerApplication(data);
       setSuccess(true);
     } catch {
-      alert("Ошибка при отправке. Пожалуйста, попробуйте позже.");
+      alert(t('partners.formError'));
     } finally {
       setSubmitting(false);
     }
@@ -486,12 +510,12 @@ function FormSection() {
         <div className="form-hero">
           <div>
             <motion.h2 className="sec-title mb-6" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={blurReveal}>
-              Начать <br/>Сотрудничество
+              {t('partners.formTitleLine1')} <br/>{t('partners.formTitleLine2')}
             </motion.h2>
             <motion.p className="sec-desc text-xl mb-10" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={blurReveal}>
-              Оставьте заявку — мы свяжемся с вами, расскажем условия и поможем подготовить первое предложение.
+              {t('partners.formDesc')}
             </motion.p>
-            <div className="flex items-center gap-4 text-dim"><ShieldCheck color="var(--accent-red)"/> Защита данных</div>
+            <div className="flex items-center gap-4 text-dim"><ShieldCheck color="var(--accent-red)"/> {t('partners.dataProtection')}</div>
           </div>
           
           <div>
@@ -499,19 +523,19 @@ function FormSection() {
               {success ? (
                 <motion.div key="success" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
                   <CheckCircle2 size={80} color="var(--accent-red)" className="mx-auto mb-6" />
-                  <h3 className="text-3xl font-display font-bold mb-4">Заявка принята</h3>
-                  <p className="text-dim">Мы скоро с вами свяжемся.</p>
+                  <h3 className="text-3xl font-display font-bold mb-4">{t('partners.formSuccessTitle')}</h3>
+                  <p className="text-dim">{t('partners.formSuccessDesc')}</p>
                 </motion.div>
               ) : (
                 <motion.form key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onSubmit={onSubmit} noValidate>
                   <div className="flex gap-6 form-row">
                     <div className="f-group w-1/2">
-                      <label>Имя</label>
-                      <input {...register('name')} placeholder="Азиза" />
+                      <label>{t('partners.formName')}</label>
+                      <input {...register('name')} placeholder={t('partners.namePlaceholder')} />
                       {errors.name && <span className="text-red-500 text-xs mt-2 block" role="alert">{errors.name.message}</span>}
                     </div>
                     <div className="f-group w-1/2">
-                      <label>Телефон</label>
+                      <label>{t('partners.formPhone')}</label>
                       <input {...register('phone')} placeholder="+998 XX XXX XX XX" />
                       {errors.phone && <span className="text-red-500 text-xs mt-2 block" role="alert">{errors.phone.message}</span>}
                     </div>
@@ -519,9 +543,9 @@ function FormSection() {
                   
                   <div className="flex gap-6 form-row">
                     <div className="f-group w-1/2">
-                      <label>Город</label>
+                      <label>{t('partners.formCity')}</label>
                       <CustomSelect 
-                        placeholder="Выбрать"
+                        placeholder={t('partners.formSelect')}
                         options={cities}
                         value={selectedCity || ''}
                         onChange={(val) => setValue('city', val, { shouldValidate: true })}
@@ -529,9 +553,9 @@ function FormSection() {
                       {errors.city && <span className="text-red-500 text-xs mt-2 block" role="alert">{errors.city.message}</span>}
                     </div>
                     <div className="f-group w-1/2">
-                      <label>Категория</label>
+                      <label>{t('partners.formCategory')}</label>
                       <CustomSelect 
-                        placeholder="Выбрать"
+                        placeholder={t('partners.formSelect')}
                         options={bizCats}
                         value={selectedCategory || ''}
                         onChange={(val) => setValue('businessCategory', val, { shouldValidate: true })}
@@ -541,12 +565,12 @@ function FormSection() {
                   </div>
 
                   <div className="f-group">
-                    <label>Название бизнеса</label>
-                    <input {...register('businessName')} placeholder="Необязательно" />
+                    <label>{t('partners.formBusinessName')}</label>
+                    <input {...register('businessName')} placeholder={t('partners.formOptional')} />
                   </div>
 
                   <button type="submit" disabled={submitting} className="btn-submit">
-                    {submitting ? 'Отправка...' : 'Отправить'}
+                    {submitting ? t('common.submitting') : t('partners.formSubmit')}
                   </button>
                 </motion.form>
               )}
@@ -560,18 +584,19 @@ function FormSection() {
 
 /* ── 7. FAQ & CTA ── */
 function FaqSection() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState<number | null>(0);
   const faqs = [
-    { q: 'Сколько стоит подключение?', a: 'Условия прозрачны: комиссия только за реально купленные купоны.' },
-    { q: 'Нужно ли самому создавать купоны?', a: 'Мы помогаем упаковать оффер и сделать крутой дизайн.' },
-    { q: 'Как клиент использует купон?', a: 'Он показывает PIN или QR. Кассир вводит его в кабинете.' },
-    { q: 'Подходит ли TopDim для малого бизнеса?', a: 'Да, платформа отлично генерирует локальный трафик.' },
+    { q: t('partners.faq.q1'), a: t('partners.faq.a1') },
+    { q: t('partners.faq.q2'), a: t('partners.faq.a2') },
+    { q: t('partners.faq.q3'), a: t('partners.faq.a3') },
+    { q: t('partners.faq.q4'), a: t('partners.faq.a4') },
   ];
 
   return (
     <section className="spacer-section" style={{ flexDirection: 'column' }}>
       <div className="mx w-full mb-40">
-        <h2 className="sec-title text-center mb-16">Частые Вопросы</h2>
+        <h2 className="sec-title text-center mb-16">{t('partners.faqTitle')}</h2>
         <div className="faq-list">
           {faqs.map((f, i) => (
             <div key={i} className="faq-row">
@@ -594,7 +619,7 @@ function FaqSection() {
       <div className="mx w-full text-center pb-40">
         <h2 className="final-title">READY TO GROW?</h2>
         <a href="#lead" className="btn-primary" style={{ textDecoration: 'none', transform: 'scale(1.2)', margin: '20px auto', display: 'flex', maxWidth: '240px', justifyContent: 'center' }}>
-          Стать партнёром
+          {t('partners.ctaJoin')}
         </a>
       </div>
     </section>

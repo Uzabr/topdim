@@ -1,11 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, ShoppingBag, ArrowRight, Plus, Minus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useCartStore } from '../store/cartStore';
 import { formatPrice } from '../utils/format';
 import { useLocalePath } from '../hooks/useLocalePath';
 import './CartPage.css';
 
 export default function CartPage() {
+  const { t } = useTranslation();
   const { items, totalItems, totalPrice, removeFromCart, updateQuantity } = useCartStore();
   const navigate = useNavigate();
   const lp = useLocalePath();
@@ -19,10 +21,10 @@ export default function CartPage() {
       <div className="cart-page">
         <div className="cart-empty container">
           <div className="cart-empty__icon">🛒</div>
-          <h2>Корзина пуста</h2>
-          <p>Добавьте купоны из каталога, чтобы начать покупки</p>
+          <h2>{t('cart.emptyTitle')}</h2>
+          <p>{t('cart.emptyDesc')}</p>
           <Link to={lp('/coupons')} className="primary-button cart-empty__btn">
-            <ShoppingBag size={18} /> К купонам
+            <ShoppingBag size={18} /> {t('cart.toCoupons')}
           </Link>
         </div>
       </div>
@@ -32,8 +34,8 @@ export default function CartPage() {
   return (
     <div className="cart-page">
       <div className="cart-header container">
-        <h1 className="cart-title">Корзина</h1>
-        <span className="cart-count badge">{totalItems} товар(ов)</span>
+        <h1 className="cart-title">{t('cart.title')}</h1>
+        <span className="cart-count badge">{t('cart.itemsCount', { count: totalItems })}</span>
       </div>
 
       <div className="cart-content container">
@@ -52,7 +54,7 @@ export default function CartPage() {
                 <p className="cart-item__option">{item.optionTitle}</p>
                 {item.isGift && (
                   <span className="cart-item__gift badge">
-                    🎁 В подарок {item.giftRecipientName ? `(Кому: ${item.giftRecipientName})` : ''}
+                    🎁 {t('cart.gift')}{item.giftRecipientName ? ` (${t('cart.giftTo', { name: item.giftRecipientName })})` : ''}
                   </span>
                 )}
                 <div className="cart-item__qty">
@@ -78,7 +80,7 @@ export default function CartPage() {
                 <button
                   className="icon-button cart-item__remove"
                   onClick={() => removeFromCart(item.key)}
-                  aria-label="Удалить"
+                  aria-label={t('common.delete')}
                 >
                   <Trash2 size={18} />
                 </button>
@@ -88,17 +90,17 @@ export default function CartPage() {
         </div>
 
         <div className="cart-summary glass-card">
-          <h2>Итого</h2>
+          <h2>{t('cart.summary')}</h2>
           <div className="cart-summary__row">
-            <span>Товары ({totalItems})</span>
+            <span>{t('cart.itemsLine', { count: totalItems })}</span>
             <span className="cart-summary__value">{formatPrice(totalPrice)}</span>
           </div>
           <div className="cart-summary__total">
-            <span>К оплате</span>
+            <span>{t('cart.toPay')}</span>
             <span className="cart-summary__price">{formatPrice(totalPrice)}</span>
           </div>
           <button onClick={handleCheckout} className="primary-button cart-summary__btn">
-            Оформить заказ <ArrowRight size={18} />
+            {t('cart.checkout')} <ArrowRight size={18} />
           </button>
         </div>
       </div>

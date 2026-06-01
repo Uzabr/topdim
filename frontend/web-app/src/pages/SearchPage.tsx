@@ -2,15 +2,15 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Flame } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { bazaarsApi } from '../api/bazaars';
 import type { Shop } from '../api/bazaars';
 import { couponsApi } from '../api/coupons';
 import CouponCard from '../components/coupon/CouponCard';
 import SearchBar from '../components/ui/SearchBar';
+import { useLocalePath } from '../hooks/useLocalePath';
 import { mapCouponOfferToCardData } from '../utils/couponCardMapper';
 import './SearchPage.css';
-
-const POPULAR_QUERIES = ['SPA', 'Пицца', 'Фитнес', 'Sushi', 'Картинг'];
 
 type SearchShop = Shop & {
   hasCoupon?: boolean;
@@ -18,9 +18,13 @@ type SearchShop = Shop & {
 };
 
 export default function SearchPage() {
+  const { t } = useTranslation();
+  const lp = useLocalePath();
   const [query, setQuery] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
+
+  const popularQueries = ['SPA', t('search.popular.pizza'), t('search.popular.fitness'), 'Sushi', t('search.popular.karting')];
 
   const { data: categories = [] } = useQuery({
     queryKey: ['search-categories'],
@@ -60,7 +64,7 @@ export default function SearchPage() {
   return (
     <div className="search-page container">
       <div className="search-header">
-        <h1>Поиск</h1>
+        <h1>{t('search.title')}</h1>
         <div className="search-page-bar-container">
           <SearchBar
             value={query}
@@ -68,7 +72,7 @@ export default function SearchPage() {
             onSubmit={(val) => {
               if (val.trim()) setSearchTerm(val.trim());
             }}
-            placeholder="Искать скидки, магазины или услуги..."
+            placeholder={t('search.pagePlaceholder')}
             autoFocus
           />
         </div>
@@ -77,7 +81,7 @@ export default function SearchPage() {
       {!searchTerm && !isTyping && (
         <div className="search-suggestions glass-card">
           <div className="search-categories">
-            <h3 className="search-suggestions__title">Популярные категории</h3>
+            <h3 className="search-suggestions__title">{t('search.popularCategories')}</h3>
             <div className="categories-grid">
               {categories.map((c) => (
                 <div key={c.id} className="category-card" onClick={() => applyPopular(c.name)}>
@@ -89,10 +93,10 @@ export default function SearchPage() {
           </div>
           <h3 className="search-suggestions__title" style={{ marginTop: '24px' }}>
             <Flame size={18} color="var(--primary)" />
-            Популярные запросы
+            {t('search.popularQueries')}
           </h3>
           <div className="search-tags">
-            {POPULAR_QUERIES.map(q => (
+            {popularQueries.map(q => (
               <button key={q} className="search-tag-btn" onClick={() => applyPopular(q)}>
                 {q}
               </button>
@@ -104,13 +108,12 @@ export default function SearchPage() {
       {searchTerm && (
         <div className="search-results">
           {isLoading ? (
-            <div className="search-loading">Поиск лучших предложений...</div>
+            <div className="search-loading">{t('search.loading')}</div>
           ) : (
             <>
-              {/* Coupons Results */}
               {filteredCoupons.length > 0 && (
                 <div className="search-section">
-                  <h2 className="search-section__title">Акции и купоны <span className="badge">{filteredCoupons.length}</span></h2>
+                  <h2 className="search-section__title">{t('search.couponsSection')} <span className="badge">{filteredCoupons.length}</span></h2>
                   <div className="search-grid">
                     {filteredCoupons.map((coupon) => (
                       <CouponCard key={coupon.id} coupon={coupon} layout="card" />
@@ -119,16 +122,15 @@ export default function SearchPage() {
                 </div>
               )}
 
-              {/* Shops Results */}
               {shops.length > 0 && (
                 <div className="search-section">
-                  <h2 className="search-section__title">Магазины на базарах <span className="badge">{shops.length}</span></h2>
+                  <h2 className="search-section__title">{t('search.shopsSection')} <span className="badge">{shops.length}</span></h2>
                   <div className="search-shops-list">
                     {shops.map((shop: SearchShop) => {
                       const productTags = shop.productTags ?? [];
 
                       return (
-                        <div key={shop.id} className="search-shop-card glass-card" onClick={() => navigate(`/shop/${shop.id}`)}>
+                        <div key={shop.id} className="search-shop-card glass-card" onClick={() => navigate(lp(`/shop/${shop.id}`))}>
                           <div className="search-shop-card__main">
                             <h3>{shop.name}</h3>
                             {shop.bazaar && (
@@ -138,10 +140,10 @@ export default function SearchPage() {
                             )}
                           </div>
                           <div className="search-shop-card__meta">
-                            {shop.hasCoupon && <span className="search-coupon-badge">🎫 Скидки</span>}
+                            {shop.hasCoupon && <span className="search-coupon-badge">🎫 {t('search.discountsBadge')}</span>}
                             {productTags.length > 0 && (
                               <p className="search-shop__tags-text">
-                                {productTags.slice(0, 3).map((t) => t.tag).join(', ')}
+                                {productTags.slice(0, 3).map((tag) => tag.tag).join(', ')}
                               </p>
                             )}
                           </div>
@@ -152,13 +154,12 @@ export default function SearchPage() {
                 </div>
               )}
 
-              {/* Empty State */}
               {!isLoading && filteredCoupons.length === 0 && shops.length === 0 && (
                 <div className="search-empty glass-card">
                   <span className="search-empty-icon">🕵️</span>
-                  <h3>Упс, мы ничего не нашли</h3>
-                  <p>По запросу «{searchTerm}» нет результатов. Попробуйте изменить запрос или поискать в других категориях.</p>
-                  <button className="text-button" onClick={handleClear}>Сбросить поиск</button>
+                  <h3>{t('search.emptyTitle')}</h3>
+                  <p>{t('search.emptyDesc', { query: searchTerm })}</p>
+                  <button className="text-button" onClick={handleClear}>{t('search.reset')}</button>
                 </div>
               )}
             </>

@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Cookie, X } from 'lucide-react';
+import { useLocalePath } from '../../hooks/useLocalePath';
 import './CookieConsent.css';
 
 const COOKIE_KEY = 'topdim_cookie_consent';
 
 export default function CookieConsent() {
+  const { t } = useTranslation();
+  const lp = useLocalePath();
   const [visible, setVisible] = useState(false);
   const [animatingOut, setAnimatingOut] = useState(false);
 
@@ -31,11 +36,10 @@ export default function CookieConsent() {
           <Cookie size={24} />
         </div>
         <div className="cookie-consent__text">
-          <p className="cookie-consent__title">Мы используем файлы cookie</p>
+          <p className="cookie-consent__title">{t('cookie.title')}</p>
           <p className="cookie-consent__desc">
-            Для улучшения работы сайта и персонализации контента мы используем cookie.
-            Продолжая использование сайта, вы соглашаетесь с нашей{' '}
-            <a href="/privacy">политикой конфиденциальности</a>.
+            {t('cookie.desc')}{' '}
+            <Link to={lp('/privacy')}>{t('cookie.privacyLink')}</Link>.
           </p>
         </div>
         <div className="cookie-consent__actions">
@@ -43,19 +47,19 @@ export default function CookieConsent() {
             className="cookie-consent__btn cookie-consent__btn--accept"
             onClick={() => dismiss(true)}
           >
-            Принять все
+            {t('cookie.accept')}
           </button>
           <button
             className="cookie-consent__btn cookie-consent__btn--decline"
             onClick={() => dismiss(false)}
           >
-            Отклонить
+            {t('cookie.decline')}
           </button>
         </div>
         <button
           className="cookie-consent__close"
           onClick={() => dismiss(false)}
-          aria-label="Закрыть"
+          aria-label={t('common.close')}
         >
           <X size={18} />
         </button>

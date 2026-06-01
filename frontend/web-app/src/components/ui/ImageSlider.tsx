@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import './ImageSlider.css';
 
@@ -15,6 +16,7 @@ export default function ImageSlider({
   fallbackText = 'TopDim',
   aspectRatio = '16/10',
 }: ImageSliderProps) {
+  const { t } = useTranslation();
   const [current, setCurrent] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -109,10 +111,10 @@ export default function ImageSlider({
 
       {total > 1 && (
         <>
-          <button className="img-slider__arrow img-slider__arrow--prev" onClick={prev} aria-label="Назад">
+          <button className="img-slider__arrow img-slider__arrow--prev" onClick={prev} aria-label={t('common.carouselPrev')}>
             <ChevronLeft size={22} />
           </button>
-          <button className="img-slider__arrow img-slider__arrow--next" onClick={next} aria-label="Вперёд">
+          <button className="img-slider__arrow img-slider__arrow--next" onClick={next} aria-label={t('common.carouselNext')}>
             <ChevronRight size={22} />
           </button>
 

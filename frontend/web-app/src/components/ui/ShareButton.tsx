@@ -1,5 +1,6 @@
 import { Share2, Link2, Check } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import './ShareButton.css';
 
 interface ShareButtonProps {
@@ -15,6 +16,7 @@ export default function ShareButton({
   url,
   variant = 'icon',
 }: ShareButtonProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const shareUrl = url || window.location.href;
@@ -38,8 +40,8 @@ export default function ShareButton({
       <button
         className="share-btn share-btn--icon"
         onClick={handleShare}
-        aria-label="Поделиться"
-        title="Поделиться"
+        aria-label={t('share.label')}
+        title={t('share.label')}
       >
         {copied ? <Check size={18} /> : <Share2 size={18} />}
       </button>
@@ -51,12 +53,12 @@ export default function ShareButton({
       {copied ? (
         <>
           <Check size={16} />
-          <span>Ссылка скопирована</span>
+          <span>{t('share.copied')}</span>
         </>
       ) : (
         <>
           <Link2 size={16} />
-          <span>Поделиться</span>
+          <span>{t('share.label')}</span>
         </>
       )}
     </button>

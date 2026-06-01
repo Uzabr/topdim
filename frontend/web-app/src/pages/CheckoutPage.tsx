@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ShieldCheck, ChevronLeft, CreditCard, Smartphone, AlertCircle, Loader2, LogIn } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { formatPrice } from '../utils/format';
@@ -15,6 +16,7 @@ import './CheckoutPage.css';
  * Order создаётся из backend cart.
  */
 export default function CheckoutPage() {
+  const { t } = useTranslation();
   const { items, totalPrice, clearCart } = useCartStore();
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
@@ -29,10 +31,10 @@ export default function CheckoutPage() {
     return (
       <div className="checkout-empty container">
         <LogIn size={48} className="checkout-empty__icon" />
-        <h2>Необходимо войти в аккаунт</h2>
-        <p>Для оформления заказа необходимо авторизоваться.</p>
+        <h2>{t('checkout.authRequiredTitle')}</h2>
+        <p>{t('checkout.authRequiredDesc')}</p>
         <button className="primary-button" onClick={() => navigate(lp('/login'))}>
-          Войти
+          {t('checkout.login')}
         </button>
       </div>
     );
@@ -43,8 +45,8 @@ export default function CheckoutPage() {
     return (
       <div className="checkout-empty container">
         <AlertCircle size={48} className="checkout-empty__icon" />
-        <h2>Нет товаров для оформления</h2>
-        <button className="primary-button" onClick={() => navigate(lp('/coupons'))}>Вернуться в каталог</button>
+        <h2>{t('checkout.emptyTitle')}</h2>
+        <button className="primary-button" onClick={() => navigate(lp('/coupons'))}>{t('checkout.backToCatalog')}</button>
       </div>
     );
   }
@@ -59,22 +61,22 @@ export default function CheckoutPage() {
     return (
       <div className="checkout-page container">
         <div className="checkout-header">
-          <button className="checkout-back" onClick={() => navigate(-1)} aria-label="Назад">
+          <button className="checkout-back" onClick={() => navigate(-1)} aria-label={t('common.back')}>
             <ChevronLeft size={24} />
           </button>
-          <h1>Оформление заказа</h1>
+          <h1>{t('checkout.title')}</h1>
         </div>
 
         <div className="checkout-missing-contact glass-card">
           <AlertCircle size={40} className="checkout-missing-contact__icon" />
           {!userEmail && (
             <p className="checkout-missing-contact__text">
-              В профиле не указан email. Добавьте email в аккаунт или обратитесь в поддержку.
+              {t('checkout.missingEmail')}
             </p>
           )}
           {!userPhone && (
             <p className="checkout-missing-contact__text">
-              В профиле не указан телефон. Добавьте телефон, чтобы мы могли связать заказ и купон с вашим аккаунтом.
+              {t('checkout.missingPhone')}
             </p>
           )}
           <button
@@ -82,7 +84,7 @@ export default function CheckoutPage() {
             onClick={() => navigate(lp('/profile') + '?tab=profile')}
             id="checkout-fill-profile-btn"
           >
-            Заполнить профиль
+            {t('checkout.fillProfile')}
           </button>
         </div>
       </div>
@@ -102,7 +104,7 @@ export default function CheckoutPage() {
       navigate(lp(`/payment/${order.id}`), { replace: true });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || 'Ошибка оформления заказа');
+      setError(error.response?.data?.message || t('checkout.error'));
     } finally {
       setIsLoading(false);
     }
@@ -111,26 +113,24 @@ export default function CheckoutPage() {
   return (
     <div className="checkout-page container">
       <div className="checkout-header">
-        <button className="checkout-back" onClick={() => navigate(-1)} aria-label="Назад">
+        <button className="checkout-back" onClick={() => navigate(-1)} aria-label={t('common.back')}>
           <ChevronLeft size={24} />
         </button>
-        <h1>Оформление заказа</h1>
+        <h1>{t('checkout.title')}</h1>
       </div>
 
       <div className="checkout-layout">
-        {/* Main Content */}
         <div className="checkout-main">
 
-          {/* Contact Info (read-only from profile) */}
           <div className="checkout-section glass-card">
-            <h2 className="checkout-section__title">Контактные данные</h2>
+            <h2 className="checkout-section__title">{t('checkout.contactTitle')}</h2>
             <div className="checkout-contact-info">
               <div className="checkout-contact-row">
                 <span className="checkout-contact-label">Email:</span>
                 <span className="checkout-contact-value">{userEmail || '—'}</span>
               </div>
               <div className="checkout-contact-row">
-                <span className="checkout-contact-label">Телефон:</span>
+                <span className="checkout-contact-label">{t('checkout.phoneLabel')}</span>
                 <span className="checkout-contact-value">{userPhone || '—'}</span>
               </div>
             </div>
@@ -138,7 +138,7 @@ export default function CheckoutPage() {
 
           {/* Payment Method */}
           <div className="checkout-section glass-card">
-            <h2 className="checkout-section__title">Оплата</h2>
+            <h2 className="checkout-section__title">{t('checkout.paymentTitle')}</h2>
             
             {error && <div className="checkout-error"><AlertCircle size={16} /> {error}</div>}
 
@@ -151,7 +151,7 @@ export default function CheckoutPage() {
                   onChange={() => setPaymentMethod('CARD')}
                 />
                 <CreditCard size={24} />
-                <span>Банковская карта</span>
+                <span>{t('checkout.card')}</span>
               </label>
               
               <label className={`payment-method ${paymentMethod === 'CLICK' ? 'payment-method--active' : ''}`}>
@@ -182,16 +182,16 @@ export default function CheckoutPage() {
               onClick={handlePayment}
               disabled={isLoading}
             >
-              {isLoading ? <><Loader2 size={18} className="spin" /> Оформляем...</> : `Оплатить ${formatPrice(totalPrice)}`}
+              {isLoading ? <><Loader2 size={18} className="spin" /> {t('checkout.processing')}</> : t('checkout.pay', { amount: formatPrice(totalPrice) })}
             </button>
-            <p className="secure-badge"><ShieldCheck size={14} /> Платеж защищен шифрованием</p>
+            <p className="secure-badge"><ShieldCheck size={14} /> {t('checkout.secure')}</p>
           </div>
         </div>
 
         {/* Sidebar Summary */}
         <div className="checkout-sidebar">
           <div className="checkout-summary glass-card">
-            <h3>Ваш заказ</h3>
+            <h3>{t('checkout.yourOrder')}</h3>
             <div className="checkout-items">
               {items.map((item) => (
                <div key={item.key} className="checkout-item">
@@ -201,7 +201,7 @@ export default function CheckoutPage() {
                  </div>
                  <div className="checkout-item__price-block">
                    <span className="checkout-item__price">{formatPrice(item.unitPrice * item.quantity)}</span>
-                   <span className="checkout-item__qty">{item.quantity} шт.</span>
+                   <span className="checkout-item__qty">{item.quantity} {t('common.units.pcs')}</span>
                  </div>
                </div> 
               ))}
@@ -209,7 +209,7 @@ export default function CheckoutPage() {
             
             <div className="checkout-totals">
               <div className="checkout-total-row">
-                <span>Итого:</span>
+                <span>{t('checkout.total')}</span>
                 <span className="checkout-final-price">{formatPrice(totalPrice)}</span>
               </div>
             </div>

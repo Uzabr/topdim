@@ -1,8 +1,11 @@
+import i18n from '../i18n';
+
 /**
  * Format price in Uzbek sums
  */
 export function formatPrice(price: number): string {
-  return price.toLocaleString('ru-RU') + ' сум';
+  const locale = i18n.language === 'uz' ? 'uz-UZ' : 'ru-RU';
+  return price.toLocaleString(locale) + ' ' + i18n.t('common.currency.sum');
 }
 
 /**
@@ -17,7 +20,8 @@ export function calcDiscount(oldPrice: number, newPrice: number): number {
  * Format date to localized string
  */
 export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('ru-RU', {
+  const locale = i18n.language === 'uz' ? 'uz-UZ' : 'ru-RU';
+  return new Date(dateStr).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Star, Send, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { reviewsApi } from '../../api/reviews';
 import './ReviewForm.css';
 
@@ -9,6 +10,7 @@ interface ReviewFormProps {
 }
 
 export default function ReviewForm({ couponOfferId }: ReviewFormProps) {
+  const { t } = useTranslation();
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -25,7 +27,7 @@ export default function ReviewForm({ couponOfferId }: ReviewFormProps) {
     },
     onError: (err: unknown) => {
       const e = err as { response?: { data?: { message?: string } } };
-      const msg = e.response?.data?.message || 'Не удалось отправить отзыв';
+      const msg = e.response?.data?.message || t('couponDetail.reviewForm.error');
       setError(msg);
     },
   });
@@ -34,8 +36,8 @@ export default function ReviewForm({ couponOfferId }: ReviewFormProps) {
     return (
       <div className="review-form-success">
         <CheckCircle size={32} />
-        <h4>Спасибо за отзыв!</h4>
-        <p>Ваш отзыв отправлен на модерацию и появится после проверки.</p>
+        <h4>{t('couponDetail.reviewForm.thanksTitle')}</h4>
+        <p>{t('couponDetail.reviewForm.thanksDesc')}</p>
       </div>
     );
   }
@@ -44,11 +46,10 @@ export default function ReviewForm({ couponOfferId }: ReviewFormProps) {
 
   return (
     <div className="review-form">
-      <h4 className="review-form__title">Оставить отзыв</h4>
+      <h4 className="review-form__title">{t('couponDetail.reviewForm.title')}</h4>
 
-      {/* Star Rating */}
       <div className="review-form__stars">
-        <span className="review-form__stars-label">Оценка:</span>
+        <span className="review-form__stars-label">{t('couponDetail.reviewForm.rating')}</span>
         <div className="review-form__stars-row">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
@@ -58,7 +59,7 @@ export default function ReviewForm({ couponOfferId }: ReviewFormProps) {
               onMouseEnter={() => setHoveredRating(star)}
               onMouseLeave={() => setHoveredRating(0)}
               onClick={() => setRating(star)}
-              aria-label={`${star} звёзд`}
+              aria-label={t('couponDetail.reviewForm.stars', { count: star })}
             >
               <Star size={24} fill={star <= (hoveredRating || rating) ? 'currentColor' : 'none'} />
             </button>
@@ -66,10 +67,9 @@ export default function ReviewForm({ couponOfferId }: ReviewFormProps) {
         </div>
       </div>
 
-      {/* Comment */}
       <textarea
         className="review-form__textarea"
-        placeholder="Поделитесь впечатлениями (минимум 10 символов)"
+        placeholder={t('couponDetail.reviewForm.placeholder')}
         value={comment}
         onChange={(e) => { setComment(e.target.value); setError(''); }}
         maxLength={2000}
@@ -86,10 +86,10 @@ export default function ReviewForm({ couponOfferId }: ReviewFormProps) {
         onClick={() => mutation.mutate()}
         id="review-submit-btn"
       >
-        {mutation.isPending ? 'Отправка...' : (
+        {mutation.isPending ? t('common.submitting') : (
           <>
             <Send size={16} />
-            Отправить отзыв
+            {t('couponDetail.reviewForm.submit')}
           </>
         )}
       </button>

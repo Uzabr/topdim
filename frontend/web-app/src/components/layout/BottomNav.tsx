@@ -1,5 +1,6 @@
 import { Heart, MapPinned, User, ShoppingBag, Home } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import { useLocalePath } from '../../hooks/useLocalePath';
@@ -7,6 +8,7 @@ import { BAZAAR_NAV_ENABLED } from '../../config/features';
 import './BottomNav.css';
 
 export default function BottomNav() {
+  const { t } = useTranslation();
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
   const { openCart, totalItems } = useCartStore();
@@ -20,7 +22,7 @@ export default function BottomNav() {
         <div className="bottom-nav-icon-wrapper">
           <Home size={24} strokeWidth={isActive('/') ? 2.5 : 2} />
         </div>
-        <span>Главная</span>
+        <span>{t('bottomNav.home')}</span>
       </Link>
       
       {BAZAAR_NAV_ENABLED && (
@@ -28,7 +30,7 @@ export default function BottomNav() {
           <div className="bottom-nav-icon-wrapper">
             <MapPinned size={24} strokeWidth={isActive('/bazaar') ? 2.5 : 2} />
           </div>
-          <span>Базар</span>
+          <span>{t('bottomNav.bazaar')}</span>
         </Link>
       )}
 
@@ -40,14 +42,14 @@ export default function BottomNav() {
           <ShoppingBag size={24} strokeWidth={2} />
           {totalItems > 0 && <span className="bottom-nav-badge">{totalItems}</span>}
         </div>
-        <span>Корзина</span>
+        <span>{t('bottomNav.cart')}</span>
       </button>
       
       <Link to={lp('/favorites')} className={`bottom-nav-item ${isActive('/favorites') ? 'active' : ''}`}>
         <div className="bottom-nav-icon-wrapper">
           <Heart size={24} strokeWidth={isActive('/favorites') ? 2.5 : 2} />
         </div>
-        <span>Избранное</span>
+        <span>{t('bottomNav.favorites')}</span>
       </Link>
       
       <Link
@@ -57,7 +59,7 @@ export default function BottomNav() {
         <div className="bottom-nav-icon-wrapper">
           <User size={24} strokeWidth={isActive('/profile') || isActive('/login') ? 2.5 : 2} />
         </div>
-        <span>Профиль</span>
+        <span>{t('bottomNav.profile')}</span>
       </Link>
     </nav>
   );
