@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Gift, TrendingUp, Calendar, Clock, MapPin, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -27,6 +28,8 @@ import ReviewForm from '../components/coupon-detail/ReviewForm';
 import './CouponDetailPage.css';
 
 export default function CouponDetailPage() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === 'uz' ? 'uz-UZ' : 'ru-RU';
   const { id } = useParams<{ id: string }>();
   const { addToCart } = useCartStore();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
@@ -100,7 +103,7 @@ export default function CouponDetailPage() {
         <div className="detail-loading">
           <div>
             <div className="detail-loading__spinner" />
-            <div className="detail-loading__text">Загрузка купона...</div>
+            <div className="detail-loading__text">{t('couponDetail.loading')}</div>
           </div>
         </div>
       </div>
@@ -136,7 +139,7 @@ export default function CouponDetailPage() {
       quantity: 1,
       coverImageUrl: c.coverImageUrl,
     });
-    showToast(`«${option.title}» добавлен в корзину!`);
+    showToast(t('couponDetail.addedToCart', { title: option.title }));
   };
 
   const handleBuyNow = (option: CouponOption) => {
@@ -166,7 +169,7 @@ export default function CouponDetailPage() {
       {/* Breadcrumbs */}
       <div className="container">
         <Breadcrumbs items={[
-          { label: c.category?.name || 'Каталог', to: `/coupons${c.category ? `?category=${c.category.slug}` : ''}` },
+          { label: c.category?.name || t('common.catalog'), to: `/coupons${c.category ? `?category=${c.category.slug}` : ''}` },
           { label: c.title },
         ]} />
       </div>
@@ -191,7 +194,7 @@ export default function CouponDetailPage() {
             {/* Discount badge & pricing */}
             <div className="hero-pricing">
               {discount > 0 && <span className="hero-discount-badge">-{discount}%</span>}
-              <span className="hero-price">от {formatPrice(c.fromPrice)}</span>
+              <span className="hero-price">{t('common.from')} {formatPrice(c.fromPrice)}</span>
               {c.oldPrice && <span className="hero-old-price">{formatPrice(c.oldPrice)}</span>}
             </div>
 
@@ -207,16 +210,16 @@ export default function CouponDetailPage() {
             <div className="hero-dates">
               <div className="hero-meta-item">
                 <Calendar size={15} />
-                <span>Купить до: {formatDate(c.buyUntil)}</span>
+                <span>{t('couponDetail.buyUntil', { date: formatDate(c.buyUntil) })}</span>
                 {buyDaysLeft <= 7 && (
                   <span className="hero-urgent">
-                    {buyDaysLeft === 0 ? 'Последний день!' : `${buyDaysLeft} дн.`}
+                    {buyDaysLeft === 0 ? t('couponDetail.lastDay') : t('couponDetail.daysLeft', { count: buyDaysLeft })}
                   </span>
                 )}
               </div>
               <div className="hero-meta-item">
                 <Clock size={15} />
-                <span>Использовать до: {formatDate(c.useUntil)}</span>
+                <span>{t('couponDetail.useUntil', { date: formatDate(c.useUntil) })}</span>
               </div>
             </div>
 
@@ -227,19 +230,19 @@ export default function CouponDetailPage() {
               )}
               <span className="detail-stat">
                 <TrendingUp size={15} />
-                {c.totalSold.toLocaleString('ru-RU')} покупок
+                {t('couponDetail.purchases', { count: c.totalSold.toLocaleString(locale) })}
               </span>
               {c.giftAvailable && (
                 <span className="detail-stat detail-stat--gift">
                   <Gift size={15} />
-                  Подарок
+                  {t('couponDetail.gift')}
                 </span>
               )}
             </div>
 
             {/* CTA */}
             <button className="hero-cta primary-button" onClick={scrollToOptions}>
-              Выбрать сертификат
+              {t('couponDetail.selectCert')}
             </button>
           </div>
         </div>
@@ -253,23 +256,23 @@ export default function CouponDetailPage() {
               className={`detail-tab-btn ${activeTab === 'info' ? 'detail-tab-btn--active' : ''}`}
               onClick={() => changeTab('info')}
             >
-              Информация
+              {t('couponDetail.tabInfo')}
             </button>
             <button
               className={`detail-tab-btn ${activeTab === 'reviews' ? 'detail-tab-btn--active' : ''}`}
               onClick={() => changeTab('reviews')}
             >
-              Отзывы {reviewCount > 0 && <span className="detail-tab-badge">{reviewCount}</span>}
+              {t('couponDetail.tabReviews')} {reviewCount > 0 && <span className="detail-tab-badge">{reviewCount}</span>}
             </button>
           </div>
           <div className="detail-action-buttons">
             <button
               className={`detail-fav-btn ${fav ? 'detail-fav-btn--active' : ''}`}
               onClick={() => toggleFavorite(c.id)}
-              aria-label="В избранное"
+              aria-label={t('couponDetail.favorite')}
             >
               <Heart size={18} fill={fav ? 'currentColor' : 'none'} />
-              <span className="detail-action-label">В избранное</span>
+              <span className="detail-action-label">{t('couponDetail.favorite')}</span>
             </button>
             <ShareButton title={c.title} variant="icon" />
           </div>
@@ -292,7 +295,7 @@ export default function CouponDetailPage() {
               {/* Offer description */}
               {c.offerDescription && (
                 <div className="detail-block">
-                  <h2 className="detail-section-title">Описание</h2>
+                  <h2 className="detail-section-title">{t('couponDetail.description')}</h2>
                   <div className="markdown-body">
                     <ReactMarkdown>{c.offerDescription}</ReactMarkdown>
                   </div>
@@ -316,7 +319,7 @@ export default function CouponDetailPage() {
               <div className="review-notice">
                 <div className="review-notice__icon">✍️</div>
                 <p className="review-notice__text">
-                  <a href="/login" className="review-notice__link">Войдите</a>, чтобы оставить отзыв после использования купона
+                  <Link to={lp('/login')} className="review-notice__link">{t('couponDetail.loginToReview')}</Link>{t('couponDetail.loginToReviewSuffix')}
                 </p>
               </div>
             ) : canReview ? (
@@ -325,7 +328,7 @@ export default function CouponDetailPage() {
               <div className="review-notice">
                 <div className="review-notice__icon">📋</div>
                 <p className="review-notice__text">
-                  Оставить отзыв можно после использования купона
+                  {t('couponDetail.reviewAfterUse')}
                 </p>
               </div>
             )}
@@ -333,8 +336,8 @@ export default function CouponDetailPage() {
             {reviews.length === 0 ? (
               <div className="reviews-empty">
                 <div className="reviews-empty__icon">⭐</div>
-                <h3>Отзывов пока нет</h3>
-                <p>Будьте первым, кто оставит отзыв об этом купоне</p>
+                <h3>{t('couponDetail.noReviews')}</h3>
+                <p>{t('couponDetail.beFirstReview')}</p>
               </div>
             ) : (
               <>
@@ -342,7 +345,7 @@ export default function CouponDetailPage() {
                   <div className="reviews-summary__big">
                     <span className="reviews-summary__number">{avgRating.toFixed(1)}</span>
                     <StarRating rating={avgRating} showCount={false} size={20} />
-                    <span className="reviews-summary__total">{reviewCount} отзывов</span>
+                    <span className="reviews-summary__total">{t('couponDetail.reviewsCount', { count: reviewCount })}</span>
                   </div>
                 </div>
                 <div className="reviews-list">
@@ -353,7 +356,7 @@ export default function CouponDetailPage() {
                           {(review.userName || 'U').charAt(0)}
                         </div>
                         <div>
-                          <div className="review-card__author">{review.userName || 'Пользователь'}</div>
+                          <div className="review-card__author">{review.userName || t('common.user')}</div>
                           <StarRating rating={review.rating} showCount={false} size={13} />
                         </div>
                         <span className="review-card__date">{formatDate(review.createdAt)}</span>
@@ -370,7 +373,7 @@ export default function CouponDetailPage() {
         {/* Related deals */}
         {relatedDeals.length > 0 && (
           <div className="detail-related">
-            <h2 className="detail-section-title">Похожие акции</h2>
+            <h2 className="detail-section-title">{t('couponDetail.related')}</h2>
             <div className="detail-related__carousel">
               {relatedDeals.map((deal) => (
                 <CouponCard key={deal.id} coupon={deal} layout="carousel" />
@@ -382,7 +385,7 @@ export default function CouponDetailPage() {
 
       {/* Sticky CTA (mobile) */}
       <button className="detail-sticky-cta" onClick={scrollToOptions}>
-        Выбрать сертификат
+        {t('couponDetail.selectCert')}
       </button>
 
       {/* Toast notification */}

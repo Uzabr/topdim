@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useAuthStore } from '../../store/authStore';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import './LimitModal.css';
 
 export default function LimitModal() {
+  const { t } = useTranslation();
   const { showLimitModal, limitMessage, closeLimitModal } = useFavoritesStore();
   const { isAuthenticated } = useAuthStore();
   const lp = useLocalePath();
@@ -15,14 +17,14 @@ export default function LimitModal() {
     <div className="limit-modal-overlay" onClick={closeLimitModal}>
       <div className="limit-modal" onClick={(e) => e.stopPropagation()}>
         <span className="limit-modal__icon">💛</span>
-        <h3 className="limit-modal__title">Лимит избранного</h3>
+        <h3 className="limit-modal__title">{t('favorites.limitTitle')}</h3>
         <p className="limit-modal__text">{limitMessage}</p>
         <button className="limit-modal__btn" onClick={closeLimitModal}>
-          Понятно
+          {t('favorites.limitOk')}
         </button>
         {!isAuthenticated && (
           <Link to={lp('/login')} className="limit-modal__login-link" onClick={closeLimitModal}>
-            Войти в аккаунт →
+            {t('favorites.limitLogin')}
           </Link>
         )}
       </div>

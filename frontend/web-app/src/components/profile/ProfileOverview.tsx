@@ -1,4 +1,5 @@
 import { Package, ShoppingBag, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import type { ProfileTab } from '../../pages/ProfilePage';
 import './ProfileOverview.css';
@@ -16,6 +17,7 @@ export default function ProfileOverview({
   ordersCount,
   onTabChange,
 }: ProfileOverviewProps) {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
 
   const hasPhone = !!user?.phone;
@@ -32,7 +34,7 @@ export default function ProfileOverview({
           </h2>
           <p className="profile-overview__email">{user?.email}</p>
           <p className="profile-overview__phone">
-            {user?.phone || 'Телефон не указан'}
+            {user?.phone || t('profile.overview.phoneMissing')}
           </p>
         </div>
       </div>
@@ -41,12 +43,12 @@ export default function ProfileOverview({
         <div className="profile-overview__warning">
           <span>⚠️</span>
           <div>
-            <p>Телефон нужен для оформления заказа и связи по купону.</p>
+            <p>{t('profile.overview.phoneWarning')}</p>
             <button
               className="profile-overview__warning-link"
               onClick={() => onTabChange('profile')}
             >
-              Заполнить телефон →
+              {t('profile.overview.fillPhone')}
             </button>
           </div>
         </div>
@@ -56,17 +58,17 @@ export default function ProfileOverview({
         <button className="profile-overview__stat" onClick={() => onTabChange('coupons')}>
           <Package size={20} />
           <span className="profile-overview__stat-value">{activeCouponsCount}</span>
-          <span className="profile-overview__stat-label">Активных</span>
+          <span className="profile-overview__stat-label">{t('profile.overview.active')}</span>
         </button>
         <button className="profile-overview__stat" onClick={() => onTabChange('coupons')}>
           <CheckCircle size={20} />
           <span className="profile-overview__stat-value">{usedCouponsCount}</span>
-          <span className="profile-overview__stat-label">Использовано</span>
+          <span className="profile-overview__stat-label">{t('profile.overview.used')}</span>
         </button>
         <button className="profile-overview__stat" onClick={() => onTabChange('orders')}>
           <ShoppingBag size={20} />
           <span className="profile-overview__stat-value">{ordersCount}</span>
-          <span className="profile-overview__stat-label">Заказов</span>
+          <span className="profile-overview__stat-label">{t('profile.overview.orders')}</span>
         </button>
       </div>
     </div>

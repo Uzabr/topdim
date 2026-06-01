@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { MapPin, Store, Tag } from 'lucide-react';
 import type { Shop } from '../../api/bazaars';
 import { useLocalePath } from '../../hooks/useLocalePath';
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function DirectoryShopCard({ shop, compact = false }: Props) {
+  const { t } = useTranslation();
   const lp = useLocalePath();
   const CardWrapper: React.ElementType = shop.isExternal ? 'a' : Link;
   const linkProps = shop.isExternal
@@ -26,7 +28,7 @@ export default function DirectoryShopCard({ shop, compact = false }: Props) {
       <div className="dir-card__body">
         <div className="dir-card__badges">
           {shop.isExternal && (
-            <span className="dir-card__category" style={{ background: '#FF6660', color: 'white' }}>Из 2ГИС</span>
+            <span className="dir-card__category" style={{ background: '#FF6660', color: 'white' }}>{t('directory.from2gis')}</span>
           )}
           {shop.category && (
             <span className="dir-card__category"><Tag size={12} /> {shop.category}</span>
@@ -39,8 +41,8 @@ export default function DirectoryShopCard({ shop, compact = false }: Props) {
         <div className="dir-card__meta">
           {shop.locationType === 'BAZAAR' && shop.bazaar && (
             <span><Store size={14} />{shop.bazaar.name}
-              {shop.rowNumber ? `, ряд ${shop.rowNumber}` : ''}
-              {shop.shopNumber ? `, место ${shop.shopNumber}` : ''}
+              {shop.rowNumber ? `, ${t('directory.row')} ${shop.rowNumber}` : ''}
+              {shop.shopNumber ? `, ${t('directory.place')} ${shop.shopNumber}` : ''}
             </span>
           )}
           {shop.locationType === 'STANDALONE' && shop.address && (

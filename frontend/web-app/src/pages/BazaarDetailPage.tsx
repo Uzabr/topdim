@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, MapPin, Clock, Phone, Store, Search } from 'lucide-react';
 import { directoryApi } from '../api/bazaars';
@@ -24,11 +25,14 @@ const DEMO_SHOPS: Shop[] = [
   { id: 3, name: 'Фрукты Ферганы', category: 'Фрукты', goodsDescription: 'Гранат, хурма, виноград', locationType: 'BAZAAR', bazaar: { id: 1, name: 'Чорсу' }, rowNumber: '1', shopNumber: '5', floorNumber: 1, latitude: 41.3265, longitude: 69.2289, photos: [], status: 'ACTIVE' },
 ];
 
-const TYPE_LABELS: Record<string, string> = {
-  BAZAAR: 'Базар', SHOPPING_CENTER: 'ТЦ', MARKET: 'Рынок', TRADE_COMPLEX: 'Торговый комплекс',
-};
-
 export default function BazaarDetailPage() {
+  const { t } = useTranslation();
+  const typeLabels: Record<string, string> = {
+    BAZAAR: t('directory.types.bazaar'),
+    SHOPPING_CENTER: t('directory.types.shoppingCenter'),
+    MARKET: t('directory.types.market'),
+    TRADE_COMPLEX: t('directory.types.tradeComplexFull'),
+  };
   const { id } = useParams<{ id: string }>();
   const [shopSearch, setShopSearch] = useState('');
   const lp = useLocalePath();
@@ -62,7 +66,7 @@ export default function BazaarDetailPage() {
     <div className="bazaar-detail">
       <div className="bazaar-detail__topbar container">
         <Link to={lp('/bazaar')} className="detail-back">
-          <ArrowLeft size={20} /> Справочник
+          <ArrowLeft size={20} /> {t('directory.guide')}
         </Link>
       </div>
 
@@ -77,7 +81,7 @@ export default function BazaarDetailPage() {
 
       <div className="bazaar-detail__content container">
         <div className="bazaar-detail__info">
-          <span className="bazaar-detail__type">{TYPE_LABELS[b.type] || b.type}</span>
+          <span className="bazaar-detail__type">{typeLabels[b.type] || b.type}</span>
           <h1>{b.name}</h1>
           {b.nameUz && <p className="bazaar-detail__name-uz">{b.nameUz}</p>}
           {b.description && <p className="bazaar-detail__desc">{b.description}</p>}
@@ -100,13 +104,13 @@ export default function BazaarDetailPage() {
         {/* Shops */}
         <div className="bazaar-detail__shops">
           <div className="bazaar-detail__shops-header">
-            <h2><Store size={20} /> Магазины ({filteredShops.length})</h2>
+            <h2><Store size={20} /> {t('bazaar.shopsTitle', { count: filteredShops.length })}</h2>
             <div className="bazaar-detail__shop-search">
               <Search size={16} />
               <input
                 value={shopSearch}
                 onChange={(e) => setShopSearch(e.target.value)}
-                placeholder="Поиск по магазинам…"
+                placeholder={t('bazaar.shopsSearch')}
               />
             </div>
           </div>
@@ -115,7 +119,7 @@ export default function BazaarDetailPage() {
               <DirectoryShopCard key={shop.id} shop={shop} />
             ))}
             {filteredShops.length === 0 && (
-              <p className="bazaar-detail__shops-empty">Магазины не найдены</p>
+              <p className="bazaar-detail__shops-empty">{t('bazaar.shopsEmpty')}</p>
             )}
           </div>
         </div>

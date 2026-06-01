@@ -1,30 +1,35 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { refundsApi, type RefundRequestData } from '../../api/refunds';
 import { Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { formatDate } from '../../utils/format';
 import './RefundsSection.css';
 
-const STATUS_MAP: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
-  PENDING: { label: 'На рассмотрении', icon: <Clock size={14} />, className: 'refund-badge--pending' },
-  APPROVED_PROCESSING: { label: 'Одобрен, ожидание возврата', icon: <Loader2 size={14} />, className: 'refund-badge--processing' },
-  REFUNDED: { label: 'Возврат завершён', icon: <CheckCircle size={14} />, className: 'refund-badge--refunded' },
-  REJECTED: { label: 'Отклонён', icon: <XCircle size={14} />, className: 'refund-badge--rejected' },
-};
-
 export default function RefundsSection() {
+  const { t } = useTranslation();
+
+  const statusMap = useMemo(() => ({
+    PENDING: { label: t('profile.refundStatus.pending'), icon: <Clock size={14} />, className: 'refund-badge--pending' },
+    APPROVED_PROCESSING: { label: t('profile.refundStatus.approved'), icon: <Loader2 size={14} />, className: 'refund-badge--processing' },
+    REFUNDED: { label: t('profile.refundStatus.refunded'), icon: <CheckCircle size={14} />, className: 'refund-badge--refunded' },
+    REJECTED: { label: t('profile.refundStatus.rejected'), icon: <XCircle size={14} />, className: 'refund-badge--rejected' },
+  }), [t]);
+
   const { data: refunds = [], isLoading } = useQuery({
     queryKey: ['my-refunds'],
     queryFn: () => refundsApi.getMine(),
     select: (res) => res.data.data,
   });
 
-  if (isLoading) return <div className="profile-loading">Загрузка заявок на возврат...</div>;
+  if (isLoading) return <div className="profile-loading">{t('profile.loadingRefunds')}</div>;
 
   if (refunds.length === 0) {
     return (
       <div className="refunds-empty glass-card">
         <span style={{ fontSize: '2rem' }}>📋</span>
-        <h3>Нет заявок на возврат</h3>
-        <p>Запросить возврат можно в карточке активного купона.</p>
+        <h3>{t('profile.refundsSection.emptyTitle')}</h3>
+        <p>{t('profile.refundsSection.emptyDesc')}</p>
       </div>
     );
   }
@@ -32,12 +37,12 @@ export default function RefundsSection() {
   return (
     <div className="refunds-list">
       {refunds.map((r: RefundRequestData) => {
-        const status = STATUS_MAP[r.status] || STATUS_MAP.PENDING;
+        const status = statusMap[r.status as keyof typeof statusMap] || statusMap.PENDING;
         return (
           <div key={r.id} className="refund-card glass-card">
             <div className="refund-card__top">
               <div>
-                <h4 className="refund-card__title">{r.couponTitle || 'Купон'}</h4>
+                <h4 className="refund-card__title">{r.couponTitle || t('profile.purchasedCoupon.couponFallback')}</h4>
                 {r.couponCode && <span className="refund-card__code">{r.couponCode}</span>}
               </div>
               <span className={`refund-badge ${status.className}`}>
@@ -49,24 +54,24 @@ export default function RefundsSection() {
 
             {r.refundAmount != null && r.refundAmount > 0 && (
               <div className="refund-card__amount">
-                Сумма возврата: <strong>{r.refundAmount.toLocaleString()} сум</strong>
+                {t('profile.refundsSection.refundAmount', { amount: `${r.refundAmount.toLocaleString()} ${t('common.currency.sum')}` })}
               </div>
             )}
 
             {r.status === 'APPROVED_PROCESSING' && r.expectedRefundAt && (
               <div className="refund-card__info">
-                Деньги вернутся до: <strong>{new Date(r.expectedRefundAt).toLocaleDateString('ru-RU')}</strong>
+                {t('profile.refundsSection.refundUntil', { date: formatDate(r.expectedRefundAt) })}
               </div>
             )}
 
             {r.adminComment && (
               <div className="refund-card__comment">
-                Комментарий администратора: {r.adminComment}
+                {t('profile.refundsSection.adminComment', { comment: r.adminComment })}
               </div>
             )}
 
             <div className="refund-card__date">
-              Создано: {new Date(r.createdAt).toLocaleDateString('ru-RU')}
+              {t('profile.refundsSection.created', { date: formatDate(r.createdAt) })}
             </div>
           </div>
         );

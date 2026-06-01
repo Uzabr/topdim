@@ -27,7 +27,7 @@ export default function SearchBar({
   const [isFocused, setIsFocused] = useState(false);
 
   const displayVal = value !== undefined ? value : internalVal;
-  const defaultPlaceholder = t('search.placeholder', { defaultValue: 'Поиск...' });
+  const defaultPlaceholder = t('search.placeholder');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVal = e.target.value;
@@ -67,12 +67,12 @@ export default function SearchBar({
           autoFocus={autoFocus}
         />
         {displayVal.length > 0 && (
-          <button type="button" className="search-bar__clear" onClick={handleClear} aria-label="Очистить">
+          <button type="button" className="search-bar__clear" onClick={handleClear} aria-label={t('common.clear')}>
             <X size={16} />
           </button>
         )}
         <button type="submit" className="search-bar__submit">
-          {t('search.button', { defaultValue: 'Найти' })}
+          {t('search.button')}
         </button>
       </form>
 

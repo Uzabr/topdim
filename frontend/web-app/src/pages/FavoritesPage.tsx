@@ -1,5 +1,6 @@
 import { Heart, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useFavoritesStore } from '../store/favoritesStore';
 import CouponCard from '../components/coupon/CouponCard';
@@ -10,6 +11,7 @@ import { mapCouponOfferToCardData } from '../utils/couponCardMapper';
 import './FavoritesPage.css';
 
 export default function FavoritesPage() {
+  const { t } = useTranslation();
   const { favoriteIds } = useFavoritesStore();
   const lp = useLocalePath();
 
@@ -20,16 +22,14 @@ export default function FavoritesPage() {
   });
 
   const apiDeals = couponsData || [];
-
   const mappedDeals: CouponCardData[] = apiDeals.map(mapCouponOfferToCardData);
-
   const mapped = mappedDeals.filter(deal => favoriteIds.includes(deal.id));
 
   return (
     <div className="favorites-page container">
       <div className="favorites-header">
         <Heart size={24} className="favorites-icon" />
-        <h1>Избранное</h1>
+        <h1>{t('favorites.title')}</h1>
         {mapped.length > 0 && (
           <span className="favorites-count">{mapped.length}</span>
         )}
@@ -38,10 +38,10 @@ export default function FavoritesPage() {
       {mapped.length === 0 ? (
         <div className="favorites-empty surface-card">
           <span className="favorites-empty__icon">💛</span>
-          <h3>Пока пусто</h3>
-          <p>Добавляйте понравившиеся купоны, нажимая на ❤️ на карточке</p>
+          <h3>{t('favorites.emptyTitle')}</h3>
+          <p>{t('favorites.emptyDesc')}</p>
           <Link to={lp('/coupons')} className="primary-button">
-            Перейти в каталог
+            {t('favorites.goCatalog')}
             <ArrowRight size={16} />
           </Link>
         </div>

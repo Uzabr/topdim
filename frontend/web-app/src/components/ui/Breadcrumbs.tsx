@@ -1,5 +1,6 @@
 import { ChevronRight, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import './Breadcrumbs.css';
 
@@ -13,9 +14,10 @@ interface BreadcrumbsProps {
 }
 
 export default function Breadcrumbs({ items }: BreadcrumbsProps) {
+  const { t } = useTranslation();
   const lp = useLocalePath();
   return (
-    <nav className="breadcrumbs" aria-label="Навигация">
+    <nav className="breadcrumbs" aria-label={t('common.navigation')}>
       <ol className="breadcrumbs__list" itemScope itemType="https://schema.org/BreadcrumbList">
         <li
           className="breadcrumbs__item"
@@ -25,7 +27,7 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
         >
           <Link to={lp('/')} className="breadcrumbs__link" itemProp="item">
             <Home size={14} />
-            <span itemProp="name">Главная</span>
+            <span itemProp="name">{t('common.home')}</span>
           </Link>
           <meta itemProp="position" content="1" />
           <ChevronRight size={14} className="breadcrumbs__separator" />
@@ -39,7 +41,7 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
             itemType="https://schema.org/ListItem"
           >
             {item.to ? (
-              <Link to={item.to} className="breadcrumbs__link" itemProp="item">
+              <Link to={lp(item.to)} className="breadcrumbs__link" itemProp="item">
                 <span itemProp="name">{item.label}</span>
               </Link>
             ) : (

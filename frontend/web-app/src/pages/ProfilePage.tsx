@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { LogOut, Clock, CheckCircle, Ticket, AlertCircle, ShoppingBag, Settings, HelpCircle, RotateCcw, MessageSquare, Bell } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -28,49 +29,35 @@ function getInitialTab(search: string): ProfileTab {
   return 'coupons';
 }
 
-const SIDEBAR_ITEMS: { key: ProfileTab; label: string; icon: React.ReactNode }[] = [
-  { key: 'coupons', label: 'Мои купоны', icon: <Ticket size={18} /> },
-  { key: 'orders', label: 'Мои заказы', icon: <ShoppingBag size={18} /> },
-  { key: 'refunds', label: 'Возвраты', icon: <RotateCcw size={18} /> },
-  { key: 'complaints', label: 'Обращения', icon: <MessageSquare size={18} /> },
-  { key: 'notifications', label: 'Уведомления', icon: <Bell size={18} /> },
-  { key: 'profile', label: 'Настройки', icon: <Settings size={18} /> },
-  { key: 'help', label: 'Помощь', icon: <HelpCircle size={18} /> },
-];
-
-const COUPON_TABS = [
-  { key: 'ACTIVE', label: 'Активные', icon: <Clock size={16} /> },
-  { key: 'REFUND_PENDING', label: 'На возврате', icon: <RotateCcw size={16} /> },
-  { key: 'USED', label: 'Использованные', icon: <CheckCircle size={16} /> },
-  { key: 'EXPIRED', label: 'Истёкшие', icon: <AlertCircle size={16} /> },
-  { key: 'REFUNDED', label: 'Возвращённые', icon: <RotateCcw size={16} /> },
-];
-
-const EMPTY_COUPON_COPY: Record<string, { title: string; text: string }> = {
-  ACTIVE: {
-    title: 'У вас пока нет активных купонов',
-    text: 'Выберите предложение в каталоге и купон появится здесь после оплаты.',
-  },
-  REFUND_PENDING: {
-    title: 'Нет купонов на возврате',
-    text: 'Когда вы запросите возврат, его статус появится здесь.',
-  },
-  USED: {
-    title: 'Пока нет использованных купонов',
-    text: 'После визита к партнёру использованные купоны будут здесь.',
-  },
-  EXPIRED: {
-    title: 'Нет истёкших купонов',
-    text: 'Купоны с истёкшим сроком будут отображаться в этом разделе.',
-  },
-  REFUNDED: {
-    title: 'Нет возвращённых купонов',
-    text: 'Завершённые возвраты будут отображаться здесь.',
-  },
-};
-
 export default function ProfilePage() {
+  const { t } = useTranslation();
   const { user, logout, isAuthenticated } = useAuthStore();
+
+  const sidebarItems = useMemo(() => [
+    { key: 'coupons' as ProfileTab, label: t('profile.tabs.coupons'), icon: <Ticket size={18} /> },
+    { key: 'orders' as ProfileTab, label: t('profile.tabs.orders'), icon: <ShoppingBag size={18} /> },
+    { key: 'refunds' as ProfileTab, label: t('profile.tabs.refunds'), icon: <RotateCcw size={18} /> },
+    { key: 'complaints' as ProfileTab, label: t('profile.tabs.complaints'), icon: <MessageSquare size={18} /> },
+    { key: 'notifications' as ProfileTab, label: t('profile.tabs.notifications'), icon: <Bell size={18} /> },
+    { key: 'profile' as ProfileTab, label: t('profile.tabs.settings'), icon: <Settings size={18} /> },
+    { key: 'help' as ProfileTab, label: t('profile.tabs.help'), icon: <HelpCircle size={18} /> },
+  ], [t]);
+
+  const couponTabs = useMemo(() => [
+    { key: 'ACTIVE', label: t('profile.couponSubtabs.active'), icon: <Clock size={16} /> },
+    { key: 'REFUND_PENDING', label: t('profile.couponSubtabs.refundPending'), icon: <RotateCcw size={16} /> },
+    { key: 'USED', label: t('profile.couponSubtabs.used'), icon: <CheckCircle size={16} /> },
+    { key: 'EXPIRED', label: t('profile.couponSubtabs.expired'), icon: <AlertCircle size={16} /> },
+    { key: 'REFUNDED', label: t('profile.couponSubtabs.refunded'), icon: <RotateCcw size={16} /> },
+  ], [t]);
+
+  const emptyCouponCopy = useMemo(() => ({
+    ACTIVE: { title: t('profile.emptyCoupons.active.title'), text: t('profile.emptyCoupons.active.text') },
+    REFUND_PENDING: { title: t('profile.emptyCoupons.refundPending.title'), text: t('profile.emptyCoupons.refundPending.text') },
+    USED: { title: t('profile.emptyCoupons.used.title'), text: t('profile.emptyCoupons.used.text') },
+    EXPIRED: { title: t('profile.emptyCoupons.expired.title'), text: t('profile.emptyCoupons.expired.text') },
+    REFUNDED: { title: t('profile.emptyCoupons.refunded.title'), text: t('profile.emptyCoupons.refunded.text') },
+  }), [t]);
   const navigate = useNavigate();
   const location = useLocation();
   const lp = useLocalePath();
@@ -133,9 +120,9 @@ export default function ProfilePage() {
       <div className="profile-page container">
         <div className="profile-empty glass-card">
           <Ticket size={48} className="profile-empty-icon" />
-          <h2>Привет!</h2>
-          <p>Войдите или зарегистрируйтесь, чтобы видеть купоны, заказы и статус оплаты.</p>
-          <Link to={lp('/login')} className="primary-button">Войти в профиль</Link>
+          <h2>{t('profile.greeting')}</h2>
+          <p>{t('profile.guestDesc')}</p>
+          <Link to={lp('/login')} className="primary-button">{t('profile.login')}</Link>
         </div>
       </div>
     );
@@ -159,23 +146,23 @@ export default function ProfilePage() {
           <div className="profile-content">
             {activeHubTab === 'coupons' && (
               <>
-                <h2 className="profile-section-title">Мои купоны</h2>
+                <h2 className="profile-section-title">{t('profile.tabs.coupons')}</h2>
                 <Tabs
-                  tabs={COUPON_TABS}
+                  tabs={couponTabs}
                   activeKey={couponSubTab}
                   onChange={setCouponSubTab}
                 />
                 <div className="profile-coupons">
                   {couponsLoading ? (
-                    <div className="profile-loading">Загрузка купонов...</div>
+                    <div className="profile-loading">{t('profile.loadingCoupons')}</div>
                   ) : coupons.length === 0 ? (
                     <div className="profile-coupons-empty glass-card">
                       <span className="profile-empty-icon">📋</span>
-                      <h3>{EMPTY_COUPON_COPY[couponSubTab]?.title || 'Нет купонов'}</h3>
-                      <p>{EMPTY_COUPON_COPY[couponSubTab]?.text || 'Купоны появятся здесь.'}</p>
+                      <h3>{emptyCouponCopy[couponSubTab as keyof typeof emptyCouponCopy]?.title || t('profile.emptyCoupons.none')}</h3>
+                      <p>{emptyCouponCopy[couponSubTab as keyof typeof emptyCouponCopy]?.text || t('profile.emptyCoupons.defaultText')}</p>
                       {couponSubTab === 'ACTIVE' && (
                         <button className="primary-button" onClick={() => navigate(lp('/coupons'))}>
-                          Перейти в каталог
+                          {t('profile.goCatalog')}
                         </button>
                       )}
                     </div>
@@ -195,28 +182,28 @@ export default function ProfilePage() {
 
             {activeHubTab === 'orders' && (
               <>
-                <h2 className="profile-section-title">Мои заказы</h2>
+                <h2 className="profile-section-title">{t('profile.tabs.orders')}</h2>
                 <OrderHistorySection onTabChange={setTab} />
               </>
             )}
 
             {activeHubTab === 'refunds' && (
               <>
-                <h2 className="profile-section-title">Возвраты</h2>
+                <h2 className="profile-section-title">{t('profile.tabs.refunds')}</h2>
                 <RefundsSection />
               </>
             )}
 
             {activeHubTab === 'complaints' && (
               <>
-                <h2 className="profile-section-title">Обращения</h2>
+                <h2 className="profile-section-title">{t('profile.tabs.complaints')}</h2>
                 <ComplaintsSection />
               </>
             )}
 
             {activeHubTab === 'notifications' && (
               <>
-                <h2 className="profile-section-title">Уведомления</h2>
+                <h2 className="profile-section-title">{t('profile.tabs.notifications')}</h2>
                 <NotificationsSection />
               </>
             )}
@@ -247,7 +234,7 @@ export default function ProfilePage() {
 
             {/* Nav items */}
             <nav className="profile-sidebar__nav">
-              {SIDEBAR_ITEMS.map((item) => (
+              {sidebarItems.map((item) => (
                 <button
                   key={item.key}
                   className={`profile-sidebar__nav-item ${activeHubTab === item.key ? 'profile-sidebar__nav-item--active' : ''}`}
@@ -266,7 +253,7 @@ export default function ProfilePage() {
             <div className="profile-sidebar__footer">
               <button className="profile-sidebar__logout" onClick={logout}>
                 <LogOut size={16} />
-                Выйти
+                {t('profile.logout')}
               </button>
             </div>
           </div>

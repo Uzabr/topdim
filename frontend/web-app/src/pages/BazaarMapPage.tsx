@@ -1,4 +1,5 @@
 import { useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, Crosshair, MapPin, Store } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { directoryApi } from '../api/bazaars';
@@ -35,13 +36,8 @@ const DEMO_SHOPS: Shop[] = [
   { id: 3, name: 'Samsung Brand Store', category: 'Электроника', goodsDescription: 'Смартфоны, ТВ, бытовая техника', locationType: 'BAZAAR', bazaar: { id: 2, name: 'Eco Mall Bazaar' }, shopNumber: '118', latitude: 41.3112, longitude: 69.2792, photos: [], status: 'ACTIVE' },
 ];
 
-const TYPE_OPTIONS = ['Все', 'BAZAAR_MARKET', 'SHOPPING_CENTER', 'TRADE_COMPLEX'];
-const TYPE_LABELS: Record<string, string> = {
-  Все: 'Все',
-  BAZAAR_MARKET: 'Базар / Рынок',
-  SHOPPING_CENTER: 'ТЦ',
-  TRADE_COMPLEX: 'Т. Комплекс',
-};
+const FILTER_ALL = 'Все';
+const TYPE_OPTIONS = [FILTER_ALL, 'BAZAAR_MARKET', 'SHOPPING_CENTER', 'TRADE_COMPLEX'];
 
 /** BAZAAR_MARKET filter matches both BAZAAR and MARKET backend types */
 const TYPE_FILTER_MAP: Record<string, string[]> = {
@@ -51,6 +47,13 @@ const TYPE_FILTER_MAP: Record<string, string[]> = {
 };
 
 export default function BazaarMapPage() {
+  const { t } = useTranslation();
+  const typeLabels: Record<string, string> = {
+    [FILTER_ALL]: t('directory.types.all'),
+    BAZAAR_MARKET: t('directory.types.bazaarMarket'),
+    SHOPPING_CENTER: t('directory.types.shoppingCenter'),
+    TRADE_COMPLEX: t('directory.types.tradeComplex'),
+  };
   const {
     search, activeTab, bazaarTypeFilter, isAreaSelecting,
     areaBazaars, areaShops, showResultsPanel, selectedBazaarId,
@@ -90,7 +93,7 @@ export default function BazaarMapPage() {
     let result = allBazaars;
 
     // Type filter
-    if (bazaarTypeFilter !== 'Все') {
+    if (bazaarTypeFilter !== FILTER_ALL) {
       const allowedTypes = TYPE_FILTER_MAP[bazaarTypeFilter] || [];
       result = result.filter((b) => allowedTypes.includes(b.type));
     }
@@ -120,7 +123,7 @@ export default function BazaarMapPage() {
   }, [standaloneShops, search]);
 
   // Show standalone shops only when "Все" is selected
-  const showStandaloneSection = bazaarTypeFilter === 'Все';
+  const showStandaloneSection = bazaarTypeFilter === FILTER_ALL;
 
   // Handle area select from map
   const handleAreaSelect = useCallback(async (bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number }) => {
@@ -195,9 +198,9 @@ export default function BazaarMapPage() {
         {/* Title */}
         <div className="dir-header">
           <div>
-            <h1 className="page-title">Справочник базаров и магазинов</h1>
+            <h1 className="page-title">{t('directory.title')}</h1>
             <p className="section-copy">
-              Ищите базары и магазины на карте, выделяйте область для поиска, или выберите из списка.
+              {t('directory.subtitle')}
             </p>
           </div>
         </div>
@@ -209,20 +212,20 @@ export default function BazaarMapPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Поиск по базарам и магазинам…"
+              placeholder={t('directory.searchPlaceholder')}
               className="input-field"
-              aria-label="Поиск"
+              aria-label={t('directory.searchAria')}
             />
           </div>
 
           <div className="dir-filters">
-            {TYPE_OPTIONS.map((t) => (
+            {TYPE_OPTIONS.map((opt) => (
               <button
-                key={t}
-                className={`filter-chip ${bazaarTypeFilter === t ? 'filter-chip--active' : ''}`}
-                onClick={() => setBazaarTypeFilter(t)}
+                key={opt}
+                className={`filter-chip ${bazaarTypeFilter === opt ? 'filter-chip--active' : ''}`}
+                onClick={() => setBazaarTypeFilter(opt)}
               >
-                {TYPE_LABELS[t]}
+                {typeLabels[opt]}
               </button>
             ))}
           </div>
@@ -234,14 +237,14 @@ export default function BazaarMapPage() {
           <aside className="dir-sidebar">
             <h2 className="dir-sidebar__title">
               <MapPin size={18} />
-              Базары ({filteredBazaars.length})
+              {t('directory.bazaarsTitle', { count: filteredBazaars.length })}
             </h2>
             <div className="dir-sidebar__list">
               {filteredBazaars.map((b) => (
                 <DirectoryBazaarCard key={b.id} bazaar={b} compact />
               ))}
               {filteredBazaars.length === 0 && (
-                <p className="dir-sidebar__empty">Базары не найдены</p>
+                <p className="dir-sidebar__empty">{t('directory.bazaarsEmpty')}</p>
               )}
             </div>
 
@@ -250,7 +253,7 @@ export default function BazaarMapPage() {
               <>
                 <h2 className="dir-sidebar__title dir-sidebar__title--shops">
                   <Store size={18} />
-                  Магазины ({filteredShops.length})
+                  {t('directory.shopsSidebarTitle', { count: filteredShops.length })}
                 </h2>
                 <div className="dir-sidebar__list">
                   {filteredShops.map((s) => (
@@ -269,11 +272,11 @@ export default function BazaarMapPage() {
                 onClick={toggleAreaSelecting}
               >
                 <Crosshair size={18} />
-                {isAreaSelecting ? 'Отменить выделение' : 'Выделить область'}
+                {isAreaSelecting ? t('directory.cancelArea') : t('directory.selectArea')}
               </button>
               {isAreaSelecting && (
                 <span className="dir-draw-hint">
-                  Зажмите кнопку мыши и обведите нужную область на карте.
+                  {t('directory.drawHint')}
                 </span>
               )}
             </div>

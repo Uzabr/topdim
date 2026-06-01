@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Clock3, Star, Users } from 'lucide-react';
 import FavoriteButton from '../ui/FavoriteButton';
 import { useLocalePath } from '../../hooks/useLocalePath';
@@ -33,8 +34,11 @@ interface CouponCardProps {
 }
 
 export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps) {
+  const { t, i18n } = useTranslation();
   const [timeLeft, setTimeLeft] = useState<string | null>(coupon.countdownText || null);
   const lp = useLocalePath();
+  const locale = i18n.language === 'uz' ? 'uz-UZ' : 'ru-RU';
+  const currency = t('common.currency.sum');
 
   useEffect(() => {
     if (!coupon.countdownText || !coupon.countdownText.includes(':')) return;
@@ -86,14 +90,14 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
         <div className="coupon-card__top-left">
           {coupon.isHot && (
             <span className="coupon-card__hot">
-              <span>🔥</span> Топ
+              <span>🔥</span> {t('couponCard.hot')}
             </span>
           )}
         </div>
 
         {/* Discount badge */}
         {discount > 0 && (
-          <span className="coupon-card__discount">до -{discount}%</span>
+          <span className="coupon-card__discount">{t('couponCard.discountUpTo', { percent: discount })}</span>
         )}
 
         {/* Favorite button */}
@@ -115,7 +119,7 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
           {coupon.totalSold !== undefined && coupon.totalSold > 0 && (
             <span className="coupon-card__sold">
               <Users size={12} />
-              {coupon.totalSold.toLocaleString('ru-RU')} покупок
+              {t('couponCard.purchases', { count: coupon.totalSold.toLocaleString(locale) })}
             </span>
           )}
         </div>
@@ -132,7 +136,7 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
             <Star size={13} fill="currentColor" className="coupon-card__star" />
             <span className="coupon-card__rating-value">{coupon.rating.toFixed(1)}</span>
             {coupon.reviewCount !== undefined && (
-              <span className="coupon-card__review-count">/{coupon.reviewCount} отзывов</span>
+              <span className="coupon-card__review-count">{t('couponCard.reviews', { count: coupon.reviewCount })}</span>
             )}
           </div>
         )}
@@ -140,11 +144,11 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
         {/* Price */}
         <div className="coupon-card__pricing">
           <span className="coupon-card__price-pill">
-            от {coupon.fromPrice.toLocaleString('ru-RU')} сум
+            {t('couponCard.priceFrom', { price: coupon.fromPrice.toLocaleString(locale), currency })}
           </span>
           {coupon.oldPrice && (
             <span className="coupon-card__old-price">
-              {coupon.oldPrice.toLocaleString('ru-RU')} сум
+              {coupon.oldPrice.toLocaleString(locale)} {currency}
             </span>
           )}
         </div>

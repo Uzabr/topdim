@@ -1,4 +1,5 @@
 import { Star } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import './StarRating.css';
 
 interface StarRatingProps {
@@ -18,6 +19,7 @@ export default function StarRating({
   interactive = false,
   onRate,
 }: StarRatingProps) {
+  const { t } = useTranslation();
   const stars = Array.from({ length: 5 }, (_, i) => {
     const diff = rating - i;
     if (diff >= 0.75) return 'full';
@@ -35,7 +37,7 @@ export default function StarRating({
             className={`star-rating__star star-rating__star--${type}`}
             onClick={interactive && onRate ? () => onRate(i + 1) : undefined}
             tabIndex={interactive ? 0 : -1}
-            aria-label={`${i + 1} звёзд`}
+            aria-label={t('starRating.stars', { count: i + 1 })}
           >
             <Star
               size={size}
@@ -54,7 +56,7 @@ export default function StarRating({
         <span className="star-rating__info">
           <span className="star-rating__value">{rating.toFixed(1)}</span>
           {reviewCount !== undefined && (
-            <span className="star-rating__count"> /{reviewCount} отзывов</span>
+            <span className="star-rating__count"> {t('starRating.reviews', { count: reviewCount })}</span>
           )}
         </span>
       )}
