@@ -200,6 +200,7 @@
 
 .filter-chip span {
   display: flex;
+  flex-shrink: 0;
 }
 
 /* ═══ Carousel ═══ */

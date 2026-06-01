@@ -2,6 +2,7 @@ import { Instagram, Send, Mail, MapPin, Phone, Smartphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocalePath } from '../../hooks/useLocalePath';
+import { BAZAAR_NAV_ENABLED } from '../../config/features';
 import './Footer.css';
 
 export default function Footer() {
@@ -30,7 +31,9 @@ export default function Footer() {
           <ul>
             <li><Link to={lp('/coupons')}>Каталог купонов</Link></li>
             <li><Link to={lp('/favorites')}>Избранное</Link></li>
-            <li><Link to={lp('/bazaar')}>Онлайн базар</Link></li>
+            {BAZAAR_NAV_ENABLED && (
+              <li><Link to={lp('/bazaar')}>Онлайн базар</Link></li>
+            )}
             <li><Link to={lp('/profile')}>Мои купоны</Link></li>
           </ul>
         </div>
