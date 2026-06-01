@@ -237,8 +237,13 @@ img {
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: var(--bg-chip);
-  display: flex;
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
+  width: fit-content;
+  max-width: max-content;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .filter-chip--active {

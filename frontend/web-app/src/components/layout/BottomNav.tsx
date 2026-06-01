@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import { useLocalePath } from '../../hooks/useLocalePath';
+import { BAZAAR_NAV_ENABLED } from '../../config/features';
 import './BottomNav.css';
 
 export default function BottomNav() {
@@ -22,13 +23,15 @@ export default function BottomNav() {
         <span>Главная</span>
       </Link>
       
-      <Link to={lp('/bazaar')} className={`bottom-nav-item ${isActive('/bazaar') ? 'active' : ''}`}>
-        <div className="bottom-nav-icon-wrapper">
-          <MapPinned size={24} strokeWidth={isActive('/bazaar') ? 2.5 : 2} />
-        </div>
-        <span>Базар</span>
-      </Link>
-      
+      {BAZAAR_NAV_ENABLED && (
+        <Link to={lp('/bazaar')} className={`bottom-nav-item ${isActive('/bazaar') ? 'active' : ''}`}>
+          <div className="bottom-nav-icon-wrapper">
+            <MapPinned size={24} strokeWidth={isActive('/bazaar') ? 2.5 : 2} />
+          </div>
+          <span>Базар</span>
+        </Link>
+      )}
+
       <button 
         className="bottom-nav-item bottom-nav-item--cart" 
         onClick={openCart}

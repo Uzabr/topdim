@@ -9,6 +9,7 @@ import { useFavoritesStore } from '../../store/favoritesStore';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import { notificationsApi } from '../../api/notifications';
 import LanguageSelector from '../ui/LanguageSelector';
+import { BAZAAR_NAV_ENABLED } from '../../config/features';
 import './Header.css';
 
 export default function Header() {
@@ -54,10 +55,12 @@ export default function Header() {
               <Ticket size={18} />
               {t('nav.coupons')}
             </Link>
-            <Link to={lp('/bazaar')} className={`nav-link ${isActive('/bazaar') ? 'nav-link--active' : ''}`}>
-              <MapPinned size={18} />
-              {t('nav.bazaar')}
-            </Link>
+            {BAZAAR_NAV_ENABLED && (
+              <Link to={lp('/bazaar')} className={`nav-link ${isActive('/bazaar') ? 'nav-link--active' : ''}`}>
+                <MapPinned size={18} />
+                {t('nav.bazaar')}
+              </Link>
+            )}
             {/* ✅ Заменён инлайн-стиль на класс .badge-wrapper */}
             <Link to={lp('/favorites')} className={`nav-link ${isActive('/favorites') ? 'nav-link--active' : ''}`}>
               <span className="badge-wrapper">
@@ -107,9 +110,11 @@ export default function Header() {
         <Link to={lp('/')} onClick={() => setMobileMenuOpen(false)}>
           {t('nav.coupons')}
         </Link>
-        <Link to={lp('/bazaar')} onClick={() => setMobileMenuOpen(false)}>
-          {t('nav.bazaar')}
-        </Link>
+        {BAZAAR_NAV_ENABLED && (
+          <Link to={lp('/bazaar')} onClick={() => setMobileMenuOpen(false)}>
+            {t('nav.bazaar')}
+          </Link>
+        )}
         <Link to={lp('/favorites')} onClick={() => setMobileMenuOpen(false)}>
           {t('nav.favorites')}
         </Link>

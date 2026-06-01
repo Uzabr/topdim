@@ -106,8 +106,8 @@
 
 .footer-app-badges {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  justify-content: space-between;
 }
 
 .footer-app-badge {
