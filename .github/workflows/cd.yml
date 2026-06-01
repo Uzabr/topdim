@@ -11,75 +11,10 @@ env:
   IMAGE_PREFIX: ghcr.io/uzabr/topdim
 
 jobs:
-  changes:
-    name: Detect changes
-    runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    outputs:
-      backend_services: ${{ steps.detect.outputs.backend_services }}
-      frontend_services: ${{ steps.detect.outputs.frontend_services }}
-      has_backend: ${{ steps.detect.outputs.has_backend }}
-      has_frontend: ${{ steps.detect.outputs.has_frontend }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: Detect changed services
-        id: detect
-        run: |
-          CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo ".")
-
-          BACKEND_SERVICES="[]"
-          FRONTEND_SERVICES="[]"
-
-          # If shared code or gradle config changed — rebuild all backend
-          if echo "$CHANGED" | grep -qE '^(shared/|build\.gradle|settings\.gradle|gradle\.properties|docker/backend/)'; then
-            BACKEND_SERVICES='[{"service":"discovery-server","module_path":"infrastructure:discovery-server"},{"service":"api-gateway","module_path":"infrastructure:api-gateway"},{"service":"identity-service","module_path":"services:identity-service"},{"service":"coupon-service","module_path":"services:coupon-service"},{"service":"order-service","module_path":"services:order-service"},{"service":"payment-service","module_path":"services:payment-service"},{"service":"notification-service","module_path":"services:notification-service"},{"service":"media-service","module_path":"services:media-service"}]'
-          else
-            SERVICES=""
-            echo "$CHANGED" | grep -q '^infrastructure/discovery-server/' && SERVICES="$SERVICES"'{"service":"discovery-server","module_path":"infrastructure:discovery-server"},'
-            echo "$CHANGED" | grep -q '^infrastructure/api-gateway/' && SERVICES="$SERVICES"'{"service":"api-gateway","module_path":"infrastructure:api-gateway"},'
-            echo "$CHANGED" | grep -q '^services/identity-service/' && SERVICES="$SERVICES"'{"service":"identity-service","module_path":"services:identity-service"},'
-            echo "$CHANGED" | grep -q '^services/coupon-service/' && SERVICES="$SERVICES"'{"service":"coupon-service","module_path":"services:coupon-service"},'
-            echo "$CHANGED" | grep -q '^services/order-service/' && SERVICES="$SERVICES"'{"service":"order-service","module_path":"services:order-service"},'
-            echo "$CHANGED" | grep -q '^services/payment-service/' && SERVICES="$SERVICES"'{"service":"payment-service","module_path":"services:payment-service"},'
-            echo "$CHANGED" | grep -q '^services/notification-service/' && SERVICES="$SERVICES"'{"service":"notification-service","module_path":"services:notification-service"},'
-            echo "$CHANGED" | grep -q '^services/media-service/' && SERVICES="$SERVICES"'{"service":"media-service","module_path":"services:media-service"},'
-            if [ -n "$SERVICES" ]; then
-              BACKEND_SERVICES="[${SERVICES%,}]"
-            fi
-          fi
-
-          # Frontend detection
-          F_SERVICES=""
-          if echo "$CHANGED" | grep -qE '^(docker/frontend/|frontend/web-app/)'; then
-            F_SERVICES="$F_SERVICES"'{"service":"web-app","app_path":"frontend/web-app","api_url":"https://api.sizbiz.uz"},'
-          fi
-          if echo "$CHANGED" | grep -qE '^(docker/frontend/|frontend/admin-app/)'; then
-            F_SERVICES="$F_SERVICES"'{"service":"admin-app","app_path":"frontend/admin-app","api_url":"https://api.sizbiz.uz"},'
-          fi
-          if echo "$CHANGED" | grep -qE '^(docker/frontend/|frontend/partner/)'; then
-            F_SERVICES="$F_SERVICES"'{"service":"partner","app_path":"frontend/partner","api_url":"https://api.sizbiz.uz"},'
-          fi
-          if [ -n "$F_SERVICES" ]; then
-            FRONTEND_SERVICES="[${F_SERVICES%,}]"
-          fi
-
-          echo "backend_services=$BACKEND_SERVICES" >> "$GITHUB_OUTPUT"
-          echo "frontend_services=$FRONTEND_SERVICES" >> "$GITHUB_OUTPUT"
-          echo "has_backend=$( [ "$BACKEND_SERVICES" != "[]" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
-          echo "has_frontend=$( [ "$FRONTEND_SERVICES" != "[]" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
-
-          echo "### Changed services" >> "$GITHUB_STEP_SUMMARY"
-          echo "Backend: $BACKEND_SERVICES" >> "$GITHUB_STEP_SUMMARY"
-          echo "Frontend: $FRONTEND_SERVICES" >> "$GITHUB_STEP_SUMMARY"
-
   build-backend:
     name: Build backend (${{ matrix.service }})
     runs-on: ubuntu-latest
-    needs: changes
-    if: ${{ needs.changes.outputs.has_backend == 'true' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
       packages: write
@@ -87,7 +22,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.changes.outputs.backend_services) }}
+        include:
+          - service: discovery-server
+            module_path: infrastructure:discovery-server
+          - service: api-gateway
+            module_path: infrastructure:api-gateway
+          - service: identity-service
+            module_path: services:identity-service
+          - service: coupon-service
+            module_path: services:coupon-service
+          - service: order-service
+            module_path: services:order-service
+          - service: payment-service
+            module_path: services:payment-service
+          - service: notification-service
+            module_path: services:notification-service
+          - service: media-service
+            module_path: services:media-service
 
     steps:
       - name: Checkout
@@ -120,8 +71,7 @@ jobs:
   build-frontend:
     name: Build frontend (${{ matrix.service }})
     runs-on: ubuntu-latest
-    needs: changes
-    if: ${{ needs.changes.outputs.has_frontend == 'true' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
       packages: write
@@ -129,7 +79,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.changes.outputs.frontend_services) }}
+        include:
+          - service: web-app
+            app_path: frontend/web-app
+            api_url: https://api.sizbiz.uz
+          - service: admin-app
+            app_path: frontend/admin-app
+            api_url: https://api.sizbiz.uz
+          - service: partner
+            app_path: frontend/partner
+            api_url: https://api.sizbiz.uz
 
     steps:
       - name: Checkout
@@ -163,28 +122,19 @@ jobs:
   deploy:
     name: Deploy to server
     runs-on: ubuntu-latest
-    needs: [ changes, build-backend, build-frontend ]
-    if: |
-      always() &&
-      needs.changes.result == 'success' &&
-      (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') &&
-      (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped') &&
-      (needs.changes.outputs.has_backend == 'true' || needs.changes.outputs.has_frontend == 'true')
+    needs: [build-backend, build-frontend]
 
     steps:
-      - name: Deploy via SSH
-        id: deploy
+      - name: Deploy with health check and rollback
         uses: appleboy/ssh-action@v1
         env:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
-          BACKEND_SERVICES: ${{ needs.changes.outputs.has_backend == 'true' && needs.changes.outputs.backend_services || '[]' }}
-          FRONTEND_SERVICES: ${{ needs.changes.outputs.has_frontend == 'true' && needs.changes.outputs.frontend_services || '[]' }}
           COMMIT_SHA: ${{ github.sha }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: GHCR_PAT,BACKEND_SERVICES,FRONTEND_SERVICES,COMMIT_SHA
+          envs: GHCR_PAT,COMMIT_SHA
           command_timeout: 10m
           script: |
             REGISTRY="ghcr.io/uzabr/topdim"
@@ -194,39 +144,34 @@ jobs:
 
             echo "$GHCR_PAT" | docker login ghcr.io -u uzabr --password-stdin
 
-            # Extract service names from JSON arrays
-            SERVICES=$(echo "$BACKEND_SERVICES $FRONTEND_SERVICES" | grep -oP '"service"\s*:\s*"\K[^"]+' | sort -u)
+            for svc in discovery-server api-gateway \
+                       identity-service coupon-service order-service \
+                       payment-service notification-service media-service \
+                       web-app admin-app partner; do
 
-            if [ -z "$SERVICES" ]; then
-              echo "No services to deploy"
-              exit 0
-            fi
-
-            for svc in $SERVICES; do
               SVC_NAME="topdim_${svc}"
               echo "========================================="
               echo "Deploying ${svc}..."
 
               # Save current image for rollback
               OLD_IMAGE=$(docker service inspect "$SVC_NAME" --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' 2>/dev/null || echo "")
-
-              # Update to new image
-              if ! docker service update --image "${REGISTRY}/${svc}:sha-${COMMIT_SHA}" \
-                "$SVC_NAME" --with-registry-auth --detach 2>/dev/null; then
+              if [ -z "$OLD_IMAGE" ]; then
                 echo "  SKIP: ${svc} (service not found)"
                 continue
               fi
 
-              echo "  Image updated, waiting for health..."
+              # Update to new image
+              docker service update --image "${REGISTRY}/${svc}:sha-${COMMIT_SHA}" \
+                "$SVC_NAME" --with-registry-auth --detach
 
-              # Wait up to 120s for the service to stabilize
+              # Wait up to 120s for service to stabilize
               HEALTHY=false
               for i in $(seq 1 12); do
                 sleep 10
-                REPLICAS=$(docker service ls --filter "name=${SVC_NAME}" --format '{{.Replicas}}' 2>/dev/null)
+                REPLICAS=$(docker service ls --filter "name=${SVC_NAME}" --format '{{.Replicas}}')
                 DESIRED=$(echo "$REPLICAS" | cut -d/ -f2)
                 RUNNING=$(echo "$REPLICAS" | cut -d/ -f1)
-                echo "  Check $i: ${RUNNING}/${DESIRED}"
+                echo "  Check $i/12: ${RUNNING}/${DESIRED}"
                 if [ "$DESIRED" != "0" ] && [ "$RUNNING" = "$DESIRED" ]; then
                   HEALTHY=true
                   break
@@ -234,16 +179,12 @@ jobs:
               done
 
               if [ "$HEALTHY" = true ]; then
-                echo "  OK: ${svc} deployed successfully"
+                echo "  ✓ ${svc}"
                 DEPLOYED="${DEPLOYED} ${svc}"
               else
-                echo "  FAIL: ${svc} not healthy, rolling back..."
-                if [ -n "$OLD_IMAGE" ]; then
-                  docker service update --image "$OLD_IMAGE" "$SVC_NAME" --with-registry-auth --detach 2>/dev/null
-                  ROLLED_BACK="${ROLLED_BACK} ${svc}"
-                else
-                  FAILED="${FAILED} ${svc}"
-                fi
+                echo "  ✗ ${svc} — rolling back..."
+                docker service update --image "$OLD_IMAGE" "$SVC_NAME" --with-registry-auth --detach
+                ROLLED_BACK="${ROLLED_BACK} ${svc}"
               fi
             done
 
@@ -251,58 +192,55 @@ jobs:
 
             echo ""
             echo "========================================="
-            echo "DEPLOY SUMMARY"
+            echo "DEPLOY SUMMARY (sha: ${COMMIT_SHA:0:7})"
             echo "========================================="
-            [ -n "$DEPLOYED" ] && echo "Deployed:    $DEPLOYED"
-            [ -n "$ROLLED_BACK" ] && echo "Rolled back: $ROLLED_BACK"
-            [ -n "$FAILED" ] && echo "Failed:      $FAILED"
+            [ -n "$DEPLOYED" ]    && echo "✓ Deployed:    $DEPLOYED"
+            [ -n "$ROLLED_BACK" ] && echo "✗ Rolled back: $ROLLED_BACK"
+            [ -z "$DEPLOYED" ] && [ -z "$ROLLED_BACK" ] && echo "Nothing to deploy"
 
-            # Smoke test: check key endpoints
+            # Smoke test
             echo ""
             echo "SMOKE TEST"
-            for endpoint in "/api/v1/categories" "/api/v1/coupons?size=1"; do
-              STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://topdim_api-gateway:8080${endpoint}" 2>/dev/null || echo "000")
-              echo "  GET ${endpoint} -> ${STATUS}"
+            for ep in "/api/v1/categories" "/api/v1/coupons?size=1"; do
+              CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://topdim_api-gateway:8080${ep}" 2>/dev/null || echo "000")
+              echo "  GET ${ep} → ${CODE}"
             done
 
-            # Exit with error if anything was rolled back
-            if [ -n "$ROLLED_BACK" ] || [ -n "$FAILED" ]; then
-              exit 1
-            fi
+            # Fail if anything rolled back
+            [ -n "$ROLLED_BACK" ] && exit 1
+            exit 0
 
   notify:
-    name: Notify
+    name: Telegram notify
     runs-on: ubuntu-latest
-    needs: [ changes, build-backend, build-frontend, deploy ]
-    if: always() && (needs.changes.outputs.has_backend == 'true' || needs.changes.outputs.has_frontend == 'true')
+    needs: [build-backend, build-frontend, deploy]
+    if: always()
 
     steps:
-      - name: Send Telegram notification
-        if: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}
+      - name: Send notification
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          if [ "${{ needs.deploy.result }}" = "success" ]; then
-            EMOJI="✅"
-            STATUS="успешно"
-          elif [ "${{ needs.deploy.result }}" = "skipped" ]; then
-            EMOJI="⏭️"
-            STATUS="пропущен (нет изменений)"
-          else
-            EMOJI="❌"
-            STATUS="ошибка"
+          # Skip if Telegram not configured
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram not configured, skipping"
+            exit 0
           fi
 
-          COMMIT_MSG=$(echo "${{ github.event.workflow_run.head_commit.message }}" | head -1)
-          REPO="${{ github.repository }}"
+          if [ "${{ needs.deploy.result }}" = "success" ]; then
+            EMOJI="✅"; STATUS="успешно"
+          elif [ "${{ needs.deploy.result }}" = "skipped" ]; then
+            EMOJI="⏭️"; STATUS="пропущен"
+          else
+            EMOJI="❌"; STATUS="ошибка"
+          fi
+
           SHA="${{ github.sha }}"
-          SHORT_SHA="${SHA:0:7}"
-          RUN_URL="https://github.com/${REPO}/actions/runs/${{ github.run_id }}"
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
           TEXT="${EMOJI} *Deploy ${STATUS}*
-
-          📦 \`${SHORT_SHA}\` ${COMMIT_MSG}
+          📦 \`${SHA:0:7}\`
           🔗 [Подробнее](${RUN_URL})"
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
