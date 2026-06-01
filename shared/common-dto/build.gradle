@@ -9,9 +9,9 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.36'
 
     // For ReadReplicaConfig (optional — only used by services with DB)
-    compileOnly 'org.springframework:spring-jdbc:6.2.3'
-    compileOnly 'org.springframework:spring-context:6.2.3'
-    compileOnly 'org.springframework:spring-tx:6.2.3'
+    compileOnly 'org.springframework:spring-jdbc:7.0.7'
+    compileOnly 'org.springframework:spring-context:7.0.7'
+    compileOnly 'org.springframework:spring-tx:7.0.7'
     compileOnly 'org.springframework.boot:spring-boot:3.4.3'
     compileOnly 'org.springframework.boot:spring-boot-autoconfigure:3.4.3'
 }
