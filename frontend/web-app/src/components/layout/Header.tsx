@@ -9,6 +9,7 @@ import { useFavoritesStore } from '../../store/favoritesStore';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import { notificationsApi } from '../../api/notifications';
 import LanguageSelector from '../ui/LanguageSelector';
+import CitySelector from '../ui/CitySelector';
 import { BAZAAR_NAV_ENABLED } from '../../config/features';
 import './Header.css';
 
@@ -76,24 +77,26 @@ export default function Header() {
 
         {/* RIGHT */}
         <div className="header-actions">
-          <Link to={lp('/search')} className="icon-button">
-            <Search size={19} />
-          </Link>
+          <div className="header-actions-desktop">
+            <Link to={lp('/search')} className="icon-button">
+              <Search size={19} />
+            </Link>
 
-          <button className="icon-button" onClick={toggleCart}>
-            <ShoppingBag size={19} />
-            {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
-          </button>
+            <button className="icon-button" onClick={toggleCart}>
+              <ShoppingBag size={19} />
+              {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
+            </button>
 
-          <LanguageSelector />
+            <LanguageSelector />
 
-          <Link to={lp(isAuthenticated ? '/profile?tab=notifications' : '/login')} className="account-pill">
-            <span className="badge-wrapper">
-              <User size={18} />
-              {hasUnread && <span className="notification-dot" />}
-            </span>
-            <span>{isAuthenticated ? user?.firstName ?? t('header.profile') : t('header.login')}</span>
-          </Link>
+            <Link to={lp(isAuthenticated ? '/profile?tab=notifications' : '/login')} className="account-pill">
+              <span className="badge-wrapper">
+                <User size={18} />
+                {hasUnread && <span className="notification-dot" />}
+              </span>
+              <span>{isAuthenticated ? user?.firstName ?? t('header.profile') : t('header.login')}</span>
+            </Link>
+          </div>
 
           {/* BURGER */}
           <button
@@ -118,6 +121,49 @@ export default function Header() {
         <Link to={lp('/favorites')} onClick={() => setMobileMenuOpen(false)}>
           {t('nav.favorites')}
         </Link>
+
+        <div className="mobile-menu-divider" />
+
+        <Link to={lp('/search')} className="mobile-menu-action" onClick={() => setMobileMenuOpen(false)}>
+          <Search size={18} />
+          <span>{t('common.search')}</span>
+        </Link>
+
+        <button
+          type="button"
+          className="mobile-menu-action"
+          onClick={() => {
+            toggleCart();
+            setMobileMenuOpen(false);
+          }}
+        >
+          <span className="badge-wrapper">
+            <ShoppingBag size={18} />
+            {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
+          </span>
+          <span>{t('cart.title')}</span>
+        </button>
+
+        <Link
+          to={lp(isAuthenticated ? '/profile?tab=notifications' : '/login')}
+          className="mobile-menu-action"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <span className="badge-wrapper">
+            <User size={18} />
+            {hasUnread && <span className="notification-dot" />}
+          </span>
+          <span>{isAuthenticated ? user?.firstName ?? t('header.profile') : t('header.login')}</span>
+        </Link>
+
+        <div className="mobile-menu-tools">
+          <div className="mobile-menu-tool-item">
+            <LanguageSelector />
+          </div>
+          <div className="mobile-menu-tool-item">
+            <CitySelector />
+          </div>
+        </div>
       </div>
     </header>
   );
