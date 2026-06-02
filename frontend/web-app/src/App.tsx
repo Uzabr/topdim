@@ -50,6 +50,7 @@ function RootRedirect() {
 function AppShell() {
   const location = useLocation();
   const isPartnerLanding = /^\/(ru|uz)\/partners\/?$/.test(location.pathname);
+  const isLoginPage = /^\/(ru|uz)\/login\/?$/.test(location.pathname);
 
   useEffect(() => {
     if (isPartnerLanding) {
@@ -59,12 +60,20 @@ function AppShell() {
       document.body.classList.remove('td-partner-body');
       document.documentElement.classList.remove('td-partner-body');
     }
-  }, [isPartnerLanding]);
+
+    if (isLoginPage) {
+      document.body.classList.add('td-login-body');
+      document.documentElement.classList.add('td-login-body');
+    } else {
+      document.body.classList.remove('td-login-body');
+      document.documentElement.classList.remove('td-login-body');
+    }
+  }, [isPartnerLanding, isLoginPage]);
 
   return (
     <div className="app-shell">
       {!isPartnerLanding && <Header />}
-      <main className="app-main">
+      <main className={`app-main${isLoginPage ? ' app-main--login' : ''}`}>
       <Routes>
         {/* Bare root → redirect to /ru or /uz */}
         <Route path="/" element={<RootRedirect />} />
@@ -93,8 +102,8 @@ function AppShell() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       </main>
-      {!isPartnerLanding && <Footer />}
-      {!isPartnerLanding && <BottomNav />}
+      {!isPartnerLanding && !isLoginPage && <Footer />}
+      {!isPartnerLanding && !isLoginPage && <BottomNav />}
       <CartDrawer />
       <LimitModal />
       <CookieConsent />
