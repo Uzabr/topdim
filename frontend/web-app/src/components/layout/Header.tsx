@@ -9,8 +9,9 @@ import { useFavoritesStore } from '../../store/favoritesStore';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import { notificationsApi } from '../../api/notifications';
 import LanguageSelector from '../ui/LanguageSelector';
-import CitySelector from '../ui/CitySelector';
 import { BAZAAR_NAV_ENABLED } from '../../config/features';
+
+const MOBILE_MENU_ICON = 22;
 import './Header.css';
 
 export default function Header() {
@@ -103,29 +104,42 @@ export default function Header() {
             className="mobile-menu-btn"
             onClick={() => setMobileMenuOpen(v => !v)}
           >
-            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            {mobileMenuOpen ? <X size={28} strokeWidth={2} /> : <Menu size={28} strokeWidth={2} />}
           </button>
         </div>
       </div>
 
       {/* MOBILE MENU */}
       <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
-        <Link to={lp('/')} onClick={() => setMobileMenuOpen(false)}>
-          {t('nav.coupons')}
-        </Link>
-        {BAZAAR_NAV_ENABLED && (
-          <Link to={lp('/bazaar')} onClick={() => setMobileMenuOpen(false)}>
-            {t('nav.bazaar')}
-          </Link>
-        )}
-        <Link to={lp('/favorites')} onClick={() => setMobileMenuOpen(false)}>
-          {t('nav.favorites')}
+        <Link
+          to={lp('/')}
+          className="mobile-menu-action"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <Ticket size={MOBILE_MENU_ICON} />
+          <span>{t('nav.coupons')}</span>
         </Link>
 
-        <div className="mobile-menu-divider" />
+        <Link
+          to={lp('/favorites')}
+          className="mobile-menu-action"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <span className="badge-wrapper">
+            <Heart size={MOBILE_MENU_ICON} />
+            {favoriteIds.length > 0 && (
+              <span className="cart-badge">{favoriteIds.length}</span>
+            )}
+          </span>
+          <span>{t('nav.favorites')}</span>
+        </Link>
 
-        <Link to={lp('/search')} className="mobile-menu-action" onClick={() => setMobileMenuOpen(false)}>
-          <Search size={18} />
+        <Link
+          to={lp('/search')}
+          className="mobile-menu-action"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <Search size={MOBILE_MENU_ICON} />
           <span>{t('common.search')}</span>
         </Link>
 
@@ -138,7 +152,7 @@ export default function Header() {
           }}
         >
           <span className="badge-wrapper">
-            <ShoppingBag size={18} />
+            <ShoppingBag size={MOBILE_MENU_ICON} />
             {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
           </span>
           <span>{t('cart.title')}</span>
@@ -150,18 +164,15 @@ export default function Header() {
           onClick={() => setMobileMenuOpen(false)}
         >
           <span className="badge-wrapper">
-            <User size={18} />
+            <User size={MOBILE_MENU_ICON} />
             {hasUnread && <span className="notification-dot" />}
           </span>
-          <span>{isAuthenticated ? user?.firstName ?? t('header.profile') : t('header.login')}</span>
+          <span>{isAuthenticated ? user?.firstName ?? t('header.profile') : t('header.profile')}</span>
         </Link>
 
         <div className="mobile-menu-tools">
           <div className="mobile-menu-tool-item">
             <LanguageSelector />
-          </div>
-          <div className="mobile-menu-tool-item">
-            <CitySelector />
           </div>
         </div>
       </div>
