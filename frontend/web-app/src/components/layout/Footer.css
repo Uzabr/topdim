@@ -185,8 +185,8 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .app-footer {
-    margin-bottom: calc(76px + env(safe-area-inset-bottom));
+    display: none;
   }
 }

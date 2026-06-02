@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Heart, MapPinned, Menu, Search, ShoppingBag, Ticket, User, X } from 'lucide-react';
+import { Heart, Instagram, MapPinned, Menu, Search, Send, ShoppingBag, Ticket, User, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
@@ -10,9 +10,9 @@ import { useLocalePath } from '../../hooks/useLocalePath';
 import { notificationsApi } from '../../api/notifications';
 import LanguageSelector from '../ui/LanguageSelector';
 import { BAZAAR_NAV_ENABLED } from '../../config/features';
+import './Header.css';
 
 const MOBILE_MENU_ICON = 22;
-import './Header.css';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -171,6 +171,30 @@ export default function Header() {
         </Link>
 
         <div className="mobile-menu-tools">
+          <div className="mobile-menu-socials">
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mobile-menu-social-link"
+              aria-label="Instagram"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Instagram size={20} />
+              <span>Instagram</span>
+            </a>
+            <a
+              href="https://t.me"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mobile-menu-social-link"
+              aria-label="Telegram"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Send size={20} />
+              <span>Telegram</span>
+            </a>
+          </div>
           <div className="mobile-menu-tool-item">
             <LanguageSelector />
           </div>
