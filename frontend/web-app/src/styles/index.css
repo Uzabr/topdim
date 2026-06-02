@@ -136,6 +136,27 @@ img {
   padding-top: calc(var(--header-height) + 8px);
 }
 
+.app-main--login {
+  padding-top: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.td-login-body,
+html.td-login-body {
+  overflow: hidden;
+  height: 100%;
+}
+
+body.td-login-body .app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
 .container {
   width: min(var(--max-width), 100%);
   margin: 0 auto;
