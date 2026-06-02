@@ -62,15 +62,23 @@ export default function SearchPage() {
   const isTyping = query !== searchTerm;
 
   return (
-    <div className="search-page container">
+    <div className="search-page">
+      <div className="container">
       <div className="search-header">
         <h1>{t('search.title')}</h1>
         <div className="search-page-bar-container">
           <SearchBar
             value={query}
-            onChange={setQuery}
+            onChange={(val) => {
+              setQuery(val);
+              if (!val.trim()) {
+                setSearchTerm('');
+              }
+            }}
             onSubmit={(val) => {
-              if (val.trim()) setSearchTerm(val.trim());
+              const trimmed = val.trim();
+              setSearchTerm(trimmed);
+              setQuery(trimmed);
             }}
             placeholder={t('search.pagePlaceholder')}
             autoFocus
@@ -82,12 +90,17 @@ export default function SearchPage() {
         <div className="search-suggestions glass-card">
           <div className="search-categories">
             <h3 className="search-suggestions__title">{t('search.popularCategories')}</h3>
-            <div className="categories-grid">
+            <div className="search-tags search-tags--scroll">
               {categories.map((c) => (
-                <div key={c.id} className="category-card" onClick={() => applyPopular(c.name)}>
-                  <span className="category-card__icon">{c.iconUrl || '🔎'}</span>
-                  <span className="category-card__name">{c.name}</span>
-                </div>
+                <button
+                  key={c.id}
+                  type="button"
+                  className="search-tag-btn"
+                  onClick={() => applyPopular(c.name)}
+                >
+                  {c.iconUrl ? <span className="search-tag-btn__icon">{c.iconUrl}</span> : null}
+                  {c.name}
+                </button>
               ))}
             </div>
           </div>
@@ -166,6 +179,7 @@ export default function SearchPage() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

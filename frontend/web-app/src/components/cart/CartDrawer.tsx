@@ -30,7 +30,7 @@ export default function CartDrawer() {
             {totalItems > 0 && <span className="cart-drawer__count">{totalItems}</span>}
           </h2>
           <button className="cart-drawer__close" onClick={closeCart} aria-label={t('common.close')}>
-            <X size={24} />
+            <X size={28} strokeWidth={2} />
           </button>
         </div>
 
