@@ -297,3 +297,23 @@
     aspect-ratio: 16 / 10;
   }
 }
+
+@media (max-width: 480px) {
+  .coupon-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+
+  .catalog-controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .catalog-search {
+    min-width: 100%;
+  }
+
+  .catalog-hero__title {
+    font-size: 1.5rem;
+  }
+}
