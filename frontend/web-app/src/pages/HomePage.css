@@ -185,15 +185,23 @@
 /* ═══ Categories ═══ */
 .categories-row {
   display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
   overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: 4px;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
 .categories-row::-webkit-scrollbar {
   display: none;
+}
+
+.categories-row > * {
+  flex: 0 0 auto;
 }
 
 /* Old .category-bubble styles removed — now using global .filter-chip from index.css */
