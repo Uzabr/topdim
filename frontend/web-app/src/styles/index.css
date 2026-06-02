@@ -130,9 +130,17 @@ img {
 #root,
 .app-shell {
   min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
 }
 
 .app-main {
+  flex: 1 0 auto;
+  width: 100%;
   padding-top: calc(var(--header-height) + 8px);
 }
 
@@ -159,7 +167,8 @@ body.td-login-body .app-shell {
 
 body.td-login-body .app-main--login {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   justify-content: center;
   box-sizing: border-box;
   padding: calc(var(--header-height) + 10px) 0 var(--space-md);

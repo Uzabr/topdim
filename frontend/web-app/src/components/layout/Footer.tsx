@@ -10,7 +10,8 @@ export default function Footer() {
   const lp = useLocalePath();
   return (
     <footer className="app-footer">
-      <div className="container footer-content">
+      <div className="container">
+      <div className="footer-content">
         {/* Brand */}
         <div className="footer-column footer-brand">
           <h2 className="footer-logo text-gradient">TopDim</h2>
@@ -85,6 +86,7 @@ export default function Footer() {
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       <div className="footer-bottom">
