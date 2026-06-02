@@ -159,20 +159,12 @@
 /* ═══ Responsive ═══ */
 @media (max-width: 1024px) {
   .footer-content {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .footer-content {
     grid-template-columns: 1fr;
     gap: var(--space-md);
     padding: var(--space-lg) var(--space-md);
   }
 
-  /* На мобилке оставляем только бренд + ссылки для пользователей */
-  .footer-column:nth-child(3),
-  .footer-column:nth-child(4) {
+  .footer-column:not(.footer-brand) {
     display: none;
   }
 
@@ -183,9 +175,16 @@
   .footer-desc {
     max-width: 100%;
     font-size: var(--font-xs);
+    margin-bottom: var(--space-sm);
   }
 
-  .footer-apps {
+  .footer-bottom {
     display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-footer {
+    margin-bottom: calc(76px + env(safe-area-inset-bottom));
   }
 }

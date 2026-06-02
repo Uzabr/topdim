@@ -11,10 +11,10 @@ export interface City {
 
 export const CITIES: City[] = [
   { id: 'tashkent', name: 'Ташкент', nameUz: 'Toshkent', latitude: 41.2995, longitude: 69.2401 },
+  { id: 'namangan', name: 'Наманган', nameUz: 'Namangan', latitude: 40.9983, longitude: 71.6726 },
   { id: 'samarkand', name: 'Самарканд', nameUz: 'Samarqand', latitude: 39.6542, longitude: 66.9597 },
-  { id: 'bukhara', name: 'Бухара', nameUz: 'Buxoro', latitude: 39.7681, longitude: 64.4556 },
-  { id: 'fergana', name: 'Фергана', nameUz: 'Farg\'ona', latitude: 40.3842, longitude: 71.7869 },
-  { id: 'khiva', name: 'Хива', nameUz: 'Xiva', latitude: 41.3775, longitude: 60.3619 },
+  { id: 'andijan', name: 'Андижан', nameUz: 'Andijon', latitude: 40.7821, longitude: 72.3442 },
+  { id: 'nukus', name: 'Нукус', nameUz: 'Nukus', latitude: 42.4600, longitude: 59.6166 },
 ];
 
 interface CityState {
