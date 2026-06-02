@@ -3,9 +3,37 @@
    ═══════════════════════════════════════════ */
 
 .profile-page {
-  padding: var(--space-xl) 0 var(--space-3xl);
-  max-width: 1100px;
+  width: min(1300px, 100%);
+  max-width: 1300px;
   margin: 0 auto;
+  padding: var(--space-xl) 20px var(--space-3xl);
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+
+/* Горизонтальный скролл только для списков (навигация, вкладки, статистика) */
+.profile-scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(37, 99, 235, 0.45) rgba(15, 23, 42, 0.06);
+}
+
+.profile-scroll-x::-webkit-scrollbar {
+  height: 5px;
+}
+
+.profile-scroll-x::-webkit-scrollbar-track {
+  margin: 0 8px 4px;
+  background: rgba(15, 23, 42, 0.06);
+  border-radius: 999px;
+}
+
+.profile-scroll-x::-webkit-scrollbar-thumb {
+  background: rgba(37, 99, 235, 0.45);
+  border-radius: 999px;
 }
 
 /* ═══ Two-Column Layout ═══ */
@@ -21,6 +49,26 @@
   flex-direction: column;
   gap: var(--space-xl);
   min-width: 0;
+}
+
+.profile-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.profile-tabs-card {
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 0;
+}
+
+.profile-tabs-card__body {
+  padding: 20px;
+}
+
+.profile-tabs-card .profile-coupons {
+  margin-top: 0;
 }
 
 /* ═══ Sidebar ═══ */
@@ -199,7 +247,6 @@
 }
 
 .profile-coupons {
-  margin-top: var(--space-xl);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
@@ -330,14 +377,36 @@
 
 /* ═══ Responsive ═══ */
 @media (max-width: 768px) {
-  .profile-layout {
-    grid-template-columns: 1fr;
+  .profile-page {
+    padding: var(--space-lg) 16px var(--space-2xl);
   }
 
-  /* On mobile, sidebar becomes a horizontal card at the top */
+  .profile-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    min-width: 0;
+    width: 100%;
+  }
+
+  .profile-main,
+  .profile-sidebar,
+  .profile-content,
+  .profile-tabs-card,
+  .profile-tabs-card__body,
+  .profile-overview {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .profile-sidebar {
     position: static;
     order: -1;
+    width: 100%;
+  }
+
+  .profile-sidebar__card {
+    min-width: 0;
   }
 
   .profile-sidebar__user {
@@ -345,20 +414,16 @@
   }
 
   .profile-sidebar__nav {
+    display: flex;
     flex-direction: row;
-    padding: 0;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .profile-sidebar__nav::-webkit-scrollbar {
-    display: none;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 8px 12px 12px;
   }
 
   .profile-sidebar__nav-item {
-    flex-shrink: 0;
-    padding: 12px var(--space-md);
+    flex: 0 0 auto;
+    padding: 10px 14px;
     white-space: nowrap;
     font-size: 13px;
     gap: 6px;
@@ -366,8 +431,8 @@
   }
 
   .profile-sidebar__nav-item--active::before {
-    left: 12px;
-    right: 12px;
+    left: 10px;
+    right: 10px;
     top: auto;
     bottom: 0;
     width: auto;
@@ -377,6 +442,87 @@
 
   .profile-sidebar__footer {
     display: none;
+  }
+
+  .profile-overview {
+    padding: var(--space-lg);
+  }
+
+  .profile-overview__user {
+    gap: var(--space-md);
+  }
+
+  .profile-overview__name {
+    font-size: var(--font-lg);
+    word-break: break-word;
+  }
+
+  .profile-overview__email,
+  .profile-overview__phone {
+    word-break: break-word;
+  }
+
+  .profile-overview__stats {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .profile-overview__stats.profile-scroll-x {
+    padding-bottom: 4px;
+  }
+
+  .profile-overview__stat {
+    flex: 0 0 auto;
+    min-width: 104px;
+  }
+
+  .profile-section-title {
+    font-size: var(--font-lg);
+  }
+
+  .profile-tabs-card__body {
+    padding: 16px;
+  }
+
+  .profile-tabs-card .td-tabs__track {
+    padding: 0 12px 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(37, 99, 235, 0.45) rgba(15, 23, 42, 0.06);
+  }
+
+  .profile-tabs-card .td-tabs__track::-webkit-scrollbar {
+    height: 5px;
+  }
+
+  .profile-tabs-card .td-tabs__track::-webkit-scrollbar-track {
+    margin: 0 8px 2px;
+    background: rgba(15, 23, 42, 0.06);
+    border-radius: 999px;
+  }
+
+  .profile-tabs-card .td-tabs__track::-webkit-scrollbar-thumb {
+    background: rgba(37, 99, 235, 0.45);
+    border-radius: 999px;
+  }
+
+  .profile-tabs-card .td-tab {
+    flex-shrink: 0;
+    padding: 12px 14px;
+  }
+
+  .profile-coupons .coupon-ticket {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .profile-content .refund-card__top {
+    flex-wrap: wrap;
+    gap: var(--space-sm);
   }
 
   .purchased-coupon {

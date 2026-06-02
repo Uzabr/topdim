@@ -374,17 +374,41 @@
   color: #15803d;
 }
 
+@media (max-width: 768px) {
+  .coupon-ticket {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .coupon-ticket__header {
+    padding: 16px;
+  }
+
+  .coupon-ticket__title {
+    word-break: break-word;
+  }
+
+  .coupon-ticket__topline {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .coupon-ticket__actions {
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 576px) {
   .coupon-ticket__topline {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-  
+
   .coupon-ticket__actions {
     flex-direction: column;
   }
-  
+
   .coupon-ticket__action-btn {
     width: 100%;
     justify-content: center;

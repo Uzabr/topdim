@@ -111,12 +111,14 @@
   letter-spacing: 0.03em;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .profile-overview__stats {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-xs);
+    display: flex;
+    grid-template-columns: unset;
   }
+
   .profile-overview__stat {
-    padding: var(--space-sm);
+    flex: 0 0 auto;
+    min-width: 104px;
   }
 }
