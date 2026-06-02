@@ -26,7 +26,8 @@ export default function FavoritesPage() {
   const mapped = mappedDeals.filter(deal => favoriteIds.includes(deal.id));
 
   return (
-    <div className="favorites-page container">
+    <div className="favorites-page">
+      <div className="container">
       <div className="favorites-header">
         <Heart size={24} className="favorites-icon" />
         <h1>{t('favorites.title')}</h1>
@@ -52,6 +53,7 @@ export default function FavoritesPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

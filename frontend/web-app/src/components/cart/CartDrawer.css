@@ -77,6 +77,19 @@
   transform: rotate(90deg);
 }
 
+@media (max-width: 768px) {
+  .cart-drawer__close {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+  }
+
+  .cart-drawer__close svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
 /* ═══ Empty State ═══ */
 .cart-drawer__empty {
   flex: 1;

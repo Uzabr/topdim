@@ -157,6 +157,14 @@ body.td-login-body .app-shell {
   overflow: hidden;
 }
 
+body.td-login-body .app-main--login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: calc(var(--header-height) + 10px) 0 var(--space-md);
+}
+
 .container {
   width: min(var(--max-width), 100%);
   margin: 0 auto;

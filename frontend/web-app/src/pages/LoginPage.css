@@ -1,10 +1,10 @@
 .login-page {
   box-sizing: border-box;
-  height: 100%;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--header-height) + 10px) var(--space-md) var(--space-md);
+  padding: 0 var(--space-md);
   background: var(--gradient-hero);
   overflow: hidden;
 }
@@ -164,7 +164,7 @@
 
 @media (max-width: 768px) {
   .login-page {
-    padding: calc(var(--header-height) + 6px) var(--space-sm) var(--space-sm);
+    padding: 0 var(--space-md);
   }
 
   .login-card {
