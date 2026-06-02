@@ -1,7 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Heart, Instagram, MapPinned, Menu, Search, Send, ShoppingBag, Ticket, User, X } from 'lucide-react';
+import {
+  Bell,
+  Heart,
+  Instagram,
+  LogOut,
+  MapPinned,
+  Menu,
+  Search,
+  Send,
+  Settings,
+  ShoppingBag,
+  Ticket,
+  User,
+  X,
+} from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
@@ -16,10 +30,12 @@ const MOBILE_MENU_ICON = 22;
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuBtnRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
   const { totalItems, toggleCart } = useCartStore();
   const { favoriteIds } = useFavoritesStore();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
   const { t } = useTranslation();
   const lp = useLocalePath();
 
@@ -35,6 +51,32 @@ export default function Header() {
 
   const isActive = (path: string) =>
     location.pathname.endsWith(path) || location.pathname === lp(path);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const handlePointerOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      if (
+        mobileMenuRef.current?.contains(target) ||
+        mobileMenuBtnRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setMobileMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerOutside);
+    document.addEventListener('touchstart', handlePointerOutside);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerOutside);
+      document.removeEventListener('touchstart', handlePointerOutside);
+    };
+  }, [mobileMenuOpen]);
 
   return (
     <header className="header">
@@ -101,8 +143,12 @@ export default function Header() {
 
           {/* BURGER */}
           <button
+            ref={mobileMenuBtnRef}
+            type="button"
             className="mobile-menu-btn"
-            onClick={() => setMobileMenuOpen(v => !v)}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
+            onClick={() => setMobileMenuOpen((v) => !v)}
           >
             {mobileMenuOpen ? <X size={28} strokeWidth={2} /> : <Menu size={28} strokeWidth={2} />}
           </button>
@@ -110,7 +156,11 @@ export default function Header() {
       </div>
 
       {/* MOBILE MENU */}
-      <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
+      <div
+        id="mobile-menu"
+        ref={mobileMenuRef}
+        className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}
+      >
         <Link
           to={lp('/')}
           className="mobile-menu-action"
@@ -158,17 +208,70 @@ export default function Header() {
           <span>{t('cart.title')}</span>
         </button>
 
-        <Link
-          to={lp(isAuthenticated ? '/profile?tab=notifications' : '/login')}
-          className="mobile-menu-action"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          <span className="badge-wrapper">
+        {isAuthenticated ? (
+          <div className="mobile-menu-profile">
+            <div className="mobile-menu-profile__header">
+              <span className="mobile-menu-profile__avatar">
+                {user?.firstName?.charAt(0)?.toUpperCase() ?? '?'}
+              </span>
+              <div className="mobile-menu-profile__user">
+                <span className="mobile-menu-profile__name">
+                  {[user?.firstName, user?.lastName].filter(Boolean).join(' ') || t('header.profile')}
+                </span>
+                <span className="mobile-menu-profile__label">{t('header.profile')}</span>
+              </div>
+            </div>
+            <div className="mobile-menu-profile__links">
+              <Link
+                to={lp('/profile?tab=coupons')}
+                className="mobile-menu-action"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Ticket size={MOBILE_MENU_ICON} />
+                <span>{t('profile.tabs.coupons')}</span>
+              </Link>
+              <Link
+                to={lp('/profile?tab=notifications')}
+                className="mobile-menu-action mobile-menu-action--badge-end"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Bell size={MOBILE_MENU_ICON} />
+                <span className="mobile-menu-action__text">{t('profile.tabs.notifications')}</span>
+                {hasUnread && (
+                  <span className="mobile-menu-unread" title={t('profile.tabs.notifications')} />
+                )}
+              </Link>
+              <Link
+                to={lp('/profile?tab=profile')}
+                className="mobile-menu-action"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Settings size={MOBILE_MENU_ICON} />
+                <span>{t('profile.tabs.settings')}</span>
+              </Link>
+              <button
+                type="button"
+                className="mobile-menu-action mobile-menu-action--logout"
+                onClick={() => {
+                  logout();
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <LogOut size={MOBILE_MENU_ICON} />
+                <span>{t('profile.logout')}</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <Link
+            to={lp('/login')}
+            className="mobile-menu-action"
+            onClick={() => setMobileMenuOpen(false)}
+          >
             <User size={MOBILE_MENU_ICON} />
-            {hasUnread && <span className="notification-dot" />}
-          </span>
-          <span>{isAuthenticated ? user?.firstName ?? t('header.profile') : t('header.profile')}</span>
-        </Link>
+            <span>{t('header.login')}</span>
+          </Link>
+        )}
 
         <div className="mobile-menu-tools">
           <div className="mobile-menu-socials">

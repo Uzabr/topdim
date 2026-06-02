@@ -54,7 +54,7 @@ export default function ProfileOverview({
         </div>
       )}
 
-      <div className="profile-overview__stats">
+      <div className="profile-overview__stats profile-scroll-x">
         <button className="profile-overview__stat" onClick={() => onTabChange('coupons')}>
           <Package size={20} />
           <span className="profile-overview__stat-value">{activeCouponsCount}</span>

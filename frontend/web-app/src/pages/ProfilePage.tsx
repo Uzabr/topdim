@@ -117,7 +117,7 @@ export default function ProfilePage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="profile-page container">
+      <div className="profile-page">
         <div className="profile-empty glass-card">
           <Ticket size={48} className="profile-empty-icon" />
           <h2>{t('profile.greeting')}</h2>
@@ -129,7 +129,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="profile-page container">
+    <div className="profile-page">
       {/* ═══ Two-column Layout ═══ */}
       <div className="profile-layout">
         {/* ═══ Main Content (left) ═══ */}
@@ -147,35 +147,39 @@ export default function ProfilePage() {
             {activeHubTab === 'coupons' && (
               <>
                 <h2 className="profile-section-title">{t('profile.tabs.coupons')}</h2>
-                <Tabs
-                  tabs={couponTabs}
-                  activeKey={couponSubTab}
-                  onChange={setCouponSubTab}
-                />
-                <div className="profile-coupons">
-                  {couponsLoading ? (
-                    <div className="profile-loading">{t('profile.loadingCoupons')}</div>
-                  ) : coupons.length === 0 ? (
-                    <div className="profile-coupons-empty glass-card">
-                      <span className="profile-empty-icon">📋</span>
-                      <h3>{emptyCouponCopy[couponSubTab as keyof typeof emptyCouponCopy]?.title || t('profile.emptyCoupons.none')}</h3>
-                      <p>{emptyCouponCopy[couponSubTab as keyof typeof emptyCouponCopy]?.text || t('profile.emptyCoupons.defaultText')}</p>
-                      {couponSubTab === 'ACTIVE' && (
-                        <button className="primary-button" onClick={() => navigate(lp('/coupons'))}>
-                          {t('profile.goCatalog')}
-                        </button>
+                <div className="profile-tabs-card glass-card">
+                  <Tabs
+                    tabs={couponTabs}
+                    activeKey={couponSubTab}
+                    onChange={setCouponSubTab}
+                  />
+                  <div className="profile-tabs-card__body">
+                    <div className="profile-coupons">
+                      {couponsLoading ? (
+                        <div className="profile-loading">{t('profile.loadingCoupons')}</div>
+                      ) : coupons.length === 0 ? (
+                        <div className="profile-coupons-empty">
+                          <span className="profile-empty-icon">📋</span>
+                          <h3>{emptyCouponCopy[couponSubTab as keyof typeof emptyCouponCopy]?.title || t('profile.emptyCoupons.none')}</h3>
+                          <p>{emptyCouponCopy[couponSubTab as keyof typeof emptyCouponCopy]?.text || t('profile.emptyCoupons.defaultText')}</p>
+                          {couponSubTab === 'ACTIVE' && (
+                            <button className="primary-button" onClick={() => navigate(lp('/coupons'))}>
+                              {t('profile.goCatalog')}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        coupons.map((coupon) => (
+                          <PurchasedCouponCard
+                            key={coupon.id}
+                            coupon={coupon}
+                            onRefundRequest={setRefundCoupon}
+                            onComplaintRequest={setComplaintCoupon}
+                          />
+                        ))
                       )}
                     </div>
-                  ) : (
-                    coupons.map((coupon) => (
-                      <PurchasedCouponCard
-                        key={coupon.id}
-                        coupon={coupon}
-                        onRefundRequest={setRefundCoupon}
-                        onComplaintRequest={setComplaintCoupon}
-                      />
-                    ))
-                  )}
+                  </div>
                 </div>
               </>
             )}
@@ -233,7 +237,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Nav items */}
-            <nav className="profile-sidebar__nav">
+            <nav className="profile-sidebar__nav profile-scroll-x">
               {sidebarItems.map((item) => (
                 <button
                   key={item.key}
