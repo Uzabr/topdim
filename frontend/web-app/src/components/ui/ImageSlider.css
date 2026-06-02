@@ -116,9 +116,14 @@
 
 @media (max-width: 768px) {
   .img-slider__arrow {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     opacity: 1;
+  }
+
+  .img-slider__arrow svg {
+    width: 22px;
+    height: 22px;
   }
 
   .img-slider__arrow--prev {

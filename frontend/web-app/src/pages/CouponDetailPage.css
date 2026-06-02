@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════ */
 
 .detail-page {
-  padding-bottom: calc(var(--bottom-nav-height) + 80px);
+  padding-bottom: calc((var(--bottom-nav-height) + 8px) * 1.5 + 4px + 72px);
 }
 
 /* ═══ Hero Section ═══ */
@@ -646,7 +646,8 @@
 .detail-sticky-cta {
   display: none;
   position: fixed;
-  bottom: calc(var(--bottom-nav-height) + 8px);
+  /* +50% от базового отступа + 4px — выше над bottom nav */
+  bottom: calc((var(--bottom-nav-height) + 8px) * 1.5 + 4px);
   left: 16px;
   right: 16px;
   z-index: 100;
@@ -727,7 +728,7 @@
 /* ═══ Toast Notification ═══ */
 .detail-toast {
   position: fixed;
-  bottom: calc(var(--bottom-nav-height) + 70px);
+  bottom: calc((var(--bottom-nav-height) + 8px) * 1.5 + 4px + 60px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
