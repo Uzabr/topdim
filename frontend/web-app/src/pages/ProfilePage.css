@@ -3,12 +3,17 @@
    ═══════════════════════════════════════════ */
 
 .profile-page {
-  width: min(1300px, 100%);
-  max-width: 1300px;
+  width: min(1100px, 100%);
+  max-width: 1100px;
   margin: 0 auto;
   padding: var(--space-xl) 20px var(--space-3xl);
   box-sizing: border-box;
-  overflow-x: clip;
+  overflow-x: hidden;
+}
+
+.profile-page .glass-card {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Горизонтальный скролл только для списков (навигация, вкладки, статистика) */
@@ -61,6 +66,7 @@
   border-radius: 16px;
   overflow: hidden;
   padding: 0;
+  max-width: 100%;
 }
 
 .profile-tabs-card__body {
@@ -160,7 +166,7 @@
 .profile-sidebar__nav-item--active {
   color: var(--primary);
   font-weight: 700;
-  background: rgba(255, 102, 96, 0.06);
+  background: rgba(37, 99, 235, 0.08);
 }
 
 .profile-sidebar__nav-item--active::before {
@@ -375,10 +381,24 @@
   margin-top: var(--space-sm);
 }
 
-/* ═══ Responsive ═══ */
+/* ═══ Tablet: одна колонка, без сжатия контента ═══ */
+@media (max-width: 1024px) {
+  .profile-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+
+  .profile-sidebar {
+    position: static;
+  }
+}
+
+/* ═══ Mobile ═══ */
 @media (max-width: 768px) {
   .profile-page {
-    padding: var(--space-lg) 16px var(--space-2xl);
+    width: 100%;
+    max-width: 100%;
+    padding: var(--space-md) 16px calc(var(--bottom-nav-height) + var(--space-lg));
   }
 
   .profile-layout {
@@ -397,19 +417,31 @@
   .profile-overview {
     min-width: 0;
     max-width: 100%;
+    width: 100%;
   }
 
+  .profile-main {
+    gap: var(--space-md);
+  }
+
+  /* Навигация разделов — компактная полоса со скроллом */
   .profile-sidebar {
-    position: static;
+    position: sticky;
+    top: calc(var(--header-height) + 6px);
+    z-index: 25;
     order: -1;
     width: 100%;
+    margin: 0;
   }
 
   .profile-sidebar__card {
     min-width: 0;
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
   }
 
-  .profile-sidebar__user {
+  .profile-sidebar__user,
+  .profile-sidebar__footer {
     display: none;
   }
 
@@ -417,112 +449,151 @@
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    gap: 6px;
-    padding: 8px 12px 12px;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px 14px;
+    margin: 0;
   }
 
   .profile-sidebar__nav-item {
     flex: 0 0 auto;
-    padding: 10px 14px;
+    padding: 10px 12px;
     white-space: nowrap;
-    font-size: 13px;
+    font-size: 12px;
     gap: 6px;
-    justify-content: center;
+    border-radius: 10px;
+    background: var(--bg-surface-strong);
+    border: 1px solid var(--border);
+  }
+
+  .profile-sidebar__nav-item--active {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
   }
 
   .profile-sidebar__nav-item--active::before {
-    left: 10px;
-    right: 10px;
-    top: auto;
-    bottom: 0;
-    width: auto;
-    height: 3px;
-    border-radius: 3px 3px 0 0;
+    display: none;
   }
 
-  .profile-sidebar__footer {
+  .profile-sidebar__nav-item svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  /* Заголовок дублирует активный пункт меню — скрываем */
+  .profile-content > .profile-section-title {
     display: none;
   }
 
   .profile-overview {
-    padding: var(--space-lg);
-  }
-
-  .profile-overview__user {
-    gap: var(--space-md);
-  }
-
-  .profile-overview__name {
-    font-size: var(--font-lg);
-    word-break: break-word;
-  }
-
-  .profile-overview__email,
-  .profile-overview__phone {
-    word-break: break-word;
-  }
-
-  .profile-overview__stats {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 8px;
-  }
-
-  .profile-overview__stats.profile-scroll-x {
-    padding-bottom: 4px;
-  }
-
-  .profile-overview__stat {
-    flex: 0 0 auto;
-    min-width: 104px;
+    padding: var(--space-md);
   }
 
   .profile-section-title {
     font-size: var(--font-lg);
+    margin-bottom: var(--space-sm);
+  }
+
+  .profile-content {
+    gap: var(--space-sm);
+  }
+
+  .profile-tabs-card {
+    border-radius: 14px;
+    overflow: hidden;
   }
 
   .profile-tabs-card__body {
-    padding: 16px;
+    padding: 12px;
+  }
+
+  .profile-tabs-card .td-tabs {
+    border-radius: 14px 14px 0 0;
   }
 
   .profile-tabs-card .td-tabs__track {
-    padding: 0 12px 4px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(37, 99, 235, 0.45) rgba(15, 23, 42, 0.06);
-  }
-
-  .profile-tabs-card .td-tabs__track::-webkit-scrollbar {
-    height: 5px;
-  }
-
-  .profile-tabs-card .td-tabs__track::-webkit-scrollbar-track {
-    margin: 0 8px 2px;
-    background: rgba(15, 23, 42, 0.06);
-    border-radius: 999px;
-  }
-
-  .profile-tabs-card .td-tabs__track::-webkit-scrollbar-thumb {
-    background: rgba(37, 99, 235, 0.45);
-    border-radius: 999px;
+    padding: 8px 12px 10px;
   }
 
   .profile-tabs-card .td-tab {
     flex-shrink: 0;
-    padding: 12px 14px;
+    padding: 10px 12px;
+    font-size: 12px;
   }
 
-  .profile-coupons .coupon-ticket {
-    max-width: 100%;
+  .profile-coupons {
+    gap: var(--space-sm);
+    overflow-x: hidden;
+  }
+
+  .profile-coupons-empty {
+    padding: var(--space-xl) var(--space-md);
+  }
+
+  .profile-coupons-empty p {
+    margin-bottom: var(--space-md);
+  }
+
+  /* Заказы */
+  .profile-content .order-card {
+    padding: var(--space-md);
+  }
+
+  .profile-content .order-card__header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .profile-content .order-card__body {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+  }
+
+  .profile-content .order-card__actions {
+    flex-wrap: wrap;
+  }
+
+  .profile-content .order-card__btn {
+    flex: 1 1 auto;
     min-width: 0;
+  }
+
+  /* Возвраты */
+  .profile-content .refund-card {
+    padding: var(--space-md);
   }
 
   .profile-content .refund-card__top {
     flex-wrap: wrap;
     gap: var(--space-sm);
+  }
+
+  /* Уведомления */
+  .profile-content .notification-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--space-md);
+    gap: var(--space-sm);
+  }
+
+  .profile-content .notification-card__mark {
+    align-self: flex-end;
+  }
+
+  .profile-content .notifications-filter {
+    flex-wrap: wrap;
+  }
+
+  /* Настройки */
+  .profile-content .profile-settings {
+    max-width: 100%;
+  }
+
+  .profile-empty {
+    margin-top: var(--space-lg);
+    padding: var(--space-2xl) var(--space-md);
   }
 
   .purchased-coupon {
@@ -540,5 +611,28 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+  }
+
+  .code-value {
+    font-size: var(--font-xl);
+    letter-spacing: 0.08em;
+    word-break: break-all;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-page {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .profile-content .order-card__body {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-sidebar__nav-item span:not(:first-child) {
+    max-width: 88px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
