@@ -1,15 +1,21 @@
 package uz.topdim.identity.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
  * Заглушка NotificationSender — логирует отправку, не делает реальных вызовов.
- * В проде заменить на реальную интеграцию с email/SMS провайдером.
+ * Активируется когда notification.email.enabled != true (по умолчанию для dev/test).
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "notification.email.enabled", havingValue = "false", matchIfMissing = true)
 public class LoggingNotificationSender implements NotificationSender {
+
+    public LoggingNotificationSender() {
+        log.warn("LoggingNotificationSender activated — emails will NOT be sent, only logged");
+    }
 
     @Override
     public void sendPasswordResetToken(String target, String token) {

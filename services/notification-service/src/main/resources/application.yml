@@ -33,6 +33,11 @@ spring:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
 
+notification:
+  email:
+    enabled: true
+    from: ${MAIL_USERNAME:noreply@topdim.uz}
+
 eureka:
   client:
     service-url:
