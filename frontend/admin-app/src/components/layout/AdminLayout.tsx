@@ -73,8 +73,6 @@ const allMenuItems: MenuItem[] = [
     children: [
       { key: '/catalog/merchants', icon: <ShopOutlined />, label: 'Мерчанты', roles: ['ADMIN', 'SUPER_ADMIN'] },
       { key: '/catalog/categories', icon: <AppstoreOutlined />, label: 'Категории', roles: ['ADMIN', 'SUPER_ADMIN'] },
-      { key: '/catalog/bazaars', icon: <ShopOutlined />, label: 'Базары', roles: ['ADMIN', 'SUPER_ADMIN'] },
-      { key: '/catalog/shops', icon: <ShopOutlined />, label: 'Магазины', roles: ['ADMIN', 'SUPER_ADMIN'] },
     ],
   },
   {
@@ -85,7 +83,6 @@ const allMenuItems: MenuItem[] = [
     children: [
       { key: '/orders/list', icon: <FileTextOutlined />, label: 'Все заказы', roles: ['ADMIN', 'SUPER_ADMIN'] },
       { key: '/orders/coupon-lookup', icon: <TagOutlined />, label: 'Поиск купона', roles: ['ADMIN', 'SUPER_ADMIN'] },
-      { key: '/orders/promocodes', icon: <TagOutlined />, label: 'Промокоды', roles: ['ADMIN', 'SUPER_ADMIN'] },
     ],
   },
   {
