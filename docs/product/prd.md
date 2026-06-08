@@ -186,8 +186,9 @@
 - Название продукта: `TopDim`
 - Тип продукта: гибридная платформа локальных скидок, купонов, directory базаров/магазинов и внутренней staff-модерации.
 - Текущие продуктовые поверхности:
-  - публичный web storefront;
-  - admin-приложение;
+  - публичный web storefront (`frontend/web-app`);
+  - admin-приложение (`frontend/admin-app`);
+  - **партнёрский портал** (`frontend/partner`) — отдельное приложение для мерчантов (добавлено в v3);
   - Telegram-бот для merchant-согласования;
   - микросервисный backend.
 
@@ -602,12 +603,13 @@ Support, orders, reviews, complaints, bazaars, shops следует считат
 
 ## 7.3. Merchant contour
 
-### Подтверждено кодом
+### Подтверждено кодом (v3)
 
-Merchant-contour состоит из двух интерфейсов:
+Merchant-contour состоит из трёх интерфейсов:
 
-1. **Web-кабинет (Lite Dashboard):** доступен в приложении `admin-app`. Позволяет просматривать статистику, список купонов и подавать заявки на новые акции (LEAD).
-2. **Telegram Bot:** используется для оперативного согласования купонов. Бот присылает превью карточки (DRAFT/WAITING_FOR_MERCHANT), и мерчант может нажать "Одобрить" (перевод в ACTIVE) или "Запросить правки".
+1. **Partner Portal (`frontend/partner`):** отдельное приложение для мерчантов. Дашборд, список купонов, заявки на новые акции, одобрение/ревизия, погашение купонов, управление сотрудниками.
+2. **Telegram Bot:** оперативное согласование купонов (превью карточки, одобрить/запросить правки, статистика).
+3. **Admin-app под ролью PARTNER:** legacy lite dashboard (просмотр статистики и купонов).
 
 ### Рекомендация
 
@@ -967,17 +969,18 @@ CTA:
 
 ## 9.14. Уведомления
 
-### Подтверждено кодом
+### Подтверждено кодом (v3)
 
-- Backend support есть.
+- In-app notification center реализован: вкладка уведомлений, unread badge, mark-read API.
+- Email-уведомления подключены через identity-service (EmailNotificationSender / SMTP).
+- SMS остаётся stub/disabled для MVP.
+- notification-service отвечает за in-app уведомления.
 
-### Подтверждено кодом
+### Решение (v3)
 
-- Явного notification center в storefront не найдено.
-
-### Рекомендация
-
-- Для MVP достаточно доставлять критические post-purchase сообщения по email/SMS и отражать их в профиле или будущем notification center.
+- In-app notifications — Implemented.
+- Email delivery — Implemented (identity-service, SMTP).
+- SMS delivery — Post-MVP.
 
 ---
 
@@ -2169,8 +2172,9 @@ Current flow:
 - `DRAFT` — staff взял в работу
 - `WAITING_FOR_MERCHANT` — отправлен мерчанту
 - `REVISION_REQUESTED` — мерчант запросил правки
-- `ACTIVE` — доступен пользователям. **Immutable**.
-- `SOLD_OUT` — лимит продаж исчерпан. **Immutable**.
+- `ACTIVE` — доступен пользователям.
+- `PAUSED` — временно приостановлен (добавлено в v3). Переходы: ACTIVE → PAUSED, PAUSED → ACTIVE.
+- `SOLD_OUT` — лимит продаж исчерпан. Устанавливается автоматически через atomic stock reservation (v3).
 - `ARCHIVED` — терминальный: снят с продажи staff-ом с обязательной причиной. Купленные сертификаты не затрагиваются.
 
 ### Уточнение product rule
@@ -2187,12 +2191,23 @@ Current flow:
 
 ## 22.4. Purchased coupon
 
-### Подтверждено кодом
+### Подтверждено кодом (v3)
 
 - `ACTIVE`
 - `USED`
 - `EXPIRED`
 - `CANCELLED`
+- `REFUND_PENDING` — пользователь запросил возврат (добавлено в v3)
+- `REFUNDED` — возврат одобрен и выполнен (добавлено в v3)
+
+## 22.5. Refund request (добавлено в v3)
+
+### Подтверждено кодом
+
+- `PENDING` — новый запрос на возврат
+- `APPROVED_PROCESSING` — одобрен, выполняется возврат средств
+- `REFUNDED` — возврат завершён
+- `REJECTED` — возврат отклонён
 
 ## 22.5. Order
 
