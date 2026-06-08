@@ -25,6 +25,7 @@ import { PurchasedCouponLookupPage } from './features/orders/PurchasedCouponLook
 import { ReviewsPage } from './features/support/ReviewsPage';
 import { RefundsPage } from './features/support/RefundsPage';
 import { ComplaintsPage } from './features/support/ComplaintsPage';
+import { UsersListPage } from './features/users/UsersListPage';
 
 function HomeRedirect() {
   return <Navigate to="/dashboard" replace />;
@@ -82,7 +83,6 @@ function App() {
                   <Route path="/catalog/categories" element={<CategoriesPage />} />
                   <Route path="/catalog/merchants" element={<MerchantsPage />} />
                   <Route path="/catalog/merchants/:id" element={<MerchantDetailPage />} />
-                  {/* TODO: подключить BazaarsPage, ShopsPage */}
 
                   {/* Заказы (только ADMIN, SUPER_ADMIN) */}
                   <Route path="/orders/list" element={<OrdersPage />} />
@@ -90,7 +90,7 @@ function App() {
 
                   {/* Пользователи (ADMIN, SUPER_ADMIN) */}
                   <Route path="/users/partner-applications" element={<PartnerApplicationsPage />} />
-                  {/* TODO: подключить UsersListPage */}
+                  <Route path="/users/list" element={<UsersListPage />} />
                 </Route>
               </Route>
 
