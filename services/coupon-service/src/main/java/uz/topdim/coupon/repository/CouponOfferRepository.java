@@ -94,4 +94,15 @@ public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> 
     long countByMerchantId(Long merchantId);
 
     long countByMerchantIdAndStatus(Long merchantId, CouponStatus status);
+
+    /**
+     * Atomic increment totalSold и totalTurnover.
+     * Безопасно при конкурентных вызовах — один атомарный UPDATE.
+     */
+    @Modifying
+    @Query("UPDATE CouponOffer o SET o.totalSold = o.totalSold + :qty, " +
+           "o.totalTurnover = o.totalTurnover + :amount WHERE o.id = :offerId")
+    int atomicIncrementSoldAndTurnover(@Param("offerId") Long offerId,
+                                       @Param("qty") int qty,
+                                       @Param("amount") java.math.BigDecimal amount);
 }

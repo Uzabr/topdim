@@ -31,6 +31,7 @@ class CouponSaleRegistrationTest {
     @Mock private ReviewRepository reviewRepository;
     @Mock private jakarta.persistence.EntityManager entityManager;
     @Mock private TelegramPreviewService telegramPreviewService;
+    @Mock private CouponRedemptionLedgerRepository couponRedemptionLedgerRepository;
 
     @InjectMocks
     private CouponOfferService couponOfferService;
@@ -52,22 +53,23 @@ class CouponSaleRegistrationTest {
     }
 
     @Test
-    @DisplayName("registerSaleOnce: первая регистрация — инкрементирует счётчики")
-    void registerSaleOnce_firstSale_incrementsCounters() {
-        CouponOffer offer = buildOffer(5L, 0, BigDecimal.ZERO);
-        when(couponOfferRepository.findById(5L)).thenReturn(Optional.of(offer));
+    @DisplayName("registerSaleOnce: первая регистрация — вызывает atomic increment")
+    void registerSaleOnce_firstSale_callsAtomicIncrement() {
+        CouponOffer offer = buildOffer(5L, 2, BigDecimal.valueOf(198000));
         when(couponSaleRepository.findByOrderIdAndCouponOfferIdAndCouponOptionId(100L, 5L, 3L))
                 .thenReturn(Optional.empty());
         when(couponSaleRepository.save(any(CouponSale.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(couponOfferRepository.save(any(CouponOffer.class))).thenAnswer(inv -> inv.getArgument(0));
+        // Atomic increment succeeds (returns 1 row updated)
+        when(couponOptionRepository.atomicIncrementSold(3L, 2)).thenReturn(1);
+        when(couponOfferRepository.atomicIncrementSoldAndTurnover(eq(5L), eq(2), any(BigDecimal.class))).thenReturn(1);
+        // After atomic updates, re-read offer for SOLD_OUT check
+        when(couponOfferRepository.findById(5L)).thenReturn(Optional.of(offer));
 
         couponOfferService.registerSaleOnce(100L, 5L, 3L, 2, BigDecimal.valueOf(198000));
 
-        assertThat(offer.getTotalSold()).isEqualTo(2);
-        assertThat(offer.getTotalTurnover()).isEqualByComparingTo(BigDecimal.valueOf(198000));
-        assertThat(offer.getOptions().get(0).getQuantitySold()).isEqualTo(2);
         verify(couponSaleRepository).save(any(CouponSale.class));
-        verify(couponOfferRepository).save(offer);
+        verify(couponOptionRepository).atomicIncrementSold(3L, 2);
+        verify(couponOfferRepository).atomicIncrementSoldAndTurnover(eq(5L), eq(2), eq(BigDecimal.valueOf(198000)));
     }
 
     @Test
@@ -82,25 +84,73 @@ class CouponSaleRegistrationTest {
         couponOfferService.registerSaleOnce(100L, 5L, 3L, 2, BigDecimal.valueOf(198000));
 
         verify(couponOfferRepository, never()).findById(anyLong());
-        verify(couponOfferRepository, never()).save(any());
+        verify(couponOptionRepository, never()).atomicIncrementSold(anyLong(), anyInt());
+        verify(couponOfferRepository, never()).atomicIncrementSoldAndTurnover(anyLong(), anyInt(), any());
         verify(couponSaleRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("registerSaleOnce: достижение лимита → SOLD_OUT")
-    void registerSaleOnce_reachesLimit_setsOptionSoldOut() {
-        CouponOffer offer = buildOffer(5L, 8, BigDecimal.valueOf(792000));
-        when(couponOfferRepository.findById(5L)).thenReturn(Optional.of(offer));
+    void registerSaleOnce_reachesLimit_setsOfferSoldOut() {
+        // Offer has totalSold=10 (after atomic increment), limit=10
+        CouponOffer offer = buildOffer(5L, 10, BigDecimal.valueOf(990000));
         when(couponSaleRepository.findByOrderIdAndCouponOfferIdAndCouponOptionId(101L, 5L, 3L))
                 .thenReturn(Optional.empty());
         when(couponSaleRepository.save(any(CouponSale.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(couponOptionRepository.atomicIncrementSold(3L, 2)).thenReturn(1);
+        when(couponOfferRepository.atomicIncrementSoldAndTurnover(eq(5L), eq(2), any(BigDecimal.class))).thenReturn(1);
+        // After atomic updates, offer re-read shows totalSold >= totalLimit
+        when(couponOfferRepository.findById(5L)).thenReturn(Optional.of(offer));
         when(couponOfferRepository.save(any(CouponOffer.class))).thenAnswer(inv -> inv.getArgument(0));
 
         couponOfferService.registerSaleOnce(101L, 5L, 3L, 2, BigDecimal.valueOf(198000));
 
-        assertThat(offer.getTotalSold()).isEqualTo(10);
-        assertThat(offer.getOptions().get(0).getQuantitySold()).isEqualTo(10);
-        // Option reached quantityLimit=10, total also reached limit
         assertThat(offer.getStatus()).isEqualTo(CouponStatus.SOLD_OUT);
+        verify(couponOfferRepository).save(offer);
+    }
+
+    @Test
+    @DisplayName("registerSaleOnce: лимит исчерпан — atomic increment возвращает 0, выбрасывает исключение")
+    void registerSaleOnce_limitExceeded_throwsException() {
+        when(couponSaleRepository.findByOrderIdAndCouponOfferIdAndCouponOptionId(102L, 5L, 3L))
+                .thenReturn(Optional.empty());
+        when(couponSaleRepository.save(any(CouponSale.class))).thenAnswer(inv -> inv.getArgument(0));
+        // Atomic increment fails (returns 0 — limit exceeded)
+        when(couponOptionRepository.atomicIncrementSold(3L, 2)).thenReturn(0);
+
+        assertThatThrownBy(() ->
+                couponOfferService.registerSaleOnce(102L, 5L, 3L, 2, BigDecimal.valueOf(198000)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("лимит исчерпан");
+
+        // Should NOT increment offer counters
+        verify(couponOfferRepository, never()).atomicIncrementSoldAndTurnover(anyLong(), anyInt(), any());
+    }
+
+    @Test
+    @DisplayName("registerSale: atomic increment вызывается, лимит не превышен")
+    void registerSale_callsAtomicIncrement() {
+        CouponOffer offer = buildOffer(5L, 2, BigDecimal.valueOf(198000));
+        when(couponOptionRepository.atomicIncrementSold(3L, 1)).thenReturn(1);
+        when(couponOfferRepository.atomicIncrementSoldAndTurnover(eq(5L), eq(1), any(BigDecimal.class))).thenReturn(1);
+        when(couponOfferRepository.findById(5L)).thenReturn(Optional.of(offer));
+
+        couponOfferService.registerSale(5L, 3L, 1, BigDecimal.valueOf(99000));
+
+        verify(couponOptionRepository).atomicIncrementSold(3L, 1);
+        verify(couponOfferRepository).atomicIncrementSoldAndTurnover(eq(5L), eq(1), eq(BigDecimal.valueOf(99000)));
+    }
+
+    @Test
+    @DisplayName("registerSale: лимит исчерпан — atomic increment возвращает 0, выбрасывает исключение")
+    void registerSale_limitExceeded_throwsException() {
+        when(couponOptionRepository.atomicIncrementSold(3L, 1)).thenReturn(0);
+
+        assertThatThrownBy(() ->
+                couponOfferService.registerSale(5L, 3L, 1, BigDecimal.valueOf(99000)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("лимит исчерпан");
+
+        verify(couponOfferRepository, never()).atomicIncrementSoldAndTurnover(anyLong(), anyInt(), any());
     }
 }
