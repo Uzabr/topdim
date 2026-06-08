@@ -162,9 +162,9 @@
 
 ## Статус документа
 
-- Версия: `v2` (актуализация после MVP)
-- Дата обновления: `2026-04-28`
-- Основание: реализованный MVP (admin-app dashboard, coupon request flow, telegram bot, guest access fixes).
+- Версия: `v3` (post-implementation audit)
+- Дата обновления: `2026-06-08`
+- Основание: PRD implementation audit, atomic stock reservation, auth-only checkout, admin UI gaps fix.
 
 ## Как читать документ
 
@@ -445,8 +445,9 @@ Pain points:
 - открывать детальную страницу купона;
 - добавлять купоны в избранное;
 - складывать товары в локальную корзину;
-- проходить guest checkout;
 - выбирать город в UI.
+
+> **Уточнение (v3):** Guest НЕ может проходить checkout напрямую. При переходе к оплате требуется login/register. После авторизации локальная корзина синхронизируется с backend cart.
 
 Не может:
 
@@ -754,15 +755,17 @@ Merchant-contour состоит из двух интерфейсов:
 - browse каталог и читать отзывы;
 - сохранять favorites локально;
 - собирать local cart;
-- пройти guest-auth внутри checkout.
+- при переходе к checkout — login/register, после чего local cart синхронизируется с backend cart.
 
 Особенности реализованного MVP:
 - Гость не перенаправляется агрессивно на страницу логина при получении 401 ошибки (например, при попытке загрузить отзывы).
 - Запросы для открытых данных (отзывы на купон) пропускаются API Gateway без токена.
+- Checkout доступен только для авторизованных пользователей (auth-only checkout for MVP).
 
-### Рекомендация
+### Решение (v3)
 
-- В PRD закрепить guest как официальную MVP-функцию, иначе команда будет трактовать guest checkout как случайную техническую времянку.
+- Guest является официальной MVP-функцией для browsing и local cart.
+- Checkout — auth-only: при попытке оплатить guest перенаправляется на login/register.
 
 ## 9.5. Профиль и учетные данные
 
@@ -885,24 +888,25 @@ CTA:
 
 ## 9.10. Покупка / checkout
 
-### Подтверждено кодом
+### Подтверждено кодом (v3)
 
-Checkout содержит:
+Модель checkout для MVP:
 
-- контактный шаг для guest;
-- выбор способа оплаты;
-- sidebar заказа;
+- **Auth-only:** Checkout доступен только авторизованным пользователям.
+- При переходе к checkout guest перенаправляется на login/register.
+- После авторизации local cart синхронизируется с backend cart.
+- Backend cart используется для создания Order.
+- Выбор способа оплаты.
+- Sidebar заказа.
 - CTA на оплату.
 
-### Риск
+### Решение (v3)
 
-- Реальный server-side checkout flow не согласован с local storefront cart.
-
-### Рекомендация
-
-- Для MVP явно выбрать одну модель:
-  - или web cart синхронизируется с backend cart;
-  - или direct buy создает order line items без серверной корзины.
+- MVP использует модель auth-only backend cart:
+  - guest собирает local cart;
+  - при checkout → login/register;
+  - local cart → backend cart sync;
+  - backend cart → Order creation.
 
 ## 9.11. Purchased coupons
 
