@@ -1,0 +1,37 @@
+name: Cleanup old images
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'  # каждое воскресенье в 3:00 UTC
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    name: Delete untagged GHCR images
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+
+    strategy:
+      matrix:
+        package:
+          - discovery-server
+          - api-gateway
+          - identity-service
+          - coupon-service
+          - order-service
+          - payment-service
+          - notification-service
+          - media-service
+          - web-app
+          - admin-app
+          - partner
+
+    steps:
+      - name: Delete old images
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: topdim/${{ matrix.package }}
+          package-type: container
+          min-versions-to-keep: 5
+          delete-only-untagged-versions: true
