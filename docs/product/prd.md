@@ -162,9 +162,9 @@
 
 ## Статус документа
 
-- Версия: `v2` (актуализация после MVP)
-- Дата обновления: `2026-04-28`
-- Основание: реализованный MVP (admin-app dashboard, coupon request flow, telegram bot, guest access fixes).
+- Версия: `v3` (post-implementation audit)
+- Дата обновления: `2026-06-08`
+- Основание: PRD implementation audit, atomic stock reservation, auth-only checkout, admin UI gaps fix.
 
 ## Как читать документ
 
@@ -186,8 +186,9 @@
 - Название продукта: `TopDim`
 - Тип продукта: гибридная платформа локальных скидок, купонов, directory базаров/магазинов и внутренней staff-модерации.
 - Текущие продуктовые поверхности:
-  - публичный web storefront;
-  - admin-приложение;
+  - публичный web storefront (`frontend/web-app`);
+  - admin-приложение (`frontend/admin-app`);
+  - **партнёрский портал** (`frontend/partner`) — отдельное приложение для мерчантов (добавлено в v3);
   - Telegram-бот для merchant-согласования;
   - микросервисный backend.
 
@@ -445,8 +446,9 @@ Pain points:
 - открывать детальную страницу купона;
 - добавлять купоны в избранное;
 - складывать товары в локальную корзину;
-- проходить guest checkout;
 - выбирать город в UI.
+
+> **Уточнение (v3):** Guest НЕ может проходить checkout напрямую. При переходе к оплате требуется login/register. После авторизации локальная корзина синхронизируется с backend cart.
 
 Не может:
 
@@ -601,12 +603,13 @@ Support, orders, reviews, complaints, bazaars, shops следует считат
 
 ## 7.3. Merchant contour
 
-### Подтверждено кодом
+### Подтверждено кодом (v3)
 
-Merchant-contour состоит из двух интерфейсов:
+Merchant-contour состоит из трёх интерфейсов:
 
-1. **Web-кабинет (Lite Dashboard):** доступен в приложении `admin-app`. Позволяет просматривать статистику, список купонов и подавать заявки на новые акции (LEAD).
-2. **Telegram Bot:** используется для оперативного согласования купонов. Бот присылает превью карточки (DRAFT/WAITING_FOR_MERCHANT), и мерчант может нажать "Одобрить" (перевод в ACTIVE) или "Запросить правки".
+1. **Partner Portal (`frontend/partner`):** отдельное приложение для мерчантов. Дашборд, список купонов, заявки на новые акции, одобрение/ревизия, погашение купонов, управление сотрудниками.
+2. **Telegram Bot:** оперативное согласование купонов (превью карточки, одобрить/запросить правки, статистика).
+3. **Admin-app под ролью PARTNER:** legacy lite dashboard (просмотр статистики и купонов).
 
 ### Рекомендация
 
@@ -754,15 +757,17 @@ Merchant-contour состоит из двух интерфейсов:
 - browse каталог и читать отзывы;
 - сохранять favorites локально;
 - собирать local cart;
-- пройти guest-auth внутри checkout.
+- при переходе к checkout — login/register, после чего local cart синхронизируется с backend cart.
 
 Особенности реализованного MVP:
 - Гость не перенаправляется агрессивно на страницу логина при получении 401 ошибки (например, при попытке загрузить отзывы).
 - Запросы для открытых данных (отзывы на купон) пропускаются API Gateway без токена.
+- Checkout доступен только для авторизованных пользователей (auth-only checkout for MVP).
 
-### Рекомендация
+### Решение (v3)
 
-- В PRD закрепить guest как официальную MVP-функцию, иначе команда будет трактовать guest checkout как случайную техническую времянку.
+- Guest является официальной MVP-функцией для browsing и local cart.
+- Checkout — auth-only: при попытке оплатить guest перенаправляется на login/register.
 
 ## 9.5. Профиль и учетные данные
 
@@ -885,24 +890,25 @@ CTA:
 
 ## 9.10. Покупка / checkout
 
-### Подтверждено кодом
+### Подтверждено кодом (v3)
 
-Checkout содержит:
+Модель checkout для MVP:
 
-- контактный шаг для guest;
-- выбор способа оплаты;
-- sidebar заказа;
+- **Auth-only:** Checkout доступен только авторизованным пользователям.
+- При переходе к checkout guest перенаправляется на login/register.
+- После авторизации local cart синхронизируется с backend cart.
+- Backend cart используется для создания Order.
+- Выбор способа оплаты.
+- Sidebar заказа.
 - CTA на оплату.
 
-### Риск
+### Решение (v3)
 
-- Реальный server-side checkout flow не согласован с local storefront cart.
-
-### Рекомендация
-
-- Для MVP явно выбрать одну модель:
-  - или web cart синхронизируется с backend cart;
-  - или direct buy создает order line items без серверной корзины.
+- MVP использует модель auth-only backend cart:
+  - guest собирает local cart;
+  - при checkout → login/register;
+  - local cart → backend cart sync;
+  - backend cart → Order creation.
 
 ## 9.11. Purchased coupons
 
@@ -963,17 +969,18 @@ Checkout содержит:
 
 ## 9.14. Уведомления
 
-### Подтверждено кодом
+### Подтверждено кодом (v3)
 
-- Backend support есть.
+- In-app notification center реализован: вкладка уведомлений, unread badge, mark-read API.
+- Email-уведомления подключены через identity-service (EmailNotificationSender / SMTP).
+- SMS остаётся stub/disabled для MVP.
+- notification-service отвечает за in-app уведомления.
 
-### Подтверждено кодом
+### Решение (v3)
 
-- Явного notification center в storefront не найдено.
-
-### Рекомендация
-
-- Для MVP достаточно доставлять критические post-purchase сообщения по email/SMS и отражать их в профиле или будущем notification center.
+- In-app notifications — Implemented.
+- Email delivery — Implemented (identity-service, SMTP).
+- SMS delivery — Post-MVP.
 
 ---
 
@@ -2165,8 +2172,9 @@ Current flow:
 - `DRAFT` — staff взял в работу
 - `WAITING_FOR_MERCHANT` — отправлен мерчанту
 - `REVISION_REQUESTED` — мерчант запросил правки
-- `ACTIVE` — доступен пользователям. **Immutable**.
-- `SOLD_OUT` — лимит продаж исчерпан. **Immutable**.
+- `ACTIVE` — доступен пользователям.
+- `PAUSED` — временно приостановлен (добавлено в v3). Переходы: ACTIVE → PAUSED, PAUSED → ACTIVE.
+- `SOLD_OUT` — лимит продаж исчерпан. Устанавливается автоматически через atomic stock reservation (v3).
 - `ARCHIVED` — терминальный: снят с продажи staff-ом с обязательной причиной. Купленные сертификаты не затрагиваются.
 
 ### Уточнение product rule
@@ -2183,12 +2191,23 @@ Current flow:
 
 ## 22.4. Purchased coupon
 
-### Подтверждено кодом
+### Подтверждено кодом (v3)
 
 - `ACTIVE`
 - `USED`
 - `EXPIRED`
 - `CANCELLED`
+- `REFUND_PENDING` — пользователь запросил возврат (добавлено в v3)
+- `REFUNDED` — возврат одобрен и выполнен (добавлено в v3)
+
+## 22.5. Refund request (добавлено в v3)
+
+### Подтверждено кодом
+
+- `PENDING` — новый запрос на возврат
+- `APPROVED_PROCESSING` — одобрен, выполняется возврат средств
+- `REFUNDED` — возврат завершён
+- `REJECTED` — возврат отклонён
 
 ## 22.5. Order
 

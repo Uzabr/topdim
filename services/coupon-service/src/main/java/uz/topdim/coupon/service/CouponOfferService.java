@@ -954,6 +954,7 @@ public class CouponOfferService {
 
     /**
      * Регистрирует продажу купона.
+     * Использует atomic SQL для предотвращения oversell при конкурентных вызовах.
      * Если лимит распродан, автоматически останавливает публикацию.
      */
     @Caching(evict = {
@@ -963,40 +964,18 @@ public class CouponOfferService {
     })
     @Transactional
     public void registerSale(Long id, Long optionId, int quantity, BigDecimal amount) {
-        CouponOffer offer = couponOfferRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
-
-        CouponOption option = offer.getOptions().stream()
-                .filter(opt -> opt.getId().equals(optionId))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Опция купона не найдена"));
-
-        // Обновляем статистику
-        option.setQuantitySold(option.getQuantitySold() + quantity);
-        offer.setTotalSold(offer.getTotalSold() + quantity);
-        offer.setTotalTurnover(offer.getTotalTurnover().add(amount != null ? amount : BigDecimal.ZERO));
-
-        // Проверяем общий лимит
-        int totalSold = offer.getTotalSold();
-        int totalLimit = offer.getOptions().stream()
-                .mapToInt(opt -> opt.getQuantityLimit() != null ? opt.getQuantityLimit() : 0)
-                .sum();
-
-        if (totalLimit > 0 && totalSold >= totalLimit && offer.getStatus() == CouponStatus.ACTIVE) {
-            offer.setStatus(CouponStatus.SOLD_OUT);
-            log.info("Купон #{} автоматически переведен в SOLD_OUT", id);
-
-            // Пуш мерчанту
-            if (offer.getMerchant() != null && offer.getMerchant().getTelegramChatId() != null) {
-                telegramPreviewService.sendPushMessage(
-                        offer.getMerchant().getTelegramChatId(),
-                        "🛑 Сертификаты по акции распроданы! Публикация автоматически приостановлена. " +
-                        "Чтобы запустить новую, нажмите [➕ Создать купон]."
-                );
-            }
+        // Atomic increment option quantitySold с проверкой лимита
+        int updated = couponOptionRepository.atomicIncrementSold(optionId, quantity);
+        if (updated == 0) {
+            throw new IllegalStateException("Купон распродан — лимит исчерпан для опции #" + optionId);
         }
 
-        couponOfferRepository.save(offer);
+        // Atomic increment offer totalSold и totalTurnover
+        BigDecimal safeAmount = amount != null ? amount : BigDecimal.ZERO;
+        couponOfferRepository.atomicIncrementSoldAndTurnover(id, quantity, safeAmount);
+
+        // Перечитываем offer из БД после atomic updates для проверки SOLD_OUT
+        checkAndSetSoldOut(id);
     }
 
     /**
@@ -1023,8 +1002,7 @@ public class CouponOfferService {
             return;
         }
 
-        CouponOffer offer = couponOfferRepository.findById(couponId)
-                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+        BigDecimal safeAmount = amount != null ? amount : BigDecimal.ZERO;
 
         // Записываем в ledger
         CouponSale sale = CouponSale.builder()
@@ -1032,41 +1010,25 @@ public class CouponOfferService {
                 .couponOfferId(couponId)
                 .couponOptionId(optionId)
                 .quantity(quantity)
-                .amount(amount != null ? amount : BigDecimal.ZERO)
+                .amount(safeAmount)
                 .build();
         couponSaleRepository.save(sale);
 
-        // Обновляем счётчики
+        // Atomic increment option quantitySold с проверкой лимита
         if (optionId != 0L) {
-            CouponOption option = offer.getOptions().stream()
-                    .filter(opt -> opt.getId().equals(optionId))
-                    .findFirst()
-                    .orElseThrow(() -> new ResourceNotFoundException("Опция купона не найдена"));
-            option.setQuantitySold(option.getQuantitySold() + quantity);
-        }
-        offer.setTotalSold(offer.getTotalSold() + quantity);
-        offer.setTotalTurnover(offer.getTotalTurnover().add(amount != null ? amount : BigDecimal.ZERO));
-
-        // Проверяем общий лимит для автоматического SOLD_OUT
-        int totalSold = offer.getTotalSold();
-        int totalLimit = offer.getOptions().stream()
-                .mapToInt(opt -> opt.getQuantityLimit() != null ? opt.getQuantityLimit() : 0)
-                .sum();
-
-        if (totalLimit > 0 && totalSold >= totalLimit && offer.getStatus() == CouponStatus.ACTIVE) {
-            offer.setStatus(CouponStatus.SOLD_OUT);
-            log.info("Купон #{} автоматически переведен в SOLD_OUT через registerSaleOnce", couponId);
-
-            if (offer.getMerchant() != null && offer.getMerchant().getTelegramChatId() != null) {
-                telegramPreviewService.sendPushMessage(
-                        offer.getMerchant().getTelegramChatId(),
-                        "🛑 Сертификаты по акции распроданы! Публикация автоматически приостановлена. " +
-                        "Чтобы запустить новую, нажмите [➕ Создать купон]."
-                );
+            int updated = couponOptionRepository.atomicIncrementSold(optionId, quantity);
+            if (updated == 0) {
+                log.warn("Лимит исчерпан для опции #{} при регистрации продажи заказа #{}", optionId, orderId);
+                throw new IllegalStateException("Купон распродан — лимит исчерпан для опции #" + optionId);
             }
         }
 
-        couponOfferRepository.save(offer);
+        // Atomic increment offer totalSold и totalTurnover
+        couponOfferRepository.atomicIncrementSoldAndTurnover(couponId, quantity, safeAmount);
+
+        // Перечитываем offer из БД после atomic updates для проверки SOLD_OUT
+        checkAndSetSoldOut(couponId);
+
         log.info("Зарегистрирована продажа: orderId={}, couponId={}, optionId={}, qty={}, amount={}",
                 orderId, couponId, optionId, quantity, amount);
     }
@@ -1105,6 +1067,36 @@ public class CouponOfferService {
 
         log.info("Инкремент redeemedCount для couponOfferId={}, purchasedCouponId={}, new count={}",
                 couponOfferId, purchasedCouponId, offer.getRedeemedCount());
+    }
+
+    // ==================== Stock/SOLD_OUT ====================
+
+    /**
+     * Перечитывает offer из БД после atomic updates и проверяет,
+     * не исчерпан ли общий лимит. Если да — переводит в SOLD_OUT.
+     */
+    private void checkAndSetSoldOut(Long couponId) {
+        CouponOffer offer = couponOfferRepository.findById(couponId)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
+
+        int totalSold = offer.getTotalSold();
+        int totalLimit = offer.getOptions().stream()
+                .mapToInt(opt -> opt.getQuantityLimit() != null ? opt.getQuantityLimit() : 0)
+                .sum();
+
+        if (totalLimit > 0 && totalSold >= totalLimit && offer.getStatus() == CouponStatus.ACTIVE) {
+            offer.setStatus(CouponStatus.SOLD_OUT);
+            couponOfferRepository.save(offer);
+            log.info("Купон #{} автоматически переведен в SOLD_OUT", couponId);
+
+            if (offer.getMerchant() != null && offer.getMerchant().getTelegramChatId() != null) {
+                telegramPreviewService.sendPushMessage(
+                        offer.getMerchant().getTelegramChatId(),
+                        "🛑 Сертификаты по акции распроданы! Публикация автоматически приостановлена. " +
+                        "Чтобы запустить новую, нажмите [➕ Создать купон]."
+                );
+            }
+        }
     }
 
     // ==================== Helpers ====================

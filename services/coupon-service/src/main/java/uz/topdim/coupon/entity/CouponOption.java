@@ -39,6 +39,10 @@ public class CouponOption {
     @Column(name = "quantity_limit")
     private Integer quantityLimit;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @Column(name = "quantity_sold")
     private int quantitySold;
 
