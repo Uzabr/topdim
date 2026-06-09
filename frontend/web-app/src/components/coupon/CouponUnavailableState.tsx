@@ -1,16 +1,10 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, SearchX } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useLocalePath } from '../../hooks/useLocalePath';
 
-interface CouponUnavailableStateProps {
-  title?: string;
-  description?: string;
-}
-
-export default function CouponUnavailableState({
-  title = 'Купон недоступен',
-  description = 'Этот купон больше не доступен публично или ссылка устарела.',
-}: CouponUnavailableStateProps) {
+export default function CouponUnavailableState() {
+  const { t } = useTranslation();
   const lp = useLocalePath();
 
   return (
@@ -19,15 +13,15 @@ export default function CouponUnavailableState({
         <div className="coupon-unavailable__icon">
           <SearchX size={34} />
         </div>
-        <h1>{title}</h1>
-        <p>{description}</p>
+        <h1>{t('couponDetail.unavailableTitle')}</h1>
+        <p>{t('couponDetail.unavailableDesc')}</p>
         <div className="coupon-unavailable__actions">
           <Link to={lp('/coupons')} className="coupon-unavailable__primary">
-            Смотреть активные купоны
+            {t('couponDetail.unavailableBrowse')}
           </Link>
           <Link to={lp('/')} className="coupon-unavailable__secondary">
             <ArrowLeft size={16} />
-            На главную
+            {t('notFound.home')}
           </Link>
         </div>
       </div>

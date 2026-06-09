@@ -185,9 +185,17 @@
 /* ═══ Categories ═══ */
 .categories-row {
   display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
   overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: 4px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -196,10 +204,15 @@
   display: none;
 }
 
+.categories-row > * {
+  flex: 0 0 auto;
+}
+
 /* Old .category-bubble styles removed — now using global .filter-chip from index.css */
 
 .filter-chip span {
   display: flex;
+  flex-shrink: 0;
 }
 
 /* ═══ Carousel ═══ */
@@ -349,6 +362,15 @@
 }
 
 @media (max-width: 768px) {
+  .carousel-arrow {
+    width: 44px;
+    height: 44px;
+  }
+
+  .carousel-arrow svg {
+    width: 22px;
+    height: 22px;
+  }
 
   .deals-mosaic {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

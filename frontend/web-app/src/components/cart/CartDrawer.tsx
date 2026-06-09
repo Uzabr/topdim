@@ -1,18 +1,25 @@
-import { X, Trash2, ShoppingBag, ArrowRight, Plus, Minus } from 'lucide-react';
+import { X, Trash2, ShoppingBag, ArrowRight, Plus, Minus, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCartStore } from '../../store/cartStore';
+import { useFavoritesStore } from '../../store/favoritesStore';
+import ShareButton from '../ui/ShareButton';
 import { formatPrice } from '../../utils/format';
+import { useLocalePath } from '../../hooks/useLocalePath';
 import './CartDrawer.css';
 
 export default function CartDrawer() {
+  const { t } = useTranslation();
   const { items, isOpen, closeCart, removeFromCart, updateQuantity, totalItems, totalPrice, error, clearError } = useCartStore();
+  const { toggleFavorite, isFavorite } = useFavoritesStore();
   const navigate = useNavigate();
+  const lp = useLocalePath();
 
   if (!isOpen) return null;
 
   const handleCheckout = () => {
     closeCart();
-    navigate('/checkout');
+    navigate(lp('/checkout'));
   };
 
   return (
@@ -22,71 +29,99 @@ export default function CartDrawer() {
         <div className="cart-drawer__header">
           <h2>
             <ShoppingBag size={20} />
-            Корзина
+            {t('cart.title')}
             {totalItems > 0 && <span className="cart-drawer__count">{totalItems}</span>}
           </h2>
-          <button className="cart-drawer__close" onClick={closeCart} aria-label="Закрыть">
-            <X size={24} />
+          <button className="cart-drawer__close" onClick={closeCart} aria-label={t('common.close')}>
+            <X size={28} strokeWidth={2} />
           </button>
         </div>
 
         {items.length === 0 ? (
           <div className="cart-drawer__empty">
             <span className="cart-drawer__empty-icon">🛒</span>
-            <h3>Корзина пуста</h3>
-            <p>Добавьте купоны из каталога, чтобы начать покупки</p>
-            <button className="primary-button cart-drawer__empty-btn" onClick={() => { closeCart(); navigate('/coupons'); }}>
-              Начать покупки
+            <h3>{t('cart.emptyTitle')}</h3>
+            <p>{t('cart.emptyDesc')}</p>
+            <button className="primary-button cart-drawer__empty-btn" onClick={() => { closeCart(); navigate(lp('/coupons')); }}>
+              {t('cart.startShopping')}
             </button>
           </div>
         ) : (
           <>
             <div className="cart-drawer__items">
-              {items.map((item) => (
-                <div key={item.key} className="cart-drawer__item">
-                  {item.coverImageUrl && (
+              {items.map((item) => {
+                const fav = isFavorite(item.couponOfferId);
+                return (
+                  <div key={item.key} className="cart-drawer__item">
                     <div className="cart-drawer__item-img">
-                      <img src={item.coverImageUrl} alt="" />
+                      {item.coverImageUrl ? (
+                        <img src={item.coverImageUrl} alt="" />
+                      ) : (
+                        <span className="cart-drawer__item-img-placeholder">🎫</span>
+                      )}
                     </div>
-                  )}
-                  <div className="cart-drawer__item-info">
-                    <h4 className="cart-drawer__item-title">{item.couponTitle}</h4>
-                    <p className="cart-drawer__item-option">{item.optionTitle}</p>
-                    {item.isGift && (
-                      <span className="cart-drawer__item-badge">🎁 В подарок</span>
-                    )}
-                  </div>
-                  <div className="cart-drawer__item-meta">
-                    <span className="cart-drawer__item-price">
-                      {formatPrice(item.unitPrice * item.quantity)}
-                    </span>
-                    <div className="cart-drawer__item-qty-controls">
-                      <button
-                        className="cart-drawer__qty-btn"
-                        onClick={() => updateQuantity(item.key, item.quantity - 1)}
-                        aria-label="Уменьшить"
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span className="cart-drawer__qty-value">{item.quantity}</span>
-                      <button
-                        className="cart-drawer__qty-btn"
-                        onClick={() => updateQuantity(item.key, item.quantity + 1)}
-                        aria-label="Увеличить"
-                      >
-                        <Plus size={14} />
-                      </button>
+
+                    <div className="cart-drawer__item-body">
+                      <div className="cart-drawer__item-toolbar">
+                        <button
+                          type="button"
+                          className={`cart-drawer__toolbar-btn${fav ? ' cart-drawer__toolbar-btn--active' : ''}`}
+                          onClick={() => toggleFavorite(item.couponOfferId)}
+                          aria-label={t('couponDetail.favorite')}
+                        >
+                          <Heart size={18} fill={fav ? 'currentColor' : 'none'} />
+                        </button>
+                        <ShareButton
+                          title={item.couponTitle}
+                          text={item.optionTitle}
+                          variant="icon"
+                        />
+                        <button
+                          type="button"
+                          className="cart-drawer__toolbar-btn cart-drawer__toolbar-btn--danger"
+                          onClick={() => removeFromCart(item.key)}
+                          aria-label={t('common.delete')}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+
+                      <div className="cart-drawer__item-text">
+                        <h4 className="cart-drawer__item-title">{item.couponTitle}</h4>
+                        <p className="cart-drawer__item-option">{item.optionTitle}</p>
+                        {item.isGift && (
+                          <span className="cart-drawer__item-badge">🎁 {t('cart.gift')}</span>
+                        )}
+                      </div>
+
+                      <div className="cart-drawer__item-row-bottom">
+                        <div className="cart-drawer__item-qty-controls">
+                          <button
+                            type="button"
+                            className="cart-drawer__qty-btn"
+                            onClick={() => updateQuantity(item.key, item.quantity - 1)}
+                            aria-label={t('common.decrease')}
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="cart-drawer__qty-value">{item.quantity}</span>
+                          <button
+                            type="button"
+                            className="cart-drawer__qty-btn"
+                            onClick={() => updateQuantity(item.key, item.quantity + 1)}
+                            aria-label={t('common.increase')}
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        <span className="cart-drawer__item-price">
+                          {formatPrice(item.unitPrice * item.quantity)}
+                        </span>
+                      </div>
                     </div>
-                    <button
-                      className="cart-drawer__item-remove"
-                      onClick={() => removeFromCart(item.key)}
-                      aria-label="Удалить"
-                    >
-                      <Trash2 size={16} />
-                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="cart-drawer__footer">
@@ -96,11 +131,11 @@ export default function CartDrawer() {
                 </div>
               )}
               <div className="cart-drawer__total">
-                <span>Итого к оплате:</span>
+                <span>{t('cart.totalToPay')}</span>
                 <span className="cart-drawer__total-amount">{formatPrice(totalPrice)}</span>
               </div>
               <button className="primary-button cart-drawer__checkout-btn" onClick={handleCheckout}>
-                Оформить заказ
+                {t('cart.checkout')}
                 <ArrowRight size={18} />
               </button>
             </div>

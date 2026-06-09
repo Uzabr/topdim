@@ -130,10 +130,55 @@ img {
 #root,
 .app-shell {
   min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
 }
 
 .app-main {
+  flex: 1 0 auto;
+  width: 100%;
   padding-top: calc(var(--header-height) + 8px);
+}
+
+.app-main--login {
+  padding-top: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.td-login-body,
+html.td-login-body {
+  overflow: hidden;
+  height: 100%;
+}
+
+body.td-login-body .app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+body.td-login-body .app-main--login {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: calc(var(--header-height) + 10px) 0 var(--space-md);
+}
+
+/* Mobile: add bottom padding so content doesn't hide behind BottomNav */
+@media (max-width: 768px) {
+  .app-main {
+    padding-bottom: calc(var(--bottom-nav-height) + 16px);
+  }
 }
 
 .container {
@@ -237,8 +282,13 @@ img {
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: var(--bg-chip);
-  display: flex;
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
+  width: fit-content;
+  max-width: max-content;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .filter-chip--active {

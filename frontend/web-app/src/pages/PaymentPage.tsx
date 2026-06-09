@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, CheckCircle2, XCircle, ExternalLink, Clock, AlertCircle, ShieldCheck } from 'lucide-react';
 import { paymentsApi, type PaymentResponse } from '../api/payments';
@@ -27,6 +28,7 @@ const POLL_INTERVAL_MS = 2000;
 const MAX_POLL_ATTEMPTS = 30;
 
 export default function PaymentPage() {
+  const { t } = useTranslation();
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const lp = useLocalePath();
@@ -92,7 +94,7 @@ export default function PaymentPage() {
           // Continue polling
         } else {
           // Unexpected error
-          setError(error.response?.data?.message || 'Ошибка при проверке платежа');
+          setError(error.response?.data?.message || t('payment.checkError'));
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
@@ -137,11 +139,10 @@ export default function PaymentPage() {
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
     } catch (err: unknown) {
       const error = err as { response?: { status?: number, data?: { message?: string } } };
-      const msg = error.response?.data?.message || 'Ошибка при подтверждении покупки';
+      const msg = error.response?.data?.message || t('payment.confirmError');
       setError(msg);
-      // Don't switch to 'failed' for recoverable errors — keep on pending
       if (error.response?.status === 403) {
-        setError('Демо-оплата недоступна. Обратитесь к администратору.');
+        setError(t('payment.demoUnavailable'));
       }
     } finally {
       setDemoLoading(false);
@@ -153,9 +154,9 @@ export default function PaymentPage() {
       <div className="payment-page container">
         <div className="payment-card glass-card">
           <AlertCircle size={48} className="payment-icon payment-icon--error" />
-          <h2>Заказ не найден</h2>
+          <h2>{t('payment.orderNotFound')}</h2>
           <button className="primary-button" onClick={() => navigate(lp('/coupons'))}>
-            Вернуться в каталог
+            {t('payment.backToCatalog')}
           </button>
         </div>
       </div>
@@ -170,9 +171,9 @@ export default function PaymentPage() {
         {state === 'polling' && (
           <div className="payment-state">
             <Loader2 size={48} className="payment-icon spin" />
-            <h2>Создаём платёж...</h2>
+            <h2>{t('payment.creating')}</h2>
             <p className="payment-subtitle">
-              Подготавливаем оплату для заказа #{numericOrderId}
+              {t('payment.creatingDesc', { orderId: numericOrderId })}
             </p>
             <div className="payment-progress">
               <div 
@@ -180,7 +181,7 @@ export default function PaymentPage() {
                 style={{ width: `${Math.min((pollCountRef.current / MAX_POLL_ATTEMPTS) * 100, 95)}%` }}
               />
             </div>
-            <p className="payment-hint">Обычно это занимает несколько секунд</p>
+            <p className="payment-hint">{t('payment.creatingHint')}</p>
           </div>
         )}
 
@@ -192,27 +193,26 @@ export default function PaymentPage() {
               <>
                 <div className="payment-demo-badge">
                   <ShieldCheck size={16} />
-                  Демо-режим
+                  {t('payment.demoBadge')}
                 </div>
                 <Clock size={48} className="payment-icon payment-icon--pending" />
-                <h2>Подтверждение покупки</h2>
+                <h2>{t('payment.confirmTitle')}</h2>
                 <p className="payment-subtitle">
-                  Заказ #{numericOrderId} • {orderTotal > 0 ? formatPrice(orderTotal) : formatPrice(payment.amount)}
+                  {t('payment.orderLine', { orderId: numericOrderId, amount: orderTotal > 0 ? formatPrice(orderTotal) : formatPrice(payment.amount) })}
                 </p>
 
                 <div className="payment-demo-block">
                   <p className="payment-demo-note">
-                    Это временный демонстрационный режим оплаты. После подтверждения купоны 
-                    появятся в вашем профиле.
+                    {t('payment.demoNote')}
                   </p>
                   <div className="payment-details">
                     <div className="payment-detail-row">
-                      <span>Сумма:</span>
+                      <span>{t('payment.amount')}</span>
                       <span>{orderTotal > 0 ? formatPrice(orderTotal) : formatPrice(payment.amount)}</span>
                     </div>
                     <div className="payment-detail-row">
-                      <span>Статус:</span>
-                      <span className="payment-status payment-status--pending">Ожидает подтверждения</span>
+                      <span>{t('payment.status')}</span>
+                      <span className="payment-status payment-status--pending">{t('payment.statusPendingConfirm')}</span>
                     </div>
                   </div>
                 </div>
@@ -227,12 +227,12 @@ export default function PaymentPage() {
                   {demoLoading ? (
                     <>
                       <Loader2 size={18} className="spin" />
-                      Подтверждаем...
+                      {t('payment.confirming')}
                     </>
                   ) : (
                     <>
                       <ShieldCheck size={18} />
-                      Подтвердить покупку
+                      {t('payment.confirmPurchase')}
                     </>
                   )}
                 </button>
@@ -241,34 +241,34 @@ export default function PaymentPage() {
                   className="secondary-button" 
                   onClick={() => navigate(lp('/profile'))}
                 >
-                  Вернуться в профиль
+                  {t('payment.backToProfile')}
                 </button>
               </>
             ) : (
               /* ===== PROVIDER MODE (real payment) ===== */
               <>
                 <Clock size={48} className="payment-icon payment-icon--pending" />
-                <h2>Платёж готов</h2>
+                <h2>{t('payment.readyTitle')}</h2>
                 <p className="payment-subtitle">
-                  Заказ #{numericOrderId} • {orderTotal > 0 ? formatPrice(orderTotal) : formatPrice(payment.amount)}
+                  {t('payment.orderLine', { orderId: numericOrderId, amount: orderTotal > 0 ? formatPrice(orderTotal) : formatPrice(payment.amount) })}
                 </p>
                 <div className="payment-details">
                   <div className="payment-detail-row">
-                    <span>Провайдер:</span>
+                    <span>{t('payment.provider')}</span>
                     <span>{payment.provider}</span>
                   </div>
                   <div className="payment-detail-row">
-                    <span>Статус:</span>
-                    <span className="payment-status payment-status--pending">Ожидает оплаты</span>
+                    <span>{t('payment.status')}</span>
+                    <span className="payment-status payment-status--pending">{t('payment.statusPendingPay')}</span>
                   </div>
                 </div>
                 {payment.paymentUrl ? (
                   <button className="primary-button payment-redirect-btn" onClick={handlePaymentRedirect}>
                     <ExternalLink size={18} />
-                    Перейти к оплате
+                    {t('payment.goToPay')}
                   </button>
                 ) : (
-                  <p className="payment-hint">Ссылка на оплату формируется...</p>
+                  <p className="payment-hint">{t('payment.linkForming')}</p>
                 )}
               </>
             )}
@@ -279,8 +279,8 @@ export default function PaymentPage() {
         {state === 'confirming' && (
           <div className="payment-state">
             <Loader2 size={48} className="payment-icon spin" />
-            <h2>Подтверждаем покупку...</h2>
-            <p className="payment-subtitle">Пожалуйста, подождите</p>
+            <h2>{t('payment.confirmingPurchase')}</h2>
+            <p className="payment-subtitle">{t('payment.pleaseWait')}</p>
           </div>
         )}
 
@@ -288,8 +288,8 @@ export default function PaymentPage() {
         {state === 'redirecting' && (
           <div className="payment-state">
             <Loader2 size={48} className="payment-icon spin" />
-            <h2>Переходим к оплате...</h2>
-            <p className="payment-subtitle">Вы будете перенаправлены на страницу платёжной системы</p>
+            <h2>{t('payment.redirecting')}</h2>
+            <p className="payment-subtitle">{t('payment.redirectingDesc')}</p>
           </div>
         )}
 
@@ -297,26 +297,28 @@ export default function PaymentPage() {
         {state === 'completed' && (
           <div className="payment-state">
             <CheckCircle2 size={48} className="payment-icon payment-icon--success" />
-            <h2>Покупка подтверждена!</h2>
+            <h2>{t('payment.successTitle')}</h2>
             <p className="payment-subtitle">
-              Заказ #{numericOrderId} {isDemoMode ? 'подтверждён' : 'оплачен'}
+              {isDemoMode
+                ? t('payment.successDescConfirmed', { orderId: numericOrderId })
+                : t('payment.successDescPaid', { orderId: numericOrderId })}
             </p>
             {payment?.transactionId && (
-              <p className="payment-transaction">ID транзакции: {payment.transactionId}</p>
+              <p className="payment-transaction">{t('payment.transactionId', { id: payment.transactionId })}</p>
             )}
             <div className="payment-next-steps">
-              <h3>Что дальше?</h3>
+              <h3>{t('payment.nextStepsTitle')}</h3>
               <ol>
-                <li>Откройте купон в профиле.</li>
-                <li>Покажите QR или PIN кассиру партнёра.</li>
-                <li>После использования вы сможете оставить отзыв.</li>
+                <li>{t('payment.step1')}</li>
+                <li>{t('payment.step2')}</li>
+                <li>{t('payment.step3')}</li>
               </ol>
             </div>
             <button className="primary-button" onClick={() => navigate(lp('/profile') + '?tab=coupons')}>
-              Открыть мои купоны
+              {t('payment.openCoupons')}
             </button>
             <button className="secondary-button" style={{ marginTop: 8 }} onClick={() => navigate(lp('/profile') + '?tab=orders')}>
-              История заказов
+              {t('payment.orderHistory')}
             </button>
           </div>
         )}
@@ -325,16 +327,16 @@ export default function PaymentPage() {
         {state === 'failed' && (
           <div className="payment-state">
             <XCircle size={48} className="payment-icon payment-icon--error" />
-            <h2>Ошибка</h2>
+            <h2>{t('payment.errorTitle')}</h2>
             <p className="payment-subtitle">
-              {error || 'Платёж не был завершён. Заказ сохранён, вы можете попробовать оплатить ещё раз.'}
+              {error || t('payment.errorDefault')}
             </p>
             <div className="payment-actions">
               <button className="primary-button" onClick={() => window.location.reload()}>
-                Попробовать снова
+                {t('payment.retry')}
               </button>
               <button className="secondary-button" onClick={() => navigate(lp('/profile') + '?tab=orders')}>
-                Мои заказы
+                {t('payment.myOrders')}
               </button>
             </div>
           </div>
@@ -344,16 +346,16 @@ export default function PaymentPage() {
         {state === 'timeout' && (
           <div className="payment-state">
             <AlertCircle size={48} className="payment-icon payment-icon--warning" />
-            <h2>Платёж не создан</h2>
+            <h2>{t('payment.timeoutTitle')}</h2>
             <p className="payment-subtitle">
-              Мы не смогли быстро получить платёж. Заказ сохранён в профиле, попробуйте продолжить оплату из раздела «Мои заказы».
+              {t('payment.timeoutDesc')}
             </p>
             <div className="payment-actions">
               <button className="primary-button" onClick={() => navigate(lp('/profile') + '?tab=orders')}>
-                Мои заказы
+                {t('payment.myOrders')}
               </button>
               <button className="secondary-button" onClick={() => window.location.reload()}>
-                Обновить статус
+                {t('payment.refreshStatus')}
               </button>
             </div>
           </div>

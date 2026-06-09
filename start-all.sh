@@ -161,12 +161,9 @@ start_all() {
   # 1. Docker
   echo -e "${CYAN}[1/3] 🐳 Docker инфраструктура${NC}"
   cd "$PROJECT_DIR"
-  if docker compose ps --format '{{.Name}}' 2>/dev/null | grep -q topdim; then
-    echo -e "  ${YELLOW}⚡ Docker уже запущен${NC}"
-  else
-    docker compose up -d
-    echo -e "  ${GREEN}✓ PostgreSQL, Redis, RabbitMQ, MinIO${NC}"
-  fi
+  # Всегда выполняем up -d, чтобы поднять остановленные контейнеры
+  docker compose up -d 2>/dev/null
+  echo -e "  ${GREEN}✓ PostgreSQL, Redis, RabbitMQ, MinIO${NC}"
   sleep 2
 
   # Ждём готовности инфраструктуры (чтобы Flyway/AMQP не падали на старте)

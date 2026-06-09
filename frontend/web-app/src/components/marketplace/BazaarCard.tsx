@@ -1,4 +1,6 @@
 import { Grid2X2, MapPin, Route, Star } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatPrice } from '../../utils/format';
 import type { BazaarItem } from '../../data/topdim';
 import './BazaarCard.css';
 
@@ -8,6 +10,7 @@ interface BazaarCardProps {
 }
 
 export default function BazaarCard({ item, viewMode }: BazaarCardProps) {
+  const { t } = useTranslation();
   return (
     <article className={`bazaar-item-card bazaar-item-card--${viewMode}`}>
       <div className="bazaar-item-card__image">
@@ -39,10 +42,10 @@ export default function BazaarCard({ item, viewMode }: BazaarCardProps) {
         </div>
         <div className="bazaar-item-card__footer">
           <div>
-            <strong>{item.price.toLocaleString()} сум</strong>
-            {item.oldPrice && <span>{item.oldPrice.toLocaleString()} сум</span>}
+            <strong>{formatPrice(item.price)}</strong>
+            {item.oldPrice && <span>{formatPrice(item.oldPrice)}</span>}
           </div>
-          <button type="button">Смотреть</button>
+          <button type="button">{t('marketplace.view')}</button>
         </div>
       </div>
     </article>

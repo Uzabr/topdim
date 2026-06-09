@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { Save, CheckCircle, AlertCircle } from 'lucide-react';
 import './ProfileSettingsSection.css';
 
 export default function ProfileSettingsSection() {
+  const { t } = useTranslation();
   const { user, updateProfile } = useAuthStore();
 
   const [firstName, setFirstName] = useState(user?.firstName || '');
@@ -14,12 +16,12 @@ export default function ProfileSettingsSection() {
   const [error, setError] = useState('');
 
   const validate = (): string | null => {
-    if (!firstName.trim()) return 'Имя обязательно';
-    if (firstName.trim().length > 100) return 'Имя не должно превышать 100 символов';
-    if (lastName.trim().length > 100) return 'Фамилия не должна превышать 100 символов';
-    if (!phone.trim()) return 'Укажите телефон';
-    if (phone.trim().length < 9) return 'Телефон слишком короткий (минимум 9 символов)';
-    if (phone.trim().length > 20) return 'Телефон не должен превышать 20 символов';
+    if (!firstName.trim()) return t('profile.settings.validation.firstNameRequired');
+    if (firstName.trim().length > 100) return t('profile.settings.validation.firstNameMax');
+    if (lastName.trim().length > 100) return t('profile.settings.validation.lastNameMax');
+    if (!phone.trim()) return t('profile.settings.validation.phoneRequired');
+    if (phone.trim().length < 9) return t('profile.settings.validation.phoneMin');
+    if (phone.trim().length > 20) return t('profile.settings.validation.phoneMax');
     return null;
   };
 
@@ -41,11 +43,11 @@ export default function ProfileSettingsSection() {
         lastName: lastName.trim() || undefined,
         phone: phone.trim(),
       });
-      setSuccess('Профиль обновлён');
+      setSuccess(t('profile.settings.success'));
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      const msg = e.response?.data?.message || 'Ошибка обновления профиля';
+      const msg = e.response?.data?.message || t('profile.settings.error');
       setError(msg);
     } finally {
       setIsLoading(false);
@@ -54,17 +56,16 @@ export default function ProfileSettingsSection() {
 
   return (
     <div className="profile-settings">
-      <h3 className="profile-settings__title">Настройки профиля</h3>
+      <h3 className="profile-settings__title">{t('profile.settings.title')}</h3>
 
       {!user?.phone && (
         <div className="profile-settings__phone-warning">
           <AlertCircle size={16} />
-          Телефон нужен для оформления заказа и связи по купону.
+          {t('profile.settings.phoneHint')}
         </div>
       )}
 
       <form className="profile-settings__form" onSubmit={handleSubmit}>
-        {/* Email — read-only */}
         <div className="profile-settings__field">
           <label className="profile-settings__label">Email</label>
           <input
@@ -76,9 +77,8 @@ export default function ProfileSettingsSection() {
           />
         </div>
 
-        {/* First Name */}
         <div className="profile-settings__field">
-          <label className="profile-settings__label" htmlFor="profile-first-name">Имя *</label>
+          <label className="profile-settings__label" htmlFor="profile-first-name">{t('profile.settings.firstName')}</label>
           <input
             className="profile-settings__input"
             type="text"
@@ -86,13 +86,12 @@ export default function ProfileSettingsSection() {
             value={firstName}
             onChange={(e) => { setFirstName(e.target.value); setError(''); }}
             maxLength={100}
-            placeholder="Имя"
+            placeholder={t('profile.settings.firstNamePlaceholder')}
           />
         </div>
 
-        {/* Last Name */}
         <div className="profile-settings__field">
-          <label className="profile-settings__label" htmlFor="profile-last-name">Фамилия</label>
+          <label className="profile-settings__label" htmlFor="profile-last-name">{t('profile.settings.lastName')}</label>
           <input
             className="profile-settings__input"
             type="text"
@@ -100,13 +99,12 @@ export default function ProfileSettingsSection() {
             value={lastName}
             onChange={(e) => { setLastName(e.target.value); setError(''); }}
             maxLength={100}
-            placeholder="Фамилия (необязательно)"
+            placeholder={t('profile.settings.lastNamePlaceholder')}
           />
         </div>
 
-        {/* Phone */}
         <div className="profile-settings__field">
-          <label className="profile-settings__label" htmlFor="profile-phone">Телефон *</label>
+          <label className="profile-settings__label" htmlFor="profile-phone">{t('profile.settings.phone')}</label>
           <input
             className="profile-settings__input"
             type="tel"
@@ -138,10 +136,10 @@ export default function ProfileSettingsSection() {
           disabled={isLoading}
           id="profile-save-btn"
         >
-          {isLoading ? 'Сохранение...' : (
+          {isLoading ? t('profile.settings.saving') : (
             <>
               <Save size={16} />
-              Сохранить изменения
+              {t('profile.settings.save')}
             </>
           )}
         </button>

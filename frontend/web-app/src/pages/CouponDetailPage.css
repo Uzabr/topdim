@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════ */
 
 .detail-page {
-  padding-bottom: calc(var(--bottom-nav-height) + 80px);
+  padding-bottom: calc((var(--bottom-nav-height) + 8px) * 1.5 + 4px + 72px);
 }
 
 /* ═══ Hero Section ═══ */
@@ -646,7 +646,8 @@
 .detail-sticky-cta {
   display: none;
   position: fixed;
-  bottom: calc(var(--bottom-nav-height) + 8px);
+  /* +50% от базового отступа + 4px — выше над bottom nav */
+  bottom: calc((var(--bottom-nav-height) + 8px) * 1.5 + 4px - 18px);
   left: 16px;
   right: 16px;
   z-index: 100;
@@ -657,7 +658,7 @@
   font-size: var(--font-md);
   font-weight: 800;
   text-align: center;
-  box-shadow: 0 12px 36px rgba(255, 102, 96, 0.4);
+  box-shadow: 0 12px 36px rgba(37, 99, 235, 0.35);
   transition: transform var(--transition-fast);
   border: none;
   cursor: pointer;
@@ -711,8 +712,35 @@
   }
 
   .detail-action-bar {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    overflow: visible;
+  }
+
+  .detail-tabs-row {
+    flex: 1;
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .detail-tab-btn {
+    padding: 10px 14px;
+    background: var(--bg-surface-strong);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .detail-tab-btn--active {
+    background: var(--bg-chip);
+    border-color: var(--border-strong);
+    color: var(--primary);
+  }
+
+  .detail-action-buttons {
+    flex-shrink: 0;
+    gap: 8px;
   }
 
   .detail-action-label {
@@ -720,14 +748,34 @@
   }
 
   .detail-fav-btn {
-    padding: 8px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: var(--bg-surface-strong);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .detail-fav-btn--active {
+    background: rgba(37, 99, 235, 0.1);
+    border-color: var(--border-strong);
+    color: var(--primary);
+  }
+
+  .detail-action-buttons .share-btn--icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-surface-strong);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
   }
 }
 
 /* ═══ Toast Notification ═══ */
 .detail-toast {
   position: fixed;
-  bottom: calc(var(--bottom-nav-height) + 70px);
+  bottom: calc((var(--bottom-nav-height) + 8px) * 1.5 + 4px + 60px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;

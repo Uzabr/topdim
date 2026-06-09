@@ -11,6 +11,7 @@ import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
 import SearchBar from '../components/ui/SearchBar';
 import { mapCouponOfferToCardData } from '../utils/couponCardMapper';
+import { localizedName } from '../utils/localizedText';
 import './HomePage.css';
 
 const EMPTY_CATEGORIES: Category[] = [];
@@ -55,7 +56,7 @@ export default function HomePage() {
   const searchSuggestions = useMemo(() => {
     return categories.map((c) => ({
       id: c.id,
-      label: i18n.language === 'uz' ? (c.nameUz || c.name) : c.name,
+      label: localizedName(c, i18n.language),
     }));
   }, [categories, i18n.language]);
 
@@ -125,17 +126,17 @@ export default function HomePage() {
       <section className="home-hero container">
         <div className="home-hero__content">
           <h1 className="home-hero__title">
-            Твои лучшие моменты <br/>
-            <span className="text-gradient">со скидкой до 90%</span>
+            {t('home.heroTitle')} <br/>
+            <span className="text-gradient">{t('home.heroTitleHighlight')}</span>
           </h1>
           <p className="home-hero__subtitle">
-            Каждый день уникальные предложения на кафе, рестораны, SPA, развлечения и спорт. Покупай эмоции выгодно.
+            {t('home.heroSubtitle')}
           </p>
           <div className="home-hero__search">
             <SearchBar
               value={search}
               onChange={setSearch}
-              placeholder={t('home.searchPlaceholder') || 'Поиск по категориям и заведениям...'}
+              placeholder={t('home.searchPlaceholder')}
               suggestions={searchSuggestions}
               onSuggestionClick={(id) => {
                 setActiveCategory(id);
@@ -145,7 +146,7 @@ export default function HomePage() {
           </div>
           <div className="home-hero__actions">
             <Link to={lp('/coupons')} className="primary-button home-hero__btn">
-              Смотреть предложения
+              {t('home.btnOffers')}
             </Link>
           </div>
         </div>
@@ -153,14 +154,14 @@ export default function HomePage() {
           <div className="home-hero__badge">
             <span className="home-hero__badge-icon">🔥</span>
             <div>
-              <span className="home-hero__badge-title">Самый популярный</span>
-              <span className="home-hero__badge-desc">Справка купон - самый сочный !!!</span>
+              <span className="home-hero__badge-title">{t('home.heroBadgeTitle')}</span>
+              <span className="home-hero__badge-desc">{t('home.heroBadgeDesc')}</span>
             </div>
           </div>
           <div className="home-hero__visual-inner">
             <img 
               src={heroImage} 
-              alt="Скидки" 
+              alt={t('home.heroImageAlt')}
               className="home-hero__img" 
             />
             <div className="home-hero__glow"></div>
@@ -194,7 +195,7 @@ export default function HomePage() {
               onClick={() => setActiveCategory(category.id)}
             >
               <span><CategoryIcon slug={category.slug} /></span>
-              {i18n.language === 'uz' ? (category.nameUz || category.name) : category.name}
+              {localizedName(category, i18n.language)}
             </button>
           ))}
         </div>
@@ -205,14 +206,14 @@ export default function HomePage() {
         <section className="section container">
           <div className="section-heading">
             <div>
-              <p className="section-label">🔥 Топ-акции дня</p>
-              <h2 className="section-title">Забирают быстрее всего</h2>
+              <p className="section-label">🔥 {t('home.topDealsLabel')}</p>
+              <h2 className="section-title">{t('home.topDealsTitle')}</h2>
             </div>
             <div className="carousel-controls">
-              <button onClick={() => scrollCarousel(-1)} className="carousel-arrow" aria-label="Назад">
+              <button onClick={() => scrollCarousel(-1)} className="carousel-arrow" aria-label={t('common.carouselPrev')}>
                 <ChevronLeft size={18} />
               </button>
-              <button onClick={() => scrollCarousel(1)} className="carousel-arrow" aria-label="Вперёд">
+              <button onClick={() => scrollCarousel(1)} className="carousel-arrow" aria-label={t('common.carouselNext')}>
                 <ChevronRight size={18} />
               </button>
             </div>
@@ -237,11 +238,11 @@ export default function HomePage() {
         <section className="section container">
           <div className="section-heading">
             <div>
-              <p className="section-label">✨ Новые</p>
-              <h2 className="section-title">Только что добавлены</h2>
+              <p className="section-label">✨ {t('home.newDealsLabel')}</p>
+              <h2 className="section-title">{t('home.newDealsTitle')}</h2>
             </div>
             <Link to={lp('/coupons?sortBy=new')} className="section-link">
-              Все новые
+              {t('home.newDealsLink')}
               <ArrowRight size={16} />
             </Link>
           </div>
@@ -261,7 +262,7 @@ export default function HomePage() {
             <h2 className="section-title">{t('home.trendingTitle')}</h2>
           </div>
           <Link to={lp('/coupons')} className="section-link">
-            Показать все
+            {t('common.showAll')}
             <ArrowRight size={16} />
           </Link>
         </div>
@@ -276,13 +277,13 @@ export default function HomePage() {
       <section className="section container">
         <div className="bazaar-cta surface-card">
           <div className="bazaar-cta__content">
-            <p className="section-label">Онлайн базар</p>
-            <h2 className="section-title">Карта и товары рядом с тобой</h2>
+            <p className="section-label">{t('home.bazaarCtaLabel')}</p>
+            <h2 className="section-title">{t('home.bazaarCtaTitle')}</h2>
             <p className="section-copy">
-              Переключайся между пинами, товарами и расстоянием. Найди лучшие скидки на карте Ташкента.
+              {t('home.bazaarCtaCopy')}
             </p>
             <Link to={lp('/bazaar')} className="primary-button">
-              Открыть базар
+              {t('home.bazaarCtaBtn')}
               <MapPinned size={18} />
             </Link>
           </div>

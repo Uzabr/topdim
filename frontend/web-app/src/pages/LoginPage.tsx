@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/authStore';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,27 +10,28 @@ import { IMaskInput } from 'react-imask';
 import { useLocalePath } from '../hooks/useLocalePath';
 import './LoginPage.css';
 
-const loginSchema = z.object({
-  email: z.string().min(1, 'Email обязателен').email('Неверный формат email'),
-  password: z.string().min(1, 'Пароль обязателен'),
-});
-
-const registerSchema = loginSchema.extend({
-  firstName: z.string().min(2, 'Имя должно быть не короче 2 символов'),
-  phone: z.string()
-    .optional()
-    .transform(e => e === "" ? undefined : e)
-    .refine((val) => !val || /^\+998\d{9}$/.test(val), {
-      message: 'Формат: +998XXXXXXXXX',
-    }),
-  password: z.string().min(8, 'Пароль должен быть от 8 символов'), // backend restriction
-});
-
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState('');
-  
+
+  const loginSchema = useMemo(() => z.object({
+    email: z.string().min(1, t('login.validation.emailRequired')).email(t('login.validation.emailInvalid')),
+    password: z.string().min(1, t('login.validation.passwordRequired')),
+  }), [t]);
+
+  const registerSchema = useMemo(() => loginSchema.extend({
+    firstName: z.string().min(2, t('login.validation.firstNameMin')),
+    phone: z.string()
+      .optional()
+      .transform(e => e === "" ? undefined : e)
+      .refine((val) => !val || /^\+998\d{9}$/.test(val), {
+        message: t('login.validation.phoneFormat'),
+      }),
+    password: z.string().min(8, t('login.validation.passwordMin')),
+  }), [loginSchema, t]);
+
   const { login, register, isLoading } = useAuthStore();
   const navigate = useNavigate();
   const lp = useLocalePath();
@@ -68,14 +70,14 @@ export default function LoginPage() {
       navigate(lp('/'));
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setServerError(error.response?.data?.message || 'Ошибка. Попробуйте ещё раз.');
+      setServerError(error.response?.data?.message || t('login.serverError'));
     }
   };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setServerError('');
-    reset(); // reset form fields
+    reset();
   };
 
   return (
@@ -83,9 +85,9 @@ export default function LoginPage() {
       <div className="login-card glass">
         <div className="login-header">
           <Link to={lp('/')} className="login-logo">💎 TopDim</Link>
-          <h1>{isLogin ? 'Вход' : 'Регистрация'}</h1>
+          <h1>{isLogin ? t('login.titleLogin') : t('login.titleRegister')}</h1>
           <p className="login-subtitle">
-            {isLogin ? 'Войдите, чтобы покупать купоны' : 'Создайте аккаунт за минуту'}
+            {isLogin ? t('login.subtitleLogin') : t('login.subtitleRegister')}
           </p>
         </div>
 
@@ -96,7 +98,7 @@ export default function LoginPage() {
                 <User size={18} className="input-icon" />
                 <input
                   type="text"
-                  placeholder="Имя"
+                  placeholder={t('login.firstName')}
                   {...formRegister('firstName')}
                 />
               </div>
@@ -126,7 +128,7 @@ export default function LoginPage() {
                   render={({ field: { onChange, onBlur, value, ref } }) => (
                     <IMaskInput
                       mask="+{998} 00 000-00-00"
-                      placeholder="Телефон (+998 XX XXX-XX-XX)"
+                      placeholder={t('login.phonePlaceholder')}
                       value={value || ''}
                       onAccept={(val) => onChange(val.replace(/\s|-/g, ''))}
                       onBlur={onBlur}
@@ -144,7 +146,7 @@ export default function LoginPage() {
               <Lock size={18} className="input-icon" />
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Пароль"
+                placeholder={t('login.password')}
                 {...formRegister('password')}
               />
               <button
@@ -161,15 +163,15 @@ export default function LoginPage() {
           {serverError && <div className="login-error">{serverError}</div>}
 
           <button type="submit" className="login-submit" disabled={isLoading}>
-            {isLoading ? 'Загрузка...' : isLogin ? 'Войти' : 'Зарегистрироваться'}
+            {isLoading ? t('common.loading') : isLogin ? t('login.submitLogin') : t('login.submitRegister')}
           </button>
         </form>
 
         <div className="login-footer">
           <span className="login-switch">
-            {isLogin ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}
+            {isLogin ? t('login.noAccount') : t('login.hasAccount')}
             <button onClick={toggleMode}>
-              {isLogin ? 'Зарегистрироваться' : 'Войти'}
+              {isLogin ? t('login.switchRegister') : t('login.switchLogin')}
             </button>
           </span>
         </div>

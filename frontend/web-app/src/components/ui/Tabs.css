@@ -2,6 +2,7 @@
   position: relative;
   border-bottom: 1px solid var(--border);
   background: var(--bg-surface);
+  border-radius: 16px 16px 0 0;
 }
 
 .td-tabs--sticky {
@@ -19,7 +20,7 @@
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 0 var(--space-md);
+  padding: 0 20px;
 }
 
 .td-tabs__track::-webkit-scrollbar {
@@ -36,6 +37,7 @@
   font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
+  flex-shrink: 0;
   transition: color var(--transition-fast);
   border: none;
   background: none;

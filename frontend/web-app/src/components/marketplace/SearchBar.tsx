@@ -1,4 +1,5 @@
 import { Mic, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import './SearchBar.css';
 
 interface ISpeechRecognition {
@@ -29,6 +30,7 @@ export default function SearchBar({
   onSuggestionSelect,
   sticky = false,
 }: SearchBarProps) {
+  const { t } = useTranslation();
   const showSuggestions = value.trim().length > 0 && suggestions.length > 0;
 
   return (
@@ -42,10 +44,10 @@ export default function SearchBar({
           aria-label={placeholder}
         />
 
-        <button type="button" className="search-bar__voice" aria-label="Голосовой поиск" onClick={() => {
+        <button type="button" className="search-bar__voice" aria-label={t('marketplace.voiceSearch')} onClick={() => {
           const SpeechRecognition = (window as unknown as WindowWithSpeech).SpeechRecognition || (window as unknown as WindowWithSpeech).webkitSpeechRecognition;
           if (!SpeechRecognition) {
-            alert("Ваш браузер не поддерживает голосовой ввод");
+            alert(t('marketplace.voiceUnsupported'));
             return;
           }
           const recognition = new SpeechRecognition();

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { ordersApi } from '../api/orders';
 import type { AddToCartRequest, CartItem } from '../api/orders';
+import i18n from '../i18n';
 
 // ═══ Constants ═══
 /** Максимальное количество позиций в guest-корзине (localStorage). */
@@ -173,7 +174,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     const addQty = request.quantity || 1;
 
     if (currentTotal + addQty > GUEST_CART_LIMIT && !existing) {
-      alert(`Максимум ${GUEST_CART_LIMIT} позиций в гостевой корзине. Войдите в аккаунт для большего.`);
+      alert(i18n.t('cart.guestLimit', { limit: GUEST_CART_LIMIT }));
       return;
     }
 
@@ -181,7 +182,7 @@ export const useCartStore = create<CartState>((set, get) => ({
 
     if (existing) {
       if (existing.quantity + addQty > GUEST_CART_LIMIT) {
-        alert(`Максимум ${GUEST_CART_LIMIT} позиций в гостевой корзине.`);
+        alert(i18n.t('cart.guestLimitShort', { limit: GUEST_CART_LIMIT }));
         return;
       }
       newItems = get().localItems.map((item) =>
@@ -231,7 +232,7 @@ export const useCartStore = create<CartState>((set, get) => ({
           })
           .catch((err: unknown) => {
             const error = err as { response?: { data?: { message?: string } } };
-            const message = error.response?.data?.message || 'Не удалось обновить количество';
+            const message = error.response?.data?.message || i18n.t('cart.updateQtyError');
             set({ isLoading: false, error: message });
           });
       }
@@ -310,7 +311,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      const message = error.response?.data?.message || 'Не удалось добавить купон в корзину';
+      const message = error.response?.data?.message || i18n.t('cart.addError');
       set({ isLoading: false, error: message });
       throw err;
     }

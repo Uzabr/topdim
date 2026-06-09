@@ -1,42 +1,46 @@
+import { useMemo } from 'react';
 import { RefreshCw, MessageSquare, Star, Bell } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import './ProfileHelpSection.css';
 
-const COMING_SOON_ITEMS = [
-  {
-    icon: <RefreshCw size={24} />,
-    title: 'Возвраты',
-    description: 'Скоро здесь можно будет запросить возврат и видеть статус.',
-  },
-  {
-    icon: <MessageSquare size={24} />,
-    title: 'Жалобы',
-    description: 'Скоро здесь можно будет сообщить о проблеме с купоном или партнёром.',
-  },
-  {
-    icon: <Star size={24} />,
-    title: 'Отзывы',
-    description: 'Отзывы сейчас находятся на странице купона после использования.',
-  },
-  {
-    icon: <Bell size={24} />,
-    title: 'Уведомления',
-    description: 'Скоро здесь будут важные события по заказам и купонам.',
-  },
-];
-
 export default function ProfileHelpSection() {
+  const { t } = useTranslation();
+
+  const items = useMemo(() => [
+    {
+      icon: <RefreshCw size={24} />,
+      title: t('profile.help.refundsTitle'),
+      description: t('profile.help.refundsDesc'),
+    },
+    {
+      icon: <MessageSquare size={24} />,
+      title: t('profile.help.complaintsTitle'),
+      description: t('profile.help.complaintsDesc'),
+    },
+    {
+      icon: <Star size={24} />,
+      title: t('profile.help.reviewsTitle'),
+      description: t('profile.help.reviewsDesc'),
+    },
+    {
+      icon: <Bell size={24} />,
+      title: t('profile.help.notificationsTitle'),
+      description: t('profile.help.notificationsDesc'),
+    },
+  ], [t]);
+
   return (
     <div className="profile-help">
-      <h3 className="profile-help__title">Помощь и поддержка</h3>
+      <h3 className="profile-help__title">{t('profile.help.title')}</h3>
       <div className="profile-help__grid">
-        {COMING_SOON_ITEMS.map((item) => (
+        {items.map((item) => (
           <div key={item.title} className="profile-help__card glass-card">
             <div className="profile-help__card-icon">{item.icon}</div>
             <div>
               <h4 className="profile-help__card-title">{item.title}</h4>
               <p className="profile-help__card-desc">{item.description}</p>
             </div>
-            <span className="profile-help__badge">Скоро</span>
+            <span className="profile-help__badge">{t('common.soon')}</span>
           </div>
         ))}
       </div>

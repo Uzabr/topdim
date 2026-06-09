@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { favoritesApi } from '../api/favorites';
+import i18n from '../i18n';
 
 interface FavoritesState {
   /** Массив ID купонов в избранном */
@@ -39,8 +40,8 @@ export const useFavoritesStore = create<FavoritesState>()(
           const maxItems = isAuthenticated() ? 50 : 10;
           if (ids.length >= maxItems) {
             const msg = isAuthenticated()
-              ? 'Вы достигли лимита — 50 купонов в избранном. Удалите ненужные, чтобы добавить новые.'
-              : 'Для неавторизованных пользователей лимит — 10 купонов. Войдите в аккаунт, чтобы сохранить до 50!';
+              ? i18n.t('favorites.limitAuth')
+              : i18n.t('favorites.limitGuest');
             set({ showLimitModal: true, limitMessage: msg });
             return;
           }

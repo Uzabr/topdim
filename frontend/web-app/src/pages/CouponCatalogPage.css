@@ -152,10 +152,17 @@
 /* Categories */
 .catalog-categories {
   display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
   overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: var(--space-sm);
   margin-bottom: var(--space-sm);
+  max-width: 100%;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -268,7 +275,15 @@
 @media (max-width: 768px) {
   .catalog-toolbar {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start;
+  }
+
+  .catalog-view-toggle {
+    display: none;
+  }
+
+  .coupon-grid--list {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
 
   .coupon-grid--list .coupon-card {
@@ -280,5 +295,25 @@
     width: 100%;
     min-width: unset;
     aspect-ratio: 16 / 10;
+  }
+}
+
+@media (max-width: 480px) {
+  .coupon-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+
+  .catalog-controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .catalog-search {
+    min-width: 100%;
+  }
+
+  .catalog-hero__title {
+    font-size: 1.5rem;
   }
 }

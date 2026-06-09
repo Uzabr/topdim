@@ -111,12 +111,68 @@
   letter-spacing: 0.03em;
 }
 
-@media (max-width: 480px) {
-  .profile-overview__stats {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-xs);
+@media (max-width: 768px) {
+  .profile-overview__user {
+    align-items: flex-start;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
   }
+
+  .profile-overview__avatar {
+    width: 52px;
+    height: 52px;
+    font-size: 1.35rem;
+  }
+
+  .profile-overview__name {
+    font-size: var(--font-lg);
+    word-break: break-word;
+    line-height: 1.25;
+  }
+
+  .profile-overview__email,
+  .profile-overview__phone {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .profile-overview__warning {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: var(--space-md);
+  }
+
+  .profile-overview__stats {
+    display: flex;
+    flex-wrap: nowrap;
+    grid-template-columns: unset;
+    gap: 8px;
+    margin: 0 -2px;
+    padding-bottom: 2px;
+  }
+
   .profile-overview__stat {
-    padding: var(--space-sm);
+    flex: 0 0 auto;
+    min-width: 100px;
+    padding: var(--space-sm) 10px;
+  }
+
+  .profile-overview__stat-value {
+    font-size: var(--font-lg);
+  }
+
+  .profile-overview__stat-label {
+    font-size: 10px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-overview__user {
+    flex-direction: row;
+  }
+
+  .profile-overview__stat {
+    min-width: 92px;
   }
 }

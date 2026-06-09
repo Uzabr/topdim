@@ -3,6 +3,8 @@
    ═══════════════════════════════════════════ */
 
 .app-footer {
+  flex-shrink: 0;
+  margin-top: auto;
   border-top: 1px solid var(--border);
   background: var(--bg-surface);
 }
@@ -11,7 +13,7 @@
   display: grid;
   grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
   gap: var(--space-xl);
-  padding: var(--space-2xl) var(--space-md);
+  padding-block: var(--space-2xl);
 }
 
 .footer-column h3 {
@@ -106,8 +108,8 @@
 
 .footer-app-badges {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  justify-content: space-between;
 }
 
 .footer-app-badge {
@@ -159,20 +161,12 @@
 /* ═══ Responsive ═══ */
 @media (max-width: 1024px) {
   .footer-content {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .footer-content {
     grid-template-columns: 1fr;
     gap: var(--space-md);
-    padding: var(--space-lg) var(--space-md);
+    padding-block: var(--space-lg);
   }
 
-  /* На мобилке оставляем только бренд + ссылки для пользователей */
-  .footer-column:nth-child(3),
-  .footer-column:nth-child(4) {
+  .footer-column:not(.footer-brand) {
     display: none;
   }
 
@@ -183,9 +177,16 @@
   .footer-desc {
     max-width: 100%;
     font-size: var(--font-xs);
+    margin-bottom: var(--space-sm);
   }
 
-  .footer-apps {
+  .footer-bottom {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-footer {
     display: none;
   }
 }

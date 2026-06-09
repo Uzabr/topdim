@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Search, SlidersHorizontal, X, LayoutGrid, List, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
 import { couponsApi } from '../api/coupons';
 import CouponCard from '../components/coupon/CouponCard';
 import Select from '../components/ui/Select';
 import { mapCouponOfferToCardData } from '../utils/couponCardMapper';
+import { localizedName } from '../utils/localizedText';
 import './CouponCatalogPage.css';
 
 const CategoryIcon = ({ slug }: { slug?: string }) => {
@@ -19,16 +21,20 @@ const CategoryIcon = ({ slug }: { slug?: string }) => {
   }
 };
 
-const SORT_OPTIONS = [
-  { id: 'popular', label: 'Популярные' },
-  { id: 'new', label: 'Новые' },
-  { id: 'price_asc', label: 'Сначала дешёвые' },
-  { id: 'price_desc', label: 'Сначала дорогие' },
-  { id: 'discount', label: 'По скидке' },
-];
-
 export default function CouponCatalogPage() {
+  const { t, i18n } = useTranslation();
   const [search, setSearch] = useState('');
+
+  const sortOptions = useMemo(
+    () => [
+      { id: 'popular', label: t('catalog.sortPopular') },
+      { id: 'new', label: t('catalog.sortNew') },
+      { id: 'price_asc', label: t('catalog.sortPriceAsc') },
+      { id: 'price_desc', label: t('catalog.sortPriceDesc') },
+      { id: 'discount', label: t('catalog.sortDiscount') },
+    ],
+    [t, i18n.language],
+  );
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState('popular');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -72,11 +78,11 @@ export default function CouponCatalogPage() {
         <div className="catalog-hero__inner container">
           <div className="catalog-hero__eyebrow">
             <Sparkles size={16} />
-            Все скидки города
+            {t('catalog.eyebrow')}
           </div>
-          <h1 className="catalog-hero__title">Каталог купонов</h1>
+          <h1 className="catalog-hero__title">{t('catalog.title')}</h1>
           <p className="catalog-hero__subtitle">
-            Откройте для себя лучшие предложения от проверенных партнёров
+            {t('catalog.subtitle')}
           </p>
         </div>
       </div>
@@ -87,7 +93,7 @@ export default function CouponCatalogPage() {
           <Search size={18} />
           <input
             type="text"
-            placeholder="Поиск купонов..."
+            placeholder={t('catalog.searchPlaceholder')}
             value={search}
             onChange={(e) => {
               const val = e.target.value;
@@ -115,7 +121,7 @@ export default function CouponCatalogPage() {
         <div className="catalog-toolbar">
           <div className="catalog-sort">
             <Select
-              options={SORT_OPTIONS}
+              options={sortOptions}
               value={sortBy}
               onChange={(val) => setSortBy(val as string)}
               triggerIcon={<SlidersHorizontal size={15} />}
@@ -127,14 +133,14 @@ export default function CouponCatalogPage() {
             <button
               className={viewMode === 'grid' ? 'active' : ''}
               onClick={() => setViewMode('grid')}
-              aria-label="Сетка"
+              aria-label={t('catalog.viewGrid')}
             >
               <LayoutGrid size={16} />
             </button>
             <button
               className={viewMode === 'list' ? 'active' : ''}
               onClick={() => setViewMode('list')}
-              aria-label="Список"
+              aria-label={t('catalog.viewList')}
             >
               <List size={16} />
             </button>
@@ -148,7 +154,7 @@ export default function CouponCatalogPage() {
           className={`filter-chip ${activeCategory === null ? 'filter-chip--active' : ''}`}
           onClick={() => { setActiveCategory(null); setPage(0); }}
         >
-          Все
+          {t('common.all')}
         </button>
         {!isCategoriesLoading && !isCategoriesError && categories.map((cat) => (
           <button
@@ -156,7 +162,7 @@ export default function CouponCatalogPage() {
             className={`filter-chip ${activeCategory === cat.id ? 'filter-chip--active' : ''}`}
             onClick={() => { setActiveCategory(cat.id); setPage(0); }}
           >
-            <CategoryIcon slug={cat.slug} /> {cat.name}
+            <CategoryIcon slug={cat.slug} /> {localizedName(cat, i18n.language)}
           </button>
         ))}
       </div>
@@ -164,7 +170,7 @@ export default function CouponCatalogPage() {
       {/* Result count */}
       <div className="catalog-meta container">
         <span className="catalog-meta__count">
-          Найдено <strong>{totalElements}</strong> купонов
+          {t('catalog.found', { count: totalElements })}
         </span>
       </div>
 
@@ -179,14 +185,14 @@ export default function CouponCatalogPage() {
         ) : isError ? (
           <div className="catalog-empty">
             <span className="catalog-empty__icon">!</span>
-            <h3>Не удалось загрузить купоны</h3>
-            <p>Попробуйте обновить страницу чуть позже</p>
+            <h3>{t('catalog.loadErrorTitle')}</h3>
+            <p>{t('catalog.loadErrorDesc')}</p>
           </div>
         ) : coupons.length === 0 ? (
           <div className="catalog-empty">
             <span className="catalog-empty__icon">🔍</span>
-            <h3>Купоны не найдены</h3>
-            <p>Попробуйте изменить фильтры</p>
+            <h3>{t('catalog.emptyTitle')}</h3>
+            <p>{t('catalog.emptyDesc')}</p>
           </div>
         ) : (
           <div className={`coupon-grid ${viewMode === 'list' ? 'coupon-grid--list' : ''}`}>
@@ -204,7 +210,7 @@ export default function CouponCatalogPage() {
               onClick={() => setPage(p => p - 1)}
               className="pagination-btn"
             >
-              ← Назад
+              ← {t('common.back')}
             </button>
             <span className="pagination-info">
               {page + 1} / {totalPages}
@@ -214,7 +220,7 @@ export default function CouponCatalogPage() {
               onClick={() => setPage(p => p + 1)}
               className="pagination-btn"
             >
-              Далее →
+              {t('common.next')} →
             </button>
           </div>
         )}
