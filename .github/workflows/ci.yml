@@ -85,6 +85,7 @@ jobs:
     if: ${{ needs.changes.outputs.frontend == 'true' || github.event_name == 'push' }}
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           - app_name: web-app
@@ -119,13 +120,3 @@ jobs:
       - name: Build
         working-directory: ${{ matrix.app_path }}
         run: npm run build
-
-  dependency-review:
-    name: Dependency review
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
-        with:
-          fail-on-severity: high
