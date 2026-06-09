@@ -85,6 +85,7 @@ jobs:
     if: ${{ needs.changes.outputs.frontend == 'true' || github.event_name == 'push' }}
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           - app_name: web-app
