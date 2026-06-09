@@ -53,6 +53,8 @@ export default function Header() {
     location.pathname.endsWith(path) || location.pathname === lp(path);
 
   useEffect(() => {
+    // Закрываем мобильное меню при навигации — синхронизация UI с роутом.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
