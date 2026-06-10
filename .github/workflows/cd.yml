@@ -1,20 +1,38 @@
 name: CD
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    branches: [main]
-    types: [completed]
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type 'deploy' to confirm a production deploy from main"
+        required: true
+        default: ""
 
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/uzabr/topdim
 
 jobs:
+  guard:
+    name: Guard (main + confirm)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch and confirmation
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "::error::Deploy is allowed only from main (got ${{ github.ref }})"
+            exit 1
+          fi
+          if [ "${{ inputs.confirm }}" != "deploy" ]; then
+            echo "::error::Type 'deploy' in the confirm field to proceed"
+            exit 1
+          fi
+          echo "Guard passed: deploying from main."
+
   build-backend:
     name: Build backend (${{ matrix.service }})
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: guard
     permissions:
       contents: read
       packages: write
@@ -71,7 +89,7 @@ jobs:
   build-frontend:
     name: Build frontend (${{ matrix.service }})
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: guard
     permissions:
       contents: read
       packages: write
