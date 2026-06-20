@@ -1,0 +1,9 @@
+# gitleaks baseline — known historical findings that are already remediated.
+# Fingerprint format: <commit>:<file>:<rule>:<line>
+#
+# The weak default JWT secret that used to sit in application.yml has been
+# REMOVED from current code (now `${JWT_SECRET}`, fail-fast). These entries
+# acknowledge the old commits where it still lives in git history so the
+# scanner stays green. The prod JWT_SECRET was rotated.
+19d153ae47c22ff393df8bb15dce88fa8beb088b:infrastructure/api-gateway/src/main/resources/application.yml:generic-api-key:75
+19d153ae47c22ff393df8bb15dce88fa8beb088b:services/auth-service/src/main/resources/application.yml:generic-api-key:34
