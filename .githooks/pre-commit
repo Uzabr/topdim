@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Pre-commit: block secrets from being committed (gitleaks).
+#
+# Enable once per clone:
+#   git config core.hooksPath .githooks
+#
+# Bypass in a true emergency:  git commit --no-verify
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "⚠️  gitleaks не установлен — проверка секретов пропущена."
+  echo "    Установи: brew install gitleaks  (или https://github.com/gitleaks/gitleaks/releases)"
+  exit 0
+fi
+
+gitleaks protect --staged --redact --no-banner
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "✋ gitleaks нашёл секрет в staged-изменениях — коммит остановлен."
+  echo "   • Убери секрет из кода, вынеси значение в env (EasyPanel / GitHub Secrets / локальный .env)."
+  echo "   • Ложное срабатывание? добавь путь/правило в .gitleaks.toml → [allowlist]."
+  echo "   • Аварийный обход: git commit --no-verify"
+  exit 1
+fi
+exit 0
