@@ -12,4 +12,10 @@ paths = [
   '''.*Tests\.java$''',
   '''docs/API_CONTRACT\.md$''', # example tokens in API documentation
   '''test-map\.html$''',        # local 2GIS map sandbox
+  # 2GIS Maps API keys are PUBLIC frontend keys (shipped in the browser bundle);
+  # the real protection is domain/referrer restriction in the 2GIS console, not
+  # source-control secrecy. Allowlisted so they don't trip the scanner.
+  '''frontend/web-app/src/components/map/TwoGisMap\.tsx$''',
+  '''frontend/web-app/src/pages/BazaarMapPage\.tsx$''',
+  '''frontend/web-app/src/pages/CouponDetailPage\.tsx$''',
 ]
