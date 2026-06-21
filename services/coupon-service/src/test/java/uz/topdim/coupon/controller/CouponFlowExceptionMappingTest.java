@@ -55,8 +55,8 @@ class CouponFlowExceptionMappingTest {
         adminMvc = MockMvcBuilders.standaloneSetup(adminCouponController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
-        // Set botApiKey to empty string (dev-mode bypass) since @Value isn't processed in standalone MockMvc
-        ReflectionTestUtils.setField(botWebhookController, "botApiKey", "");
+        // Set a valid bot API key (L4: empty key is now fail-closed)
+        ReflectionTestUtils.setField(botWebhookController, "botApiKey", "test-bot-key");
         botMvc = MockMvcBuilders.standaloneSetup(botWebhookController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -103,7 +103,8 @@ class CouponFlowExceptionMappingTest {
         when(couponOfferService.approveByMerchant(12L))
                 .thenThrow(new IllegalStateException("Нельзя публиковать купон без адреса в primary location мерчанта"));
 
-        botMvc.perform(post("/api/v1/bot/coupons/12/approve"))
+        botMvc.perform(post("/api/v1/bot/coupons/12/approve")
+                        .header("X-Bot-Api-Key", "test-bot-key"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message")

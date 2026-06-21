@@ -32,14 +32,17 @@ public class BotWebhookController {
 
     /**
      * Проверяет API-ключ бота.
-     * @throws ResponseStatusException 401 если ключ невалидный
+     * Fail-closed: если ключ не настроен — отклоняем (а не пропускаем).
+     * Constant-time сравнение для защиты от timing-атак.
+     * @throws ResponseStatusException 401 если ключ невалидный или не настроен
      */
     private void validateBotApiKey(String apiKey) {
-        if (botApiKey.isEmpty()) {
-            // Ключ не настроен — пропускаем (dev-режим)
-            return;
+        if (botApiKey == null || botApiKey.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Bot API key is not configured");
         }
-        if (apiKey == null || !botApiKey.equals(apiKey)) {
+        if (apiKey == null || !java.security.MessageDigest.isEqual(
+                botApiKey.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                apiKey.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid bot API key");
         }
     }

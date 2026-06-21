@@ -129,6 +129,67 @@ class JwtAuthenticationFilterTest {
         verify(gatewayFilterChain, never()).filter(any());
     }
 
+    // ==================== L3: prefix-matching boundary ====================
+
+    @Test
+    @DisplayName("L3: /api/v1/couponsX не считается open endpoint (suffix не от segment boundary)")
+    void prefixBoundary_pathWithTrailingChars_requiresAuth() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/api/v1/couponsXYZ").build()
+        );
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(gatewayFilterChain, never()).filter(any());
+    }
+
+    @Test
+    @DisplayName("L3: /api/v1/coupons/123 всё ещё считается open endpoint")
+    void prefixBoundary_pathWithSubpath_isOpen() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/api/v1/coupons/123").build()
+        );
+
+        when(gatewayFilterChain.filter(any())).thenReturn(Mono.empty());
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        verify(gatewayFilterChain).filter(any());
+    }
+
+    @Test
+    @DisplayName("L3: /api/v1/coupons (точное совпадение) считается open endpoint")
+    void prefixBoundary_exactMatch_isOpen() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/api/v1/coupons").build()
+        );
+
+        when(gatewayFilterChain.filter(any())).thenReturn(Mono.empty());
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        verify(gatewayFilterChain).filter(any());
+    }
+
+    @Test
+    @DisplayName("L3: /api/v1/bot/coupons/1/approve считается open endpoint (bot webhook)")
+    void prefixBoundary_botWebhookPath_isOpen() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/bot/coupons/1/approve").build()
+        );
+
+        when(gatewayFilterChain.filter(any())).thenReturn(Mono.empty());
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        verify(gatewayFilterChain).filter(any());
+    }
+
     private String createToken(String subject, String role, String email, String jti, long securityVersion) {
         SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET));
         return Jwts.builder()
