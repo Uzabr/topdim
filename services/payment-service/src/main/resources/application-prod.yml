@@ -5,3 +5,8 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+# M3: понижаем логирование до INFO в проде
+logging:
+  level:
+    uz.topdim: INFO
