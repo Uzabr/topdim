@@ -63,7 +63,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/bazaars",
             "/api/v1/shops",
             "/api/v1/partners/applications",
-            "/api/v1/bot/",
+            "/api/v1/bot",
             "/eureka"
     );
 
@@ -72,7 +72,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "GUEST", "USER", "PARTNER", "MODERATOR", "ADMIN", "SUPER_ADMIN"
     );
 
-    /** Роли, которым разрешён доступ к /api/v1/admin/**. */
+    /**
+     * Роли, которым разрешён доступ к /api/v1/admin/** на уровне gateway.
+     * MODERATOR включён, т.к. coupon-service допускает модераторов к /api/v1/admin/coupons/**.
+     * Downstream-сервисы (identity, bazaar) дополнительно ограничивают доступ через @PreAuthorize.
+     */
     private static final Set<String> ADMIN_ROLES = Set.of("ADMIN", "SUPER_ADMIN", "MODERATOR");
 
     public JwtAuthenticationFilter(ReactiveTokenValidationService tokenValidationService) {
@@ -197,7 +201,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return "GET".equalsIgnoreCase(method) && path.startsWith("/api/v1/reviews/coupon");
         }
 
-        return OPEN_ENDPOINTS.stream().anyMatch(path::startsWith);
+        return OPEN_ENDPOINTS.stream().anyMatch(prefix ->
+                path.equals(prefix) || path.startsWith(prefix + "/"));
     }
 
     @Override
