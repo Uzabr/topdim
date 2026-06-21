@@ -64,8 +64,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/shops",
             "/api/v1/partners/applications",
             "/api/v1/bot/",
-            "/eureka",
-            "/actuator"
+            "/eureka"
     );
 
     /** Допустимые значения ролей — строгий whitelist. */
