@@ -68,7 +68,7 @@ class JwtAuthenticationFilterTest {
                         .build()
         );
 
-        when(tokenValidationService.isTokenInvalid("jti-123", "7", 2L)).thenReturn(Mono.just(false));
+        when(tokenValidationService.isTokenInvalid("jti-123", "7", 2L, false)).thenReturn(Mono.just(false));
         when(gatewayFilterChain.filter(any())).thenReturn(Mono.empty());
 
         jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
@@ -95,7 +95,7 @@ class JwtAuthenticationFilterTest {
                         .build()
         );
 
-        when(tokenValidationService.isTokenInvalid("jti-456", "7", 1L)).thenReturn(Mono.just(false));
+        when(tokenValidationService.isTokenInvalid("jti-456", "7", 1L, false)).thenReturn(Mono.just(false));
         when(gatewayFilterChain.filter(any())).thenReturn(Mono.empty());
 
         jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
@@ -121,7 +121,7 @@ class JwtAuthenticationFilterTest {
                         .build()
         );
 
-        when(tokenValidationService.isTokenInvalid("jti-123", "7", 2L)).thenReturn(Mono.just(true));
+        when(tokenValidationService.isTokenInvalid("jti-123", "7", 2L, false)).thenReturn(Mono.just(true));
 
         jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
 

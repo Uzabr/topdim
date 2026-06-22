@@ -149,8 +149,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         // Реактивная проверка через Redis: jti blacklist + securityVersion
+        // M6: fail-closed для привилегированных путей при недоступности Redis
+        boolean privilegedPath = path.startsWith("/api/v1/admin/") || path.startsWith("/api/v1/super/");
         ServerWebExchange finalExchange = exchange;
-        return tokenValidationService.isTokenInvalid(jti, userId, securityVersion)
+        return tokenValidationService.isTokenInvalid(jti, userId, securityVersion, privilegedPath)
                 .flatMap(invalid -> {
                     if (invalid) {
                         log.warn("Token invalidated via Redis for userId: {}, jti: {}", userId, jti);
