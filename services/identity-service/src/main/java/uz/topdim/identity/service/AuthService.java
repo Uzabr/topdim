@@ -45,12 +45,10 @@ public class AuthService {
         String normalizedEmail = normalizeEmail(request.getEmail());
         String normalizedPhone = normalizePhone(request.getPhone());
 
-        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
-            throw new AuthException("Email уже зарегистрирован");
-        }
-
-        if (normalizedPhone != null && userRepository.existsByPhone(normalizedPhone)) {
-            throw new AuthException("Телефон уже зарегистрирован");
+        // M5: единый нейтральный ответ — не раскрываем, какое именно поле занято (anti-enumeration)
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)
+                || (normalizedPhone != null && userRepository.existsByPhone(normalizedPhone))) {
+            throw new AuthException("Не удалось зарегистрироваться с указанными данными");
         }
 
         User user = User.builder()
