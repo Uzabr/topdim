@@ -4,6 +4,29 @@
 (фаервол, JWT в проде, RabbitMQ, H1), CI/CD и защита от утечки секретов уже
 закрыты вручную/отдельными PR — здесь только то, что чинится в коде.
 
+## Статус (обновлено 2026-06-21)
+
+| Тикет | Статус |
+|---|---|
+| C1 — убрать дефолт `jwt.secret` | ✅ сделано (PR #42), в проде |
+| M2 — actuator наружу | ⚠️ частично (PR #44): health-детали скрыты (`show-details: never`), info/env/beans/prometheus наружу = 404. **НО `/actuator/metrics` всё ещё 200 снаружи** — см. follow-up ниже |
+| M3 — DEBUG-логи в проде | ✅ сделано (PR #44), в проде |
+| L3, L4, L5, L6 — authz consistency | ✅ сделано (PR #46), в проде (L4 заодно закрыл H2) |
+| H3 — XFF rate-limit | ✅ сделано (PR #47), в проде |
+| **M1** — дефолт пароля БД | 🔲 осталось |
+| **M5** — user enumeration | 🔲 осталось |
+| **M6** — Redis fail-open для admin | 🔲 осталось |
+| **M4** — токены в localStorage → cookie | 🔲 осталось (большой) |
+
+### Follow-up M2-metrics (новый)
+`/actuator/metrics` отдаёт **200 снаружи** на `api.sizbiz.uz`. Причина: собственный
+actuator gateway обслуживается **вне** `JwtAuthenticationFilter`, поэтому удаление
+`/actuator` из `OPEN_ENDPOINTS` его не блокирует. **Фикс:** у `api-gateway` убрать
+`metrics` из `management.endpoints.web.exposure.include` (оставить `health`; его
+`/actuator/prometheus` и так 404 — registry нет). Либо вынести actuator на
+`management.server.port` (внутренняя сеть), либо закрыть `/actuator/**` на traefik
+для `api.sizbiz.uz`. Ветка: `fix/actuator-metrics-internal`.
+
 ## Правила выполнения
 
 - Ветка от свежего `main`: `git checkout main && git pull` → `git checkout -b fix/<...>`.
