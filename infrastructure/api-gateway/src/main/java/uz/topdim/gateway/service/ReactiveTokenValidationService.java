@@ -15,9 +15,15 @@ import reactor.core.publisher.Mono;
  *   <li>securityVersion из JWT совпадает с текущим в Redis — для block/change-role/change-password</li>
  * </ol>
  *
- * <p>Если Redis недоступен — пропускаем (fail-open), чтобы не ломать весь сервис.
- * Это осознанный trade-off: при недоступности Redis заблокированные токены
- * продолжат работать до истечения TTL (обычно 15 мин).
+ * <p>Стратегия при недоступности Redis (M6):
+ * <ul>
+ *   <li>Привилегированные пути (/api/v1/admin/**, /api/v1/super/**) — fail-closed:
+ *       при ошибке Redis считаем токен невалидным (401). Это гарантирует,
+ *       что заблокированный админ не получит доступ при сбое Redis.</li>
+ *   <li>Обычные пути — fail-open: при ошибке Redis пропускаем запрос,
+ *       чтобы не ломать весь сервис. Заблокированные токены продолжат
+ *       работать до истечения TTL (обычно 15 мин).</li>
+ * </ul>
  */
 @Service
 public class ReactiveTokenValidationService {
@@ -35,13 +41,18 @@ public class ReactiveTokenValidationService {
 
     /**
      * Проверяет, что jti не в blacklist.
+     * @param privileged true для admin/super путей (fail-closed при ошибке Redis)
      * @return true если токен заблокирован (должен быть отклонён)
      */
-    public Mono<Boolean> isJtiBlacklisted(String jti) {
+    public Mono<Boolean> isJtiBlacklisted(String jti, boolean privileged) {
         if (jti == null) return Mono.just(false);
 
         return redisTemplate.hasKey(BLACKLIST_PREFIX + jti)
                 .onErrorResume(e -> {
+                    if (privileged) {
+                        log.error("Redis unavailable for jti blacklist check on privileged path, fail-CLOSED: {}", e.getMessage());
+                        return Mono.just(true);
+                    }
                     log.warn("Redis unavailable for jti blacklist check, fail-open: {}", e.getMessage());
                     return Mono.just(false);
                 });
@@ -49,9 +60,10 @@ public class ReactiveTokenValidationService {
 
     /**
      * Проверяет, что securityVersion из JWT актуален.
+     * @param privileged true для admin/super путей (fail-closed при ошибке Redis)
      * @return true если токен устарел (должен быть отклонён)
      */
-    public Mono<Boolean> isSecurityVersionStale(String userId, Long tokenSecurityVersion) {
+    public Mono<Boolean> isSecurityVersionStale(String userId, Long tokenSecurityVersion, boolean privileged) {
         if (userId == null || tokenSecurityVersion == null) return Mono.just(false);
 
         return redisTemplate.opsForValue().get(SECURITY_VERSION_PREFIX + userId)
@@ -66,6 +78,10 @@ public class ReactiveTokenValidationService {
                 })
                 .defaultIfEmpty(false)
                 .onErrorResume(e -> {
+                    if (privileged) {
+                        log.error("Redis unavailable for securityVersion check on privileged path, fail-CLOSED: {}", e.getMessage());
+                        return Mono.just(true);
+                    }
                     log.warn("Redis unavailable for securityVersion check, fail-open: {}", e.getMessage());
                     return Mono.just(false);
                 });
@@ -73,11 +89,12 @@ public class ReactiveTokenValidationService {
 
     /**
      * Комбинированная проверка: jti не в blacklist И securityVersion актуален.
+     * @param privileged true для admin/super путей (fail-closed при ошибке Redis)
      * @return true если токен НЕвалиден (должен быть отклонён)
      */
-    public Mono<Boolean> isTokenInvalid(String jti, String userId, Long securityVersion) {
-        Mono<Boolean> blacklisted = isJtiBlacklisted(jti);
-        Mono<Boolean> stale = isSecurityVersionStale(userId, securityVersion);
+    public Mono<Boolean> isTokenInvalid(String jti, String userId, Long securityVersion, boolean privileged) {
+        Mono<Boolean> blacklisted = isJtiBlacklisted(jti, privileged);
+        Mono<Boolean> stale = isSecurityVersionStale(userId, securityVersion, privileged);
 
         return Mono.zip(blacklisted, stale)
                 .map(tuple -> tuple.getT1() || tuple.getT2());

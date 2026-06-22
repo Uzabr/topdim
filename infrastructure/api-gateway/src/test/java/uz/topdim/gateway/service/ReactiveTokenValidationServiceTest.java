@@ -11,48 +11,111 @@ import org.springframework.data.redis.core.ReactiveValueOperations;
 import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+/**
+ * M6: Тесты fail-closed/fail-open поведения ReactiveTokenValidationService
+ * при недоступности Redis.
+ */
 @ExtendWith(MockitoExtension.class)
 class ReactiveTokenValidationServiceTest {
 
     @Mock private ReactiveStringRedisTemplate redisTemplate;
-    @Mock private ReactiveValueOperations<String, String> valueOperations;
+    @Mock private ReactiveValueOperations<String, String> valueOps;
 
     @InjectMocks
-    private ReactiveTokenValidationService tokenValidationService;
+    private ReactiveTokenValidationService service;
+
+    // --- isJtiBlacklisted ---
 
     @Test
-    @DisplayName("isJtiBlacklisted: при ошибке Redis сервис работает fail-open")
-    void isJtiBlacklisted_onRedisFailure_returnsFalse() {
-        when(redisTemplate.hasKey("token:blacklist:jti-1"))
-                .thenReturn(Mono.error(new RuntimeException("redis down")));
+    @DisplayName("M6: Redis error + privileged path → fail-CLOSED (token считается blacklisted)")
+    void jtiBlacklist_redisError_privileged_failClosed() {
+        when(redisTemplate.hasKey(anyString())).thenReturn(Mono.error(new RuntimeException("Redis down")));
 
-        Boolean result = tokenValidationService.isJtiBlacklisted("jti-1").block();
+        Boolean result = service.isJtiBlacklisted("jti-123", true).block();
+
+        assertThat(result).isTrue(); // fail-closed: считаем заблокированным
+    }
+
+    @Test
+    @DisplayName("M6: Redis error + обычный путь → fail-OPEN (token пропускается)")
+    void jtiBlacklist_redisError_regular_failOpen() {
+        when(redisTemplate.hasKey(anyString())).thenReturn(Mono.error(new RuntimeException("Redis down")));
+
+        Boolean result = service.isJtiBlacklisted("jti-123", false).block();
+
+        assertThat(result).isFalse(); // fail-open: пропускаем
+    }
+
+    @Test
+    @DisplayName("M6: Redis OK + jti в blacklist → true (заблокирован)")
+    void jtiBlacklist_redisOk_blacklisted() {
+        when(redisTemplate.hasKey("token:blacklist:jti-123")).thenReturn(Mono.just(true));
+
+        Boolean result = service.isJtiBlacklisted("jti-123", false).block();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("M6: Redis OK + jti не в blacklist → false (не заблокирован)")
+    void jtiBlacklist_redisOk_notBlacklisted() {
+        when(redisTemplate.hasKey("token:blacklist:jti-456")).thenReturn(Mono.just(false));
+
+        Boolean result = service.isJtiBlacklisted("jti-456", false).block();
 
         assertThat(result).isFalse();
     }
 
+    // --- isSecurityVersionStale ---
+
     @Test
-    @DisplayName("isSecurityVersionStale: токен устарел, если версия в Redis выше")
-    void isSecurityVersionStale_whenRedisVersionIsHigher_returnsTrue() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("user:security-version:42")).thenReturn(Mono.just("5"));
+    @DisplayName("M6: Redis error + privileged path → fail-CLOSED (securityVersion считается stale)")
+    void securityVersion_redisError_privileged_failClosed() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(valueOps.get(anyString())).thenReturn(Mono.error(new RuntimeException("Redis down")));
 
-        Boolean result = tokenValidationService.isSecurityVersionStale("42", 3L).block();
+        Boolean result = service.isSecurityVersionStale("user-1", 5L, true).block();
 
-        assertThat(result).isTrue();
+        assertThat(result).isTrue(); // fail-closed
     }
 
     @Test
-    @DisplayName("isTokenInvalid: blacklisted или stale token отклоняется")
-    void isTokenInvalid_whenAnyCheckFails_returnsTrue() {
-        when(redisTemplate.hasKey("token:blacklist:jti-1")).thenReturn(Mono.just(false));
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("user:security-version:42")).thenReturn(Mono.just("7"));
+    @DisplayName("M6: Redis error + обычный путь → fail-OPEN (securityVersion не считается stale)")
+    void securityVersion_redisError_regular_failOpen() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(valueOps.get(anyString())).thenReturn(Mono.error(new RuntimeException("Redis down")));
 
-        Boolean result = tokenValidationService.isTokenInvalid("jti-1", "42", 6L).block();
+        Boolean result = service.isSecurityVersionStale("user-1", 5L, false).block();
 
-        assertThat(result).isTrue();
+        assertThat(result).isFalse(); // fail-open
+    }
+
+    // --- isTokenInvalid (комбинированная) ---
+
+    @Test
+    @DisplayName("M6: Redis down + привилегированный путь → токен считается невалидным")
+    void isTokenInvalid_redisDown_privileged_tokenInvalid() {
+        when(redisTemplate.hasKey(anyString())).thenReturn(Mono.error(new RuntimeException("Redis down")));
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(valueOps.get(anyString())).thenReturn(Mono.error(new RuntimeException("Redis down")));
+
+        Boolean result = service.isTokenInvalid("jti-1", "user-1", 5L, true).block();
+
+        assertThat(result).isTrue(); // fail-closed для admin/super
+    }
+
+    @Test
+    @DisplayName("M6: Redis down + обычный путь → токен пропущен (fail-open)")
+    void isTokenInvalid_redisDown_regular_tokenValid() {
+        when(redisTemplate.hasKey(anyString())).thenReturn(Mono.error(new RuntimeException("Redis down")));
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(valueOps.get(anyString())).thenReturn(Mono.error(new RuntimeException("Redis down")));
+
+        Boolean result = service.isTokenInvalid("jti-1", "user-1", 5L, false).block();
+
+        assertThat(result).isFalse(); // fail-open для обычных путей
     }
 }
