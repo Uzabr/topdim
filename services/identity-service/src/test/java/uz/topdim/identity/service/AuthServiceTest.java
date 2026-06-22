@@ -117,8 +117,8 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Регистрация: дубликат телефона блокирует создание пользователя")
-    void register_duplicatePhone_throws() {
+    @DisplayName("M5: дубликат телефона → нейтральное сообщение (не раскрывает что именно занято)")
+    void register_duplicatePhone_throwsNeutralMessage() {
         RegisterRequest request = new RegisterRequest();
         request.setEmail("user@topdim.uz");
         request.setPhone("+998901234567");
@@ -130,9 +130,28 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(AuthException.class)
-                .hasMessageContaining("Телефон уже зарегистрирован");
+                .hasMessage("Не удалось зарегистрироваться с указанными данными");
 
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("M5: дубликат email → то же нейтральное сообщение (anti-enumeration)")
+    void register_duplicateEmail_throwsSameNeutralMessage() {
+        RegisterRequest request = new RegisterRequest();
+        request.setEmail("existing@topdim.uz");
+        request.setPhone("+998900000000");
+        request.setPassword("SafePass123!");
+        request.setFirstName("Ali");
+
+        when(userRepository.existsByEmailIgnoreCase("existing@topdim.uz")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(AuthException.class)
+                .hasMessage("Не удалось зарегистрироваться с указанными данными");
+
+        verify(userRepository, never()).save(any(User.class));
+        // Phone check should not even be called — short-circuit
     }
 
     @Test
