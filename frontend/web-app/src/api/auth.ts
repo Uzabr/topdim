@@ -26,10 +26,10 @@ export interface UserDto {
 
 export interface AuthResponse {
   accessToken: string;
-  refreshToken: string;
   tokenType: string;
   expiresIn: number;
   user: UserDto;
+  // M4: refreshToken больше не в JSON body — передаётся через httpOnly cookie
 }
 
 export interface UpdateProfileRequest {
@@ -46,11 +46,13 @@ export const authApi = {
   login: (data: LoginRequest) =>
     apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/login', data),
 
-  refresh: (refreshToken: string) =>
-    apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/refresh', { refreshToken }),
+  // M4: POST без body — refreshToken приходит из httpOnly cookie
+  refresh: () =>
+    apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/refresh'),
 
-  logout: (refreshToken: string) =>
-    apiClient.post<ApiResponse<void>>('/api/v1/auth/logout', { refreshToken }),
+  // M4: POST без body — refreshToken приходит из httpOnly cookie
+  logout: () =>
+    apiClient.post<ApiResponse<void>>('/api/v1/auth/logout'),
 
   guestAuth: (data: { phone: string; name: string }) =>
     apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/guest', data),

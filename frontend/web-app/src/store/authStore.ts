@@ -24,9 +24,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true });
     try {
       const response = await authApi.login(data);
-      const { accessToken, refreshToken, user } = response.data.data;
+      const { accessToken, user } = response.data.data;
+      // M4: refreshToken now in httpOnly cookie (set by backend), NOT in localStorage
       localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
       set({ user, isAuthenticated: true, isLoading: false });
       // Sync guest cart → backend and switch to auth mode
@@ -41,9 +41,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true });
     try {
       const response = await authApi.register(data);
-      const { accessToken, refreshToken, user } = response.data.data;
+      const { accessToken, user } = response.data.data;
+      // M4: refreshToken now in httpOnly cookie (set by backend), NOT in localStorage
       localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
       set({ user, isAuthenticated: true, isLoading: false });
       // Sync guest cart → backend and switch to auth mode
@@ -55,12 +55,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (refreshToken) {
-      authApi.logout(refreshToken).catch(() => {});
-    }
+    // M4: POST /logout без body — cookie удаляется бэком через Set-Cookie Max-Age=0
+    authApi.logout().catch(() => {});
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     set({ user: null, isAuthenticated: false });
     // Switch cart back to guest mode
