@@ -36,14 +36,15 @@ export const LoginPage = () => {
     setLoading(true);
     try {
       const { data } = await api.post('/api/v1/auth/login', values);
-      const { accessToken, refreshToken, user } = data.data;
+      const { accessToken, user } = data.data;
 
       if (!ALLOWED_ROLES.includes(user.role)) {
         message.error('У вас нет прав для доступа к админ-панели.');
         return;
       }
 
-      login(accessToken, refreshToken, user);
+      // M4: refreshToken теперь в httpOnly cookie — не передаём в store
+      login(accessToken, user);
       message.success(`Добро пожаловать, ${user.firstName}!`);
       navigate('/dashboard');
     } catch (err: unknown) {
@@ -57,7 +58,7 @@ export const LoginPage = () => {
   // ⚠️ DEMO: Вход без бэкенда
   const demoLogin = (role: keyof typeof DEMO_USERS) => {
     const user = DEMO_USERS[role];
-    login('demo-token-' + role, 'demo-refresh-' + role, user);
+    login('demo-token-' + role, user);
     message.success(`Демо-вход: ${user.firstName} (${role})`);
     navigate('/dashboard');
   };

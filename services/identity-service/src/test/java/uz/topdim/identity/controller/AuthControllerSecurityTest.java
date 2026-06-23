@@ -83,18 +83,34 @@ class AuthControllerSecurityTest {
     }
 
     @Test
-    @DisplayName("logout: пустой refresh token отклоняется валидацией")
-    void logout_blankRefreshToken_returnsBadRequest() throws Exception {
+    @DisplayName("M4: logout без cookie — вызывает service с null refreshToken")
+    void logout_withoutCookie_callsServiceWithNullRefreshToken() throws Exception {
         mockMvc.perform(post("/api/v1/auth/logout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "refreshToken": ""
-                                }
-                                """))
-                .andExpect(status().isBadRequest());
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
 
-        verify(authService, never()).logout(any(), any());
+        verify(authService).logout(any(), eq(null));
+    }
+
+    @Test
+    @DisplayName("M4: logout с refreshToken cookie — вызывает service с cookie значением")
+    void logout_withCookie_passesRefreshTokenFromCookie() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", "rt-cookie-value"))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(authService).logout(any(), eq("rt-cookie-value"));
+    }
+
+    @Test
+    @DisplayName("M4: refresh без cookie — возвращает 401")
+    void refresh_withoutCookie_returnsUnauthorized() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+
+        verify(authService, never()).refreshToken(any());
     }
 
     @Test

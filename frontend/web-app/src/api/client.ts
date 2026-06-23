@@ -8,9 +8,10 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true',
   },
+  withCredentials: true, // M4: send httpOnly cookies (refreshToken) with requests
 });
 
-// Request interceptor — add JWT token
+// Request interceptor — add JWT token from memory
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
@@ -32,16 +33,13 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) throw new Error('No refresh token');
-
-        const response = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {
-          refreshToken,
+        // M4: POST /refresh без body — refreshToken приходит из httpOnly cookie
+        const response = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, null, {
+          withCredentials: true,
         });
 
-        const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+        const { accessToken } = response.data.data;
         localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', newRefreshToken);
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return apiClient(originalRequest);
@@ -49,7 +47,6 @@ apiClient.interceptors.response.use(
         // Only redirect to login if user was previously authenticated
         const hadToken = localStorage.getItem('accessToken');
         localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
         if (hadToken) {
           window.location.href = '/login';
         }
