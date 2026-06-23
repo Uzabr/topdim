@@ -8,6 +8,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // M4: send httpOnly cookies (refreshToken)
 });
 
 // Автоматическое добавление JWT токена ко всем запросам
@@ -27,26 +28,20 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refreshToken = useAuthStore.getState().refreshToken;
 
-      if (refreshToken) {
-        try {
-          const { data } = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {
-            refreshToken,
-          });
+      try {
+        // M4: POST /refresh без body — refreshToken из httpOnly cookie
+        const { data } = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, null, {
+          withCredentials: true,
+        });
 
-          const newAccessToken = data.data.accessToken;
-          const newRefreshToken = data.data.refreshToken;
+        const newAccessToken = data.data.accessToken;
 
-          useAuthStore.getState().setTokens(newAccessToken, newRefreshToken);
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        useAuthStore.getState().setAccessToken(newAccessToken);
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
-          return api(originalRequest);
-        } catch {
-          useAuthStore.getState().logout();
-          window.location.href = '/login';
-        }
-      } else {
+        return api(originalRequest);
+      } catch {
         useAuthStore.getState().logout();
         window.location.href = '/login';
       }

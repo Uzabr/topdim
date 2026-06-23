@@ -1,5 +1,6 @@
 package uz.topdim.identity.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -7,7 +8,8 @@ import lombok.NoArgsConstructor;
 
 /**
  * DTO ответа аутентификации.
- * Содержит access token, refresh token и данные пользователя.
+ * Содержит access token и данные пользователя.
+ * Refresh token передаётся через httpOnly cookie (M4), не в JSON body.
  */
 @Data
 @Builder
@@ -15,6 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AuthResponse {
     private String accessToken;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String refreshToken;
     private String tokenType;
     private long expiresIn;

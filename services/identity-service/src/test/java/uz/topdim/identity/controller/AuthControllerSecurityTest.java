@@ -13,6 +13,7 @@ import uz.topdim.identity.config.SecurityConfig;
 import uz.topdim.identity.exception.GlobalExceptionHandler;
 import uz.topdim.identity.security.CustomUserDetailsService;
 import uz.topdim.identity.security.RoleHeaderAuthenticationFilter;
+import uz.topdim.identity.dto.AuthResponse;
 import uz.topdim.identity.service.AuthService;
 import uz.topdim.identity.service.EmailConfirmationService;
 import uz.topdim.identity.service.PasswordResetService;
@@ -21,8 +22,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = AuthController.class)
@@ -44,6 +48,45 @@ class AuthControllerSecurityTest {
 
     @MockBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @Test
+    @DisplayName("M4: POST /login → Set-Cookie refreshToken HttpOnly+Secure+SameSite=Lax+Path=/api/v1/auth, refreshToken НЕ в JSON body")
+    void login_setsHttpOnlyCookieAndOmitsRefreshTokenFromBody() throws Exception {
+        AuthResponse mockResponse = AuthResponse.builder()
+                .accessToken("access-jwt")
+                .refreshToken("rt-secret-value")
+                .tokenType("Bearer")
+                .expiresIn(900)
+                .user(AuthResponse.UserDto.builder()
+                        .id(1L).email("user@topdim.uz").firstName("Ali").role("USER").build())
+                .build();
+        when(authService.login(any())).thenReturn(mockResponse);
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "user@topdim.uz",
+                                  "password": "SafePass123!"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                // Cookie attributes
+                .andExpect(header().exists("Set-Cookie"))
+                .andExpect(header().string("Set-Cookie",
+                        org.hamcrest.Matchers.containsString("refreshToken=rt-secret-value")))
+                .andExpect(header().string("Set-Cookie",
+                        org.hamcrest.Matchers.containsString("HttpOnly")))
+                .andExpect(header().string("Set-Cookie",
+                        org.hamcrest.Matchers.containsString("Secure")))
+                .andExpect(header().string("Set-Cookie",
+                        org.hamcrest.Matchers.containsString("SameSite=Lax")))
+                .andExpect(header().string("Set-Cookie",
+                        org.hamcrest.Matchers.containsString("Path=/api/v1/auth")))
+                // JSON body: accessToken present, refreshToken absent
+                .andExpect(jsonPath("$.data.accessToken").value("access-jwt"))
+                .andExpect(jsonPath("$.data.refreshToken").doesNotExist());
+    }
 
     @Test
     @DisplayName("change-password: без аутентификации endpoint недоступен")
@@ -83,18 +126,34 @@ class AuthControllerSecurityTest {
     }
 
     @Test
-    @DisplayName("logout: пустой refresh token отклоняется валидацией")
-    void logout_blankRefreshToken_returnsBadRequest() throws Exception {
+    @DisplayName("M4: logout без cookie — вызывает service с null refreshToken")
+    void logout_withoutCookie_callsServiceWithNullRefreshToken() throws Exception {
         mockMvc.perform(post("/api/v1/auth/logout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "refreshToken": ""
-                                }
-                                """))
-                .andExpect(status().isBadRequest());
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
 
-        verify(authService, never()).logout(any(), any());
+        verify(authService).logout(any(), eq(null));
+    }
+
+    @Test
+    @DisplayName("M4: logout с refreshToken cookie — вызывает service с cookie значением")
+    void logout_withCookie_passesRefreshTokenFromCookie() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", "rt-cookie-value"))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(authService).logout(any(), eq("rt-cookie-value"));
+    }
+
+    @Test
+    @DisplayName("M4: refresh без cookie — возвращает 401")
+    void refresh_withoutCookie_returnsUnauthorized() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+
+        verify(authService, never()).refreshToken(any());
     }
 
     @Test

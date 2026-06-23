@@ -1,8 +1,13 @@
 package uz.topdim.identity.controller;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.identity.dto.*;
@@ -12,9 +17,14 @@ import uz.topdim.identity.service.EmailConfirmationService;
 import uz.topdim.identity.service.PasswordResetService;
 import uz.topdim.common.dto.ApiResponse;
 
+import java.time.Duration;
+import java.util.Arrays;
+
 /**
  * REST контроллер аутентификации.
- * Endpoints: register, login, refresh, logout, change-password, guest,
+ * M4: refresh token передаётся через httpOnly cookie, не в JSON body.
+ *
+ * <p>Endpoints: register, login, refresh, logout, change-password, guest,
  * password-reset/request, password-reset/confirm.
  */
 @RestController
@@ -26,52 +36,78 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final EmailConfirmationService emailConfirmationService;
 
+    private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
+    private static final String COOKIE_PATH = "/api/v1/auth";
+    private static final Duration REFRESH_TOKEN_MAX_AGE = Duration.ofDays(7);
+
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        AuthResponse response = authService.register(request);
+    public ResponseEntity<ApiResponse<AuthResponse>> register(
+            @Valid @RequestBody RegisterRequest request,
+            HttpServletResponse response) {
+        AuthResponse authResponse = authService.register(request);
+        addRefreshTokenCookie(response, authResponse.getRefreshToken());
+        authResponse.setRefreshToken(null); // не отдаём в JSON body
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Регистрация прошла успешно", response));
+                .body(ApiResponse.success("Регистрация прошла успешно", authResponse));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
-        return ResponseEntity.ok(ApiResponse.success("Вход выполнен успешно", response));
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletResponse response) {
+        AuthResponse authResponse = authService.login(request);
+        addRefreshTokenCookie(response, authResponse.getRefreshToken());
+        authResponse.setRefreshToken(null);
+        return ResponseEntity.ok(ApiResponse.success("Вход выполнен успешно", authResponse));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<AuthResponse>> refresh(@Valid @RequestBody RefreshTokenRequest request) {
-        AuthResponse response = authService.refreshToken(request);
-        return ResponseEntity.ok(ApiResponse.success("Токен обновлён", response));
+    public ResponseEntity<ApiResponse<AuthResponse>> refresh(
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        String refreshToken = extractRefreshTokenFromCookie(request);
+        if (refreshToken == null) {
+            throw new AuthException("Refresh token отсутствует");
+        }
+        RefreshTokenRequest tokenRequest = new RefreshTokenRequest();
+        tokenRequest.setRefreshToken(refreshToken);
+        AuthResponse authResponse = authService.refreshToken(tokenRequest);
+        addRefreshTokenCookie(response, authResponse.getRefreshToken());
+        authResponse.setRefreshToken(null);
+        return ResponseEntity.ok(ApiResponse.success("Токен обновлён", authResponse));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @Valid @RequestBody RefreshTokenRequest request
-    ) {
-        // Извлекаем access token из Authorization header для blacklist jti
+            HttpServletRequest request,
+            HttpServletResponse response) {
         String accessToken = null;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             accessToken = authHeader.substring(7);
         }
-        authService.logout(accessToken, request.getRefreshToken());
+        String refreshToken = extractRefreshTokenFromCookie(request);
+        authService.logout(accessToken, refreshToken);
+        clearRefreshTokenCookie(response);
         return ResponseEntity.ok(ApiResponse.success("Выход выполнен", null));
     }
 
     @PutMapping("/change-password")
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @RequestHeader("X-User-Id") Long userId,
-            @Valid @RequestBody ChangePasswordRequest request
-    ) {
+            @Valid @RequestBody ChangePasswordRequest request) {
         authService.changePassword(userId, request);
         return ResponseEntity.ok(ApiResponse.success("Пароль успешно изменён", null));
     }
 
     @PostMapping("/guest")
-    public ResponseEntity<ApiResponse<AuthResponse>> guestAuth(@Valid @RequestBody GuestAuthRequest request) {
-        AuthResponse response = authService.guestAuth(request);
-        return ResponseEntity.ok(ApiResponse.success("Гостевой доступ предоставлен", response));
+    public ResponseEntity<ApiResponse<AuthResponse>> guestAuth(
+            @Valid @RequestBody GuestAuthRequest request,
+            HttpServletResponse response) {
+        AuthResponse authResponse = authService.guestAuth(request);
+        addRefreshTokenCookie(response, authResponse.getRefreshToken());
+        authResponse.setRefreshToken(null);
+        return ResponseEntity.ok(ApiResponse.success("Гостевой доступ предоставлен", authResponse));
     }
 
     /**
@@ -124,5 +160,49 @@ public class AuthController {
             @Valid @RequestBody EmailConfirmRequest request) {
         emailConfirmationService.confirmEmail(request.getToken());
         return ResponseEntity.ok(ApiResponse.success("Email успешно подтверждён", null));
+    }
+
+    // ==================== Cookie helpers (M4) ====================
+
+    /**
+     * Устанавливает refreshToken в httpOnly cookie.
+     * Path ограничен /api/v1/auth — cookie не отправляется на другие endpoints.
+     */
+    private void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
+        ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE, refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path(COOKIE_PATH)
+                .maxAge(REFRESH_TOKEN_MAX_AGE)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    /**
+     * Удаляет refreshToken cookie (при logout).
+     */
+    private void clearRefreshTokenCookie(HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE, "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path(COOKIE_PATH)
+                .maxAge(0)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    /**
+     * Извлекает refreshToken из cookie.
+     */
+    private String extractRefreshTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+        return Arrays.stream(request.getCookies())
+                .filter(c -> REFRESH_TOKEN_COOKIE.equals(c.getName()))
+                .map(Cookie::getValue)
+                .filter(v -> v != null && !v.isBlank())
+                .findFirst()
+                .orElse(null);
     }
 }
