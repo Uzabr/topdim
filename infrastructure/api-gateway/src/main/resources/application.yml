@@ -137,7 +137,9 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,prometheus,metrics
+        # M2: gateway actuator доступен без JWT → только health наружу.
+        # prometheus/metrics оставлены в downstream-сервисах для внутреннего Prometheus.
+        include: health
   endpoint:
     health:
       show-details: never
