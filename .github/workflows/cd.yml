@@ -1,38 +1,20 @@
-name: CD
+name: CD — build & push images
 
+# Фаза 2: авто-сборка при мерже в main → образы в GHCR (:latest + :sha-<commit>).
+# Deploy вынесен отдельно (Фаза 3 — EasyPanel webhook + пред-деплой бэкап).
 on:
-  workflow_dispatch:
-    inputs:
-      confirm:
-        description: "Type 'deploy' to confirm a production deploy from main"
-        required: true
-        default: ""
+  push:
+    branches: [main]
+  workflow_dispatch: {}
 
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/uzabr/topdim
 
 jobs:
-  guard:
-    name: Guard (main + confirm)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Validate branch and confirmation
-        run: |
-          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
-            echo "::error::Deploy is allowed only from main (got ${{ github.ref }})"
-            exit 1
-          fi
-          if [ "${{ inputs.confirm }}" != "deploy" ]; then
-            echo "::error::Type 'deploy' in the confirm field to proceed"
-            exit 1
-          fi
-          echo "Guard passed: deploying from main."
-
   build-backend:
     name: Build backend (${{ matrix.service }})
     runs-on: ubuntu-latest
-    needs: guard
     permissions:
       contents: read
       packages: write
@@ -78,6 +60,7 @@ jobs:
           context: .
           file: docker/backend/Dockerfile
           push: true
+          provenance: false
           tags: |
             ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
             ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:sha-${{ github.sha }}
@@ -89,7 +72,6 @@ jobs:
   build-frontend:
     name: Build frontend (${{ matrix.service }})
     runs-on: ubuntu-latest
-    needs: guard
     permissions:
       contents: read
       packages: write
@@ -128,6 +110,7 @@ jobs:
           context: .
           file: docker/frontend/Dockerfile
           push: true
+          provenance: false
           tags: |
             ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
             ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:sha-${{ github.sha }}
@@ -137,101 +120,10 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
-  deploy:
-    name: Deploy to server
+  notify:
+    name: Telegram notify (build)
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend]
-
-    steps:
-      - name: Deploy with health check and rollback
-        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
-        env:
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
-          COMMIT_SHA: ${{ github.sha }}
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: GHCR_PAT,COMMIT_SHA
-          command_timeout: 10m
-          script: |
-            REGISTRY="ghcr.io/uzabr/topdim"
-            DEPLOYED=""
-            FAILED=""
-            ROLLED_BACK=""
-
-            echo "$GHCR_PAT" | docker login ghcr.io -u uzabr --password-stdin
-
-            for svc in discovery-server api-gateway \
-                       identity-service coupon-service order-service \
-                       payment-service notification-service media-service \
-                       web-app admin-app partner; do
-
-              SVC_NAME="topdim_${svc}"
-              echo "========================================="
-              echo "Deploying ${svc}..."
-
-              # Save current image for rollback
-              OLD_IMAGE=$(docker service inspect "$SVC_NAME" --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' 2>/dev/null || echo "")
-              if [ -z "$OLD_IMAGE" ]; then
-                echo "  SKIP: ${svc} (service not found)"
-                continue
-              fi
-
-              # Update to new image
-              docker service update --image "${REGISTRY}/${svc}:sha-${COMMIT_SHA}" \
-                "$SVC_NAME" --with-registry-auth --detach
-
-              # Wait up to 120s for service to stabilize
-              HEALTHY=false
-              for i in $(seq 1 12); do
-                sleep 10
-                REPLICAS=$(docker service ls --filter "name=${SVC_NAME}" --format '{{.Replicas}}')
-                DESIRED=$(echo "$REPLICAS" | cut -d/ -f2)
-                RUNNING=$(echo "$REPLICAS" | cut -d/ -f1)
-                echo "  Check $i/12: ${RUNNING}/${DESIRED}"
-                if [ "$DESIRED" != "0" ] && [ "$RUNNING" = "$DESIRED" ]; then
-                  HEALTHY=true
-                  break
-                fi
-              done
-
-              if [ "$HEALTHY" = true ]; then
-                echo "  ✓ ${svc}"
-                DEPLOYED="${DEPLOYED} ${svc}"
-              else
-                echo "  ✗ ${svc} — rolling back..."
-                docker service update --image "$OLD_IMAGE" "$SVC_NAME" --with-registry-auth --detach
-                ROLLED_BACK="${ROLLED_BACK} ${svc}"
-              fi
-            done
-
-            docker logout ghcr.io
-
-            echo ""
-            echo "========================================="
-            echo "DEPLOY SUMMARY (sha: ${COMMIT_SHA:0:7})"
-            echo "========================================="
-            [ -n "$DEPLOYED" ]    && echo "✓ Deployed:    $DEPLOYED"
-            [ -n "$ROLLED_BACK" ] && echo "✗ Rolled back: $ROLLED_BACK"
-            [ -z "$DEPLOYED" ] && [ -z "$ROLLED_BACK" ] && echo "Nothing to deploy"
-
-            # Smoke test
-            echo ""
-            echo "SMOKE TEST"
-            for ep in "/api/v1/categories" "/api/v1/coupons?size=1"; do
-              CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://topdim_api-gateway:8080${ep}" 2>/dev/null || echo "000")
-              echo "  GET ${ep} → ${CODE}"
-            done
-
-            # Fail if anything rolled back
-            [ -n "$ROLLED_BACK" ] && exit 1
-            exit 0
-
-  notify:
-    name: Telegram notify
-    runs-on: ubuntu-latest
-    needs: [build-backend, build-frontend, deploy]
     if: always()
 
     steps:
@@ -245,21 +137,15 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          # Skip if Telegram not configured
           if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
             echo "Telegram not configured, skipping"
             exit 0
           fi
 
-          # Понятный статус: успех / откат деплоя / ошибка сборки / пропуск
-          if [ "${{ needs.deploy.result }}" = "success" ]; then
-            EMOJI="✅"; STATUS="успешно"
-          elif [ "${{ needs.deploy.result }}" = "failure" ]; then
-            EMOJI="❌"; STATUS="ошибка деплоя (часть сервисов откатилась)"
-          elif [ "${{ needs.build-backend.result }}" = "failure" ] || [ "${{ needs.build-frontend.result }}" = "failure" ]; then
-            EMOJI="❌"; STATUS="ошибка сборки образов"
+          if [ "${{ needs.build-backend.result }}" = "success" ] && [ "${{ needs.build-frontend.result }}" = "success" ]; then
+            EMOJI="✅"; STATUS="образы собраны и запушены в GHCR (:latest + :sha)"
           else
-            EMOJI="⏭️"; STATUS="пропущен"
+            EMOJI="❌"; STATUS="ошибка сборки образов"
           fi
 
           SHA_SHORT="$(echo "${{ github.sha }}" | cut -c1-7)"
@@ -267,8 +153,7 @@ jobs:
           WHEN="$(date -u '+%Y-%m-%d %H:%M UTC')"
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          # plain text (без parse_mode) + url-encode — устойчиво к спецсимволам в коммите
-          TEXT="$(printf '%s Деплой topdim — %s\n\n📦 %s — %s\n👤 %s · ветка %s\n🕐 %s\n\n🔗 Логи и детали: %s' \
+          TEXT="$(printf '%s Сборка topdim — %s\n\n📦 %s — %s\n👤 %s · ветка %s\n🕐 %s\n\n🔗 %s' \
             "$EMOJI" "$STATUS" "$SHA_SHORT" "$MSG" "${{ github.actor }}" "${{ github.ref_name }}" "$WHEN" "$RUN_URL")"
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
