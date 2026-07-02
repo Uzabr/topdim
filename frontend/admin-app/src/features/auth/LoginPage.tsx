@@ -1,30 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Form, Input, Button, Typography, App, Divider, Space } from 'antd';
-import { LockOutlined, MailOutlined, CrownOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
+import { Card, Form, Input, Button, Typography, App } from 'antd';
+import { LockOutlined, MailOutlined } from '@ant-design/icons';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../api/client';
-import type { AuthUser, UserRole } from '../../types';
+import type { UserRole } from '../../types';
 
 const { Title, Text } = Typography;
 
 const ALLOWED_ROLES: UserRole[] = ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'];
-
-// ⚠️ DEMO: Удалить перед продакшеном!
-const DEMO_USERS: Record<string, AuthUser> = {
-  SUPER_ADMIN: {
-    id: 1, email: 'superadmin@topdim.uz', phone: '+998900000001',
-    firstName: 'Аброр', lastName: 'Суперадмин', role: 'SUPER_ADMIN', avatarUrl: null,
-  },
-  ADMIN: {
-    id: 2, email: 'admin@topdim.uz', phone: '+998900000002',
-    firstName: 'Админ', lastName: 'Менеджер', role: 'ADMIN', avatarUrl: null,
-  },
-  MODERATOR: {
-    id: 3, email: 'moderator@topdim.uz', phone: '+998900000003',
-    firstName: 'Модер', lastName: 'Контент', role: 'MODERATOR', avatarUrl: null,
-  },
-};
 
 export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
@@ -53,14 +37,6 @@ export const LoginPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // ⚠️ DEMO: Вход без бэкенда
-  const demoLogin = (role: keyof typeof DEMO_USERS) => {
-    const user = DEMO_USERS[role];
-    login('demo-token-' + role, user);
-    message.success(`Демо-вход: ${user.firstName} (${role})`);
-    navigate('/dashboard');
   };
 
   return (
@@ -117,37 +93,6 @@ export const LoginPage = () => {
             </Button>
           </Form.Item>
         </Form>
-
-        <Divider plain>
-          <Text type="secondary" style={{ fontSize: 12 }}>⚠️ ДЕМО (без бэкенда)</Text>
-        </Divider>
-
-        <Space direction="vertical" style={{ width: '100%' }} size="small">
-          <Button
-            icon={<CrownOutlined />}
-            block
-            onClick={() => demoLogin('SUPER_ADMIN')}
-            style={{ background: '#722ed1', borderColor: '#722ed1', color: '#fff' }}
-          >
-            👑 Войти как Super Admin
-          </Button>
-          <Button
-            icon={<SafetyCertificateOutlined />}
-            block
-            onClick={() => demoLogin('ADMIN')}
-            style={{ background: '#1890ff', borderColor: '#1890ff', color: '#fff' }}
-          >
-            💼 Войти как Admin
-          </Button>
-          <Button
-            icon={<UserOutlined />}
-            block
-            onClick={() => demoLogin('MODERATOR')}
-            style={{ background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
-          >
-            🛡️ Войти как Moderator
-          </Button>
-        </Space>
       </Card>
     </div>
   );
