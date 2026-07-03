@@ -68,17 +68,18 @@
   (N-H1/N-M1/N-L2 закрыты; N-C2 уже защищён; N-C1/N-H2/N-M2/N-M3/N-L1 — открыты). См.
   `SECURITY_HARDENING.md`.
 - **CI/CD (3 фазы):** Фаза 1 (S3-бэкапы) ✅, Фаза 2 (авто-сборка в CI) ✅,
-  Фаза 3 (авто-деплой через EasyPanel-webhook + пред-деплой бэкап) — **код готов**
-  (cd.yml + `scripts/deploy/`), **ждёт серверной настройки** (deploy-юзер, токены, GitHub
-  secrets) + **блокера J0**: EasyPanel не тянет приватные GHCR (`unauthorized`) → нужны
-  GHCR-креды в EasyPanel. Шаги — `REBUILD_RUNBOOK.md` STAGE J.
+  Фаза 3 (авто-деплой изменённых сервисов через EasyPanel-webhook + пред-деплой бэкап)
+  ✅ **live** (PR #56, проверено e2e). CI после сборки по SSH (forced-command, deploy-юзер,
+  порт 49222) → бэкап в S3 → webhook только по изменённым. Настройка — `REBUILD_RUNBOOK.md`
+  STAGE J. ⚠️ GHCR: EasyPanel тянет приватные образы через **per-service** creds
+  (username `uzabr` + PAT `read:packages`, НЕ account-пароль — иначе 403).
 
 ## 5. Деплой и CI/CD
 - **Build:** `.github/workflows/cd.yml` — `on: push: main` собирает+пушит ВСЕ образы в GHCR
   (`:latest` + `:sha-<commit>`), нативно amd64, `provenance: false`. Через `GITHUB_TOKEN`.
 - **Deploy (текущий, ручной):** в EasyPanel «Redeploy», ИЛИ на сервере
   `docker service update --force --image ...@sha256:<digest> --with-registry-auth topdim_<svc>`.
-- **Deploy (Фаза 3, реализовано в коде):** `cd.yml` job `detect-deploy` (dorny/paths-filter)
+- **Deploy (Фаза 3, ✅ live):** `cd.yml` job `detect-deploy` (dorny/paths-filter)
   считает **изменённые** сервисы (shared-код → весь tier) → job `deploy` по SSH
   (forced-command, порт 49222) запускает `/home/deploy/deploy.sh` → пред-деплой бэкап →
   `curl localhost:3000/api/deploy/<token>` только по изменённым → EasyPanel тянет `:latest`.
