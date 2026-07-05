@@ -29,7 +29,15 @@ export default function LoginPage() {
       .refine((val) => !val || /^\+998\d{9}$/.test(val), {
         message: t('login.validation.phoneFormat'),
       }),
-    password: z.string().min(8, t('login.validation.passwordMin')),
+    // Держим в синхроне с backend @StrongPassword (StrongPasswordValidator):
+    // строчная + заглавная + цифра + спецсимвол из набора @$!%*?&#^()-_=+, длина 8–128.
+    // Блок-лист частых паролей на клиенте не воспроизводим — его сообщение приходит с сервера.
+    password: z.string()
+      .min(8, t('login.validation.passwordMin'))
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()\-_=+])[A-Za-z\d@$!%*?&#^()\-_=+]{8,128}$/,
+        t('login.validation.passwordWeak'),
+      ),
   }), [loginSchema, t]);
 
   const { login, register, isLoading } = useAuthStore();
@@ -69,8 +77,13 @@ export default function LoginPage() {
       }
       navigate(lp('/'));
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setServerError(error.response?.data?.message || t('login.serverError'));
+      // Бэкенд при 400-валидации кладёт общий текст в message ("Ошибка валидации"),
+      // а конкретику по полям — в data: { field: "сообщение" }. Показываем поле,
+      // иначе пользователь видит бесполезное "Ошибка валидации" (напр. для блок-листа паролей).
+      const error = err as { response?: { data?: { message?: string; data?: Record<string, string> } } };
+      const fieldErrors = error.response?.data?.data;
+      const firstFieldError = fieldErrors ? Object.values(fieldErrors)[0] : undefined;
+      setServerError(firstFieldError || error.response?.data?.message || t('login.serverError'));
     }
   };
 
@@ -159,6 +172,10 @@ export default function LoginPage() {
             </div>
             {errors.password && <span className="invalid-feedback">{errors.password.message?.toString()}</span>}
           </div>
+
+          {!isLogin && !errors.password && (
+            <p className="password-hint">{t('login.passwordHint')}</p>
+          )}
 
           {serverError && <div className="login-error">{serverError}</div>}
 

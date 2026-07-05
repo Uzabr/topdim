@@ -85,6 +85,7 @@
     "firstName": "Ism",
     "phonePlaceholder": "Telefon (+998 XX XXX-XX-XX)",
     "password": "Parol",
+    "passwordHint": "8–128 belgi: katta va kichik harf, raqam, maxsus belgi (@$!%*?&#^()-_=+)",
     "submitLogin": "Tizimga kirish",
     "submitRegister": "Roʻyxatdan oʻtish",
     "noAccount": "Hisobingiz yo'qmi?",
@@ -97,6 +98,7 @@
       "emailInvalid": "Elektron pochta formati noto‘g‘ri",
       "passwordRequired": "Parol talab qilinadi",
       "passwordMin": "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
+      "passwordWeak": "Parol: 8–128 belgi, katta va kichik harf, raqam va maxsus belgi (@$!%*?&#^()-_=+)",
       "firstNameMin": "Ism kamida 2 ta belgidan iborat boʻlishi kerak",
       "phoneFormat": "Format: +998XXXXXXXXX"
     }

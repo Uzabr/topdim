@@ -85,6 +85,7 @@
     "firstName": "Имя",
     "phonePlaceholder": "Телефон (+998 XX XXX-XX-XX)",
     "password": "Пароль",
+    "passwordHint": "8–128 символов: заглавная, строчная, цифра и спецсимвол (@$!%*?&#^()-_=+)",
     "submitLogin": "Войти",
     "submitRegister": "Зарегистрироваться",
     "noAccount": "Нет аккаунта?",
@@ -97,6 +98,7 @@
       "emailInvalid": "Неверный формат email",
       "passwordRequired": "Пароль обязателен",
       "passwordMin": "Пароль должен быть от 8 символов",
+      "passwordWeak": "Пароль: 8–128 символов, заглавная и строчная буквы, цифра и спецсимвол (@$!%*?&#^()-_=+)",
       "firstNameMin": "Имя должно быть не короче 2 символов",
       "phoneFormat": "Формат: +998XXXXXXXXX"
     }
