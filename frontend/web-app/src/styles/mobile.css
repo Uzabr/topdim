@@ -1,0 +1,103 @@
+/* ═══════════════════════════════════════════════════════════════
+   Мобильный слой (<768px) — отдельный визуальный язык, НЕ сжатый десктоп.
+   Референсы: design_handoff_sizbiz/«Мобилка - 1…9».
+
+   Здесь только токены, фон и общие анимации. Экраны переезжают на них
+   по шагам Этапа 2 — до этого страницы просто получают тёплый фон,
+   округлый шрифт и мобильную типографику.
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+  :root {
+    /* Тёплый белый фон вместо строго белого десктопного */
+    --page: #fcfbf8;
+
+    /* Текст мягче чёрного, кнопки/навигация — почти чёрные */
+    --ink: #090909;
+    --ink-3: #a7a4a7;
+    --btn: #050505;
+
+    /* Пастельные пятна фона */
+    --blob-mint: #8fd9c9;
+    --blob-pink: #ea9fe2;
+    --blob-lemon: #f2cf3d;
+    --blob-lilac: #cdbcf0;
+    --blob-violet: #c9b3f0;
+
+    /* Округлый, дружелюбный шрифт */
+    --font-sans: ui-rounded, 'SF Pro Rounded', 'Nunito', 'Quicksand', Helvetica, Arial,
+      sans-serif;
+  }
+
+  body {
+    background: var(--page);
+  }
+
+  /* Скроллбары скрыты везде */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  * {
+    scrollbar-width: none;
+  }
+
+  /* Нажатие любой кнопки — лёгкий сквош */
+  button:active,
+  a:active {
+    transform: scale(0.96);
+  }
+}
+
+/* ── Общие мобильные анимации (используются экранами Этапа 2) ── */
+@keyframes vUp {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes vFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes heartPop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes deckIn {
+  from {
+    transform: translateY(60px) rotate(8deg) scale(0.7);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) rotate(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @media (max-width: 767px) {
+    button:active,
+    a:active {
+      transform: none;
+    }
+  }
+}

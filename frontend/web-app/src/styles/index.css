@@ -1,4 +1,6 @@
 @import './tokens.css';
+/* Мобильный слой переопределяет токены под <768px — импорт строго после базовых */
+@import './mobile.css';
 
 :root {
   --space-2xs: 4px;
@@ -44,7 +46,8 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   color: var(--ink);
-  background: var(--paper);
+  /* --page: белый на десктопе, тёплый #FCFBF8 на мобилке (styles/mobile.css) */
+  background: var(--page);
   min-height: 100vh;
   overflow-x: hidden;
 }

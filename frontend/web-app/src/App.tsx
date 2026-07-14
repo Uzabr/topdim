@@ -7,6 +7,7 @@ import ScrollToTop from './components/ScrollToTop';
 import LocaleLayout from './components/LocaleLayout';
 import Header from './components/layout/Header';
 import BottomNav from './components/layout/BottomNav';
+import MobileBackdrop from './components/layout/MobileBackdrop';
 import Footer from './components/layout/Footer';
 import CartDrawer from './components/cart/CartDrawer';
 import CookieConsent from './components/ui/CookieConsent';
@@ -72,6 +73,7 @@ function AppShell() {
 
   return (
     <div className="app-shell">
+      {!isPartnerLanding && <MobileBackdrop />}
       {!isPartnerLanding && <Header />}
       <main className={`app-main${isLoginPage ? ' app-main--login' : ''}`}>
       <Routes>
