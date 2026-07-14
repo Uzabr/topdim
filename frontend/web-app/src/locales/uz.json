@@ -546,7 +546,7 @@
   },
   "couponCard": {
     "hot": "Yuqori",
-    "discountUpTo": "-{{percent}}% gacha",
+    "discountUpTo": "−{{percent}}% gacha",
     "purchases": "{{count}} xaridlar",
     "reviews": "/{{count}} sharhlar",
     "priceFrom": "dan {{price}} {{currency}}"
@@ -757,30 +757,44 @@
     "namePlaceholder": "Aziza"
   },
   "home": {
-    "heroTitle": "Sizning eng yaxshi daqiqalaringiz",
-    "heroTitleHighlight": "90% gacha chegirma",
-    "heroSubtitle": "Har kuni kafelar, restoranlar, SPA, o'yin-kulgi va sport uchun noyob takliflar. Hissiyotlarni foydali sotib oling.",
-    "searchPlaceholder": "Kategoriyalar va muassasalar boʻyicha qidirish...",
-    "btnOffers": "Takliflarni ko'rish",
-    "heroBadgeTitle": "Eng mashhur",
-    "heroBadgeDesc": "Yordam kuponi - eng shirali!",
-    "heroImageAlt": "Chegirmalar",
-    "categoryAll": "Hammasi",
-    "categoriesLabel": "Kategoriyalar",
-    "categoriesTitle": "Qiziqishlar boʻyicha suring",
-    "topDealsLabel": "Kunning eng yaxshi aksiyalari",
-    "topDealsTitle": "Eng tez torting",
-    "newDealsLabel": "Yangi",
-    "newDealsTitle": "Hozirgina qo'shildi",
-    "newDealsLink": "Hammasi yangi",
-    "trendingLabel": "Hozir trend",
-    "trendingTitle": "Oʻtishda davom etmoqchi boʻlgan tasma",
-    "bazaarCtaLabel": "Onlayn bozor",
-    "bazaarCtaTitle": "Xarita va sizga yaqin mahsulotlar",
-    "bazaarCtaCopy": "Pimlar, mahsulotlar va masofa o'rtasida almashinish. Eng yaxshi chegirmalarni Toshkent xaritasida toping.",
-    "bazaarCtaBtn": "Bozorni oching",
-    "emptyState": "Bu filtr uchun boʻsh",
-    "emptyStateDesc": "Boshqa turkumni yoki yuqoridagi tezkor qidiruvni sinab ko'ring."
+    "hero": {
+      "label": "Kun kuponi",
+      "endsIn": "{{time}} dan keyin tugaydi",
+      "endsOn": "{{date}} gacha sotib oling",
+      "buy": "Kupon sotib olish",
+      "left": "{{total}} tadan {{left}} ta qoldi"
+    },
+    "tiles": {
+      "title": "Bugun nima xohlaysiz?",
+      "count_one": "{{count}} ta kupon",
+      "count_other": "{{count}} ta kupon"
+    },
+    "feed": {
+      "title": "Siz uchun tanladik",
+      "hotTab": "Yonayotgan",
+      "hotLabel": "Yonayotgan kupon",
+      "bestLabel": "Eng katta chegirma",
+      "popularLabel": "Xaridorlar tanlovi",
+      "soldPercent": "{{percent}}% sotib olindi",
+      "leftCount": "{{count}} ta qoldi",
+      "empty": "Bu filtr bo'yicha hozircha bo'sh"
+    },
+    "how": {
+      "title": "Bu qanday ishlaydi",
+      "note": "Bora olmadingizmi — pulni qaytaramiz",
+      "buy": {
+        "title": "Kupon sotib oling",
+        "text": "Saytda to'lang. Kupon darhol profilingizda paydo bo'ladi"
+      },
+      "show": {
+        "title": "Joyida QR ko'rsating",
+        "text": "Hech qanday chop etish kerak emas — faqat ekrandagi kod"
+      },
+      "save": {
+        "title": "Haqiqatan tejang",
+        "text": "Merchant bizga faqat siz kelganingizda to'laydi — shuning uchun chegirmalar halol"
+      }
+    }
   },
   "catalog": {
     "eyebrow": "Barcha shahar chegirmalari",

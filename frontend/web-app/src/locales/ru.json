@@ -548,7 +548,7 @@
   },
   "couponCard": {
     "hot": "Топ",
-    "discountUpTo": "до -{{percent}}%",
+    "discountUpTo": "до −{{percent}}%",
     "purchases": "{{count}} покупок",
     "reviews": "/{{count}} отзывов",
     "priceFrom": "от {{price}} {{currency}}"
@@ -759,30 +759,46 @@
     "namePlaceholder": "Азиза"
   },
   "home": {
-    "heroTitle": "Твои лучшие моменты",
-    "heroTitleHighlight": "со скидкой до 90%",
-    "heroSubtitle": "Каждый день уникальные предложения на кафе, рестораны, SPA, развлечения и спорт. Покупай эмоции выгодно.",
-    "searchPlaceholder": "Поиск по категориям и заведениям...",
-    "btnOffers": "Смотреть предложения",
-    "heroBadgeTitle": "Самый популярный",
-    "heroBadgeDesc": "Справка купон — самый сочный!",
-    "heroImageAlt": "Скидки",
-    "categoryAll": "Все",
-    "categoriesLabel": "Категории",
-    "categoriesTitle": "Свайпай по интересам",
-    "topDealsLabel": "Топ-акции дня",
-    "topDealsTitle": "Забирают быстрее всего",
-    "newDealsLabel": "Новые",
-    "newDealsTitle": "Только что добавлены",
-    "newDealsLink": "Все новые",
-    "trendingLabel": "Trending now",
-    "trendingTitle": "Лента, которую хочется листать дальше",
-    "bazaarCtaLabel": "Онлайн базар",
-    "bazaarCtaTitle": "Карта и товары рядом с тобой",
-    "bazaarCtaCopy": "Переключайся между пинами, товарами и расстоянием. Найди лучшие скидки на карте Ташкента.",
-    "bazaarCtaBtn": "Открыть базар",
-    "emptyState": "Пока пусто по этому фильтру",
-    "emptyStateDesc": "Попробуй другую категорию или быстрый поиск выше."
+    "hero": {
+      "label": "Купон дня",
+      "endsIn": "закончится через {{time}}",
+      "endsOn": "купить до {{date}}",
+      "buy": "Купить купон",
+      "left": "осталось {{left}} из {{total}}"
+    },
+    "tiles": {
+      "title": "Что хотите сегодня?",
+      "count_one": "{{count}} купон",
+      "count_few": "{{count}} купона",
+      "count_many": "{{count}} купонов",
+      "count_other": "{{count}} купонов"
+    },
+    "feed": {
+      "title": "Подобрали для вас",
+      "hotTab": "Горящие",
+      "hotLabel": "Горящий купон",
+      "bestLabel": "Лучшая скидка",
+      "popularLabel": "Выбор покупателей",
+      "soldPercent": "выкуплено {{percent}}%",
+      "leftCount": "осталось {{count}} шт",
+      "empty": "Пока пусто по этому фильтру"
+    },
+    "how": {
+      "title": "Как это работает",
+      "note": "Не получилось прийти — вернём деньги",
+      "buy": {
+        "title": "Купите купон",
+        "text": "Оплата на сайте. Купон сразу появится в вашем профиле"
+      },
+      "show": {
+        "title": "Покажите QR на месте",
+        "text": "Никаких распечаток — только код с экрана"
+      },
+      "save": {
+        "title": "Экономьте по-настоящему",
+        "text": "Мерчант платит нам, только когда вы приходите, — поэтому скидки честные"
+      }
+    }
   },
   "catalog": {
     "eyebrow": "Все скидки города",

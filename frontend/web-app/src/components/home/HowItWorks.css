@@ -1,0 +1,72 @@
+.how {
+  margin-top: 64px;
+}
+
+.how__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.how__title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: var(--heading-ls);
+}
+
+.how__note {
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.how__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.how__card {
+  padding: 26px;
+  border-radius: var(--radius-card);
+  background: var(--card);
+}
+
+.how__num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--wasp);
+  color: var(--on-wasp);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.how__card-title {
+  margin: 16px 0 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.how__card-text {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+@media (max-width: 900px) {
+  .how__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .how__title {
+    font-size: 24px;
+  }
+}
