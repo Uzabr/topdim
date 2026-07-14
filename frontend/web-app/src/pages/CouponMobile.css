@@ -12,30 +12,6 @@
   text-align: center;
 }
 
-/* ── Навбар экрана (общей мобильной шапки здесь нет) ── */
-.cmob__bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.cmob__round {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
-  color: var(--ink);
-}
-
-.cmob__bar-title {
-  font-size: 16px;
-  font-weight: 800;
-}
-
 /* ── Фото ── */
 .cmob__gallery {
   position: relative;

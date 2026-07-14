@@ -1,10 +1,8 @@
 import { useLocation } from 'react-router-dom';
 import { useIsDesktop } from '../../hooks/useIsDesktop';
+import { hasOwnChrome } from '../../utils/mobileScreens';
 import HeaderDesktop from './HeaderDesktop';
 import HeaderMobile from './HeaderMobile';
-
-/** Экраны, у которых в мобильном макете своя навигация вместо общей шапки. */
-const OWN_HEADER = [/^\/(ru|uz)\/coupons\/\d+/];
 
 /**
  * Один сайт — два дизайна (design_handoff_sizbiz/README.md → «Архитектура»).
@@ -16,6 +14,7 @@ export default function Header() {
   const { pathname } = useLocation();
 
   if (isDesktop) return <HeaderDesktop />;
-  if (OWN_HEADER.some((route) => route.test(pathname))) return null;
+  // Купон, корзина, оплата — со своим навбаром в макете.
+  if (hasOwnChrome(pathname)) return null;
   return <HeaderMobile />;
 }

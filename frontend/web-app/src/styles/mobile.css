@@ -49,6 +49,30 @@
   }
 }
 
+/* ── Навбар экрана: назад · заголовок · действие (купон, корзина, оплата) ── */
+.mbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mbar__title {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.mround {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  color: var(--ink);
+}
+
 /* ── Общие мобильные анимации (используются экранами Этапа 2) ── */
 @keyframes vUp {
   from {

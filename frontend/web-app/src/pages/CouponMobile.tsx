@@ -136,10 +136,10 @@ export default function CouponMobile() {
 
   return (
     <div className="cmob">
-      <div className="cmob__bar">
+      <div className="mbar cmob__bar">
         <button
           type="button"
-          className="cmob__round"
+          className="mround"
           // Прямой заход по ссылке: назад некуда — уводим на главную, а не из сайта.
           onClick={() => (window.history.length > 1 ? navigate(-1) : navigate(lp('/')))}
           aria-label={t('common.back')}
@@ -147,9 +147,9 @@ export default function CouponMobile() {
           <ArrowLeft size={17} strokeWidth={2} />
         </button>
 
-        <span className="cmob__bar-title">{t('mobile.coupon.title')}</span>
+        <span className="mbar__title">{t('mobile.coupon.title')}</span>
 
-        <Link to={lp('/cart')} className="cmob__round" aria-label={t('bottomNav.cart')}>
+        <Link to={lp('/cart')} className="mround" aria-label={t('bottomNav.cart')}>
           <ShoppingBag size={16} strokeWidth={1.9} />
         </Link>
       </div>

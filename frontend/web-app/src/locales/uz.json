@@ -819,6 +819,17 @@
     },
     "coupon": {
       "title": "Kupon"
+    },
+    "checkout": {
+      "recipient": "Kuponni kim oladi",
+      "toMe": "Men",
+      "deliveryNote": "Kupon va QR-kod to'lovdan so'ng darhol profilingizda paydo bo'ladi. Ma'lumotlar profildan olinadi — o'zgartirish uchun bosing.",
+      "demoNote": "Payme va Click hali ulanmagan — xaridni keyingi qadamda tasdiqlaysiz"
+    },
+    "paid": {
+      "title": "To'landi!",
+      "text": "Kupon va QR-kod profilingizda.",
+      "until": "{{date}} gacha amal qiladi"
     }
   },
   "catalog": {
