@@ -1,6 +1,10 @@
+import { useLocation } from 'react-router-dom';
 import { useIsDesktop } from '../../hooks/useIsDesktop';
 import HeaderDesktop from './HeaderDesktop';
 import HeaderMobile from './HeaderMobile';
+
+/** Экраны, у которых в мобильном макете своя навигация вместо общей шапки. */
+const OWN_HEADER = [/^\/(ru|uz)\/coupons\/\d+/];
 
 /**
  * Один сайт — два дизайна (design_handoff_sizbiz/README.md → «Архитектура»).
@@ -8,5 +12,10 @@ import HeaderMobile from './HeaderMobile';
  * дубли id и целей для анимаций-«воронок» (шаг 6).
  */
 export default function Header() {
-  return useIsDesktop() ? <HeaderDesktop /> : <HeaderMobile />;
+  const isDesktop = useIsDesktop();
+  const { pathname } = useLocation();
+
+  if (isDesktop) return <HeaderDesktop />;
+  if (OWN_HEADER.some((route) => route.test(pathname))) return null;
+  return <HeaderMobile />;
 }

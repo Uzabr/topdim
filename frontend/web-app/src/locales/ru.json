@@ -822,6 +822,9 @@
       "more_few": "ещё {{count}} горящих · листайте",
       "more_many": "ещё {{count}} горящих · листайте",
       "more_other": "ещё {{count}} горящих · листайте"
+    },
+    "coupon": {
+      "title": "Купон"
     }
   },
   "catalog": {

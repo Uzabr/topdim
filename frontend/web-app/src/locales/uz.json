@@ -816,6 +816,9 @@
       "title": "Kun kuponlari",
       "more_one": "yana {{count}} ta yonayotgan · suring",
       "more_other": "yana {{count}} ta yonayotgan · suring"
+    },
+    "coupon": {
+      "title": "Kupon"
     }
   },
   "catalog": {

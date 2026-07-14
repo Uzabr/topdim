@@ -52,6 +52,8 @@ function AppShell() {
   const location = useLocation();
   const isPartnerLanding = /^\/(ru|uz)\/partners\/?$/.test(location.pathname);
   const isLoginPage = /^\/(ru|uz)\/login\/?$/.test(location.pathname);
+  // У купона снизу своя закреплённая покупка — нижняя навигация налезала бы на неё.
+  const isCouponDetail = /^\/(ru|uz)\/coupons\/\d+/.test(location.pathname);
 
   useEffect(() => {
     if (isPartnerLanding) {
@@ -105,7 +107,7 @@ function AppShell() {
       </Routes>
       </main>
       {!isPartnerLanding && !isLoginPage && <Footer />}
-      {!isPartnerLanding && !isLoginPage && <BottomNav />}
+      {!isPartnerLanding && !isLoginPage && !isCouponDetail && <BottomNav />}
       <CartDrawer />
       <LimitModal />
       <CookieConsent />
