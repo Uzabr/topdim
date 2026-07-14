@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useIsDesktop } from '../../hooks/useIsDesktop';
-import { hasOwnChrome } from '../../utils/mobileScreens';
+import { hasOwnHeader } from '../../utils/mobileScreens';
 import HeaderDesktop from './HeaderDesktop';
 import HeaderMobile from './HeaderMobile';
 
@@ -14,7 +14,7 @@ export default function Header() {
   const { pathname } = useLocation();
 
   if (isDesktop) return <HeaderDesktop />;
-  // Купон, корзина, оплата — со своим навбаром в макете.
-  if (hasOwnChrome(pathname)) return null;
+  // Купон, корзина, оплата, профиль, избранное, поиск — со своим навбаром.
+  if (hasOwnHeader(pathname)) return null;
   return <HeaderMobile />;
 }

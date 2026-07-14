@@ -1,0 +1,504 @@
+/* Профиль на мобиле. Референс: «Мобилка - 7 Профиль». */
+
+.pmob {
+  padding: 18px 20px 0;
+}
+
+.pmob__bar {
+  animation: vUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pmob__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blob-lemon, #f2cf3d), var(--blob-pink, #ea9fe2));
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.pmob__head {
+  margin-top: 18px;
+  animation: vUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.pmob__name {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.pmob__contact {
+  margin: 5px 0 0;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.pmob__loading {
+  padding: 40px 0;
+  color: var(--ink-3);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ── Билет ближайшего купона ── */
+.pticket {
+  margin-top: 20px;
+  filter: drop-shadow(0 14px 36px rgba(0, 0, 0, 0.18));
+  animation: vUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+}
+
+.pticket__top {
+  padding: 18px 20px;
+  border-radius: 24px 24px 4px 4px;
+  background: var(--btn);
+  color: #ffffff;
+}
+
+.pticket__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pticket__label {
+  color: var(--ink-3);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.pticket__expiry {
+  flex: none;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--wasp);
+  color: var(--on-wasp);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.pticket__title {
+  margin: 10px 0 0;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.pticket__meta {
+  margin: 6px 0 0;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+/* Перфорация: пунктир и два выреза цветом страницы */
+.pticket__perf {
+  position: relative;
+  height: 0;
+  border-top: 2px dashed #3a3a3a;
+  background: var(--btn);
+}
+
+.pticket__notch {
+  position: absolute;
+  top: -12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--page);
+}
+
+.pticket__notch--l {
+  left: -12px;
+}
+
+.pticket__notch--r {
+  right: -12px;
+}
+
+.pticket__bottom {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px 20px;
+  border-radius: 4px 4px 24px 24px;
+  background: var(--btn);
+  color: #ffffff;
+}
+
+.pticket__qr {
+  flex: none;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 104px;
+  height: 104px;
+  padding: 8px;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.pticket__side {
+  min-width: 0;
+}
+
+.pticket__hint {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.pticket__code {
+  margin: 5px 0 0;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.pticket__code span {
+  color: #ffffff;
+  font-family: var(--font-mono);
+}
+
+.pticket__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 10px;
+}
+
+.pticket__act {
+  color: var(--ink-3);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.pticket__pending {
+  color: var(--wasp);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+/* ── Списки ── */
+.pmob__section {
+  margin: 26px 0 0;
+  font-size: 16px;
+  font-weight: 800;
+  animation: vUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both;
+}
+
+.pmob__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  animation: vUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+
+.pmob__list--top {
+  margin-top: 20px;
+}
+
+.prow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.06);
+}
+
+.prow__qr {
+  flex: none;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding: 5px;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.prow__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.prow__title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.prow__meta {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.prow__code {
+  font-family: var(--font-mono);
+}
+
+.prow__more {
+  flex: none;
+  color: var(--ink-3);
+}
+
+/* ── Архив ── */
+.parc {
+  padding: 12px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.parc__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  opacity: 0.8;
+}
+
+.parc__text {
+  min-width: 0;
+}
+
+.parc__title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.parc__date {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.parc__badge {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.parc__badge--used {
+  background: var(--used-bg);
+  color: var(--used-fg);
+}
+
+.parc__badge--expired {
+  background: var(--chip);
+  color: var(--ink-3);
+}
+
+.parc__badge--refunded {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+}
+
+.parc__review {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+  border-radius: var(--radius-pill);
+  background: var(--btn);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* ── Разделы и помощь ── */
+.pmob__more {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 26px;
+  padding: 6px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.pmob__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.pmob__link--muted {
+  color: var(--ink-3);
+}
+
+.pmob__help {
+  margin: 12px 0 8px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.7);
+  animation: vUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.48s both;
+}
+
+.pmob__help-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.pmob__help-text {
+  margin: 4px 0 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pmob__help-btn {
+  display: block;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: var(--radius-pill);
+  background: var(--wasp);
+  color: var(--on-wasp);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.pmob__help-more {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* ── Вкладки «покупки», «настройки», «помощь» ── */
+.porder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.porder__text {
+  min-width: 0;
+}
+
+.porder__right {
+  flex: none;
+  text-align: right;
+}
+
+.porder__sum {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.porder__status {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Секции настроек и помощи переиспользуются с десктопа — им нужен только отступ */
+.pmob__pane {
+  margin-top: 20px;
+}
+
+/* ── Гость и пустое ── */
+.pmob__guest,
+.pmob__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 80px 20px 0;
+  text-align: center;
+}
+
+.pmob__empty {
+  padding-top: 40px;
+}
+
+.pmob__guest-icon {
+  color: var(--ink-3);
+}
+
+.pmob__guest-title {
+  margin: 10px 0 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.pmob__guest-text {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.pmob__guest-btn {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 13px 28px;
+  border-radius: var(--radius-pill);
+  background: var(--btn);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pmob__bar,
+  .pmob__head,
+  .pticket,
+  .pmob__section,
+  .pmob__list,
+  .pmob__help {
+    animation: none;
+  }
+}

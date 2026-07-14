@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from './store/authStore';
-import { hasOwnChrome } from './utils/mobileScreens';
+import { hidesBottomNav } from './utils/mobileScreens';
 import ScrollToTop from './components/ScrollToTop';
 import LocaleLayout from './components/LocaleLayout';
 import Header from './components/layout/Header';
@@ -53,8 +53,8 @@ function AppShell() {
   const location = useLocation();
   const isPartnerLanding = /^\/(ru|uz)\/partners\/?$/.test(location.pathname);
   const isLoginPage = /^\/(ru|uz)\/login\/?$/.test(location.pathname);
-  // Купон/корзина/оплата: снизу своя кнопка — нижняя таблетка налезала бы на неё.
-  const isOwnChrome = hasOwnChrome(location.pathname);
+  // Купон/корзина/оплата/поиск: снизу своя кнопка — таблетка навигации налезала бы.
+  const noBottomNav = hidesBottomNav(location.pathname);
 
   useEffect(() => {
     if (isPartnerLanding) {
@@ -108,7 +108,7 @@ function AppShell() {
       </Routes>
       </main>
       {!isPartnerLanding && !isLoginPage && <Footer />}
-      {!isPartnerLanding && !isLoginPage && !isOwnChrome && <BottomNav />}
+      {!isPartnerLanding && !isLoginPage && !noBottomNav && <BottomNav />}
       <CartDrawer />
       <LimitModal />
       <CookieConsent />
