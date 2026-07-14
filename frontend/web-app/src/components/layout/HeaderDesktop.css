@@ -120,9 +120,16 @@
 
 /* ── Центральная группа ── */
 .hdr__center {
+  position: relative;
   flex: 1;
   min-width: 0;
   gap: 8px;
+}
+
+/* Спейсеры под каплю: схлопываются/раскрываются синхронно с её перелётом */
+.hdr__slot {
+  flex: none;
+  transition: width 0.6s cubic-bezier(0.55, 0, 0.3, 1);
 }
 
 .hdr__icon {
@@ -193,9 +200,11 @@
   white-space: nowrap;
 }
 
-.hdr__cart {
-  flex: none;
-  position: relative;
+/* ── Капля: корзина ⇄ назад ── */
+.hdr__drop {
+  position: absolute;
+  top: 8px;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -204,11 +213,21 @@
   border-radius: 50%;
   background: var(--ink);
   color: var(--on-ink);
-  transition: filter var(--transition-fast);
+  transition: left 0.6s cubic-bezier(0.55, 0, 0.3, 1), transform 0.28s ease, filter 0.15s;
 }
 
-.hdr__cart:hover {
+.hdr__drop:hover {
   filter: brightness(1.35);
+}
+
+/* В полёте каплю растягивает по ходу движения */
+.hdr__drop--stretch {
+  transform: scaleX(1.55) scaleY(0.82);
+}
+
+/* «Глоток» при добавлении в корзину */
+.hdr__drop--gulp {
+  transform: scale(1.18);
 }
 
 .hdr__cart-badge {
@@ -227,6 +246,147 @@
   font-size: 11px;
   font-weight: 800;
   pointer-events: none;
+  transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.hdr__cart-badge--gulp {
+  transform: scale(1.4);
+}
+
+/* ── Микро-моушн ── */
+
+/* Гамбургер: полоски «дышат» при наведении */
+.hdr__burger {
+  flex-direction: column;
+  gap: 3.5px;
+}
+
+.hdr__bar {
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: width 0.25s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.hdr__burger:hover .hdr__bar:first-child {
+  width: 10px;
+}
+
+.hdr__burger:hover .hdr__bar:last-child {
+  width: 13px;
+  transition-delay: 0.05s;
+}
+
+/* Сердце: пульс + три разлетающихся мини-сердца */
+.hdr__fav {
+  transition: background 0.35s, color 0.2s, transform 0.28s cubic-bezier(0.3, 2, 0.5, 1);
+}
+
+.hdr__fav--pop {
+  transform: scale(1.22);
+}
+
+.hdr__hearts {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hdr__heart {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  background: var(--heart);
+  clip-path: polygon(50% 100%, 0% 35%, 15% 5%, 50% 25%, 85% 5%, 100% 35%);
+  opacity: 0;
+  animation: heartFloat 0.7s ease-out forwards;
+}
+
+.hdr__heart:nth-child(1) {
+  top: -2px;
+  left: 6px;
+}
+
+.hdr__heart:nth-child(2) {
+  top: -4px;
+  left: 17px;
+  width: 9px;
+  height: 9px;
+  animation-duration: 0.75s;
+  animation-delay: 0.08s;
+}
+
+.hdr__heart:nth-child(3) {
+  top: -2px;
+  left: 27px;
+  width: 6px;
+  height: 6px;
+  animation-duration: 0.65s;
+  animation-delay: 0.16s;
+}
+
+@keyframes heartFloat {
+  0% { opacity: 1; transform: translateY(0) scale(0.5); }
+  100% { opacity: 0; transform: translateY(-30px) scale(1.15); }
+}
+
+/* Плейсхолдер поиска: подсказки сменяются fade + slide */
+.hdr__ph {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 0.25s, transform 0.25s;
+}
+
+.hdr__ph--out {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+/* «Указать»: желейный сквош */
+.hdr__address-btn {
+  transition: background 0.35s, color 0.35s, transform 0.25s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.hdr__address-btn:hover {
+  transform: scale(1.08, 0.92);
+}
+
+.hdr__address-btn:active {
+  transform: scale(0.94);
+}
+
+/* «Войти»: стрелка выезжает при наведении */
+.hdr__login-arrow {
+  display: inline-block;
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateX(-6px);
+  transition: width 0.25s, opacity 0.25s, transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.hdr__login:hover .hdr__login-arrow {
+  width: 16px;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hdr__drop,
+  .hdr__slot,
+  .hdr__bar,
+  .hdr__fav,
+  .hdr__cart-badge,
+  .hdr__ph {
+    transition: none;
+  }
+
+  .hdr__pin--hop,
+  .hdr__heart {
+    animation: none;
+  }
 }
 
 /* ── Язык + вход ── */
@@ -261,6 +421,8 @@
 }
 
 .hdr__login {
+  display: flex;
+  align-items: center;
   padding: 9px 20px;
   border-radius: var(--radius-pill);
   font-size: 13.5px;

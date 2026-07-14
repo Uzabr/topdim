@@ -7,7 +7,16 @@
   font-weight: 800;
   letter-spacing: -0.01em;
   white-space: nowrap;
-  transition: transform var(--transition-fast);
+  /* Желейный сквош при наведении (микро-моушн из хендоффа) */
+  transition: background var(--transition-fast), transform 0.25s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.logo-pill:hover {
+  transform: scale(1.07, 0.9);
+}
+
+.logo-pill:active {
+  transform: scale(0.94);
 }
 
 .logo-pill--sm {

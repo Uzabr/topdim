@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -14,6 +14,8 @@ import PurchasePanel from '../components/coupon-detail/PurchasePanel';
 import ReviewsBlock from '../components/coupon-detail/ReviewsBlock';
 import ShareMenu from '../components/coupon-detail/ShareMenu';
 import WhereSection from '../components/coupon-detail/WhereSection';
+import DropTabs from '../components/ui/DropTabs';
+import { flyFunnel } from '../utils/funnel';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { mapCouponOfferToCardData } from '../utils/couponCardMapper';
 import { localizedName } from '../utils/localizedText';
@@ -37,6 +39,7 @@ export default function CouponDetailPage() {
   const [block, setBlock] = useState<Block>('info');
   const [optionId, setOptionId] = useState<number | null>(null);
   const [toast, setToast] = useState('');
+  const galleryRef = useRef<HTMLDivElement>(null);
 
   const {
     data: coupon,
@@ -114,10 +117,13 @@ export default function CouponDetailPage() {
     navigate(lp('/checkout'));
   };
 
+  // Купон «затягивает» воронкой в кнопку корзины и только потом падает в неё.
   const handleAddToCart = () => {
-    putInCart();
-    setToast(t('couponDetail.addedToCart', { title: selected?.title ?? c.title }));
-    setTimeout(() => setToast(''), 3000);
+    flyFunnel(galleryRef.current, 'cart-drop', () => {
+      putInCart();
+      setToast(t('couponDetail.addedToCart', { title: selected?.title ?? c.title }));
+      setTimeout(() => setToast(''), 3000);
+    });
   };
 
   const relatedCards = related.filter((r) => r.id !== c.id).slice(0, 4);
@@ -136,12 +142,14 @@ export default function CouponDetailPage() {
 
       <div className="detail__grid">
         <div className="detail__main">
-          <CouponGallery
-            images={images}
-            alt={c.title}
-            fallbackText={c.merchant?.name}
-            couponId={c.id}
-          />
+          <div ref={galleryRef}>
+            <CouponGallery
+              images={images}
+              alt={c.title}
+              fallbackText={c.merchant?.name}
+              couponId={c.id}
+            />
+          </div>
 
           <h1 className="detail__title">{c.title}</h1>
 
@@ -160,25 +168,21 @@ export default function CouponDetailPage() {
           </div>
 
           <div className="detail__blocks">
-            <div className="detail__pills" id="cblocks">
-              <button
-                type="button"
-                data-blockkey="info"
-                className={`detail__pill${block === 'info' ? ' detail__pill--active' : ''}`}
-                onClick={() => setBlock('info')}
-              >
-                {t('couponDetail.tabInfo')}
-              </button>
-              <button
-                type="button"
-                data-blockkey="reviews"
-                className={`detail__pill${block === 'reviews' ? ' detail__pill--active' : ''}`}
-                onClick={() => setBlock('reviews')}
-              >
-                {t('couponDetail.tabReviews')}
-                {c.reviewCount ? ` · ${c.reviewCount}` : ''}
-              </button>
-            </div>
+            <DropTabs
+              id="cblocks"
+              variant="card"
+              active={block}
+              onChange={setBlock}
+              tabs={[
+                { key: 'info' as const, label: t('couponDetail.tabInfo') },
+                {
+                  key: 'reviews' as const,
+                  label: c.reviewCount
+                    ? `${t('couponDetail.tabReviews')} · ${c.reviewCount}`
+                    : t('couponDetail.tabReviews'),
+                },
+              ]}
+            />
 
             <ShareMenu title={c.title} />
           </div>

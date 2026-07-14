@@ -56,32 +56,6 @@
   margin-top: 26px;
 }
 
-.detail__pills {
-  position: relative;
-  display: inline-flex;
-  gap: 8px;
-}
-
-.detail__pill {
-  padding: 10px 20px;
-  border-radius: var(--radius-pill);
-  background: var(--card);
-  color: var(--ink);
-  font-size: 13.5px;
-  font-weight: 700;
-  transition: background 0.2s, color 0.2s;
-}
-
-.detail__pill:hover {
-  background: var(--chip-hover);
-}
-
-.detail__pill--active,
-.detail__pill--active:hover {
-  background: var(--ink);
-  color: var(--on-ink);
-}
-
 /* ── Секции ── */
 .detail__section {
   margin-top: 28px;

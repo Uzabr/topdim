@@ -1,0 +1,67 @@
+.dtabs {
+  position: relative;
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Капля — чёрный индикатор под активной кнопкой (стили пишет DropTabs.tsx) */
+.dtabs__blob {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.dtab {
+  position: relative;
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+  user-select: none;
+}
+
+.dtabs--paper .dtab {
+  background: var(--paper);
+  box-shadow: var(--shadow-pill);
+}
+
+.dtabs--card .dtab {
+  background: var(--card);
+}
+
+.dtab__label {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: inherit;
+  transition: color 0.2s;
+}
+
+.dtab--active {
+  color: var(--on-ink);
+}
+
+.dtab__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--wasp);
+  color: var(--on-wasp);
+  font-size: 11px;
+  font-weight: 800;
+}

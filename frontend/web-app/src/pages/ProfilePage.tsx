@@ -15,6 +15,7 @@ import RefundRequestModal from '../components/profile/RefundRequestModal';
 import ComplaintModal from '../components/profile/ComplaintModal';
 import ProfileSettingsSection from '../components/profile/ProfileSettingsSection';
 import ProfileHelpSection from '../components/profile/ProfileHelpSection';
+import DropTabs from '../components/ui/DropTabs';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { formatDate, formatPrice } from '../utils/format';
 import './ProfilePage.css';
@@ -142,23 +143,17 @@ export default function ProfilePage() {
         </button>
       </header>
 
-      {/* ═══ Табы. Капля-индикатор и звук — шаг 6 ═══ */}
-      <div className="profile-tabs" id="ptabs">
-        {TABS.map((key) => (
-          <button
-            key={key}
-            type="button"
-            data-tabkey={key}
-            className={`profile-tab${tab === key ? ' profile-tab--active' : ''}`}
-            onClick={() => setTab(key)}
-          >
-            {t(`profile.tabs.${key}`)}
-            {key === 'coupons' && live.length > 0 && (
-              <span className="profile-tab__count">{live.length}</span>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* ═══ Табы: чёрная капля перетекает между кнопками + звук ═══ */}
+      <DropTabs
+        id="ptabs"
+        active={tab}
+        onChange={setTab}
+        tabs={TABS.map((key) => ({
+          key,
+          label: t(`profile.tabs.${key}`),
+          badge: key === 'coupons' ? live.length : undefined,
+        }))}
+      />
 
       {/* ═══ Мои купоны ═══ */}
       {tab === 'coupons' && (

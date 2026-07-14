@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Heart, MapPin, Menu, Search, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Heart, MapPin, Search, ShoppingBag } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
@@ -14,12 +14,20 @@ import './HeaderDesktop.css';
 /** Ниже этого сдвига шапка светлая, выше — тёмная полупрозрачная. */
 const SCROLL_THRESHOLD = 80;
 
+/** Капля растягивается в полёте ровно столько, сколько длится переезд. */
+const STRETCH_MS = 320;
+const GULP_MS = 260;
+const BURST_MS = 750;
+const PLACEHOLDER_MS = 2800;
+
 type AddressMode = 'idle' | 'wait' | 'set';
 
 /**
  * Десктопная шапка (≥768px), референс: design_handoff_sizbiz/«Шапка - демо анимаций.dc.html».
  * Три плавающие таблетки: [адрес] [лого · каталог · избранное · поиск · корзина] [войти].
- * Капля корзины, воронка избранного и микро-моушн — шаг 6.
+ *
+ * Капля корзины: на /cart и /favorites круглая кнопка перетекает по таблетке влево
+ * и становится «← Назад» — освободившееся место схлопывают спейсеры-слоты.
  */
 export default function HeaderDesktop() {
   const { t, i18n } = useTranslation();
@@ -40,6 +48,35 @@ export default function HeaderDesktop() {
   const mode: AddressMode = editingAddress ? 'wait' : address ? 'set' : 'idle';
   const lang = i18n.language?.substring(0, 2) === 'uz' ? 'uz' : 'ru';
   const onFavorites = location.pathname.endsWith('/favorites');
+  const onCart = location.pathname.endsWith('/cart');
+
+  // ── Капля: слева на корзине/избранном, иначе справа ──
+  const dropLeft = onCart || onFavorites;
+  const [prevDropLeft, setPrevDropLeft] = useState(dropLeft);
+  const [stretch, setStretch] = useState(false);
+  if (prevDropLeft !== dropLeft) {
+    setPrevDropLeft(dropLeft);
+    setStretch(true);
+  }
+
+  // ── «Глоток» счётчика корзины и всплеск сердец: реагируем на рост числа ──
+  const [prevItems, setPrevItems] = useState(totalItems);
+  const [gulp, setGulp] = useState(false);
+  if (prevItems !== totalItems) {
+    setPrevItems(totalItems);
+    if (totalItems > prevItems) setGulp(true);
+  }
+
+  const favCount = favoriteIds.length;
+  const [prevFav, setPrevFav] = useState(favCount);
+  const [burst, setBurst] = useState(false);
+  if (prevFav !== favCount) {
+    setPrevFav(favCount);
+    if (favCount > prevFav) setBurst(true);
+  }
+
+  const [phIdx, setPhIdx] = useState(0);
+  const [phShow, setPhShow] = useState(true);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > SCROLL_THRESHOLD);
@@ -47,6 +84,39 @@ export default function HeaderDesktop() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    if (!stretch) return;
+    const id = setTimeout(() => setStretch(false), STRETCH_MS);
+    return () => clearTimeout(id);
+  }, [stretch]);
+
+  useEffect(() => {
+    if (!gulp) return;
+    const id = setTimeout(() => setGulp(false), GULP_MS);
+    return () => clearTimeout(id);
+  }, [gulp]);
+
+  useEffect(() => {
+    if (!burst) return;
+    const id = setTimeout(() => setBurst(false), BURST_MS);
+    return () => clearTimeout(id);
+  }, [burst]);
+
+  // Плейсхолдер поиска циклически меняет подсказки (fade + slide).
+  const suggestions = t('header.searchSuggestions', { returnObjects: true }) as string[];
+  const phrases = [t('header.searchPlaceholder'), ...(Array.isArray(suggestions) ? suggestions : [])];
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPhShow(false);
+      setTimeout(() => {
+        setPhIdx((i) => (i + 1) % phrases.length);
+        setPhShow(true);
+      }, 260);
+    }, PLACEHOLDER_MS);
+    return () => clearInterval(id);
+  }, [phrases.length]);
 
   const startEditing = () => {
     setDraft(address);
@@ -65,6 +135,11 @@ export default function HeaderDesktop() {
     localStorage.setItem('language', next);
     const pathWithoutLang = location.pathname.replace(/^\/(ru|uz)/, '');
     navigate(`/${next}${pathWithoutLang || '/'}${location.search}`, { replace: true });
+  };
+
+  const dropClick = () => {
+    if (dropLeft) navigate(lp('/'));
+    else navigate(lp('/cart'));
   };
 
   return (
@@ -119,30 +194,57 @@ export default function HeaderDesktop() {
 
         {/* ═══ Центральная группа ═══ */}
         <div className="hdr__pill hdr__center">
+          {/* Слот, в который «переливается» капля на корзине/избранном */}
+          <span className="hdr__slot" style={{ width: dropLeft ? 48 : 0 }} aria-hidden="true" />
+
           <Logo />
 
-          <Link to={lp('/coupons')} className="hdr__icon" aria-label={t('header.catalog')}>
-            <Menu size={18} />
+          <Link to={lp('/coupons')} className="hdr__icon hdr__burger" aria-label={t('header.catalog')}>
+            <span className="hdr__bar" />
+            <span className="hdr__bar" />
+            <span className="hdr__bar" />
           </Link>
 
           <Link
             to={lp('/favorites')}
-            className={`hdr__icon${onFavorites ? ' hdr__icon--active' : ''}`}
+            id="fav-btn"
+            className={`hdr__icon hdr__fav${onFavorites ? ' hdr__icon--active' : ''}${burst ? ' hdr__fav--pop' : ''}`}
             aria-label={t('nav.favorites')}
           >
-            <Heart size={17} fill={onFavorites ? 'currentColor' : 'none'} />
-            {favoriteIds.length > 0 && <span className="hdr__icon-count">{favoriteIds.length}</span>}
+            <Heart size={17} fill={onFavorites || favCount > 0 ? 'currentColor' : 'none'} />
+            {favCount > 0 && <span className="hdr__icon-count">{favCount}</span>}
+            {burst && (
+              <span className="hdr__hearts" aria-hidden="true">
+                <span className="hdr__heart" />
+                <span className="hdr__heart" />
+                <span className="hdr__heart" />
+              </span>
+            )}
           </Link>
 
           <button type="button" className="hdr__search" onClick={() => setSearchOpen(true)}>
             <Search size={16} />
-            <span>{t('header.searchPlaceholder')}</span>
+            <span className={`hdr__ph${phShow ? '' : ' hdr__ph--out'}`}>{phrases[phIdx]}</span>
           </button>
 
-          <Link to={lp('/cart')} className="hdr__cart" aria-label={t('cart.title')}>
-            <ShoppingBag size={17} />
-            {totalItems > 0 && <span className="hdr__cart-badge">{totalItems}</span>}
-          </Link>
+          <span className="hdr__slot" style={{ width: dropLeft ? 0 : 48 }} aria-hidden="true" />
+
+          {/* ═══ Капля: корзина ⇄ назад ═══ */}
+          <button
+            type="button"
+            id="cart-drop"
+            className={`hdr__drop${stretch ? ' hdr__drop--stretch' : ''}${gulp ? ' hdr__drop--gulp' : ''}`}
+            style={{ left: dropLeft ? 8 : 'calc(100% - 48px)' }}
+            onClick={dropClick}
+            aria-label={dropLeft ? t('common.back') : t('cart.title')}
+          >
+            {dropLeft ? <ArrowLeft size={17} /> : <ShoppingBag size={17} />}
+            {!dropLeft && totalItems > 0 && (
+              <span className={`hdr__cart-badge${gulp ? ' hdr__cart-badge--gulp' : ''}`}>
+                {totalItems}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* ═══ Язык + вход ═══ */}
@@ -167,6 +269,9 @@ export default function HeaderDesktop() {
           ) : (
             <Link to={lp('/login')} className="hdr__login">
               {t('header.login')}
+              <span className="hdr__login-arrow" aria-hidden="true">
+                →
+              </span>
             </Link>
           )}
         </div>

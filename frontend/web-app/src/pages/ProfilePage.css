@@ -45,51 +45,14 @@
   background: var(--chip-hover);
 }
 
-/* ── Табы ── */
-.profile-tabs {
-  position: relative;
-  display: inline-flex;
-  gap: 8px;
+/* ── Табы (сам компонент — components/ui/DropTabs) ── */
+#ptabs {
   margin: 24px 0 28px;
 }
 
-.profile-tab {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+#ptabs .dtab {
   padding: 11px 22px;
-  border-radius: var(--radius-pill);
-  background: var(--paper);
-  box-shadow: var(--shadow-pill);
   font-size: 14px;
-  font-weight: 700;
-  color: var(--ink);
-  user-select: none;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.profile-tab--active {
-  background: var(--ink);
-  color: var(--on-ink);
-}
-
-.profile-tab__count {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  border-radius: var(--radius-pill);
-  background: var(--ink);
-  color: var(--on-ink);
-  font-size: 11.5px;
-  font-weight: 800;
-  transition: background var(--transition-fast);
-}
-
-.profile-tab--active .profile-tab__count {
-  background: rgba(255, 255, 255, 0.2);
 }
 
 /* ── Мои купоны ── */
@@ -298,7 +261,7 @@
     grid-template-columns: 1fr;
   }
 
-  .profile-tabs {
+  #ptabs {
     display: flex;
     flex-wrap: wrap;
   }

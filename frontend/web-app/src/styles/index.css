@@ -285,3 +285,13 @@ body.td-login-body .app-main--login {
 ::-webkit-scrollbar-track {
   background: var(--card);
 }
+
+/* ═══ Воронка: клон карточки, летящий в кнопку шапки (utils/funnel.ts) ═══ */
+.funnel-flyer {
+  position: fixed;
+  z-index: 200;
+  background: #dcd9d3;
+  pointer-events: none;
+  opacity: 1;
+  transition: clip-path 0.34s cubic-bezier(0.55, 0, 0.85, 0.45), opacity 0.4s ease-in;
+}
