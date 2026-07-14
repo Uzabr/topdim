@@ -67,7 +67,7 @@ export default function CheckoutPage() {
           <h1>{t('checkout.title')}</h1>
         </div>
 
-        <div className="checkout-missing-contact glass-card">
+        <div className="checkout-missing-contact surface-card">
           <AlertCircle size={40} className="checkout-missing-contact__icon" />
           {!userEmail && (
             <p className="checkout-missing-contact__text">
@@ -122,7 +122,7 @@ export default function CheckoutPage() {
       <div className="checkout-layout">
         <div className="checkout-main">
 
-          <div className="checkout-section glass-card">
+          <div className="checkout-section surface-card">
             <h2 className="checkout-section__title">{t('checkout.contactTitle')}</h2>
             <div className="checkout-contact-info">
               <div className="checkout-contact-row">
@@ -137,7 +137,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* Payment Method */}
-          <div className="checkout-section glass-card">
+          <div className="checkout-section surface-card">
             <h2 className="checkout-section__title">{t('checkout.paymentTitle')}</h2>
             
             {error && <div className="checkout-error"><AlertCircle size={16} /> {error}</div>}
@@ -190,7 +190,7 @@ export default function CheckoutPage() {
 
         {/* Sidebar Summary */}
         <div className="checkout-sidebar">
-          <div className="checkout-summary glass-card">
+          <div className="checkout-summary surface-card">
             <h3>{t('checkout.yourOrder')}</h3>
             <div className="checkout-items">
               {items.map((item) => (

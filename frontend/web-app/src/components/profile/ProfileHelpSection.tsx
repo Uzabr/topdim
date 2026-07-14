@@ -34,7 +34,7 @@ export default function ProfileHelpSection() {
       <h3 className="profile-help__title">{t('profile.help.title')}</h3>
       <div className="profile-help__grid">
         {items.map((item) => (
-          <div key={item.title} className="profile-help__card glass-card">
+          <div key={item.title} className="profile-help__card surface-card">
             <div className="profile-help__card-icon">{item.icon}</div>
             <div>
               <h4 className="profile-help__card-title">{item.title}</h4>

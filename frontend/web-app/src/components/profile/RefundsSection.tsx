@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { refundsApi, type RefundRequestData } from '../../api/refunds';
-import { Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Loader2, Receipt } from 'lucide-react';
 import { formatDate } from '../../utils/format';
 import './RefundsSection.css';
 
@@ -26,8 +26,8 @@ export default function RefundsSection() {
 
   if (refunds.length === 0) {
     return (
-      <div className="refunds-empty glass-card">
-        <span style={{ fontSize: '2rem' }}>📋</span>
+      <div className="refunds-empty surface-card">
+        <Receipt size={40} strokeWidth={1.5} className="section-empty__icon" />
         <h3>{t('profile.refundsSection.emptyTitle')}</h3>
         <p>{t('profile.refundsSection.emptyDesc')}</p>
       </div>
@@ -39,7 +39,7 @@ export default function RefundsSection() {
       {refunds.map((r: RefundRequestData) => {
         const status = statusMap[r.status as keyof typeof statusMap] || statusMap.PENDING;
         return (
-          <div key={r.id} className="refund-card glass-card">
+          <div key={r.id} className="refund-card surface-card">
             <div className="refund-card__top">
               <div>
                 <h4 className="refund-card__title">{r.couponTitle || t('profile.purchasedCoupon.couponFallback')}</h4>

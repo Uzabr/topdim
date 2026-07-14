@@ -114,7 +114,8 @@
 }
 
 .home-hero__badge-icon {
-  font-size: 24px;
+  color: var(--ink);
+  flex-shrink: 0;
 }
 
 .home-hero__badge-title {

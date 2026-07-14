@@ -49,7 +49,7 @@
 .search-box:focus-within {
   border-color: var(--primary);
   background: var(--bg-surface);
-  box-shadow: 0 0 0 4px rgba(255, 102, 96, 0.15);
+  box-shadow: 0 0 0 4px var(--chip);
 }
 
 .search-box__icon {
@@ -233,7 +233,7 @@
 }
 
 .search-coupon-badge {
-  background: rgba(255, 102, 96, 0.1);
+  background: var(--chip);
   color: var(--primary);
   padding: 4px 10px;
   border-radius: var(--radius-pill);
@@ -260,7 +260,7 @@
 }
 
 .search-empty-icon {
-  font-size: 4rem;
+  color: var(--ink-3);
   margin-bottom: var(--space-sm);
   opacity: 0.8;
 }

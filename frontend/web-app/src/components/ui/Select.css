@@ -16,7 +16,7 @@
   background: var(--bg-chip);
   transition: all var(--transition-fast);
   white-space: nowrap;
-  border: 1px solid transparent; /* ✅ Для плавного появления границы при ховере */
+  border: 1px solid transparent; /* Для плавного появления границы при ховере */
   cursor: pointer;
 }
 
@@ -27,19 +27,19 @@
 }
 
 .select-trigger:hover {
-  background: var(--bg-muted);    /* ✅ Было: rgba(255,122,24,0.12) */
+  background: var(--bg-muted);    /* Было: var(--chip) */
   color: var(--primary);
-  border-color: var(--border-strong); /* ✅ Подчёркиваем интерактивность */
+  border-color: var(--border-strong); /* Подчёркиваем интерактивность */
 }
 
 .select-chevron {
   transition: transform var(--transition-fast);
-  color: var(--text-muted);       /* ✅ Иконка не перетягивает внимание */
+  color: var(--text-muted);       /* Иконка не перетягивает внимание */
 }
 
 .select-chevron--open {
   transform: rotate(180deg);
-  color: var(--primary);          /* ✅ Открытое состояние — акцент */
+  color: var(--primary);          /* Открытое состояние — акцент */
 }
 
 .select-dropdown {
@@ -47,7 +47,7 @@
   top: calc(100% + 8px);
   left: 0;
   z-index: 200;
-  background: var(--bg-surface);  /* ✅ rgba(255,255,255,0.9) из системы */
+  background: var(--bg-surface);  /* rgba(255,255,255,0.9) из системы */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
@@ -91,22 +91,22 @@
 }
 
 .select-option:hover {
-  background: var(--bg-muted);    /* ✅ Единый ховер как у .nav-link */
+  background: var(--bg-muted);    /* Единый ховер как у .nav-link */
   color: var(--primary);
 }
 
 .select-option--active {
-  color: var(--text-inverse);     /* ✅ Белый текст на градиенте */
+  color: var(--text-inverse);     /* Белый текст на градиенте */
   font-weight: 700;
-  background: var(--gradient-primary); /* ✅ Градиент из дизайн-системы */
+  background: var(--gradient-primary); /* Градиент из дизайн-системы */
 }
 
 .select-check {
   margin-left: auto;
-  color: var(--text-inverse);     /* ✅ Галочка видна на градиенте */
+  color: var(--text-inverse);     /* Галочка видна на градиенте */
 }
 
-/* ✅ Опционально: фокус-состояние для доступности (клавиатура) */
+/* Опционально: фокус-состояние для доступности (клавиатура) */
 .select-trigger:focus-visible {
   outline: none;
   box-shadow: var(--shadow-focus);

@@ -95,9 +95,9 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
-      <div className="login-card glass">
+      <div className="login-card surface-card">
         <div className="login-header">
-          <Link to={lp('/')} className="login-logo">💎 TopDim</Link>
+          <Link to={lp('/')} className="login-logo">TopDim</Link>
           <h1>{isLogin ? t('login.titleLogin') : t('login.titleRegister')}</h1>
           <p className="login-subtitle">
             {isLogin ? t('login.subtitleLogin') : t('login.subtitleRegister')}

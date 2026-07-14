@@ -77,29 +77,18 @@
 
 
 
-/* Hot badge — inside wrapper */
+/* Hot badge — inside wrapper. Статус-бейдж: только текст, без иконки */
 .coupon-card__hot {
   display: flex;
   align-items: center;
-  gap: 4px;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
-  background: linear-gradient(135deg, #ff416c, #ff4b2b);
-  box-shadow: 0 4px 10px rgba(255, 75, 43, 0.4);
-  color: #fff;
+  background: var(--ink);
+  color: var(--on-ink);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-.coupon-card__hot span {
-  font-size: 14px;
-  animation: pulse-fire 2s infinite ease-in-out;
-}
-
-@keyframes pulse-fire {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
 }
 
 /* Discount badge */
@@ -109,9 +98,8 @@
   right: 10px;
   padding: 5px 12px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
-  color: var(--text-primary);
+  background: var(--wasp);
+  color: var(--on-wasp);
   font-size: 12px;
   font-weight: 700;
   z-index: 2;
@@ -201,7 +189,7 @@
 }
 
 .coupon-card__star {
-  color: #FFB800;
+  color: var(--wasp-deep);
 }
 
 .coupon-card__rating-value {

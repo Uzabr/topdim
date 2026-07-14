@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, Flame } from 'lucide-react';
+import { MapPin, Flame, SearchX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { bazaarsApi } from '../api/bazaars';
@@ -87,7 +87,7 @@ export default function SearchPage() {
       </div>
 
       {!searchTerm && !isTyping && (
-        <div className="search-suggestions glass-card">
+        <div className="search-suggestions surface-card">
           <div className="search-categories">
             <h3 className="search-suggestions__title">{t('search.popularCategories')}</h3>
             <div className="search-tags search-tags--scroll">
@@ -143,7 +143,7 @@ export default function SearchPage() {
                       const productTags = shop.productTags ?? [];
 
                       return (
-                        <div key={shop.id} className="search-shop-card glass-card" onClick={() => navigate(lp(`/shop/${shop.id}`))}>
+                        <div key={shop.id} className="search-shop-card surface-card" onClick={() => navigate(lp(`/shop/${shop.id}`))}>
                           <div className="search-shop-card__main">
                             <h3>{shop.name}</h3>
                             {shop.bazaar && (
@@ -153,7 +153,7 @@ export default function SearchPage() {
                             )}
                           </div>
                           <div className="search-shop-card__meta">
-                            {shop.hasCoupon && <span className="search-coupon-badge">🎫 {t('search.discountsBadge')}</span>}
+                            {shop.hasCoupon && <span className="search-coupon-badge">{t('search.discountsBadge')}</span>}
                             {productTags.length > 0 && (
                               <p className="search-shop__tags-text">
                                 {productTags.slice(0, 3).map((tag) => tag.tag).join(', ')}
@@ -168,8 +168,8 @@ export default function SearchPage() {
               )}
 
               {!isLoading && filteredCoupons.length === 0 && shops.length === 0 && (
-                <div className="search-empty glass-card">
-                  <span className="search-empty-icon">🕵️</span>
+                <div className="search-empty surface-card">
+                  <SearchX className="search-empty-icon" size={56} strokeWidth={1.25} />
                   <h3>{t('search.emptyTitle')}</h3>
                   <p>{t('search.emptyDesc', { query: searchTerm })}</p>
                   <button className="text-button" onClick={handleClear}>{t('search.reset')}</button>

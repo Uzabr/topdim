@@ -12,18 +12,18 @@
 .star-rating__star {
   position: relative;
   display: flex;
-  color: #d4d4d4;
+  color: var(--price-old);
   padding: 0;
   line-height: 1;
   cursor: default;
 }
 
 .star-rating__star--full {
-  color: #FFB800;
+  color: var(--wasp-deep);
 }
 
 .star-rating__star--half {
-  color: #FFB800;
+  color: var(--wasp-deep);
 }
 
 .star-rating__half-mask {
@@ -33,7 +33,7 @@
   width: 50%;
   height: 100%;
   overflow: hidden;
-  color: #d4d4d4;
+  color: var(--price-old);
   display: flex;
   justify-content: flex-end;
 }

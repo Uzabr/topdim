@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { complaintsApi, type ComplaintData } from '../../api/complaints';
-import { Clock, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Eye, MessageSquare } from 'lucide-react';
 import { formatDate } from '../../utils/format';
 import './ComplaintsSection.css';
 
@@ -28,8 +28,8 @@ export default function ComplaintsSection() {
 
   if (complaints.length === 0) {
     return (
-      <div className="complaints-empty glass-card">
-        <span style={{ fontSize: '2rem' }}>📨</span>
+      <div className="complaints-empty surface-card">
+        <MessageSquare size={40} strokeWidth={1.5} className="section-empty__icon" />
         <h3>{t('profile.complaintsSection.emptyTitle')}</h3>
         <p>{t('profile.complaintsSection.emptyDesc')}</p>
       </div>
@@ -41,7 +41,7 @@ export default function ComplaintsSection() {
       {complaints.map((c: ComplaintData) => {
         const status = statusMap[c.status as keyof typeof statusMap] || statusMap.PENDING;
         return (
-          <div key={c.id} className="complaint-card glass-card">
+          <div key={c.id} className="complaint-card surface-card">
             <div className="complaint-card__top">
               <div>
                 <h4 className="complaint-card__subject">{c.subject}</h4>

@@ -13,7 +13,7 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, #e04040) 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--warn-fg)) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -46,8 +46,8 @@
   align-items: flex-start;
   gap: var(--space-sm);
   padding: var(--space-md);
-  background: rgba(255, 165, 0, 0.08);
-  border: 1px solid rgba(255, 165, 0, 0.2);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-bg);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-lg);
   font-size: var(--font-sm);

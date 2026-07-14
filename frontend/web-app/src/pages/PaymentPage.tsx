@@ -152,7 +152,7 @@ export default function PaymentPage() {
   if (!numericOrderId) {
     return (
       <div className="payment-page container">
-        <div className="payment-card glass-card">
+        <div className="payment-card surface-card">
           <AlertCircle size={48} className="payment-icon payment-icon--error" />
           <h2>{t('payment.orderNotFound')}</h2>
           <button className="primary-button" onClick={() => navigate(lp('/coupons'))}>
@@ -165,7 +165,7 @@ export default function PaymentPage() {
 
   return (
     <div className="payment-page container">
-      <div className="payment-card glass-card">
+      <div className="payment-card surface-card">
 
         {/* POLLING: waiting for payment creation */}
         {state === 'polling' && (

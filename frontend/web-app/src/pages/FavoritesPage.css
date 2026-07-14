@@ -44,7 +44,7 @@
 }
 
 .favorites-empty__icon {
-  font-size: 3rem;
+  color: var(--ink-3);
 }
 
 .favorites-empty h3 {

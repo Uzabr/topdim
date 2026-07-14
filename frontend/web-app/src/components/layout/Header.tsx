@@ -107,7 +107,7 @@ export default function Header() {
                 {t('nav.bazaar')}
               </Link>
             )}
-            {/* ✅ Заменён инлайн-стиль на класс .badge-wrapper */}
+            {/* Заменён инлайн-стиль на класс .badge-wrapper */}
             <Link to={lp('/favorites')} className={`nav-link ${isActive('/favorites') ? 'nav-link--active' : ''}`}>
               <span className="badge-wrapper">
                 <Heart size={18} />

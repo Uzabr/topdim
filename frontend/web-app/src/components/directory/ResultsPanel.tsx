@@ -17,7 +17,7 @@ export default function ResultsPanel({ bazaars, shops, activeTab, onTabChange, o
   const { t } = useTranslation();
 
   return (
-    <div className="results-panel glass-card">
+    <div className="results-panel surface-card">
       <div className="results-panel__header">
         <div className="results-panel__summary">
           <span className="results-panel__count">

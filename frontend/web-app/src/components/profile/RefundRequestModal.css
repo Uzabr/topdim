@@ -7,13 +7,13 @@
 .modal-coupon-title{font-weight:700;font-size:var(--font-sm)}
 .modal-coupon-code{font-family:monospace;font-weight:800;letter-spacing:.1em;color:var(--text-secondary);font-size:var(--font-sm)}
 .modal-coupon-merchant{font-size:12px;color:var(--text-muted)}
-.modal-warning{display:flex;align-items:flex-start;gap:var(--space-sm);padding:var(--space-md);background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.2);border-radius:var(--radius-md);margin-bottom:var(--space-lg);font-size:var(--font-sm);color:#e67e22}
+.modal-warning{display:flex;align-items:flex-start;gap:var(--space-sm);padding:var(--space-md);background:var(--warn-bg);border:1px solid var(--warn-bg);border-radius:var(--radius-md);margin-bottom:var(--space-lg);font-size:var(--font-sm);color:var(--warn-fg)}
 .modal-label{display:block;font-size:var(--font-sm);font-weight:600;color:var(--text-secondary);margin-bottom:6px}
 .modal-textarea{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:var(--font-base);font-family:inherit;background:var(--bg-base);color:var(--text-primary);resize:vertical;min-height:80px}
 .modal-textarea:focus{outline:none;border-color:var(--primary)}
 .modal-char-count{text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px}
-.modal-error{color:var(--danger);font-size:var(--font-sm);padding:var(--space-sm);background:rgba(255,59,48,.06);border-radius:var(--radius-md);margin-top:var(--space-sm)}
+.modal-error{color:var(--danger);font-size:var(--font-sm);padding:var(--space-sm);background:var(--warn-bg);border-radius:var(--radius-md);margin-top:var(--space-sm)}
 .modal-actions{display:flex;gap:var(--space-sm);justify-content:flex-end;margin-top:var(--space-lg)}
-.modal-info{padding:var(--space-md);background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.12);border-radius:var(--radius-md);margin-bottom:var(--space-md);font-size:var(--font-sm);color:#3b82f6;line-height:1.5}
+.modal-info{padding:var(--space-md);background:var(--chip);border:1px solid var(--chip);border-radius:var(--radius-md);margin-bottom:var(--space-md);font-size:var(--font-sm);color:var(--ink);line-height:1.5}
 .modal-info p{margin:0}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}

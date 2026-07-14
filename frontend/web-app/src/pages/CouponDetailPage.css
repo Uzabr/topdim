@@ -236,13 +236,13 @@
 }
 
 .detail-fav-btn:hover {
-  background: rgba(255, 77, 79, 0.1);
+  background: var(--warn-bg);
   color: var(--danger);
 }
 
 .detail-fav-btn--active {
   color: var(--danger);
-  background: rgba(255, 77, 79, 0.1);
+  background: var(--warn-bg);
 }
 
 /* ═══ Info Layout (two columns) ═══ */
@@ -392,7 +392,7 @@
 }
 
 .reviews-empty__icon {
-  font-size: 3rem;
+  color: var(--ink-3);
   margin-bottom: var(--space-sm);
 }
 
@@ -604,12 +604,12 @@
 .detail-option__btn--buy {
   background: var(--gradient-primary);
   color: #fff;
-  box-shadow: 0 6px 18px rgba(255, 102, 96, 0.25);
+  box-shadow: 0 6px 18px var(--chip);
 }
 
 .detail-option__btn--buy:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(255, 102, 96, 0.35);
+  box-shadow: 0 10px 24px var(--chip);
 }
 
 .detail-option__btn--cart {
@@ -658,7 +658,7 @@
   font-size: var(--font-md);
   font-weight: 800;
   text-align: center;
-  box-shadow: 0 12px 36px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 12px 36px var(--chip);
   transition: transform var(--transition-fast);
   border: none;
   cursor: pointer;
@@ -757,7 +757,7 @@
   }
 
   .detail-fav-btn--active {
-    background: rgba(37, 99, 235, 0.1);
+    background: var(--chip);
     border-color: var(--border-strong);
     color: var(--primary);
   }
@@ -815,9 +815,9 @@
   width: min(560px, 100%);
   padding: 32px;
   border-radius: 28px;
-  background: linear-gradient(180deg, #fffdf8 0%, #fff8ef 100%);
-  border: 1px solid rgba(210, 166, 121, 0.22);
-  box-shadow: 0 20px 60px rgba(117, 74, 28, 0.10);
+  background: linear-gradient(180deg, var(--warn-bg) 0%, var(--warn-bg) 100%);
+  border: 1px solid var(--warn-bg);
+  box-shadow: 0 20px 60px var(--warn-bg);
   text-align: center;
 }
 
@@ -828,8 +828,8 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: rgba(201, 104, 39, 0.10);
-  color: #b65b25;
+  background: var(--warn-bg);
+  color: var(--warn-fg);
 }
 
 .coupon-unavailable__card h1 {
@@ -841,7 +841,7 @@
 
 .coupon-unavailable__card p {
   margin: 0 0 24px;
-  color: rgba(52, 37, 26, 0.74);
+  color: rgba(20, 20, 20, 0.74);
   font-size: var(--font-sm);
   line-height: 1.6;
 }
@@ -864,13 +864,13 @@
   font-weight: 700;
   font-size: var(--font-sm);
   text-decoration: none;
-  box-shadow: 0 6px 18px rgba(255, 102, 96, 0.25);
+  box-shadow: 0 6px 18px var(--chip);
   transition: all var(--transition-fast);
 }
 
 .coupon-unavailable__primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(255, 102, 96, 0.35);
+  box-shadow: 0 10px 24px var(--chip);
 }
 
 .coupon-unavailable__secondary {

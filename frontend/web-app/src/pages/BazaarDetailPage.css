@@ -6,7 +6,7 @@
   align-items: center; justify-content: center; overflow: hidden;
 }
 .bazaar-detail__hero img { width: 100%; height: 100%; object-fit: cover; }
-.bazaar-detail__placeholder { font-size: 100px; }
+.bazaar-detail__placeholder { color: var(--ink-3); }
 
 .bazaar-detail__content { padding: var(--space-xl) 0 var(--space-3xl); }
 

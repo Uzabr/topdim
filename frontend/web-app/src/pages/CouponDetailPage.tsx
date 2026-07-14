@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Heart, Gift, TrendingUp, Calendar, Clock, MapPin, Check } from 'lucide-react';
+import { Heart, Gift, TrendingUp, Calendar, Clock, MapPin, Check, PenLine, Info, Star } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { couponsApi } from '../api/coupons';
 import type { CouponOption } from '../api/coupons';
@@ -317,7 +317,7 @@ export default function CouponDetailPage() {
             {/* Review Form / Notice */}
             {!isAuthenticated ? (
               <div className="review-notice">
-                <div className="review-notice__icon">✍️</div>
+                <PenLine className="review-notice__icon" size={24} strokeWidth={1.5} />
                 <p className="review-notice__text">
                   <Link to={lp('/login')} className="review-notice__link">{t('couponDetail.loginToReview')}</Link>{t('couponDetail.loginToReviewSuffix')}
                 </p>
@@ -326,7 +326,7 @@ export default function CouponDetailPage() {
               <ReviewForm couponOfferId={c.id} />
             ) : (
               <div className="review-notice">
-                <div className="review-notice__icon">📋</div>
+                <Info className="review-notice__icon" size={24} strokeWidth={1.5} />
                 <p className="review-notice__text">
                   {t('couponDetail.reviewAfterUse')}
                 </p>
@@ -335,7 +335,7 @@ export default function CouponDetailPage() {
 
             {reviews.length === 0 ? (
               <div className="reviews-empty">
-                <div className="reviews-empty__icon">⭐</div>
+                <Star className="reviews-empty__icon" size={40} strokeWidth={1.5} />
                 <h3>{t('couponDetail.noReviews')}</h3>
                 <p>{t('couponDetail.beFirstReview')}</p>
               </div>

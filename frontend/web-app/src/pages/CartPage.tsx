@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingBag, ArrowRight, Plus, Minus } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowRight, Plus, Minus, ShoppingCart, Ticket } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCartStore } from '../store/cartStore';
 import { formatPrice } from '../utils/format';
@@ -20,7 +20,7 @@ export default function CartPage() {
     return (
       <div className="cart-page">
         <div className="cart-empty container">
-          <div className="cart-empty__icon">🛒</div>
+          <ShoppingCart className="cart-empty__icon" size={64} strokeWidth={1.25} />
           <h2>{t('cart.emptyTitle')}</h2>
           <p>{t('cart.emptyDesc')}</p>
           <Link to={lp('/coupons')} className="primary-button cart-empty__btn">
@@ -39,14 +39,14 @@ export default function CartPage() {
       </div>
 
       <div className="cart-content container">
-        <div className="cart-items glass-card">
+        <div className="cart-items surface-card">
           {items.map((item) => (
             <div key={item.key} className="cart-item">
               <div className="cart-item__icon-wrapper">
                 {item.coverImageUrl ? (
                   <img src={item.coverImageUrl} alt="" className="cart-item__img" />
                 ) : (
-                  <div className="cart-item__icon">🎫</div>
+                  <div className="cart-item__icon"><Ticket size={26} strokeWidth={1.5} /></div>
                 )}
               </div>
               <div className="cart-item__info">
@@ -54,7 +54,7 @@ export default function CartPage() {
                 <p className="cart-item__option">{item.optionTitle}</p>
                 {item.isGift && (
                   <span className="cart-item__gift badge">
-                    🎁 {t('cart.gift')}{item.giftRecipientName ? ` (${t('cart.giftTo', { name: item.giftRecipientName })})` : ''}
+                    {t('cart.gift')}{item.giftRecipientName ? ` (${t('cart.giftTo', { name: item.giftRecipientName })})` : ''}
                   </span>
                 )}
                 <div className="cart-item__qty">
@@ -89,7 +89,7 @@ export default function CartPage() {
           ))}
         </div>
 
-        <div className="cart-summary glass-card">
+        <div className="cart-summary surface-card">
           <h2>{t('cart.summary')}</h2>
           <div className="cart-summary__row">
             <span>{t('cart.itemsLine', { count: totalItems })}</span>

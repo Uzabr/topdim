@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Search, SlidersHorizontal, X, LayoutGrid, List, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
+import { Search, SearchX, SlidersHorizontal, X, LayoutGrid, List, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
 import { couponsApi } from '../api/coupons';
 import CouponCard from '../components/coupon/CouponCard';
 import Select from '../components/ui/Select';
@@ -190,7 +190,7 @@ export default function CouponCatalogPage() {
           </div>
         ) : coupons.length === 0 ? (
           <div className="catalog-empty">
-            <span className="catalog-empty__icon">🔍</span>
+            <SearchX className="catalog-empty__icon" size={44} strokeWidth={1.5} />
             <h3>{t('catalog.emptyTitle')}</h3>
             <p>{t('catalog.emptyDesc')}</p>
           </div>

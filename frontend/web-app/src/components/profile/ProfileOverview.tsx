@@ -23,7 +23,7 @@ export default function ProfileOverview({
   const hasPhone = !!user?.phone;
 
   return (
-    <div className="profile-overview glass-card">
+    <div className="profile-overview surface-card">
       <div className="profile-overview__user">
         <div className="profile-overview__avatar">
           {user?.firstName?.charAt(0)?.toUpperCase() || '?'}
@@ -41,7 +41,6 @@ export default function ProfileOverview({
 
       {!hasPhone && (
         <div className="profile-overview__warning">
-          <span>⚠️</span>
           <div>
             <p>{t('profile.overview.phoneWarning')}</p>
             <button

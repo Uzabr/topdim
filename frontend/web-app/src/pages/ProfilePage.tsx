@@ -118,7 +118,7 @@ export default function ProfilePage() {
   if (!isAuthenticated) {
     return (
       <div className="profile-page">
-        <div className="profile-empty glass-card">
+        <div className="profile-empty surface-card">
           <Ticket size={48} className="profile-empty-icon" />
           <h2>{t('profile.greeting')}</h2>
           <p>{t('profile.guestDesc')}</p>
@@ -147,7 +147,7 @@ export default function ProfilePage() {
             {activeHubTab === 'coupons' && (
               <>
                 <h2 className="profile-section-title">{t('profile.tabs.coupons')}</h2>
-                <div className="profile-tabs-card glass-card">
+                <div className="profile-tabs-card surface-card">
                   <Tabs
                     tabs={couponTabs}
                     activeKey={couponSubTab}
@@ -159,7 +159,7 @@ export default function ProfilePage() {
                         <div className="profile-loading">{t('profile.loadingCoupons')}</div>
                       ) : coupons.length === 0 ? (
                         <div className="profile-coupons-empty">
-                          <span className="profile-empty-icon">📋</span>
+                          <Ticket className="profile-empty-icon" size={44} strokeWidth={1.5} />
                           <h3>{emptyCouponCopy[couponSubTab as keyof typeof emptyCouponCopy]?.title || t('profile.emptyCoupons.none')}</h3>
                           <p>{emptyCouponCopy[couponSubTab as keyof typeof emptyCouponCopy]?.text || t('profile.emptyCoupons.defaultText')}</p>
                           {couponSubTab === 'ACTIVE' && (
@@ -224,7 +224,7 @@ export default function ProfilePage() {
 
         {/* ═══ Sidebar (right) ═══ */}
         <aside className="profile-sidebar">
-          <div className="profile-sidebar__card glass-card">
+          <div className="profile-sidebar__card surface-card">
             {/* User mini card */}
             <div className="profile-sidebar__user">
               <div className="profile-sidebar__avatar">

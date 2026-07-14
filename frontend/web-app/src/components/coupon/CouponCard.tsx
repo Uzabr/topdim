@@ -80,7 +80,7 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
           <img src={coupon.coverImageUrl} alt={coupon.title} loading="lazy" />
         ) : (
           <div className="coupon-card__img-placeholder">
-            <span>{coupon.merchant?.name?.charAt(0) || '💎'}</span>
+            <span>{coupon.merchant?.name?.charAt(0) || coupon.title.charAt(0)}</span>
           </div>
         )}
 
@@ -89,9 +89,7 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
         {/* Top-left badges wrapper (Hot) */}
         <div className="coupon-card__top-left">
           {coupon.isHot && (
-            <span className="coupon-card__hot">
-              <span>🔥</span> {t('couponCard.hot')}
-            </span>
+            <span className="coupon-card__hot">{t('couponCard.hot')}</span>
           )}
         </div>
 

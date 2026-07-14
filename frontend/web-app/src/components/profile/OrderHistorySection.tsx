@@ -45,7 +45,7 @@ export default function OrderHistorySection({ onTabChange }: OrderHistorySection
 
   if (isError) {
     return (
-      <div className="orders-error glass-card">
+      <div className="orders-error surface-card">
         <XCircle size={24} />
         <p>{t('profile.ordersSection.error')}</p>
       </div>
@@ -54,7 +54,7 @@ export default function OrderHistorySection({ onTabChange }: OrderHistorySection
 
   if (orders.length === 0) {
     return (
-      <div className="orders-empty glass-card">
+      <div className="orders-empty surface-card">
         <ShoppingBag size={40} className="orders-empty__icon" />
         <h3>{t('profile.ordersSection.emptyTitle')}</h3>
         <p>{t('profile.ordersSection.emptyDesc')}</p>
@@ -93,7 +93,7 @@ function OrderCard({ order, onTabChange }: { order: OrderResponse; onTabChange: 
   const statusClass = `order-card__status--${order.status.toLowerCase()}`;
 
   return (
-    <div className="order-card glass-card">
+    <div className="order-card surface-card">
       <div className="order-card__header">
         <div className="order-card__number">
           <CreditCard size={16} />

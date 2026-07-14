@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Heart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useAuthStore } from '../../store/authStore';
@@ -16,7 +17,7 @@ export default function LimitModal() {
   return (
     <div className="limit-modal-overlay" onClick={closeLimitModal}>
       <div className="limit-modal" onClick={(e) => e.stopPropagation()}>
-        <span className="limit-modal__icon">💛</span>
+        <Heart className="limit-modal__icon" size={48} strokeWidth={1.5} />
         <h3 className="limit-modal__title">{t('favorites.limitTitle')}</h3>
         <p className="limit-modal__text">{limitMessage}</p>
         <button className="limit-modal__btn" onClick={closeLimitModal}>

@@ -39,7 +39,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(37,99,235,0.2), rgba(16,185,129,0.2));
+  background: linear-gradient(135deg, var(--chip), var(--used-bg));
 }
 
 .logo-mark__diamond {
@@ -109,7 +109,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative; /* ✅ Якорь для позиционирования бейджа */
+  position: relative; /* Якорь для позиционирования бейджа */
 }
 
 .icon-button:hover {
@@ -132,8 +132,8 @@
 /* BADGE */
 .cart-badge {
   position: absolute;
-  top: -4px;    /* ✅ Ваше значение */
-  right: -11px; /* ✅ Ваше значение */
+  top: -4px;    /* Ваше значение */
+  right: -11px; /* Ваше значение */
   background: var(--primary);
   color: #fff;
   font-size: 10px;
@@ -158,7 +158,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #ef4444;
+  background: var(--warn-fg);
   border: 2px solid #fff;
   pointer-events: none;
   z-index: 2;
@@ -240,7 +240,7 @@
     height: 10px;
     margin-left: auto;
     border-radius: 50%;
-    background: #ef4444;
+    background: var(--warn-fg);
     box-shadow: 0 0 0 2px #fff;
   }
 
@@ -250,7 +250,7 @@
 
   .mobile-menu-action--logout:hover,
   .mobile-menu-action--logout:focus-visible {
-    background: rgba(239, 68, 68, 0.08);
+    background: var(--warn-bg);
     color: var(--danger);
   }
 
@@ -368,7 +368,7 @@
     justify-content: space-between;
   }
 
-  /* 📱 Адаптив: на узких экранах бейдж может вылезать за край */
+  /* Адаптив: на узких экранах бейдж может вылезать за край */
   .cart-badge {
     right: -6px;
     top: -2px;

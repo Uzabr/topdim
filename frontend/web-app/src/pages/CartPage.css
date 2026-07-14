@@ -29,7 +29,7 @@
 }
 
 .cart-empty__icon {
-  font-size: 5rem;
+  color: var(--ink-3);
   margin-bottom: var(--space-sm);
   filter: drop-shadow(0 10px 20px rgba(0,0,0,0.05));
   opacity: 0.9;
@@ -64,7 +64,7 @@
 }
 
 .cart-items {
-  padding: 0; /* Override glass-card padding */
+  padding: 0; /* Override surface-card padding */
   overflow: hidden;
 }
 
@@ -104,7 +104,7 @@
 }
 
 .cart-item__icon {
-  font-size: 2rem;
+  color: var(--ink-3);
 }
 
 .cart-item__info {
@@ -130,7 +130,7 @@
 
 .cart-item__gift {
   margin-top: 4px;
-  background: rgba(255, 102, 96, 0.1);
+  background: var(--chip);
   color: var(--primary);
   width: fit-content;
 }

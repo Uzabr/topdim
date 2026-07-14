@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, MapPinned, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, MapPinned, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby, Flame } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocalePath } from '../hooks/useLocalePath';
@@ -152,7 +152,7 @@ export default function HomePage() {
         </div>
         <div className="home-hero__visual">
           <div className="home-hero__badge">
-            <span className="home-hero__badge-icon">🔥</span>
+            <Flame className="home-hero__badge-icon" size={24} strokeWidth={1.75} />
             <div>
               <span className="home-hero__badge-title">{t('home.heroBadgeTitle')}</span>
               <span className="home-hero__badge-desc">{t('home.heroBadgeDesc')}</span>
@@ -206,7 +206,7 @@ export default function HomePage() {
         <section className="section container">
           <div className="section-heading">
             <div>
-              <p className="section-label">🔥 {t('home.topDealsLabel')}</p>
+              <p className="section-label">{t('home.topDealsLabel')}</p>
               <h2 className="section-title">{t('home.topDealsTitle')}</h2>
             </div>
             <div className="carousel-controls">
@@ -238,7 +238,7 @@ export default function HomePage() {
         <section className="section container">
           <div className="section-heading">
             <div>
-              <p className="section-label">✨ {t('home.newDealsLabel')}</p>
+              <p className="section-label">{t('home.newDealsLabel')}</p>
               <h2 className="section-title">{t('home.newDealsTitle')}</h2>
             </div>
             <Link to={lp('/coupons?sortBy=new')} className="section-link">

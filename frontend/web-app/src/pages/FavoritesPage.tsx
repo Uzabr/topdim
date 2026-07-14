@@ -38,7 +38,7 @@ export default function FavoritesPage() {
 
       {mapped.length === 0 ? (
         <div className="favorites-empty surface-card">
-          <span className="favorites-empty__icon">💛</span>
+          <Heart className="favorites-empty__icon" size={44} strokeWidth={1.5} />
           <h3>{t('favorites.emptyTitle')}</h3>
           <p>{t('favorites.emptyDesc')}</p>
           <Link to={lp('/coupons')} className="primary-button">

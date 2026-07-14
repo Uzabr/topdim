@@ -7,10 +7,10 @@
 .complaint-card__subject{margin:0;font-size:var(--font-base);font-weight:700}
 .complaint-card__coupon{font-size:12px;color:var(--text-muted)}
 .complaint-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--radius-pill);font-size:11px;font-weight:700;white-space:nowrap}
-.complaint-badge--pending{background:rgba(255,165,0,.1);color:#e67e22}
-.complaint-badge--review{background:rgba(52,152,219,.1);color:#2980b9}
-.complaint-badge--resolved{background:rgba(52,199,89,.1);color:var(--success)}
-.complaint-badge--rejected{background:rgba(255,59,48,.1);color:var(--danger)}
+.complaint-badge--pending{background:var(--warn-bg);color:var(--warn-fg)}
+.complaint-badge--review{background:var(--chip);color:var(--ink)}
+.complaint-badge--resolved{background:var(--used-bg);color:var(--success)}
+.complaint-badge--rejected{background:var(--warn-bg);color:var(--danger)}
 .complaint-card__desc{font-size:var(--font-sm);color:var(--text-secondary);margin:0}
 .complaint-card__resolution{font-size:var(--font-sm);color:var(--text-secondary);font-style:italic;padding:8px 12px;background:var(--bg-muted);border-radius:var(--radius-md)}
 .complaint-card__date{font-size:12px;color:var(--text-muted)}

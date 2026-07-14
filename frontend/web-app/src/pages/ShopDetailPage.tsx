@@ -51,12 +51,12 @@ export default function ShopDetailPage() {
 
       <div className="shop-detail__content container">
         {/* Hero card */}
-        <div className="shop-detail__hero-card glass">
+        <div className="shop-detail__hero-card surface-card">
           <div className="shop-detail__photo">
             {s.photos?.[0] ? (
               <img src={s.photos[0]} alt={s.name} />
             ) : (
-              <div className="shop-detail__placeholder">🏬</div>
+              <div className="shop-detail__placeholder"><Store size={72} strokeWidth={1.25} /></div>
             )}
           </div>
 
@@ -64,7 +64,7 @@ export default function ShopDetailPage() {
             <div className="shop-detail__badges">
               {s.category && <span className="shop-detail__cat">{s.category}</span>}
               <span className={`shop-detail__location-badge ${isBazaar ? '' : 'shop-detail__location-badge--standalone'}`}>
-                {isBazaar ? `📍 ${t('shop.inBazaar')}` : `🏠 ${t('shop.standalone')}`}
+                {isBazaar ? t('shop.inBazaar') : t('shop.standalone')}
               </span>
             </div>
 
@@ -131,7 +131,7 @@ export default function ShopDetailPage() {
             )}
           </div>
 
-          <aside className="shop-detail__sidebar glass">
+          <aside className="shop-detail__sidebar surface-card">
             <h2>{t('shop.contacts')}</h2>
             {s.workingHours && (
               <div className="shop-detail__contact">
