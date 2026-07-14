@@ -1,0 +1,146 @@
+/* Безрамочная карточка мобилки. Референс: «Мобилка - 2 Главная». */
+
+.mcard {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: var(--chip);
+}
+
+.mcard--carousel {
+  flex: none;
+  width: 238px;
+  height: 300px;
+  border-radius: 26px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12);
+  scroll-snap-align: center;
+}
+
+.mcard--grid {
+  height: 178px;
+  border-radius: 20px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.06);
+  /* Лупа при скролле правит transform/opacity инлайном ([data-lens]). */
+  transform-origin: center;
+  transition: transform 0.18s linear, opacity 0.18s linear;
+  will-change: transform;
+}
+
+.mcard__photo,
+.mcard__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mcard__fav {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+  color: var(--ink-3);
+}
+
+.mcard--grid .mcard__fav {
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.mcard__fav--on {
+  color: var(--heart);
+}
+
+.mcard__fav--pop {
+  animation: heartPop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mcard__foot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 44px 16px 16px;
+  background: linear-gradient(180deg, rgba(252, 251, 248, 0), rgba(252, 251, 248, 0.92) 55%);
+}
+
+.mcard--grid .mcard__foot {
+  gap: 8px;
+  padding: 34px 12px 12px;
+}
+
+.mcard__text {
+  min-width: 0;
+}
+
+.mcard__title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.mcard--grid .mcard__title {
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.mcard__price {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mcard--grid .mcard__price {
+  margin-top: 2px;
+  font-size: 10.5px;
+}
+
+.mcard__off {
+  flex: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--wasp);
+  color: var(--on-wasp);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.mcard--grid .mcard__off {
+  padding: 4px 9px;
+  font-size: 11px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mcard--grid {
+    transition: none;
+  }
+
+  .mcard__fav--pop {
+    animation: none;
+  }
+}

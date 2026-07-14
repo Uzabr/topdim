@@ -807,6 +807,17 @@
       }
     }
   },
+  "mobile": {
+    "home": {
+      "title": "Ko'nglingizga\nyoqqanini toping.",
+      "empty": "Bu turkumda hozircha bo'sh — keyinroq kiring"
+    },
+    "deck": {
+      "title": "Kun kuponlari",
+      "more_one": "yana {{count}} ta yonayotgan · suring",
+      "more_other": "yana {{count}} ta yonayotgan · suring"
+    }
+  },
   "catalog": {
     "eyebrow": "Barcha shahar chegirmalari",
     "title": "Kuponlar katalogi",

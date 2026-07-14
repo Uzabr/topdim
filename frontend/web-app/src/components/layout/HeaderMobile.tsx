@@ -1,252 +1,126 @@
 import { useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { LayoutGrid, User } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  Bell,
-  Heart,
-  Instagram,
-  LogOut,
-  Menu,
-  Search,
-  Send,
-  Settings,
-  ShoppingBag,
-  Ticket,
-  User,
-  X,
-} from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { useCartStore } from '../../store/cartStore';
-import { useFavoritesStore } from '../../store/favoritesStore';
 import { useLocalePath } from '../../hooks/useLocalePath';
-import { notificationsApi } from '../../api/notifications';
-import LanguageSelector from '../ui/LanguageSelector';
+import CatalogSheet from '../mobile/CatalogSheet';
+import LoginModal from '../auth/LoginModal';
 import Logo from './Logo';
-import './Header.css';
-
-const MOBILE_MENU_ICON = 22;
+import './HeaderMobile.css';
 
 /**
- * Мобильная шапка (<768px) — прежняя реализация с бургер-меню.
- * Временная: на Этапе 2 её заменит отдельный мобильный дизайн
- * (лого-таблетка + шторка каталога + нижняя навигация).
+ * Мобильная шапка: лого-таблетка слева, справа полупрозрачная таблетка с
+ * каталогом и аватаром. Гость жмёт аватар → вход; залогинен → мини-шторка
+ * (язык, настройки, выйти). Референс: «Мобилка - 2 Главная».
  */
 export default function HeaderMobile() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const mobileMenuBtnRef = useRef<HTMLButtonElement>(null);
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const location = useLocation();
-  const { totalItems, toggleCart } = useCartStore();
-  const { favoriteIds } = useFavoritesStore();
-  const { isAuthenticated, user, logout } = useAuthStore();
-  const { t } = useTranslation();
   const lp = useLocalePath();
+  const { isAuthenticated, user, logout } = useAuthStore();
 
-  const { data: hasUnread = false } = useQuery({
-    queryKey: ['unread-notifications-badge'],
-    queryFn: () => notificationsApi.getMine(true, 0, 1),
-    select: (res) => (res.data.data?.totalElements ?? 0) > 0,
-    enabled: isAuthenticated,
-    staleTime: 60_000,
-    retry: false,
-  });
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Закрываем мобильное меню при навигации — синхронизация UI с роутом.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMobileMenuOpen(false);
-  }, [location.pathname]);
+  const lang = i18n.language?.substring(0, 2) === 'uz' ? 'uz' : 'ru';
 
   useEffect(() => {
-    if (!mobileMenuOpen) return;
-
-    const handlePointerOutside = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as Node;
-      if (
-        mobileMenuRef.current?.contains(target) ||
-        mobileMenuBtnRef.current?.contains(target)
-      ) {
-        return;
-      }
-      setMobileMenuOpen(false);
+    if (!accountOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!accountRef.current?.contains(e.target as Node)) setAccountOpen(false);
     };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [accountOpen]);
 
-    document.addEventListener('mousedown', handlePointerOutside);
-    document.addEventListener('touchstart', handlePointerOutside);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerOutside);
-      document.removeEventListener('touchstart', handlePointerOutside);
-    };
-  }, [mobileMenuOpen]);
+  const switchLang = (next: 'ru' | 'uz') => {
+    if (next === lang) return;
+    i18n.changeLanguage(next);
+    localStorage.setItem('language', next);
+    const path = location.pathname.replace(/^\/(ru|uz)/, '');
+    navigate(`/${next}${path || '/'}${location.search}`, { replace: true });
+  };
 
   return (
-    <header className="header">
-      <div className="header-inner container">
-        <Logo />
+    <>
+      <header className="mhdr">
+        <Logo size="md" />
 
-        <div className="header-actions">
+        <div className="mhdr__pill" ref={accountRef}>
           <button
-            ref={mobileMenuBtnRef}
             type="button"
-            className="mobile-menu-btn"
-            aria-expanded={mobileMenuOpen}
-            aria-controls="mobile-menu"
-            onClick={() => setMobileMenuOpen((v) => !v)}
+            className="mhdr__icon"
+            onClick={() => setCatalogOpen(true)}
+            aria-label={t('header.catalog')}
           >
-            {mobileMenuOpen ? <X size={28} strokeWidth={2} /> : <Menu size={28} strokeWidth={2} />}
+            <LayoutGrid size={16} strokeWidth={1.9} />
           </button>
-        </div>
-      </div>
 
-      {/* MOBILE MENU */}
-      <div
-        id="mobile-menu"
-        ref={mobileMenuRef}
-        className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}
-      >
-        <Link
-          to={lp('/')}
-          className="mobile-menu-action"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          <Ticket size={MOBILE_MENU_ICON} />
-          <span>{t('nav.coupons')}</span>
-        </Link>
-
-        <Link
-          to={lp('/favorites')}
-          className="mobile-menu-action"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          <span className="badge-wrapper">
-            <Heart size={MOBILE_MENU_ICON} />
-            {favoriteIds.length > 0 && (
-              <span className="cart-badge">{favoriteIds.length}</span>
+          <button
+            type="button"
+            className={`mhdr__avatar${isAuthenticated ? ' mhdr__avatar--auth' : ''}`}
+            onClick={() => (isAuthenticated ? setAccountOpen((v) => !v) : setLoginOpen(true))}
+            aria-label={t('header.profile')}
+          >
+            {isAuthenticated ? (
+              (user?.firstName?.charAt(0)?.toUpperCase() ?? '?')
+            ) : (
+              <User size={16} strokeWidth={1.9} />
             )}
-          </span>
-          <span>{t('nav.favorites')}</span>
-        </Link>
+          </button>
 
-        <Link
-          to={lp('/search')}
-          className="mobile-menu-action"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          <Search size={MOBILE_MENU_ICON} />
-          <span>{t('common.search')}</span>
-        </Link>
-
-        <button
-          type="button"
-          className="mobile-menu-action"
-          onClick={() => {
-            toggleCart();
-            setMobileMenuOpen(false);
-          }}
-        >
-          <span className="badge-wrapper">
-            <ShoppingBag size={MOBILE_MENU_ICON} />
-            {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
-          </span>
-          <span>{t('cart.title')}</span>
-        </button>
-
-        {isAuthenticated ? (
-          <div className="mobile-menu-profile">
-            <div className="mobile-menu-profile__header">
-              <span className="mobile-menu-profile__avatar">
-                {user?.firstName?.charAt(0)?.toUpperCase() ?? '?'}
-              </span>
-              <div className="mobile-menu-profile__user">
-                <span className="mobile-menu-profile__name">
-                  {[user?.firstName, user?.lastName].filter(Boolean).join(' ') || t('header.profile')}
-                </span>
-                <span className="mobile-menu-profile__label">{t('header.profile')}</span>
+          {accountOpen && isAuthenticated && (
+            <div className="macc">
+              <div className="macc__head">
+                <span className="macc__name">{user?.firstName}</span>
+                {user?.phone && <span className="macc__phone">{user.phone}</span>}
               </div>
-            </div>
-            <div className="mobile-menu-profile__links">
+
+              <div className="macc__row">
+                <span className="macc__label">{t('header.language')}</span>
+                <span className="macc__langs">
+                  {(['ru', 'uz'] as const).map((code) => (
+                    <button
+                      key={code}
+                      type="button"
+                      className={`macc__lang${lang === code ? ' macc__lang--active' : ''}`}
+                      onClick={() => switchLang(code)}
+                    >
+                      {code}
+                    </button>
+                  ))}
+                </span>
+              </div>
+
               <Link
-                to={lp('/profile?tab=coupons')}
-                className="mobile-menu-action"
-                onClick={() => setMobileMenuOpen(false)}
+                to={`${lp('/profile')}?tab=settings`}
+                className="macc__item"
+                onClick={() => setAccountOpen(false)}
               >
-                <Ticket size={MOBILE_MENU_ICON} />
-                <span>{t('profile.tabs.coupons')}</span>
+                {t('profile.tabs.settings')}
               </Link>
-              <Link
-                to={lp('/profile?tab=settings')}
-                className="mobile-menu-action mobile-menu-action--badge-end"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Bell size={MOBILE_MENU_ICON} />
-                <span className="mobile-menu-action__text">{t('profile.tabs.notifications')}</span>
-                {hasUnread && (
-                  <span className="mobile-menu-unread" title={t('profile.tabs.notifications')} />
-                )}
-              </Link>
-              <Link
-                to={lp('/profile?tab=settings')}
-                className="mobile-menu-action"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Settings size={MOBILE_MENU_ICON} />
-                <span>{t('profile.tabs.settings')}</span>
-              </Link>
+
               <button
                 type="button"
-                className="mobile-menu-action mobile-menu-action--logout"
+                className="macc__item macc__item--muted"
                 onClick={() => {
+                  setAccountOpen(false);
                   logout();
-                  setMobileMenuOpen(false);
                 }}
               >
-                <LogOut size={MOBILE_MENU_ICON} />
-                <span>{t('profile.logout')}</span>
+                {t('profile.logout')}
               </button>
             </div>
-          </div>
-        ) : (
-          <Link
-            to={lp('/login')}
-            className="mobile-menu-action"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <User size={MOBILE_MENU_ICON} />
-            <span>{t('header.login')}</span>
-          </Link>
-        )}
-
-        <div className="mobile-menu-tools">
-          <div className="mobile-menu-socials">
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mobile-menu-social-link"
-              aria-label="Instagram"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Instagram size={20} />
-              <span>Instagram</span>
-            </a>
-            <a
-              href="https://t.me"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mobile-menu-social-link"
-              aria-label="Telegram"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Send size={20} />
-              <span>Telegram</span>
-            </a>
-          </div>
-          <div className="mobile-menu-tool-item">
-            <LanguageSelector />
-          </div>
+          )}
         </div>
-      </div>
-    </header>
+      </header>
+
+      {catalogOpen && <CatalogSheet onClose={() => setCatalogOpen(false)} />}
+      {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
+    </>
   );
 }

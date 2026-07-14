@@ -131,6 +131,8 @@ body.td-login-body .app-main--login {
 /* Mobile: add bottom padding so content doesn't hide behind BottomNav */
 @media (max-width: 768px) {
   .app-main {
+    /* Мобильная шапка (.mhdr) в потоке, а не fixed — отступ под неё не нужен */
+    padding-top: 0;
     padding-bottom: calc(var(--bottom-nav-height) + 16px);
   }
 }
