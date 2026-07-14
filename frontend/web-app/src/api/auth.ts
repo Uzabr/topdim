@@ -57,6 +57,14 @@ export const authApi = {
   guestAuth: (data: { phone: string; name: string }) =>
     apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/guest', data),
 
+  /** Всегда 202 — бэкенд не раскрывает, зарегистрирован ли email. */
+  requestPasswordReset: (email: string) =>
+    apiClient.post<ApiResponse<void>>('/api/v1/auth/password-reset/request', { email }),
+
+  /** token приходит пользователю письмом; пароль — по правилам @StrongPassword. */
+  confirmPasswordReset: (data: { token: string; newPassword: string; confirmPassword: string }) =>
+    apiClient.post<ApiResponse<void>>('/api/v1/auth/password-reset/confirm', data),
+
   getMe: () =>
     apiClient.get<ApiResponse<UserDto>>('/api/v1/users/me'),
 

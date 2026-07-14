@@ -119,7 +119,26 @@
       "passwordWeak": "Parol: 8–128 belgi, katta va kichik harf, raqam va maxsus belgi (@$!%*?&#^()-_=+)",
       "firstNameMin": "Ism kamida 2 ta belgidan iborat boʻlishi kerak",
       "phoneFormat": "Format: +998XXXXXXXXX"
-    }
+    },
+    "oneTapTitle": "Bir bosishda kirish",
+    "oneTapSubtitle": "Kuponlar profilingizda saqlanadi — istalgan qurilmadan kiring",
+    "viaTelegram": "Telegram orqali kirish",
+    "viaPhone": "Telefon raqami bilan",
+    "viaEmail": "Pochta",
+    "or": "yoki",
+    "email": "Elektron pochta",
+    "soon": "{{provider}} — tez orada. Hozircha pochta orqali kiring.",
+    "terms": "Davom etish orqali xizmat shartlariga rozilik bildirasiz",
+    "forgot": "Parolni unutdingizmi?",
+    "resetTitle": "Parolni tiklash",
+    "resetHint": "Agar bunday hisob mavjud bo'lsa, pochtaga kod yuboramiz.",
+    "resetConfirmHint": "Xatdagi kodni va yangi parolni kiriting.",
+    "resetSend": "Kod yuborish",
+    "resetSent": "Agar hisob mavjud bo'lsa, kod pochtaga yuborildi.",
+    "resetToken": "Xatdagi kod",
+    "newPassword": "Yangi parol",
+    "resetSave": "Parolni saqlash",
+    "resetDone": "Parol o'zgartirildi — yangisi bilan kiring."
   },
   "favorites": {
     "title": "Sevimlilar",

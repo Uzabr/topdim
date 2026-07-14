@@ -9,6 +9,7 @@ import { useAddressStore } from '../../store/addressStore';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import Logo from './Logo';
 import SearchOverlay from './SearchOverlay';
+import LoginModal from '../auth/LoginModal';
 import './HeaderDesktop.css';
 
 /** Ниже этого сдвига шапка светлая, выше — тёмная полупрозрачная. */
@@ -42,6 +43,7 @@ export default function HeaderDesktop() {
 
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState(false);
   const [draft, setDraft] = useState('');
 
@@ -267,17 +269,18 @@ export default function HeaderDesktop() {
               {user?.firstName?.charAt(0)?.toUpperCase() ?? '?'}
             </Link>
           ) : (
-            <Link to={lp('/login')} className="hdr__login">
+            <button type="button" className="hdr__login" onClick={() => setLoginOpen(true)}>
               {t('header.login')}
               <span className="hdr__login-arrow" aria-hidden="true">
                 →
               </span>
-            </Link>
+            </button>
           )}
         </div>
       </header>
 
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
+      {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
     </>
   );
 }
