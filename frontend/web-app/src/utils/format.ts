@@ -35,6 +35,11 @@ export function daysUntil(dateStr: string): number {
   return Math.max(0, Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000));
 }
 
+/** Дата уже прошла (срок продажи/использования истёк). */
+export function isPast(dateStr: string): boolean {
+  return new Date(dateStr).getTime() < Date.now();
+}
+
 /**
  * Pluralize Russian word (simplified)
  */
