@@ -6,10 +6,12 @@ import './LoginModal.css';
 
 interface LoginModalProps {
   onClose: () => void;
+  /** Вызывается только после успешного входа (по умолчанию — просто закрыть). */
+  onSuccess?: () => void;
 }
 
 /** Вход открывается модалкой поверх страницы — пользователь не теряет контекст. */
-export default function LoginModal({ onClose }: LoginModalProps) {
+export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
         <button type="button" className="lmodal__close" onClick={onClose} aria-label={t('common.close')}>
           <X size={16} />
         </button>
-        <LoginCard onSuccess={onClose} />
+        <LoginCard onSuccess={onSuccess ?? onClose} />
       </div>
     </div>
   );

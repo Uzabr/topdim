@@ -28,7 +28,8 @@
   --max-width: 1280px;
   /* Шапка-таблетка: 8px паддинг + 40px иконка + 8px, плюс отступ сверху 12px */
   --header-height: 68px;
-  --bottom-nav-height: 76px;
+  /* Плавающая таблетка: 26px отступ снизу + 8 + 44 + 8 */
+  --bottom-nav-height: 86px;
 }
 
 *, *::before, *::after {
