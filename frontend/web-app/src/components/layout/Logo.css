@@ -1,0 +1,25 @@
+.logo-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--wasp);
+  color: var(--on-wasp);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transition: transform var(--transition-fast);
+}
+
+.logo-pill--sm {
+  padding: 9px 20px;
+  font-size: 15px;
+}
+
+.logo-pill--md {
+  padding: 11px 24px;
+  font-size: 19px;
+}
+
+.logo-pill:hover {
+  background: var(--wasp-deep);
+}

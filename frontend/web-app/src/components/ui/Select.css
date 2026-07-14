@@ -123,11 +123,14 @@
   }
 }
 
-.select-flag {
+.select-lang-code {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
   line-height: 1;
   width: 20px;
   height: 20px;

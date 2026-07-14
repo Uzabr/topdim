@@ -1,0 +1,296 @@
+/* ═══════════════════════════════════════════════════════════════
+   Десктопная шапка «Оса» — три плавающие таблетки.
+   Цвета вынесены в локальные переменные: при скролле меняется только
+   их значение, поэтому переход красится одним transition.
+   ═══════════════════════════════════════════════════════════════ */
+
+.hdr {
+  --hdr-pill-bg: var(--paper);
+  --hdr-fg: var(--ink);
+  --hdr-muted: var(--ink-3);
+  --hdr-icon-bg: var(--chip);
+  --hdr-icon-bg-hover: var(--chip-hover);
+  --hdr-accent-bg: var(--ink);
+  --hdr-accent-fg: var(--on-ink);
+
+  position: fixed;
+  top: 12px;
+  left: 24px;
+  right: 24px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Скролл >80px: таблетки темнеют и просвечивают, иконки и текст белеют */
+.hdr--scrolled {
+  --hdr-pill-bg: rgba(38, 38, 40, 0.58);
+  --hdr-fg: #ffffff;
+  --hdr-muted: rgba(255, 255, 255, 0.65);
+  --hdr-icon-bg: rgba(255, 255, 255, 0.16);
+  --hdr-icon-bg-hover: rgba(255, 255, 255, 0.26);
+  --hdr-accent-bg: #ffffff;
+  --hdr-accent-fg: var(--ink);
+}
+
+.hdr__pill {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--hdr-pill-bg);
+  color: var(--hdr-fg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-pill);
+  transition: background 0.35s, color 0.35s;
+}
+
+/* ── Адрес ── */
+.hdr__address {
+  gap: 10px;
+  padding-left: 20px;
+}
+
+.hdr__address-label {
+  font-size: 13px;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.hdr__address-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--hdr-accent-bg);
+  color: var(--hdr-accent-fg);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.35s, color 0.35s;
+}
+
+.hdr__address-input {
+  width: 150px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--hdr-fg);
+}
+
+.hdr__address-input::placeholder {
+  color: var(--hdr-muted);
+}
+
+.hdr__address-value {
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
+}
+
+.hdr__pin {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--hdr-accent-bg);
+  color: var(--hdr-accent-fg);
+  transition: background 0.35s, color 0.35s;
+}
+
+/* Пин подпрыгивает, пока адрес не введён */
+.hdr__pin--hop {
+  animation: pinHop 1.3s ease-in-out infinite;
+}
+
+@keyframes pinHop {
+  0%, 55%, 100% { transform: translateY(0); }
+  15% { transform: translateY(-7px); }
+  30% { transform: translateY(0); }
+  40% { transform: translateY(-3px); }
+}
+
+/* ── Центральная группа ── */
+.hdr__center {
+  flex: 1;
+  min-width: 0;
+  gap: 8px;
+}
+
+.hdr__icon {
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--hdr-icon-bg);
+  color: var(--hdr-fg);
+  transition: background 0.35s, color 0.35s;
+}
+
+.hdr__icon:hover {
+  background: var(--hdr-icon-bg-hover);
+}
+
+/* Активная страница: белая таблетка с тёмной иконкой — в обоих состояниях шапки */
+.hdr__icon--active,
+.hdr__icon--active:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.hdr__icon-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--wasp-deep);
+  color: var(--on-wasp);
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.hdr__search {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--hdr-icon-bg);
+  color: var(--hdr-muted);
+  font-size: 14px;
+  text-align: left;
+  transition: background 0.35s, color 0.35s;
+}
+
+.hdr__search:hover {
+  background: var(--hdr-icon-bg-hover);
+}
+
+.hdr__search span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hdr__cart {
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--on-ink);
+  transition: filter var(--transition-fast);
+}
+
+.hdr__cart:hover {
+  filter: brightness(1.35);
+}
+
+.hdr__cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--wasp-deep);
+  color: var(--on-wasp);
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+/* ── Язык + вход ── */
+.hdr__auth {
+  gap: 4px;
+}
+
+.hdr__lang {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.hdr__lang-btn {
+  padding: 7px 9px;
+  border-radius: var(--radius-pill);
+  color: var(--hdr-muted);
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 0.35s, color 0.35s;
+}
+
+.hdr__lang-btn:hover {
+  background: var(--hdr-icon-bg);
+  color: var(--hdr-fg);
+}
+
+.hdr__lang-btn--active,
+.hdr__lang-btn--active:hover {
+  background: var(--hdr-icon-bg);
+  color: var(--hdr-fg);
+}
+
+.hdr__login {
+  padding: 9px 20px;
+  border-radius: var(--radius-pill);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--hdr-fg);
+  white-space: nowrap;
+  transition: background 0.35s, color 0.35s;
+}
+
+.hdr__login:hover {
+  background: var(--hdr-icon-bg);
+}
+
+.hdr__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--hdr-accent-bg);
+  color: var(--hdr-accent-fg);
+  font-size: 14px;
+  font-weight: 800;
+  transition: background 0.35s, color 0.35s;
+}
+
+/* Между 768 и ~1000px адрес не помещается — прячем его, поиск важнее */
+@media (max-width: 1000px) {
+  .hdr__address {
+    display: none;
+  }
+}

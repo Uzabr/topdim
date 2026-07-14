@@ -58,9 +58,7 @@
 
 /* Brand */
 .footer-brand .footer-logo {
-  margin: 0 0 8px;
-  font-size: var(--font-xl);
-  font-weight: 800;
+  margin-bottom: 12px;
 }
 
 .footer-desc {
@@ -168,10 +166,6 @@
 
   .footer-column:not(.footer-brand) {
     display: none;
-  }
-
-  .footer-brand .footer-logo {
-    font-size: var(--font-lg);
   }
 
   .footer-desc {

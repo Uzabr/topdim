@@ -9,7 +9,21 @@
     "search": "Qidiruv",
     "cart": "Savat",
     "profile": "Profil",
-    "login": "Tizimga kirish"
+    "login": "Tizimga kirish",
+    "addressPrompt": "Manzilni kiriting",
+    "addressAction": "Kiritish",
+    "addressPlaceholder": "Ko'cha, uy…",
+    "catalog": "Katalog",
+    "searchPlaceholder": "Kupon va joylarni toping",
+    "frequentlySearched": "Ko'p qidiriladi",
+    "searchSuggestions": [
+      "SPA va hammom",
+      "Stomatologiya",
+      "Bolalar uchun akvapark",
+      "Ikki kishilik kechki ovqat",
+      "MRT va tekshiruvlar",
+      "Karting"
+    ]
   },
   "bottomNav": {
     "home": "Uy",
@@ -727,6 +741,6 @@
     "terms": "Foydalanuvchi shartnomasi",
     "business": "Biznes uchun (hamkorlar)",
     "mobileApp": "Mobil ilova",
-    "rights": "TopDim. Barcha huquqlar himoyalangan."
+    "rights": "sizbiz. Barcha huquqlar himoyalangan."
   }
 }

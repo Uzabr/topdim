@@ -188,6 +188,19 @@
   color: var(--text-primary);
 }
 
+/* Раньше жил в Header.css и протекал глобально — теперь у единственного потребителя */
+.icon-button {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-photo);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
 .cart-item__remove {
   color: var(--text-muted);
   transition: all var(--transition-fast);

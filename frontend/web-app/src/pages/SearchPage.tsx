@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Flame, SearchX } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { bazaarsApi } from '../api/bazaars';
 import type { Shop } from '../api/bazaars';
@@ -20,8 +20,11 @@ type SearchShop = Shop & {
 export default function SearchPage() {
   const { t } = useTranslation();
   const lp = useLocalePath();
-  const [query, setQuery] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  // Поиск-оверлей в шапке передаёт запрос через ?q= — подхватываем его как начальное состояние
+  const [searchParams] = useSearchParams();
+  const initialQuery = searchParams.get('q') ?? '';
+  const [query, setQuery] = useState(initialQuery);
+  const [searchTerm, setSearchTerm] = useState(initialQuery);
   const navigate = useNavigate();
 
   const popularQueries = ['SPA', t('search.popular.pizza'), t('search.popular.fitness'), 'Sushi', t('search.popular.karting')];
