@@ -55,6 +55,11 @@
   gap: 14px;
 }
 
+/* Хвост, не набравший целый блок мозаики, — обычными карточками */
+.feed__tail {
+  margin-top: 14px;
+}
+
 .feed__empty {
   padding: var(--space-2xl) 0;
   color: var(--ink-3);

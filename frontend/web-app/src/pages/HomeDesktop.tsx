@@ -3,12 +3,10 @@ import { useQueries, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { couponsApi } from '../api/coupons';
 import type { Category, CouponOffer } from '../api/coupons';
-import CouponCard from '../components/coupon/CouponCard';
 import CategoryTiles from '../components/home/CategoryTiles';
 import HeroCoupon from '../components/home/HeroCoupon';
-import HotTile from '../components/home/HotTile';
 import HowItWorks from '../components/home/HowItWorks';
-import { mapCouponOfferToCardData } from '../utils/couponCardMapper';
+import TetrisFeed from '../components/home/TetrisFeed';
 import { localizedName } from '../utils/localizedText';
 import './HomePage.css';
 
@@ -18,7 +16,8 @@ const EMPTY_COUPONS: CouponOffer[] = [];
 /** Первый таб ленты — не категория, а «самые большие скидки». */
 const HOT_TAB = 'hot';
 
-const FEED_SIZE = 11;
+/** Тайл + блок из 4 фигур + блок из 5 → мозаика без хвоста. */
+const FEED_SIZE = 10;
 
 export default function HomeDesktop() {
   const { t, i18n } = useTranslation();
@@ -57,7 +56,6 @@ export default function HomeDesktop() {
   }, [categories, countQueries]);
 
   // Лента: «Горящие» — по скидке, категория — по популярности.
-  // 11 = тайл (2 ряда × 1 колонка) + 10 карточек → ровно 3 ряда сетки 4×.
   const { data: feedData, isLoading: feedLoading } = useQuery({
     queryKey: ['coupons', 'feed', tab],
     queryFn: () =>
@@ -69,8 +67,6 @@ export default function HomeDesktop() {
     select: (res) => res.data.data.content,
   });
   const feed = feedData ?? EMPTY_COUPONS;
-
-  const [lead, ...rest] = feed;
 
   return (
     <div className="home container">
@@ -106,12 +102,7 @@ export default function HomeDesktop() {
         ) : feed.length === 0 ? (
           <p className="feed__empty">{t('home.feed.empty')}</p>
         ) : (
-          <div className="feed__grid">
-            {lead && <HotTile coupon={lead} lead={tab === HOT_TAB ? 'discount' : 'popular'} />}
-            {rest.map((coupon) => (
-              <CouponCard key={coupon.id} coupon={mapCouponOfferToCardData(coupon)} />
-            ))}
-          </div>
+          <TetrisFeed coupons={feed} lead={tab === HOT_TAB ? 'discount' : 'popular'} />
         )}
       </section>
 

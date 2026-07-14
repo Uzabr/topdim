@@ -26,7 +26,8 @@ export default function FavoriteButton({ couponId }: FavoriteButtonProps) {
       return;
     }
 
-    const card = ref.current?.closest('.coupon-card') ?? null;
+    // Карточка ленты бывает обычной и Г-образной (мозаика) — воронка нужна обеим.
+    const card = ref.current?.closest('.coupon-card, .tcard') ?? null;
     flyFunnel(card, 'fav-btn', () => toggleFavorite(couponId));
   };
 
