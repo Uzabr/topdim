@@ -830,6 +830,33 @@
       "title": "To'landi!",
       "text": "Kupon va QR-kod profilingizda.",
       "until": "{{date}} gacha amal qiladi"
+    },
+    "onboarding": {
+      "skip": "O'tkazib yuborish",
+      "start": "Boshlash",
+      "s1": {
+        "a": "Eng yaxshisini",
+        "b": "tanlang,",
+        "c": "to'lang",
+        "d": "ikki barobar kam",
+        "sub": "Shahringizdagi restoranlar, SPA va ko'ngilochar joylar — 70% gacha chegirma bilan"
+      },
+      "s2": {
+        "a": "QR ko'rsating —",
+        "b": "va sizni",
+        "c": "kutib olishadi",
+        "sub": "Kupon va QR-kod profilingizda saqlanadi. Chop etish va qo'ng'iroqsiz",
+        "sample": "Ikki kishilik SPA-kun"
+      },
+      "s3": {
+        "a": "Tejashni",
+        "b": "boshlang",
+        "c": "yoqtirgan",
+        "d": "narsangizda,",
+        "e": "birga",
+        "f": "yoningizda",
+        "g": "doim"
+      }
     }
   },
   "catalog": {

@@ -7,10 +7,14 @@ import { couponsApi } from '../api/coupons';
 import type { Category, CouponOffer } from '../api/coupons';
 import DealDeck from '../components/mobile/DealDeck';
 import MobileCouponCard from '../components/mobile/MobileCouponCard';
+import Onboarding from '../components/mobile/Onboarding';
 import { useLensEffect } from '../hooks/useLensEffect';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { localizedName } from '../utils/localizedText';
 import './HomeMobile.css';
+
+/** Онбординг показываем один раз — отметка живёт в localStorage. */
+const SEEN_KEY = 'sizbiz_onboarded';
 
 const EMPTY_CATEGORIES: Category[] = [];
 const EMPTY_COUPONS: CouponOffer[] = [];
@@ -28,6 +32,7 @@ export default function HomeMobile() {
   const { t, i18n } = useTranslation();
   const lp = useLocalePath();
   const [tab, setTab] = useState<number | typeof ALL>(ALL);
+  const [onboarding, setOnboarding] = useState(() => !localStorage.getItem(SEEN_KEY));
 
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
@@ -63,8 +68,18 @@ export default function HomeMobile() {
   // Лупа читает DOM, поэтому включаем её только когда карточки уже отрисованы.
   useLensEffect(feed.length > 0);
 
+  const closeOnboarding = () => {
+    localStorage.setItem(SEEN_KEY, '1');
+    setOnboarding(false);
+  };
+
   return (
     <div className="mhome">
+      {/* Первый запуск: ждём купоны — конвейер онбординга крутит настоящие карточки. */}
+      {onboarding && feed.length > 0 && (
+        <Onboarding deals={featured} onDone={closeOnboarding} />
+      )}
+
       <div className="mhome__top">
         <h1 className="mhome__title">{t('mobile.home.title')}</h1>
 
