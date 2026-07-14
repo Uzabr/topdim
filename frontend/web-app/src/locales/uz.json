@@ -69,7 +69,11 @@
     "share": "Ulashish",
     "copy": "Nusxalash",
     "soon": "Tez orada",
-    "user": "Foydalanuvchi"
+    "user": "Foydalanuvchi",
+    "save": "Saqlash",
+    "edit": "O'zgartirish",
+    "add": "Qo'shish",
+    "hide": "Yashirish"
   },
   "search": {
     "title": "Qidiruv",
@@ -225,8 +229,8 @@
     "login": "Profilga kiring",
     "logout": "Chiqish",
     "tabs": {
-      "coupons": "Mening kuponlarim",
-      "orders": "Mening buyurtmalarim",
+      "coupons": "Kuponlarim",
+      "orders": "Xaridlar",
       "refunds": "Qaytadi",
       "complaints": "Apellyatsiya",
       "notifications": "Bildirishnomalar",
@@ -297,7 +301,14 @@
         "phoneRequired": "Iltimos, telefon raqamingizni kiriting",
         "phoneMin": "Telefon raqami juda qisqa (kamida 9 ta belgidan iborat)",
         "phoneMax": "Telefon raqami 20 belgidan oshmasligi kerak"
-      }
+      },
+      "name": "Ism",
+      "phoneLabel": "Telefon",
+      "phoneMissing": "Ko'rsatilmagan — merchantga bog'lanish uchun kerak",
+      "language": "Til",
+      "notifications": "Bildirishnomalar",
+      "notificationsDesc": "Yaqin atrofdagi yangi kuponlar · muddat tugashi · merchant javoblari",
+      "configure": "Sozlash"
     },
     "help": {
       "title": "Yordam va qo'llab-quvvatlash",
@@ -308,7 +319,27 @@
       "reviewsTitle": "Sharhlar",
       "reviewsDesc": "Sharhlar endi foydalanishdan keyin kupon sahifasida.",
       "notificationsTitle": "Bildirishnomalar",
-      "notificationsDesc": "Bu erda tez orada buyurtmalar va kuponlar bilan bog'liq muhim voqealar bo'ladi."
+      "notificationsDesc": "Bu erda tez orada buyurtmalar va kuponlar bilan bog'liq muhim voqealar bo'ladi.",
+      "faq": {
+        "redeem": {
+          "q": "Kupondan qanday foydalanaman?",
+          "a": "Profildagi QR-kodni kassada ko'rsating. Merchant uni skanerlaydi — kupon ishlatilgan deb belgilanadi."
+        },
+        "noShow": {
+          "q": "Bora olmadim — nima qilay?",
+          "a": "Muddati tugagunicha faol kuponda «Pulni qaytarish» tugmasini bosing."
+        },
+        "bonus": {
+          "q": "Nega sharh qoldirish kerak?",
+          "a": "Sharh boshqa xaridorlarga ko'rinadi va merchantga yordam beradi. U «Tasdiqlangan xarid» belgisi bilan chiqadi — faqat tashrifdan keyin qoldirish mumkin."
+        },
+        "refused": {
+          "q": "Merchant kuponni qabul qilmadi",
+          "a": "Kuponda «Shikoyat qilish» tugmasini bosing — tekshiramiz va kupon ishlatilmagan bo'lsa pulni qaytaramiz."
+        }
+      },
+      "contact": "Qo'llab-quvvatlashga yozish",
+      "contactHint": "Telegram orqali javob beramiz"
     },
     "refundModal": {
       "title": "Qaytish so'rovi",
@@ -419,6 +450,48 @@
       "orderNumber": "Buyurtma №{{number}}",
       "continuePay": "To'lovni davom ettiring",
       "viewCoupons": "Mening kuponlarim"
+    },
+    "ticket": {
+      "nearest": "Eng yaqin kupon",
+      "expiresToday": "bugun tugaydi",
+      "expiresInDays_one": "{{count}} kundan keyin tugaydi",
+      "expiresInDays_other": "{{count}} kundan keyin tugaydi",
+      "until": "{{date}} gacha",
+      "paid": "to'langan",
+      "code": "Kod:",
+      "showAtCashier": "kassada QR ni ko'rsating"
+    },
+    "complaintPending": "Shikoyat ko'rib chiqilmoqda",
+    "refundMoney": "Pulni qaytarish",
+    "refundShort": "Qaytarish",
+    "complain": "Shikoyat qilish",
+    "archive": {
+      "title": "Arxiv",
+      "subtitle": "ishlatilgan, muddati o'tgan va qaytarilgan",
+      "leaveReview": "Sharh qoldirish"
+    },
+    "orders": {
+      "empty": "Hozircha xaridlar yo'q",
+      "number": "Buyurtma №{{number}}",
+      "note": "Qaytarishlar va to'lov holati — kupon ichida",
+      "status": {
+        "paid": "To'langan",
+        "pending": "To'lov kutilmoqda",
+        "completed": "Yakunlangan",
+        "cancelled": "Bekor qilingan"
+      }
+    },
+    "review": {
+      "title": "«{{merchant}}» da qanday o'tdi?",
+      "subtitle": "Siz u yerda {{date}} kuni kupon bo'yicha bo'lgansiz",
+      "commentPlaceholder": "Bir necha so'z — ixtiyoriy…",
+      "commentTooShort": "Sharh yozsangiz — kamida {{count}} belgi",
+      "ratingRequired": "Baho qo'ying",
+      "submit": "Yuborish",
+      "sending": "Yuborilmoqda…",
+      "later": "Keyinroq",
+      "verified": "Sharh «Tasdiqlangan xarid» belgisini oladi",
+      "error": "Sharhni yuborib bo'lmadi"
     }
   },
   "couponDetail": {

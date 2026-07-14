@@ -175,7 +175,7 @@ export default function HeaderMobile() {
                 <span>{t('profile.tabs.coupons')}</span>
               </Link>
               <Link
-                to={lp('/profile?tab=notifications')}
+                to={lp('/profile?tab=settings')}
                 className="mobile-menu-action mobile-menu-action--badge-end"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -186,7 +186,7 @@ export default function HeaderMobile() {
                 )}
               </Link>
               <Link
-                to={lp('/profile?tab=profile')}
+                to={lp('/profile?tab=settings')}
                 className="mobile-menu-action"
                 onClick={() => setMobileMenuOpen(false)}
               >

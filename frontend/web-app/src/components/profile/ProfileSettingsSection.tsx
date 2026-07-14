@@ -1,149 +1,197 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { Save, CheckCircle, AlertCircle } from 'lucide-react';
+import NotificationsSection from './NotificationsSection';
 import './ProfileSettingsSection.css';
 
+type EditingField = 'name' | 'phone' | null;
+
+/** Настройки — строки-карточки (design_handoff_sizbiz → «Профиль», таб «Настройки»). */
 export default function ProfileSettingsSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, updateProfile } = useAuthStore();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [firstName, setFirstName] = useState(user?.firstName || '');
-  const [lastName, setLastName] = useState(user?.lastName || '');
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState('');
+  const [editing, setEditing] = useState<EditingField>(null);
+  const [firstName, setFirstName] = useState(user?.firstName ?? '');
+  const [lastName, setLastName] = useState(user?.lastName ?? '');
+  const [phone, setPhone] = useState(user?.phone ?? '');
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
-  const validate = (): string | null => {
-    if (!firstName.trim()) return t('profile.settings.validation.firstNameRequired');
-    if (firstName.trim().length > 100) return t('profile.settings.validation.firstNameMax');
-    if (lastName.trim().length > 100) return t('profile.settings.validation.lastNameMax');
-    if (!phone.trim()) return t('profile.settings.validation.phoneRequired');
-    if (phone.trim().length < 9) return t('profile.settings.validation.phoneMin');
-    if (phone.trim().length > 20) return t('profile.settings.validation.phoneMax');
-    return null;
-  };
+  const lang = i18n.language?.substring(0, 2) === 'uz' ? 'uz' : 'ru';
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const save = async (field: Exclude<EditingField, null>) => {
     setError('');
-    setSuccess('');
 
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
+    if (field === 'name' && !firstName.trim()) {
+      setError(t('profile.settings.validation.firstNameRequired'));
+      return;
+    }
+    if (field === 'phone' && phone.trim().length < 9) {
+      setError(t('profile.settings.validation.phoneMin'));
       return;
     }
 
-    setIsLoading(true);
+    setSaving(true);
     try {
-      await updateProfile({
-        firstName: firstName.trim(),
-        lastName: lastName.trim() || undefined,
-        phone: phone.trim(),
-      });
-      setSuccess(t('profile.settings.success'));
-      setTimeout(() => setSuccess(''), 3000);
+      await updateProfile(
+        field === 'name'
+          ? { firstName: firstName.trim(), lastName: lastName.trim() || undefined }
+          : { phone: phone.trim() },
+      );
+      setEditing(null);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      const msg = e.response?.data?.message || t('profile.settings.error');
-      setError(msg);
+      setError(e.response?.data?.message || t('profile.settings.error'));
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
 
-  return (
-    <div className="profile-settings">
-      <h3 className="profile-settings__title">{t('profile.settings.title')}</h3>
+  const cancel = () => {
+    setFirstName(user?.firstName ?? '');
+    setLastName(user?.lastName ?? '');
+    setPhone(user?.phone ?? '');
+    setError('');
+    setEditing(null);
+  };
 
-      {!user?.phone && (
-        <div className="profile-settings__phone-warning">
-          <AlertCircle size={16} />
-          {t('profile.settings.phoneHint')}
+  const switchLang = () => {
+    const next = lang === 'ru' ? 'uz' : 'ru';
+    i18n.changeLanguage(next);
+    localStorage.setItem('language', next);
+    const pathWithoutLang = location.pathname.replace(/^\/(ru|uz)/, '');
+    navigate(`/${next}${pathWithoutLang || '/'}${location.search}`, { replace: true });
+  };
+
+  return (
+    <div className="settings">
+      {/* Имя */}
+      <div className="settings__row">
+        <div className="settings__field">
+          <p className="settings__label">{t('profile.settings.name')}</p>
+
+          {editing === 'name' ? (
+            <div className="settings__inputs">
+              <input
+                className="settings__input"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder={t('profile.settings.firstNamePlaceholder')}
+                maxLength={100}
+                autoFocus
+              />
+              <input
+                className="settings__input"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder={t('profile.settings.lastNamePlaceholder')}
+                maxLength={100}
+              />
+            </div>
+          ) : (
+            <p className="settings__value">{fullName || t('common.notSpecified')}</p>
+          )}
+        </div>
+
+        {editing === 'name' ? (
+          <div className="settings__edit-actions">
+            <button type="button" className="settings__save" disabled={saving} onClick={() => save('name')}>
+              {saving ? t('profile.settings.saving') : t('common.save')}
+            </button>
+            <button type="button" className="settings__link" onClick={cancel}>
+              {t('common.cancel')}
+            </button>
+          </div>
+        ) : (
+          <button type="button" className="settings__link" onClick={() => setEditing('name')}>
+            {t('common.edit')}
+          </button>
+        )}
+      </div>
+
+      {/* Телефон */}
+      <div className="settings__row">
+        <div className="settings__field">
+          <p className="settings__label">{t('profile.settings.phoneLabel')}</p>
+
+          {editing === 'phone' ? (
+            <div className="settings__inputs">
+              <input
+                className="settings__input"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+998 90 123 45 67"
+                maxLength={20}
+                autoFocus
+              />
+            </div>
+          ) : user?.phone ? (
+            <p className="settings__value">{user.phone}</p>
+          ) : (
+            <p className="settings__value settings__value--warn">{t('profile.settings.phoneMissing')}</p>
+          )}
+        </div>
+
+        {editing === 'phone' ? (
+          <div className="settings__edit-actions">
+            <button type="button" className="settings__save" disabled={saving} onClick={() => save('phone')}>
+              {saving ? t('profile.settings.saving') : t('common.save')}
+            </button>
+            <button type="button" className="settings__link" onClick={cancel}>
+              {t('common.cancel')}
+            </button>
+          </div>
+        ) : user?.phone ? (
+          <button type="button" className="settings__link" onClick={() => setEditing('phone')}>
+            {t('common.edit')}
+          </button>
+        ) : (
+          <button type="button" className="settings__btn" onClick={() => setEditing('phone')}>
+            {t('common.add')}
+          </button>
+        )}
+      </div>
+
+      {error && <p className="settings__error">{error}</p>}
+
+      {/* Язык */}
+      <div className="settings__row">
+        <div className="settings__field">
+          <p className="settings__label">{t('profile.settings.language')}</p>
+          <p className="settings__value">{lang === 'ru' ? 'Русский' : "O'zbekcha"}</p>
+        </div>
+        <button type="button" className="settings__link" onClick={switchLang}>
+          {lang === 'ru' ? "O'zbekcha" : 'Русский'}
+        </button>
+      </div>
+
+      {/* Уведомления */}
+      <div className="settings__row">
+        <div className="settings__field">
+          <p className="settings__label">{t('profile.settings.notifications')}</p>
+          <p className="settings__value">{t('profile.settings.notificationsDesc')}</p>
+        </div>
+        <button
+          type="button"
+          className="settings__link"
+          onClick={() => setNotificationsOpen((v) => !v)}
+        >
+          {notificationsOpen ? t('common.hide') : t('profile.settings.configure')}
+        </button>
+      </div>
+
+      {notificationsOpen && (
+        <div className="settings__notifications">
+          <NotificationsSection />
         </div>
       )}
-
-      <form className="profile-settings__form" onSubmit={handleSubmit}>
-        <div className="profile-settings__field">
-          <label className="profile-settings__label">Email</label>
-          <input
-            className="profile-settings__input profile-settings__input--readonly"
-            type="email"
-            value={user?.email || ''}
-            disabled
-            id="profile-email"
-          />
-        </div>
-
-        <div className="profile-settings__field">
-          <label className="profile-settings__label" htmlFor="profile-first-name">{t('profile.settings.firstName')}</label>
-          <input
-            className="profile-settings__input"
-            type="text"
-            id="profile-first-name"
-            value={firstName}
-            onChange={(e) => { setFirstName(e.target.value); setError(''); }}
-            maxLength={100}
-            placeholder={t('profile.settings.firstNamePlaceholder')}
-          />
-        </div>
-
-        <div className="profile-settings__field">
-          <label className="profile-settings__label" htmlFor="profile-last-name">{t('profile.settings.lastName')}</label>
-          <input
-            className="profile-settings__input"
-            type="text"
-            id="profile-last-name"
-            value={lastName}
-            onChange={(e) => { setLastName(e.target.value); setError(''); }}
-            maxLength={100}
-            placeholder={t('profile.settings.lastNamePlaceholder')}
-          />
-        </div>
-
-        <div className="profile-settings__field">
-          <label className="profile-settings__label" htmlFor="profile-phone">{t('profile.settings.phone')}</label>
-          <input
-            className="profile-settings__input"
-            type="tel"
-            id="profile-phone"
-            value={phone}
-            onChange={(e) => { setPhone(e.target.value); setError(''); }}
-            placeholder="+998 90 123 45 67"
-            maxLength={20}
-          />
-        </div>
-
-        {error && (
-          <div className="profile-settings__error">
-            <AlertCircle size={14} />
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="profile-settings__success">
-            <CheckCircle size={14} />
-            {success}
-          </div>
-        )}
-
-        <button
-          type="submit"
-          className="primary-button profile-settings__submit"
-          disabled={isLoading}
-          id="profile-save-btn"
-        >
-          {isLoading ? t('profile.settings.saving') : (
-            <>
-              <Save size={16} />
-              {t('profile.settings.save')}
-            </>
-          )}
-        </button>
-      </form>
     </div>
   );
 }

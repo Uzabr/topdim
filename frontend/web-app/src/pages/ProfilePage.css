@@ -1,636 +1,310 @@
-/* ═══════════════════════════════════════════
-   ProfilePage — User dashboard with sidebar
-   ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   Профиль: заголовок + 4 таба-таблетки. Референс:
+   design_handoff_sizbiz/«Профиль - образец.dc.html»
+   ═══════════════════════════════════════════════════════════════ */
 
 .profile-page {
-  width: min(1100px, 100%);
   max-width: 1100px;
-  margin: 0 auto;
-  padding: var(--space-xl) 20px var(--space-3xl);
-  box-sizing: border-box;
-  overflow-x: hidden;
+  padding-bottom: var(--space-3xl);
 }
 
-.profile-page .surface-card {
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-/* Горизонтальный скролл только для списков (навигация, вкладки, статистика) */
-.profile-scroll-x {
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
-  scrollbar-width: thin;
-  scrollbar-color: var(--chip) var(--line);
-}
-
-.profile-scroll-x::-webkit-scrollbar {
-  height: 5px;
-}
-
-.profile-scroll-x::-webkit-scrollbar-track {
-  margin: 0 8px 4px;
-  background: var(--line);
-  border-radius: 999px;
-}
-
-.profile-scroll-x::-webkit-scrollbar-thumb {
-  background: var(--chip);
-  border-radius: 999px;
-}
-
-/* ═══ Two-Column Layout ═══ */
-.profile-layout {
-  display: grid;
-  grid-template-columns: 1fr 280px;
-  gap: var(--space-xl);
-  align-items: start;
-}
-
-.profile-main {
+/* ── Заголовок ── */
+.profile-head {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-xl);
-  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.profile-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-.profile-tabs-card {
-  border-radius: 16px;
-  overflow: hidden;
-  padding: 0;
-  max-width: 100%;
-}
-
-.profile-tabs-card__body {
-  padding: 20px;
-}
-
-.profile-tabs-card .profile-coupons {
-  margin-top: 0;
-}
-
-/* ═══ Sidebar ═══ */
-.profile-sidebar {
-  position: sticky;
-  top: calc(var(--header-height, 64px) + var(--space-xl));
-}
-
-.profile-sidebar__card {
-  padding: 0;
-  overflow: hidden;
-}
-
-/* Sidebar — User mini card */
-.profile-sidebar__user {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-  border-bottom: 1px solid var(--border);
-}
-
-.profile-sidebar__avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--warn-fg)) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
+.profile-name {
+  margin: 0;
+  font-size: 36px;
   font-weight: 800;
-  color: #fff;
-  flex-shrink: 0;
+  letter-spacing: var(--heading-ls);
 }
 
-.profile-sidebar__user-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.profile-email {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-3);
 }
 
-.profile-sidebar__name {
-  font-size: var(--font-sm);
-  font-weight: 700;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.profile-logout {
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+  box-shadow: var(--shadow-card);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  transition: background var(--transition-fast);
 }
 
-.profile-sidebar__email {
-  font-size: 12px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.profile-logout:hover {
+  background: var(--chip-hover);
 }
 
-/* Sidebar — Navigation */
-.profile-sidebar__nav {
-  display: flex;
-  flex-direction: column;
-  padding: var(--space-sm) 0;
-}
-
-.profile-sidebar__nav-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  padding: 12px var(--space-lg);
-  background: none;
-  border: none;
-  font-size: var(--font-sm);
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.15s, color 0.15s;
+/* ── Табы ── */
+.profile-tabs {
   position: relative;
-  font-family: inherit;
+  display: inline-flex;
+  gap: 8px;
+  margin: 24px 0 28px;
 }
 
-.profile-sidebar__nav-item:hover {
-  background: var(--bg-muted);
-  color: var(--text-primary);
-}
-
-.profile-sidebar__nav-item--active {
-  color: var(--primary);
-  font-weight: 700;
-  background: var(--chip);
-}
-
-.profile-sidebar__nav-item--active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--primary);
-}
-
-.sidebar-unread-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--warn-fg);
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-/* Sidebar — Footer */
-.profile-sidebar__footer {
-  padding: var(--space-sm) var(--space-lg) var(--space-lg);
-  border-top: 1px solid var(--border);
-}
-
-.profile-sidebar__logout {
+.profile-tab {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: none;
-  border: none;
-  font-size: var(--font-sm);
-  color: var(--danger);
-  cursor: pointer;
-  font-weight: 500;
-  padding: 8px 0;
-  font-family: inherit;
-  transition: opacity 0.15s;
+  padding: 11px 22px;
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+  box-shadow: var(--shadow-pill);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  user-select: none;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.profile-sidebar__logout:hover {
-  opacity: 0.7;
+.profile-tab--active {
+  background: var(--ink);
+  color: var(--on-ink);
 }
 
-/* ═══ Empty State (Unauth) ═══ */
+.profile-tab__count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 11.5px;
+  font-weight: 800;
+  transition: background var(--transition-fast);
+}
+
+.profile-tab--active .profile-tab__count {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ── Мои купоны ── */
+.profile-active-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.profile-archive-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 40px 0 16px;
+}
+
+.profile-archive-head h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.profile-archive-head span {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.profile-archive {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.archive-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  box-shadow: var(--shadow-card);
+  opacity: 0.75;
+  transition: opacity var(--transition-fast);
+}
+
+.archive-row:hover {
+  opacity: 1;
+}
+
+.archive-row__status {
+  flex: none;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.archive-row__status--used {
+  background: var(--used-bg);
+  color: var(--used-fg);
+}
+
+.archive-row__status--expired {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+}
+
+.archive-row__status--refunded {
+  background: var(--chip);
+  color: var(--ink-2);
+}
+
+.archive-row__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.archive-row__date {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.archive-row__review {
+  flex: none;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 12px;
+  font-weight: 700;
+  transition: background var(--transition-fast);
+}
+
+.archive-row__review:hover {
+  background: var(--ink-hover);
+}
+
+/* ── Покупки ── */
+.profile-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.order-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  box-shadow: var(--shadow-card);
+}
+
+.order-row__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.order-row__date {
+  flex: none;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.order-row__sum {
+  flex: none;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.order-row__status {
+  flex: none;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--chip);
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.order-row__status--paid,
+.order-row__status--completed {
+  background: var(--used-bg);
+  color: var(--used-fg);
+}
+
+.order-row__status--pending {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+}
+
+.profile-orders__note {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+/* ── Пустые состояния ── */
+.profile-guest,
 .profile-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 8px;
+  padding: var(--space-3xl) var(--space-lg);
   text-align: center;
-  gap: var(--space-md);
-  padding: var(--space-3xl) var(--space-xl);
-  margin-top: var(--space-2xl);
+}
+
+.profile-guest h2,
+.profile-empty h3 {
+  margin: 8px 0 0;
+}
+
+.profile-guest p,
+.profile-empty p {
+  margin: 0 0 12px;
+  color: var(--ink-2);
 }
 
 .profile-empty-icon {
   color: var(--ink-3);
 }
 
-.profile-empty h2 {
-  margin: 0;
-  font-size: var(--font-2xl);
-  font-weight: 800;
-  color: var(--text-primary);
-}
-
-.profile-empty p {
-  color: var(--text-secondary);
-  margin: 0 0 var(--space-lg);
-  max-width: 300px;
-}
-
-/* ═══ Content ═══ */
-.profile-section-title {
-  font-size: var(--font-xl);
-  font-weight: 800;
-  margin: 0 0 var(--space-md);
-  letter-spacing: -0.01em;
-}
-
-.profile-coupons {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
 .profile-loading {
+  padding: var(--space-2xl) 0;
+  color: var(--ink-3);
   text-align: center;
-  padding: var(--space-2xl);
-  color: var(--text-muted);
-  font-weight: 500;
 }
 
-.profile-coupons-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: var(--space-3xl) var(--space-lg);
-  gap: var(--space-sm);
-}
-
-.profile-coupons-empty h3 {
-  margin: 0;
-  font-size: var(--font-lg);
-  font-weight: 700;
-}
-
-.profile-coupons-empty p {
-  color: var(--text-secondary);
-  margin: 0 0 var(--space-xl);
-  font-size: var(--font-sm);
-}
-
-/* ═══ Purchased Coupon Card ═══ */
-.purchased-coupon {
-  padding: var(--space-lg) var(--space-xl);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  position: relative;
-  overflow: hidden;
-}
-
-.purchased-coupon::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: var(--border-strong);
-}
-
-.purchased-coupon--active::before { background: var(--primary); }
-.purchased-coupon--used::before { background: var(--success); }
-.purchased-coupon--expired::before { background: var(--text-muted); }
-
-.purchased-coupon__main h3 {
-  margin: 0 0 4px;
-  font-size: var(--font-lg);
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.purchased-coupon__main p {
-  margin: 0;
-  font-size: var(--font-sm);
-  color: var(--text-secondary);
-}
-
-.purchased-coupon__details {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding-top: var(--space-md);
-  border-top: 1px dashed var(--border-strong);
-}
-
-.purchased-coupon__code {
-  display: flex;
-  flex-direction: column;
-}
-
-.code-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  font-weight: 800;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-}
-
-.code-value {
-  font-size: var(--font-2xl);
-  font-weight: 800;
-  letter-spacing: 0.15em;
-  color: var(--text-primary);
-  font-family: monospace;
-}
-
-.purchased-coupon__meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.badge {
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.badge--active { background: var(--chip); color: var(--primary); }
-.badge--used { background: var(--used-bg); color: var(--success); text-decoration: line-through; }
-.badge--expired { background: var(--bg-muted); color: var(--text-secondary); }
-
-.coupon-expires {
-  font-size: var(--font-xs);
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.purchased-coupon__btn {
-  margin-top: var(--space-sm);
-}
-
-/* ═══ Tablet: одна колонка, без сжатия контента ═══ */
-@media (max-width: 1024px) {
-  .profile-layout {
-    grid-template-columns: 1fr;
-    gap: var(--space-lg);
-  }
-
-  .profile-sidebar {
-    position: static;
-  }
-}
-
-/* ═══ Mobile ═══ */
-@media (max-width: 768px) {
-  .profile-page {
-    width: 100%;
-    max-width: 100%;
-    padding: var(--space-md) 16px calc(var(--bottom-nav-height) + var(--space-lg));
-  }
-
-  .profile-layout {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-    min-width: 0;
-    width: 100%;
-  }
-
-  .profile-main,
-  .profile-sidebar,
-  .profile-content,
-  .profile-tabs-card,
-  .profile-tabs-card__body,
-  .profile-overview {
-    min-width: 0;
-    max-width: 100%;
-    width: 100%;
-  }
-
-  .profile-main {
-    gap: var(--space-md);
-  }
-
-  /* Навигация разделов — компактная полоса со скроллом */
-  .profile-sidebar {
-    position: sticky;
-    top: calc(var(--header-height) + 6px);
-    z-index: 25;
-    order: -1;
-    width: 100%;
-    margin: 0;
-  }
-
-  .profile-sidebar__card {
-    min-width: 0;
-    border-radius: 14px;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .profile-sidebar__user,
-  .profile-sidebar__footer {
-    display: none;
-  }
-
-  .profile-sidebar__nav {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: stretch;
-    gap: 8px;
-    padding: 10px 12px 14px;
-    margin: 0;
-  }
-
-  .profile-sidebar__nav-item {
-    flex: 0 0 auto;
-    padding: 10px 12px;
-    white-space: nowrap;
-    font-size: 12px;
-    gap: 6px;
-    border-radius: 10px;
-    background: var(--bg-surface-strong);
-    border: 1px solid var(--border);
-  }
-
-  .profile-sidebar__nav-item--active {
-    border-color: var(--border-strong);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .profile-sidebar__nav-item--active::before {
-    display: none;
-  }
-
-  .profile-sidebar__nav-item svg {
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-  }
-
-  /* Заголовок дублирует активный пункт меню — скрываем */
-  .profile-content > .profile-section-title {
-    display: none;
-  }
-
-  .profile-overview {
-    padding: var(--space-md);
-  }
-
-  .profile-section-title {
-    font-size: var(--font-lg);
-    margin-bottom: var(--space-sm);
-  }
-
-  .profile-content {
-    gap: var(--space-sm);
-  }
-
-  .profile-tabs-card {
-    border-radius: 14px;
-    overflow: hidden;
-  }
-
-  .profile-tabs-card__body {
-    padding: 12px;
-  }
-
-  .profile-tabs-card .td-tabs {
-    border-radius: 14px 14px 0 0;
-  }
-
-  .profile-tabs-card .td-tabs__track {
-    padding: 8px 12px 10px;
-  }
-
-  .profile-tabs-card .td-tab {
-    flex-shrink: 0;
-    padding: 10px 12px;
-    font-size: 12px;
-  }
-
-  .profile-coupons {
-    gap: var(--space-sm);
-    overflow-x: hidden;
-  }
-
-  .profile-coupons-empty {
-    padding: var(--space-xl) var(--space-md);
-  }
-
-  .profile-coupons-empty p {
-    margin-bottom: var(--space-md);
-  }
-
-  /* Заказы */
-  .profile-content .order-card {
-    padding: var(--space-md);
-  }
-
-  .profile-content .order-card__header {
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .profile-content .order-card__body {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-sm);
-  }
-
-  .profile-content .order-card__actions {
-    flex-wrap: wrap;
-  }
-
-  .profile-content .order-card__btn {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  /* Возвраты */
-  .profile-content .refund-card {
-    padding: var(--space-md);
-  }
-
-  .profile-content .refund-card__top {
-    flex-wrap: wrap;
-    gap: var(--space-sm);
-  }
-
-  /* Уведомления */
-  .profile-content .notification-card {
-    flex-direction: column;
-    align-items: stretch;
-    padding: var(--space-md);
-    gap: var(--space-sm);
-  }
-
-  .profile-content .notification-card__mark {
-    align-self: flex-end;
-  }
-
-  .profile-content .notifications-filter {
-    flex-wrap: wrap;
-  }
-
-  /* Настройки */
-  .profile-content .profile-settings {
-    max-width: 100%;
-  }
-
-  .profile-empty {
-    margin-top: var(--space-lg);
-    padding: var(--space-2xl) var(--space-md);
-  }
-
-  .purchased-coupon {
-    padding: var(--space-md);
-  }
-
-  .purchased-coupon__details {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-md);
-  }
-
-  .purchased-coupon__meta {
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .code-value {
-    font-size: var(--font-xl);
-    letter-spacing: 0.08em;
-    word-break: break-all;
-  }
-}
-
-@media (max-width: 480px) {
-  .profile-page {
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-
-  .profile-content .order-card__body {
+@media (max-width: 720px) {
+  .profile-active-grid {
     grid-template-columns: 1fr;
   }
 
-  .profile-sidebar__nav-item span:not(:first-child) {
-    max-width: 88px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .profile-tabs {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .order-row,
+  .archive-row {
+    flex-wrap: wrap;
   }
 }
