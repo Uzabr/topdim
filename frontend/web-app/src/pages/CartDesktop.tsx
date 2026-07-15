@@ -1,109 +1,173 @@
+import { ArrowRight, Minus, Plus, ShoppingCart, Ticket, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingBag, ArrowRight, Plus, Minus, ShoppingCart, Ticket } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { couponsApi } from '../api/coupons';
+import CouponCard from '../components/coupon/CouponCard';
 import { useCartStore } from '../store/cartStore';
-import { formatPrice } from '../utils/format';
 import { useLocalePath } from '../hooks/useLocalePath';
+import { mapCouponOfferToCardData } from '../utils/couponCardMapper';
+import { formatPrice } from '../utils/format';
 import './CartPage.css';
+
+/** Сколько купонов показываем в «Возможно, вас заинтересует». */
+const RECS = 4;
 
 export default function CartDesktop() {
   const { t } = useTranslation();
-  const { items, totalItems, totalPrice, removeFromCart, updateQuantity } = useCartStore();
   const navigate = useNavigate();
   const lp = useLocalePath();
+  const { items, totalItems, totalPrice, removeFromCart, updateQuantity } = useCartStore();
 
-  const handleCheckout = () => {
-    navigate(lp('/checkout'));
-  };
+  // Рекомендации — популярное; из ленты вычитаем то, что уже в корзине.
+  const { data: recs = [] } = useQuery({
+    queryKey: ['cart-recs'],
+    queryFn: () => couponsApi.getCatalog({ sortBy: 'popular', size: RECS + items.length }),
+    select: (res) => res.data.data.content,
+  });
+
+  const inCart = new Set(items.map((i) => i.couponOfferId));
+  const recommendations = recs.filter((c) => !inCart.has(c.id)).slice(0, RECS);
 
   if (items.length === 0) {
     return (
-      <div className="cart-page">
-        <div className="cart-empty container">
-          <ShoppingCart className="cart-empty__icon" size={64} strokeWidth={1.25} />
-          <h2>{t('cart.emptyTitle')}</h2>
-          <p>{t('cart.emptyDesc')}</p>
-          <Link to={lp('/coupons')} className="primary-button cart-empty__btn">
-            <ShoppingBag size={18} /> {t('cart.toCoupons')}
+      <div className="cart container">
+        <div className="cart__empty">
+          <span className="cart__empty-icon">
+            <ShoppingCart size={34} strokeWidth={1.6} />
+          </span>
+          <h1 className="cart__empty-title">{t('cart.emptyTitle')}</h1>
+          <p className="cart__empty-text">{t('cart.emptyDesc')}</p>
+          <Link to={lp('/coupons')} className="cart__empty-btn">
+            {t('cart.toCoupons')}
           </Link>
         </div>
+
+        {recommendations.length > 0 && (
+          <section className="cart__recs">
+            <h2 className="cart__recs-title">{t('cart.recommendations')}</h2>
+            <div className="cart__recs-grid">
+              {recommendations.map((c) => (
+                <CouponCard key={c.id} coupon={mapCouponOfferToCardData(c)} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="cart-page">
-      <div className="cart-header container">
-        <h1 className="cart-title">{t('cart.title')}</h1>
-        <span className="cart-count badge">{t('cart.itemsCount', { count: totalItems })}</span>
-      </div>
+    <div className="cart container">
+      <header className="cart__head">
+        <h1 className="cart__title">{t('cart.title')}</h1>
+        <span className="cart__count">{t('cart.itemsCount', { count: totalItems })}</span>
+      </header>
 
-      <div className="cart-content container">
-        <div className="cart-items surface-card">
+      <div className="cart__grid">
+        <div className="cart__items">
           {items.map((item) => (
-            <div key={item.key} className="cart-item">
-              <div className="cart-item__icon-wrapper">
+            <article key={item.key} className="citem">
+              <div className="citem__photo">
                 {item.coverImageUrl ? (
-                  <img src={item.coverImageUrl} alt="" className="cart-item__img" />
+                  <img src={item.coverImageUrl} alt="" loading="lazy" />
                 ) : (
-                  <div className="cart-item__icon"><Ticket size={26} strokeWidth={1.5} /></div>
+                  <Ticket size={26} strokeWidth={1.5} className="citem__ph" />
                 )}
               </div>
-              <div className="cart-item__info">
-                <h3 className="cart-item__title">{item.couponTitle}</h3>
-                <p className="cart-item__option">{item.optionTitle}</p>
-                {item.isGift && (
-                  <span className="cart-item__gift badge">
-                    {t('cart.gift')}{item.giftRecipientName ? ` (${t('cart.giftTo', { name: item.giftRecipientName })})` : ''}
-                  </span>
-                )}
-                <div className="cart-item__qty">
+
+              <div className="citem__body">
+                <div className="citem__top">
+                  <h2 className="citem__title">{item.couponTitle}</h2>
                   <button
-                    className="cart-item__qty-btn"
-                    onClick={() => updateQuantity(item.key, item.quantity - 1)}
+                    type="button"
+                    className="citem__remove"
+                    onClick={() => removeFromCart(item.key)}
+                    aria-label={t('common.delete')}
                   >
-                    <Minus size={14} />
-                  </button>
-                  <span>{item.quantity}</span>
-                  <button
-                    className="cart-item__qty-btn"
-                    onClick={() => updateQuantity(item.key, item.quantity + 1)}
-                  >
-                    <Plus size={14} />
+                    <X size={15} />
                   </button>
                 </div>
+
+                <p className="citem__option">{item.optionTitle}</p>
+
+                {item.isGift && (
+                  <span className="citem__gift">
+                    {t('cart.gift')}
+                    {item.giftRecipientName
+                      ? ` · ${t('cart.giftTo', { name: item.giftRecipientName })}`
+                      : ''}
+                  </span>
+                )}
+
+                <div className="citem__foot">
+                  <span className="citem__qty">
+                    <button
+                      type="button"
+                      className="citem__step"
+                      onClick={() =>
+                        item.quantity > 1
+                          ? updateQuantity(item.key, item.quantity - 1)
+                          : removeFromCart(item.key)
+                      }
+                      aria-label={t('common.decrease')}
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span className="citem__num">{item.quantity}</span>
+                    <button
+                      type="button"
+                      className="citem__step"
+                      onClick={() => updateQuantity(item.key, item.quantity + 1)}
+                      aria-label={t('common.increase')}
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </span>
+
+                  <span className="citem__price">
+                    {formatPrice(item.unitPrice * item.quantity)}
+                  </span>
+                </div>
               </div>
-              <div className="cart-item__right">
-                <span className="cart-item__price">
-                  {formatPrice(item.unitPrice * item.quantity)}
-                </span>
-                <button
-                  className="icon-button cart-item__remove"
-                  onClick={() => removeFromCart(item.key)}
-                  aria-label={t('common.delete')}
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            </div>
+            </article>
           ))}
         </div>
 
-        <div className="cart-summary surface-card">
-          <h2>{t('cart.summary')}</h2>
-          <div className="cart-summary__row">
+        <aside className="cart__summary">
+          <h2 className="cart__summary-title">{t('cart.summary')}</h2>
+
+          <div className="cart__row">
             <span>{t('cart.itemsLine', { count: totalItems })}</span>
-            <span className="cart-summary__value">{formatPrice(totalPrice)}</span>
+            <span className="cart__row-value">{formatPrice(totalPrice)}</span>
           </div>
-          <div className="cart-summary__total">
+
+          <div className="cart__total">
             <span>{t('cart.toPay')}</span>
-            <span className="cart-summary__price">{formatPrice(totalPrice)}</span>
+            <span>{formatPrice(totalPrice)}</span>
           </div>
-          <button onClick={handleCheckout} className="primary-button cart-summary__btn">
-            {t('cart.checkout')} <ArrowRight size={18} />
+
+          <button
+            type="button"
+            className="cart__checkout"
+            onClick={() => navigate(lp('/checkout'))}
+          >
+            {t('cart.checkout')}
+            <ArrowRight size={18} />
           </button>
-        </div>
+        </aside>
       </div>
+
+      {recommendations.length > 0 && (
+        <section className="cart__recs">
+          <h2 className="cart__recs-title">{t('cart.recommendations')}</h2>
+          <div className="cart__recs-grid">
+            {recommendations.map((c) => (
+              <CouponCard key={c.id} coupon={mapCouponOfferToCardData(c)} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

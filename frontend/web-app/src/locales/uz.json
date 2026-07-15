@@ -173,7 +173,8 @@
     "guestLimit": "Mehmonlar savatidagi maksimal {{limit}} mahsulot. Batafsil maʼlumot uchun tizimga kiring.",
     "guestLimitShort": "Mehmonlar savatidagi maksimal {{limit}} mahsulot.",
     "updateQtyError": "Miqdorni yangilab bo‘lmadi",
-    "addError": "Kuponni savatga qo‘shib bo‘lmadi"
+    "addError": "Kuponni savatga qo‘shib bo‘lmadi",
+    "recommendations": "Sizni qiziqtirishi mumkin"
   },
   "checkout": {
     "title": "Buyurtma berish",
