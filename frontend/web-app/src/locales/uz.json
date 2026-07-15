@@ -174,7 +174,11 @@
     "guestLimitShort": "Mehmonlar savatidagi maksimal {{limit}} mahsulot.",
     "updateQtyError": "Miqdorni yangilab bo‘lmadi",
     "addError": "Kuponni savatga qo‘shib bo‘lmadi",
-    "recommendations": "Sizni qiziqtirishi mumkin"
+    "discount": "Chegirma",
+    "deliveryNote": "Kupon va QR-kod to'lovdan so'ng darhol profilingizda paydo bo'ladi. Kela olmasangiz — pulni qaytaramiz.",
+    "emptyHint": "«Kun kuponi»ga qarang — bugun eng katta chegirmalar",
+    "couponsCount_one": "{{count}} ta kupon",
+    "couponsCount_other": "{{count}} ta kupon"
   },
   "checkout": {
     "title": "Buyurtma berish",

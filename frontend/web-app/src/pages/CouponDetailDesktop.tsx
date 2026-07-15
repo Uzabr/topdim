@@ -107,6 +107,7 @@ export default function CouponDetailPage() {
       couponTitle: c.title,
       optionTitle: selected.title,
       unitPrice: selected.couponPrice,
+      oldPrice: selected.regularPrice,
       quantity: 1,
       coverImageUrl: c.coverImageUrl,
     });

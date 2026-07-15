@@ -174,7 +174,13 @@
     "guestLimitShort": "Максимум {{limit}} позиций в гостевой корзине.",
     "updateQtyError": "Не удалось обновить количество",
     "addError": "Не удалось добавить купон в корзину",
-    "recommendations": "Возможно, вас заинтересует"
+    "discount": "Скидка",
+    "deliveryNote": "Купон и QR-код появятся в профиле сразу после оплаты. Не получилось прийти — вернём деньги.",
+    "emptyHint": "Загляните в «Купон дня» — там самые большие скидки",
+    "couponsCount_one": "{{count}} купон",
+    "couponsCount_few": "{{count}} купона",
+    "couponsCount_many": "{{count}} купонов",
+    "couponsCount_other": "{{count}} купонов"
   },
   "checkout": {
     "title": "Оформление заказа",
