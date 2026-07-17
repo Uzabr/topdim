@@ -4,13 +4,10 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { couponsApi } from '../api/coupons';
-import type { Category } from '../api/coupons';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { calcDiscount } from '../utils/format';
-import { localizedName } from '../utils/localizedText';
+import { SITUATIONS } from '../data/situations';
 import './SearchMobile.css';
-
-/** Плитки категорий чередуют высоту — как в макете «Что хотите сегодня?». */
 
 /** Бэкенд ищет от 2 символов — раньше запрос бессмыслен. */
 const MIN_QUERY = 2;
@@ -25,16 +22,11 @@ export default function SearchMobile() {
   const [query, setQuery] = useState(params.get('q') ?? '');
   const term = query.trim();
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => couponsApi.getCategories(),
-    select: (res) => res.data.data,
-  });
-
+  // Плитки ситуаций «Что хотите сегодня?» (Мобилка-9): счётчик — реальный поиск.
   const counts = useQueries({
-    queries: categories.map((c: Category) => ({
-      queryKey: ['coupons', 'count', c.id],
-      queryFn: () => couponsApi.getCatalog({ categoryId: c.id, size: 1 }),
+    queries: SITUATIONS.map((s) => ({
+      queryKey: ['coupons', 'situation-count', s.query],
+      queryFn: () => couponsApi.getCatalog({ search: s.query, size: 1 }),
       select: (res: Awaited<ReturnType<typeof couponsApi.getCatalog>>) =>
         res.data.data.totalElements,
     })),
@@ -122,20 +114,22 @@ export default function SearchMobile() {
           <h1 className="smob__title">{t('home.tiles.title')}</h1>
 
           <div className="smob__tiles">
-            {categories.map((category, i) => (
-              <Link
-                key={category.id}
-                to={`${lp('/coupons')}?categoryId=${category.id}`}
-                className={`stile${i === 0 ? ' stile--featured' : ''}`}
-              >
-                <span className="stile__name">{localizedName(category, i18n.language)}</span>
-                {counts[i]?.data !== undefined && (
-                  <span className="stile__count">
-                    {t('home.tiles.count', { count: counts[i].data })}
-                  </span>
-                )}
-              </Link>
-            ))}
+            {SITUATIONS.map((situation, i) => {
+              const count = counts[i]?.data;
+              return (
+                <button
+                  key={situation.key}
+                  type="button"
+                  onClick={() => setQuery(situation.query)}
+                  className={`stile${situation.featured ? ' stile--featured' : ''}`}
+                >
+                  <span className="stile__name">{t(`home.situations.${situation.key}`)}</span>
+                  {count !== undefined && count > 0 && (
+                    <span className="stile__count">{t('home.tiles.count', { count })}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <h2 className="smob__subtitle">{t('header.frequentlySearched')}</h2>

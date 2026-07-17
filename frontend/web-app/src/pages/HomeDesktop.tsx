@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { couponsApi } from '../api/coupons';
 import type { Category, CouponOffer } from '../api/coupons';
-import CategoryTiles from '../components/home/CategoryTiles';
+import Situations from '../components/home/Situations';
 import HeroCoupon from '../components/home/HeroCoupon';
 import HowItWorks from '../components/home/HowItWorks';
 import TetrisFeed from '../components/home/TetrisFeed';
@@ -37,24 +37,6 @@ export default function HomeDesktop() {
     select: (res) => res.data.data.content[0] ?? null,
   });
 
-  // Счётчики для плиток: size=1, нужен только totalElements
-  const countQueries = useQueries({
-    queries: categories.map((c) => ({
-      queryKey: ['coupons', 'count', c.id],
-      queryFn: () => couponsApi.getCatalog({ categoryId: c.id, size: 1 }),
-      select: (res: Awaited<ReturnType<typeof couponsApi.getCatalog>>) =>
-        res.data.data.totalElements,
-    })),
-  });
-
-  const counts = useMemo(() => {
-    const map: Record<number, number | undefined> = {};
-    categories.forEach((c, i) => {
-      map[c.id] = countQueries[i]?.data;
-    });
-    return map;
-  }, [categories, countQueries]);
-
   // Лента: «Горящие» — по скидке, категория — по популярности.
   const { data: feedData, isLoading: feedLoading } = useQuery({
     queryKey: ['coupons', 'feed', tab],
@@ -72,7 +54,7 @@ export default function HomeDesktop() {
     <div className="home container">
       {heroCoupon && <HeroCoupon coupon={heroCoupon} />}
 
-      <CategoryTiles categories={categories} counts={counts} />
+      <Situations />
 
       <section className="feed">
         <h2 className="feed__title">{t('home.feed.title')}</h2>
