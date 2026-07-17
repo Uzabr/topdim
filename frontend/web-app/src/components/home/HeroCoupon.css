@@ -34,8 +34,8 @@
 .hero-coupon__timer {
   padding: 7px 14px;
   border-radius: var(--radius-pill);
-  background: var(--wasp);
-  color: var(--on-wasp);
+  background: var(--ink);
+  color: var(--on-ink);
   font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -71,8 +71,8 @@
 .hero-coupon__discount {
   padding: 6px 14px;
   border-radius: var(--radius-pill);
-  background: var(--wasp);
-  color: var(--on-wasp);
+  background: var(--paper);
+  color: var(--ink);
   font-size: 15px;
   font-weight: 800;
 }
@@ -83,6 +83,25 @@
   gap: 14px;
   flex-wrap: wrap;
   margin-top: 28px;
+}
+
+/* Тёмный CTA — палитра Главной в макете чёрно-белая, без жёлтого. */
+.hero-coupon__buy {
+  padding: 15px 32px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 15px;
+  font-weight: 700;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.hero-coupon__buy:hover {
+  background: var(--ink-hover);
+}
+
+.hero-coupon__buy:active {
+  transform: scale(0.97);
 }
 
 .hero-coupon__stock {

@@ -55,7 +55,7 @@ export default function HeroCoupon({ coupon }: HeroCouponProps) {
         </div>
 
         <div className="hero-coupon__actions">
-          <Link to={lp(`/coupons/${coupon.id}`)} className="primary-button">
+          <Link to={lp(`/coupons/${coupon.id}`)} className="hero-coupon__buy">
             {t('home.hero.buy')}
           </Link>
           {stock && stock.left > 0 && (

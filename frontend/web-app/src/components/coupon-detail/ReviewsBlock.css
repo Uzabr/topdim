@@ -52,8 +52,7 @@
 
 .review__stars {
   font-size: 12px;
-  color: var(--wasp-deep);
-  letter-spacing: 1px;
+  color: #f5a623;
 }
 
 .review__verified {

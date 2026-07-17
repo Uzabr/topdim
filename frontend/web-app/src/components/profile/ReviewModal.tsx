@@ -102,7 +102,7 @@ export default function ReviewModal({ coupon, onClose }: ReviewModalProps) {
               }}
               aria-label={String(n)}
             >
-              <Star size={30} fill="currentColor" strokeWidth={0} />
+              <Star size={32} fill="currentColor" strokeWidth={0} />
             </button>
           ))}
         </div>

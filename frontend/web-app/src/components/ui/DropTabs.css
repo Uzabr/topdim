@@ -56,12 +56,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
+  min-width: 20px;
+  height: 20px;
   padding: 0 5px;
   border-radius: var(--radius-pill);
-  background: var(--wasp);
-  color: var(--on-wasp);
-  font-size: 11px;
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 11.5px;
   font-weight: 800;
+}
+
+/* На активной (тёмной) вкладке бейдж — полупрозрачно-белый, как в макете. */
+.dtab--active .dtab__badge {
+  background: rgba(255, 255, 255, 0.2);
 }

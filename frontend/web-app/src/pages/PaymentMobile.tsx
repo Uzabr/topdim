@@ -176,7 +176,7 @@ export default function PaymentMobile() {
             className="cmdone__btn cmdone__btn--ghost"
             onClick={() => navigate(lp('/'))}
           >
-            {t('common.home')}
+            {t('payment.toHome')}
           </button>
         </div>
       </div>

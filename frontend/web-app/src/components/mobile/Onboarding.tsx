@@ -90,7 +90,7 @@ export default function Onboarding({ deals, onDone }: OnboardingProps) {
           <div className="onb__stage onb__stage--center">
             <div className="onb__ticket">
               <div className="onb__ticket-top">
-                <span className="onb__ticket-label">{t('profile.ticket.nearest')}</span>
+                <span className="onb__ticket-label">{t('profile.ticket.yours')}</span>
                 <span className="onb__ticket-title">
                   {cards[0]?.title ?? t('mobile.onboarding.s2.sample')}
                 </span>

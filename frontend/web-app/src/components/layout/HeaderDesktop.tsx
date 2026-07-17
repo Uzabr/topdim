@@ -147,6 +147,9 @@ export default function HeaderDesktop() {
   return (
     <>
       <header className={`hdr${scrolled ? ' hdr--scrolled' : ''}`}>
+        {/* ═══ Лого: отдельная жёлтая таблетка у левого края (README §Шапка) ═══ */}
+        <Logo className="hdr__logo" />
+
         {/* ═══ Адрес: «нетерпеливый пин» ═══ */}
         <div className="hdr__pill hdr__address">
           {mode === 'idle' && (
@@ -194,12 +197,13 @@ export default function HeaderDesktop() {
           )}
         </div>
 
-        {/* ═══ Центральная группа ═══ */}
+        {/* Спейсер: центральная группа встаёт строго по центру между лого/адресом и «Войти» */}
+        <span className="hdr__spacer" aria-hidden="true" />
+
+        {/* ═══ Центральная группа (короткая, max 560px, по центру) ═══ */}
         <div className="hdr__pill hdr__center">
           {/* Слот, в который «переливается» капля на корзине/избранном */}
           <span className="hdr__slot" style={{ width: dropLeft ? 48 : 0 }} aria-hidden="true" />
-
-          <Logo />
 
           <Link to={lp('/coupons')} className="hdr__icon hdr__burger" aria-label={t('header.catalog')}>
             <span className="hdr__bar" />
@@ -248,6 +252,9 @@ export default function HeaderDesktop() {
             )}
           </button>
         </div>
+
+        {/* Спейсер справа от центральной группы */}
+        <span className="hdr__spacer" aria-hidden="true" />
 
         {/* ═══ Язык + вход ═══ */}
         <div className="hdr__pill hdr__auth">

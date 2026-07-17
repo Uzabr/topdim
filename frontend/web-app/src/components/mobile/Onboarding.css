@@ -263,6 +263,15 @@
   font-weight: 800;
 }
 
+/* Первое большое слово слайда крупнее — как в макете. */
+.onb__line--1 .onb__big {
+  font-size: 34px;
+}
+
+.onb__line strong {
+  font-weight: 800;
+}
+
 .onb__thin {
   font-size: 20px;
   font-weight: 500;

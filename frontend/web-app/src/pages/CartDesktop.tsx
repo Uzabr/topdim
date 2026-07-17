@@ -28,7 +28,7 @@ export default function CartDesktop() {
           <span className="cart__empty-icon">
             <ShoppingCart size={46} strokeWidth={1.6} />
           </span>
-          <h2 className="cart__empty-title">{t('cart.emptyTitle')}</h2>
+          <h2 className="cart__empty-title">{t('cart.emptyTitleDesktop')}</h2>
           <p className="cart__empty-text">{t('cart.emptyHint')}</p>
           <Link to={lp('/coupons')} className="cart__empty-btn">
             {t('cart.toCoupons')}

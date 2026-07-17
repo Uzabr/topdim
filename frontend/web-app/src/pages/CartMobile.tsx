@@ -16,6 +16,11 @@ export default function CartMobile() {
   const lp = useLocalePath();
   const { items, totalItems, totalPrice, removeFromCart, updateQuantity } = useCartStore();
 
+  // Старую цену знаем не для всех позиций (backend-корзина её не отдаёт) —
+  // «Экономию» показываем, только если есть что показать.
+  const oldTotal = items.reduce((sum, i) => sum + (i.oldPrice ?? i.unitPrice) * i.quantity, 0);
+  const saving = oldTotal - totalPrice;
+
   const [leaving, setLeaving] = useState<Record<string, boolean>>({});
 
   const remove = (key: string) => {
@@ -117,8 +122,6 @@ export default function CartMobile() {
             ))}
           </div>
 
-          {/* «Экономии» из макета нет: корзина не хранит старую цену — ни локальная,
-              ни серверная, и выдумывать её мы не будем. */}
           <div className="cmcart__total">
             <div className="cmcart__row">
               <span>
@@ -126,6 +129,13 @@ export default function CartMobile() {
               </span>
               <span className="cmcart__row-value">{formatPrice(totalPrice)}</span>
             </div>
+
+            {saving > 0 && (
+              <div className="cmcart__row">
+                <span>{t('cart.savings')}</span>
+                <span className="cmcart__row-value">{formatPrice(saving)}</span>
+              </div>
+            )}
 
             <div className="cmcart__grand">
               <span>{t('cart.summary')}</span>
@@ -137,7 +147,7 @@ export default function CartMobile() {
               className="cmcart__cta"
               onClick={() => navigate(lp('/checkout'))}
             >
-              {t('cart.checkout')}
+              {t('cart.checkoutShort')}
             </button>
           </div>
         </>

@@ -5,7 +5,7 @@
 
 .buy__card {
   padding: 26px 26px 24px;
-  border-radius: var(--radius-block);
+  border-radius: 24px;
   background: var(--ink);
   color: var(--on-ink);
 }

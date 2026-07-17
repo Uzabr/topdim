@@ -105,8 +105,10 @@ export default function DealDeck({ deals }: DealDeckProps) {
                     {deal.coverImageUrl && <img src={deal.coverImageUrl} alt="" loading="lazy" />}
                   </div>
 
-                  {/* «Купон дня» — только у первого: остальные просто горящие. */}
-                  {i === 0 && <span className="dcard__tag">{t('home.hero.label')}</span>}
+                  {/* Первый — «купон дня», остальные — просто горящие. */}
+                  <span className={`dcard__tag${i === 0 ? '' : ' dcard__tag--hot'}`}>
+                    {i === 0 ? t('home.hero.label') : t('mobile.deck.hot')}
+                  </span>
                   <DeadlineBadge until={deal.buyUntil} className="dcard__timer" />
 
                   <div className="dcard__body">
@@ -134,7 +136,7 @@ export default function DealDeck({ deals }: DealDeckProps) {
                       )}
 
                       <Link to={lp(`/coupons/${deal.id}`)} className="dcard__buy">
-                        {t('home.hero.buy')}
+                        {t('mobile.deck.buy')}
                       </Link>
                     </div>
                   </div>

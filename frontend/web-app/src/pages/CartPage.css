@@ -2,12 +2,11 @@
    Мобильная корзина — отдельный файл CartMobile.css. */
 
 .cart {
-  padding-top: var(--space-lg);
-  padding-bottom: var(--space-2xl);
+  padding-bottom: 80px;
 }
 
 .cart__title {
-  margin: 0 0 22px;
+  margin: 26px 0 22px;
   font-size: 36px;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -41,6 +40,7 @@
   padding: 16px 20px 16px 16px;
   border-radius: 20px;
   background: var(--card);
+  overflow: hidden;
 }
 
 .citem__photo {
@@ -177,8 +177,8 @@
 }
 
 .cart__note {
-  margin: 4px 0 0;
-  padding: 0 6px;
+  margin: 0;
+  padding: 4px 6px;
   color: var(--ink-3);
   font-size: 13px;
 }
@@ -211,8 +211,9 @@
   margin-top: 8px;
 }
 
+/* На строке «кол-во» число серое (наследует #b5b5b5 из .cart__row),
+   а в .cart__total — белое (наследует из .cart__summary). Как в макете. */
 .cart__num {
-  color: var(--on-ink);
   font-variant-numeric: tabular-nums;
 }
 
@@ -253,8 +254,10 @@
   transition: background var(--transition-fast), transform var(--transition-fast);
 }
 
+/* Ховер именно этой кнопки в макете корзины — #f2c832 (чуть насыщеннее
+   системного --wasp-deep). Оставляем как в макете. */
 .cart__checkout:hover {
-  background: var(--wasp-deep);
+  background: #f2c832;
 }
 
 .cart__checkout:active {

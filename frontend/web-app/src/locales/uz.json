@@ -60,7 +60,7 @@
       "sum": "so'm"
     },
     "units": {
-      "pcs": "dona.",
+      "pcs": "dona",
       "daysShort": "kunlar",
       "items": "mahsulot(lar)"
     },
@@ -143,8 +143,8 @@
   "favorites": {
     "title": "Sevimlilar",
     "emptyTitle": "Hozircha bo'sh",
-    "emptyDesc": "Kartadagi yurakcha belgisini bosib, o'zingizga yoqqan kuponlarni qo'shing",
-    "goCatalog": "Katalogga o'ting",
+    "emptyDesc": "Kuponlardagi yurakchani bosing — ular shu yerda paydo bo'ladi",
+    "goCatalog": "Kuponlarni ko'rish",
     "limitTitle": "Sevimlilar chegarasi",
     "limitOk": "Tushunarli",
     "limitLogin": "Hisobingizga kiring →",
@@ -159,29 +159,34 @@
   "cart": {
     "title": "Savat",
     "emptyTitle": "Arava bo‘sh",
+    "emptyTitleDesktop": "Savat bo‘sh",
     "emptyDesc": "Xarid qilishni boshlash uchun katalogdan kuponlarni qo'shing",
-    "toCoupons": "Kuponlar uchun",
+    "toCoupons": "Kuponlarni ko‘rish",
     "startShopping": "Xarid qilishni boshlang",
     "itemsCount": "{{count}} mahsulot(lar)",
     "gift": "Sovg'a sifatida",
     "giftTo": "Kimga: {{name}}",
     "summary": "Jami",
-    "itemsLine": "Mahsulotlar ({{count}})",
+    "itemsLine": "Kuponlar · {{count}}",
     "toPay": "To'lov uchun",
     "checkout": "Buyurtma bering",
+    "checkoutShort": "Rasmiylashtirish",
     "totalToPay": "Jami to'lanishi kerak:",
     "guestLimit": "Mehmonlar savatidagi maksimal {{limit}} mahsulot. Batafsil maʼlumot uchun tizimga kiring.",
     "guestLimitShort": "Mehmonlar savatidagi maksimal {{limit}} mahsulot.",
     "updateQtyError": "Miqdorni yangilab bo‘lmadi",
     "addError": "Kuponni savatga qo‘shib bo‘lmadi",
     "discount": "Chegirma",
-    "deliveryNote": "Kupon va QR-kod to'lovdan so'ng darhol profilingizda paydo bo'ladi. Kela olmasangiz — pulni qaytaramiz.",
-    "emptyHint": "«Kun kuponi»ga qarang — bugun eng katta chegirmalar",
+    "savings": "Tejamkorlik",
+    "deliveryNote": "Kuponlar to'lovdan so'ng darhol Telegramga keladi. Kela olmasangiz — pulni qaytaramiz.",
+    "emptyHint": "«Kun kuponi»ga qarang — bugun −70% gacha",
     "couponsCount_one": "{{count}} ta kupon",
     "couponsCount_other": "{{count}} ta kupon"
   },
   "checkout": {
     "title": "Buyurtma berish",
+    "payTitle": "To'lov",
+    "payCta": "To'lash",
     "authRequiredTitle": "Hisobingizga kirishingiz kerak",
     "authRequiredDesc": "Buyurtma berish uchun tizimga kirishingiz kerak.",
     "login": "Tizimga kirish",
@@ -192,7 +197,7 @@
     "fillProfile": "Profilingizni to'ldiring",
     "contactTitle": "Aloqa ma'lumotlari",
     "phoneLabel": "Telefon:",
-    "paymentTitle": "To'lov",
+    "paymentTitle": "To'lov usuli",
     "card": "Bank kartasi",
     "processing": "Biz tayyorlayapmiz ...",
     "pay": "{{amount}} toʻlash",
@@ -234,7 +239,8 @@
     "step1": "Profilingizda kuponni oching.",
     "step2": "QR yoki PIN-kodni sherigingiz kassiriga ko'rsating.",
     "step3": "Foydalanishdan keyin sharh qoldirishingiz mumkin.",
-    "openCoupons": "Mening kuponlarimni oching",
+    "openCoupons": "Mening kuponlarim",
+    "toHome": "Bosh sahifaga",
     "orderHistory": "Buyurtma tarixi",
     "errorTitle": "Xato",
     "errorDefault": "To'lov tugallanmagan. Buyurtma saqlandi, siz qayta toʻlashga urinib koʻrishingiz mumkin.",
@@ -262,7 +268,7 @@
       "help": "Yordam"
     },
     "couponSubtabs": {
-      "active": "Faol",
+      "active": "Faol kuponlar",
       "refundPending": "Qaytishda",
       "used": "Ishlatilgan",
       "expired": "Muddati tugagan",
@@ -335,7 +341,7 @@
       "configure": "Sozlash"
     },
     "help": {
-      "title": "Yordam va qo'llab-quvvatlash",
+      "title": "Yordam kerakmi?",
       "refundsTitle": "Qaytadi",
       "refundsDesc": "Tez orada siz bu yerda toʻlovni qaytarishni soʻrashingiz va holatni koʻrishingiz mumkin boʻladi.",
       "complaintsTitle": "Shikoyatlar",
@@ -347,11 +353,11 @@
       "faq": {
         "redeem": {
           "q": "Kupondan qanday foydalanaman?",
-          "a": "Profildagi QR-kodni kassada ko'rsating. Merchant uni skanerlaydi — kupon ishlatilgan deb belgilanadi."
+          "a": "Profildagi yoki Telegram-botdagi QR-kodni kassada ko'rsating. Merchant skanerlaydi — kupon ishlatilgan deb belgilanadi."
         },
         "noShow": {
           "q": "Bora olmadim — nima qilay?",
-          "a": "Muddati tugagunicha faol kuponda «Pulni qaytarish» tugmasini bosing."
+          "a": "Muddati tugagunicha faol kuponda «Pulni qaytarish» tugmasini bosing. Kartaga qaytarish 3 ish kunigacha davom etadi."
         },
         "bonus": {
           "q": "Nega sharh qoldirish kerak?",
@@ -363,7 +369,7 @@
         }
       },
       "contact": "Qo'llab-quvvatlashga yozish",
-      "contactHint": "Telegram orqali javob beramiz"
+      "contactHint": "Telegram orqali javob beramiz, odatda 10 daqiqada"
     },
     "refundModal": {
       "title": "Qaytish so'rovi",
@@ -457,7 +463,7 @@
       "validUntil": "{{date}} gacha amal qiladi",
       "toggleHide": "Tafsilotlarni yashirish",
       "toggleShow": "QR kodi va tafsilotlari",
-      "qrHint": "QR kodini kassirga ko'rsating",
+      "qrHint": "Kassada QR ni ko'rsating",
       "pinHint": "yoki kodni yozing",
       "couponFallback": "Kupon",
       "address": "Manzil",
@@ -477,13 +483,14 @@
     },
     "ticket": {
       "nearest": "Eng yaqin kupon",
+      "yours": "Sizning kuponingiz",
       "expiresToday": "bugun tugaydi",
       "expiresInDays_one": "{{count}} kundan keyin tugaydi",
       "expiresInDays_other": "{{count}} kundan keyin tugaydi",
-      "until": "{{date}} gacha",
+      "until": "{{date}} gacha amal qiladi",
       "paid": "to'langan",
       "code": "Kod:",
-      "showAtCashier": "kassada QR ni ko'rsating"
+      "showAtCashier": "kassada QR ni ko'rsating, u Telegramda ham bor"
     },
     "complaintPending": "Shikoyat ko'rib chiqilmoqda",
     "refundMoney": "Pulni qaytarish",
@@ -497,7 +504,7 @@
     "orders": {
       "empty": "Hozircha xaridlar yo'q",
       "number": "Buyurtma №{{number}}",
-      "note": "Qaytarishlar va to'lov holati — kupon ichida",
+      "note": "Qaytarishlar va to'lov holati — har bir xarid ichida, alohida bo'lim kerak emas",
       "status": {
         "paid": "To'langan",
         "pending": "To'lov kutilmoqda",
@@ -551,9 +558,9 @@
     "useUntilLabel": "Foydalanish muddati",
     "soldOf": "{{limit}} tadan {{sold}} tasi sotilgan",
     "chainBuy": "Sotib oldingiz",
-    "chainQr": "QR profilda",
+    "chainQr": "QR Telegramda",
     "chainCome": "Keldingiz",
-    "refundNote": "Kela olmadingizmi — muddat tugaguncha pulni qaytaramiz.",
+    "refundNote": "Kela olmadingizmi — muddat tugaguncha pulni qaytaramiz. To'lov Payme yoki Click orqali.",
     "boughtViews": "{{bought}} ta sotilgan · {{views}} ta ko'rish",
     "related": "O'xshash kuponlar",
     "unavailableTitle": "Kupon mavjud emas",
@@ -800,7 +807,7 @@
       "note": "Bora olmadingizmi — pulni qaytaramiz",
       "buy": {
         "title": "Kupon sotib oling",
-        "text": "Saytda to'lang. Kupon darhol profilingizda paydo bo'ladi"
+        "text": "To'lov Payme yoki Click orqali. Kupon darhol Telegramga keladi"
       },
       "show": {
         "title": "Joyida QR ko'rsating",
@@ -819,6 +826,8 @@
     },
     "deck": {
       "title": "Kun kuponlari",
+      "buy": "Sotib olish",
+      "hot": "Issiq",
       "more_one": "yana {{count}} ta yonayotgan · suring",
       "more_other": "yana {{count}} ta yonayotgan · suring"
     },
@@ -833,7 +842,7 @@
     },
     "paid": {
       "title": "To'landi!",
-      "text": "Kupon va QR-kod profilingizda.",
+      "text": "Kupon va QR-kod Telegramingizda.",
       "until": "{{date}} gacha amal qiladi"
     },
     "onboarding": {
@@ -850,7 +859,7 @@
         "a": "QR ko'rsating —",
         "b": "va sizni",
         "c": "kutib olishadi",
-        "sub": "Kupon va QR-kod profilingizda saqlanadi. Chop etish va qo'ng'iroqsiz",
+        "sub": "Kupon Telegramga keladi va telefoningizda saqlanadi. Chop etish va qo'ng'iroqsiz",
         "sample": "Ikki kishilik SPA-kun"
       },
       "s3": {

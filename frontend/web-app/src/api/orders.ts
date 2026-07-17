@@ -49,6 +49,13 @@ export interface OrderResponse {
   itemCount: number;
   createdAt: string;
   paidAt?: string;
+  /**
+   * TODO(backend): в макете строка заказа ведётся названием оффера, а не «Заказ №».
+   * OrderResponse его пока не отдаёт (заказ — набор из itemCount позиций).
+   * Добавить представительное название (первая позиция + «и ещё N») в order-service
+   * OrderResponse. Пока поля нет — UI показывает «Заказ №{orderNumber}».
+   */
+  title?: string;
 }
 
 export interface PurchasedCoupon {
@@ -71,6 +78,12 @@ export interface PurchasedCoupon {
   refundRequestId?: number;
   refundStatus?: string;
   refundExpectedAt?: string;
+  /**
+   * TODO(backend): в макете тикет показывает уплаченную цену («49 000 сум»), а не название опции.
+   * order-service знает цену позиции на момент покупки (unitPrice) — отдать её в my-coupons.
+   * Пока поля нет — тикет показывает optionTitle (реальные данные, не фейк).
+   */
+  pricePaid?: number;
 }
 
 export interface PagedResponse<T> {

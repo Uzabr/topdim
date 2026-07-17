@@ -72,7 +72,10 @@ start_service() {
 
   echo -e "  ${CYAN}🚀 Запуск $name${NC} (порт $port)..."
   cd "$PROJECT_DIR"
-  nohup ./gradlew "$gradle:bootRun" --console=plain > "$log_file" 2>&1 &
+  # --no-daemon: Gradle daemon кеширует окружение с момента первого запуска,
+  # поэтому DB_PASSWORD/JWT_SECRET из .env не попадают в JVM-процесс сервиса.
+  # --no-daemon форкает JVM напрямую из текущего shell с экспортированными переменными.
+  nohup ./gradlew "$gradle:bootRun" --no-daemon --console=plain > "$log_file" 2>&1 &
   echo $! > "$LOG_DIR/$name.pid"
 }
 
@@ -158,6 +161,10 @@ start_all() {
   echo -e "${GREEN}║     🚀 TopDim — Запуск платформы     ║${NC}"
   echo -e "${GREEN}╚══════════════════════════════════════╝${NC}\n"
 
+  # Убиваем старые Gradle daemon'ы (могут кешировать устаревшее окружение)
+  cd "$PROJECT_DIR"
+  ./gradlew --stop >/dev/null 2>&1
+
   # 1. Docker
   echo -e "${CYAN}[1/3] 🐳 Docker инфраструктура${NC}"
   cd "$PROJECT_DIR"
@@ -171,6 +178,20 @@ start_all() {
   wait_for_port 6380 "redis"
   wait_for_port 5673 "rabbitmq"
   wait_for_port 9000 "minio"
+
+  # Sync PostgreSQL password — POSTGRES_PASSWORD только при первом init volume;
+  # при повторных стартах старый пароль сохраняется в data volume.
+  # После docker compose down -v, initdb может ещё работать даже когда порт уже слушает.
+  echo -e "  ${CYAN}↻ Синхронизация пароля БД...${NC}"
+  for _attempt in $(seq 1 15); do
+    if docker exec topdim-postgres psql -U "${DB_USERNAME:-topdim}" -d postgres \
+      -c "ALTER USER ${DB_USERNAME:-topdim} WITH PASSWORD '${DB_PASSWORD:-topdim_secret}';" \
+      >/dev/null 2>&1; then
+      echo -e "  ${GREEN}✓ Пароль БД синхронизирован${NC}"
+      break
+    fi
+    sleep 2
+  done
 
   # 2. Infrastructure
   echo -e "\n${CYAN}[2/3] 🏗️  Инфраструктурные сервисы${NC}"

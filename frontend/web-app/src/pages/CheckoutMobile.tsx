@@ -37,7 +37,7 @@ export default function CheckoutMobile() {
       >
         <ChevronLeft size={18} strokeWidth={2} />
       </button>
-      <span className="mbar__title">{t('checkout.title')}</span>
+      <span className="mbar__title">{t('checkout.payTitle')}</span>
       <span className="cmpay__spacer" />
     </div>
   );
@@ -159,7 +159,7 @@ export default function CheckoutMobile() {
         </div>
 
         <button type="button" className="cmpay__cta" onClick={submit} disabled={loading}>
-          {loading ? t('checkout.processing') : t('cart.checkout')}
+          {loading ? t('checkout.processing') : t('checkout.payCta')}
         </button>
       </div>
     </div>

@@ -133,6 +133,16 @@
   color: #ffffff;
 }
 
+@keyframes qrPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 210, 60, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(255, 210, 60, 0);
+  }
+}
+
 .pticket__qr {
   flex: none;
   box-sizing: border-box;
@@ -144,6 +154,7 @@
   padding: 8px;
   border-radius: 14px;
   background: #ffffff;
+  animation: qrPulse 2.6s ease-out infinite;
 }
 
 .pticket__side {

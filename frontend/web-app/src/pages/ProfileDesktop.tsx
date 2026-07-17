@@ -240,7 +240,9 @@ export default function ProfileDesktop() {
               {orders.map((o) => (
                 <div key={o.id} className="order-row">
                   <span className="order-row__title">
-                    {t('profile.orders.number', { number: o.orderNumber })}
+                    {/* Макет ведёт строку названием оффера; пока backend не отдаёт title —
+                        фолбэк на «Заказ №N». См. TODO(backend) в api/orders.ts. */}
+                    {o.title || t('profile.orders.number', { number: o.orderNumber })}
                   </span>
                   <span className="order-row__date">{formatDate(o.createdAt)}</span>
                   <span className="order-row__sum">{formatPrice(o.totalAmount)}</span>

@@ -31,7 +31,6 @@
   padding: 10px 20px;
   border-radius: var(--radius-pill);
   background: var(--paper);
-  box-shadow: var(--shadow-pill);
   color: var(--ink);
   font-size: 13.5px;
   font-weight: 600;

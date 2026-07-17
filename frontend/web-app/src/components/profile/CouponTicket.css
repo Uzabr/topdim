@@ -9,7 +9,7 @@
   align-items: flex-start;
   gap: 20px;
   padding: 24px 28px;
-  border-radius: var(--radius-block) var(--radius-block) 4px 4px;
+  border-radius: 24px 24px 4px 4px;
   background: var(--ink);
   color: var(--on-ink);
 }
@@ -76,6 +76,12 @@
   font-weight: 800;
 }
 
+/* Цена покупки (когда backend отдаёт pricePaid) — как в макете: 16px / 800. */
+.ticket__price {
+  font-size: 16px;
+  font-weight: 800;
+}
+
 .ticket__paid {
   padding: 3px 10px;
   border-radius: var(--radius-pill);
@@ -125,7 +131,7 @@
   gap: 12px;
   flex-wrap: wrap;
   padding: 14px 28px 18px;
-  border-radius: 4px 4px var(--radius-block) var(--radius-block);
+  border-radius: 4px 4px 24px 24px;
   background: var(--ink);
   color: var(--on-ink);
 }

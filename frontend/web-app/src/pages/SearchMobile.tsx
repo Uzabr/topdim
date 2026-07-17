@@ -11,7 +11,6 @@ import { localizedName } from '../utils/localizedText';
 import './SearchMobile.css';
 
 /** Плитки категорий чередуют высоту — как в макете «Что хотите сегодня?». */
-const TILE_TINTS = ['#ffe3a3', '#f7cdef', '#c9ebdb', '#cfe3f7', '#e3d7f7', '#f7e0cd'];
 
 /** Бэкенд ищет от 2 символов — раньше запрос бессмыслен. */
 const MIN_QUERY = 2;
@@ -127,8 +126,7 @@ export default function SearchMobile() {
               <Link
                 key={category.id}
                 to={`${lp('/coupons')}?categoryId=${category.id}`}
-                className="stile"
-                style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}
+                className={`stile${i === 0 ? ' stile--featured' : ''}`}
               >
                 <span className="stile__name">{localizedName(category, i18n.language)}</span>
                 {counts[i]?.data !== undefined && (

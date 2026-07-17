@@ -103,8 +103,8 @@
   bottom: 10px;
   padding: 5px 12px;
   border-radius: var(--radius-pill);
-  background: var(--wasp);
-  color: var(--on-wasp);
+  background: var(--ink);
+  color: var(--on-ink);
   font-size: 12.5px;
   font-weight: 800;
 }
@@ -139,7 +139,7 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1.35;
 }
 
@@ -231,10 +231,24 @@
   border-radius: 12px;
 }
 
-.tcard--square .tcard__discount,
 .tcard--tall .tcard__discount {
   right: 6px;
   bottom: 6px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+}
+
+/* Бейдж скидки слева — как в макете (все формы, кроме tall/l-down). */
+.tcard--l-left .tcard__discount,
+.tcard--l-right .tcard__discount {
+  right: auto;
+  left: 10px;
+}
+
+.tcard--square .tcard__discount {
+  right: auto;
+  bottom: 6px;
+  left: 6px;
   padding: 4px 10px;
   font-size: 11.5px;
 }

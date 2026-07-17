@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import type { PurchasedCoupon } from '../../api/orders';
-import { daysUntil, formatDate } from '../../utils/format';
+import { daysUntil, formatDate, formatPrice } from '../../utils/format';
 import { buildQrPayload } from '../../utils/coupon';
 import './CouponTicket.css';
 
@@ -48,7 +48,13 @@ export default function CouponTicket({ coupon, hasComplaint, onRefund, onComplai
           </p>
 
           <div className="ticket__status">
-            <span className="ticket__option">{coupon.optionTitle}</span>
+            {/* Макет показывает уплаченную цену; пока backend её не отдаёт (pricePaid) —
+                честный фолбэк на название опции. См. TODO(backend) в api/orders.ts. */}
+            {coupon.pricePaid != null ? (
+              <span className="ticket__price">{formatPrice(coupon.pricePaid)}</span>
+            ) : (
+              <span className="ticket__option">{coupon.optionTitle}</span>
+            )}
             <span className="ticket__paid">
               {coupon.status === 'REFUND_PENDING'
                 ? t('profile.purchasedCoupon.status.refundPending')

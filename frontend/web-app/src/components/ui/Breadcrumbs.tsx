@@ -1,4 +1,3 @@
-import { Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocalePath } from '../../hooks/useLocalePath';
@@ -26,7 +25,6 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
           itemType="https://schema.org/ListItem"
         >
           <Link to={lp('/')} className="breadcrumbs__link" itemProp="item">
-            <Home size={14} />
             <span itemProp="name">{t('common.home')}</span>
           </Link>
           <meta itemProp="position" content="1" />

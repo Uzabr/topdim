@@ -175,7 +175,7 @@ export default function ProfileMobile() {
                 <article className="pticket">
                   <div className="pticket__top">
                     <div className="pticket__row">
-                      <span className="pticket__label">{t('profile.ticket.nearest')}</span>
+                      <span className="pticket__label">{t('profile.ticket.yours')}</span>
                       {days !== null && (
                         <span className="pticket__expiry">
                           {days <= 0
@@ -350,7 +350,9 @@ export default function ProfileMobile() {
               <div key={o.id} className="porder">
                 <div className="porder__text">
                   <span className="prow__title">
-                    {t('profile.orders.number', { number: o.orderNumber })}
+                    {/* Название оффера, когда backend его отдаёт (title); иначе «Заказ №N».
+                        См. TODO(backend) в api/orders.ts. */}
+                    {o.title || t('profile.orders.number', { number: o.orderNumber })}
                   </span>
                   <span className="prow__meta">{formatDate(o.createdAt)}</span>
                 </div>

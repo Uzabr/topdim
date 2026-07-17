@@ -47,6 +47,17 @@
   transition: background 0.35s, color 0.35s;
 }
 
+/* Лого — отдельная жёлтая таблетка слева, не сжимается */
+.hdr__logo {
+  flex: none;
+}
+
+/* Спейсеры прижимают центральную группу к центру */
+.hdr__spacer {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 /* ── Адрес ── */
 .hdr__address {
   gap: 10px;
@@ -118,10 +129,11 @@
   40% { transform: translateY(-3px); }
 }
 
-/* ── Центральная группа ── */
+/* ── Центральная группа: короткая (max 560px), строго по центру (README §Шапка) ── */
 .hdr__center {
   position: relative;
-  flex: 1;
+  flex: 0 1 560px;
+  max-width: 560px;
   min-width: 0;
   gap: 8px;
 }
@@ -217,7 +229,7 @@
 }
 
 .hdr__drop:hover {
-  filter: brightness(1.35);
+  filter: brightness(1.25);
 }
 
 /* В полёте каплю растягивает по ходу движения */
@@ -287,6 +299,11 @@
   transform: scale(1.22);
 }
 
+/* Сердце «избранного» в активном состоянии — красное, как в макете шапки. */
+.hdr__fav.hdr__icon--active {
+  color: #e0504f;
+}
+
 .hdr__hearts {
   position: absolute;
   inset: 0;
@@ -297,7 +314,7 @@
   position: absolute;
   width: 7px;
   height: 7px;
-  background: var(--heart);
+  background: #e0504f;
   clip-path: polygon(50% 100%, 0% 35%, 15% 5%, 50% 25%, 85% 5%, 100% 35%);
   opacity: 0;
   animation: heartFloat 0.7s ease-out forwards;

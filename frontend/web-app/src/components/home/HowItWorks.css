@@ -42,8 +42,8 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--wasp);
-  color: var(--on-wasp);
+  background: var(--ink);
+  color: var(--on-ink);
   font-size: 16px;
   font-weight: 800;
 }

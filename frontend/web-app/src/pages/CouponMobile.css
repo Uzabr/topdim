@@ -127,7 +127,7 @@
 }
 
 .cmob__section-title {
-  color: var(--ink-3);
+  color: #999793;
   font-size: 12.5px;
 }
 
@@ -221,7 +221,7 @@
 /* ── Стеклянные карточки ── */
 .glass {
   overflow: hidden;
-  margin-top: 12px;
+  margin-top: 16px;
   padding: 16px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.75);
@@ -231,6 +231,7 @@
 }
 
 .glass--fold {
+  margin-top: 10px;
   padding: 0;
 }
 
@@ -323,7 +324,9 @@
 }
 
 .crev__badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   margin-top: 7px;
   padding: 3px 9px;
   border-radius: var(--radius-pill);
@@ -331,6 +334,14 @@
   color: var(--used-fg);
   font-size: 9.5px;
   font-weight: 700;
+}
+
+.crev__badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4caf7d;
 }
 
 /* ── Закреплённая покупка ── */
@@ -350,7 +361,7 @@
 
 .cmob__old {
   display: block;
-  color: var(--ink-3);
+  color: #999793;
   font-size: 11px;
   text-decoration: line-through;
 }

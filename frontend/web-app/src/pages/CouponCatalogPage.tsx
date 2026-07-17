@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Search, SearchX, SlidersHorizontal, X, LayoutGrid, List, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
+import { SearchX, SlidersHorizontal, LayoutGrid, List, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
 import { couponsApi } from '../api/coupons';
 import CouponCard from '../components/coupon/CouponCard';
 import Select from '../components/ui/Select';
@@ -23,7 +23,6 @@ const CategoryIcon = ({ slug }: { slug?: string }) => {
 
 export default function CouponCatalogPage() {
   const { t, i18n } = useTranslation();
-  const [search, setSearch] = useState('');
 
   const sortOptions = useMemo(
     () => [
@@ -55,10 +54,9 @@ export default function CouponCatalogPage() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ['coupons-catalog', activeCategory, search, sortBy, page],
+    queryKey: ['coupons-catalog', activeCategory, sortBy, page],
     queryFn: () => couponsApi.getCatalog({
       categoryId: activeCategory ?? undefined,
-      search: search || undefined,
       sortBy,
       page,
       size: 20,
@@ -87,37 +85,8 @@ export default function CouponCatalogPage() {
         </div>
       </div>
 
-      {/* Search & Sort */}
+      {/* Sort & view (поиск — только в шапке) */}
       <div className="catalog-controls container">
-        <div className="catalog-search">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder={t('catalog.searchPlaceholder')}
-            value={search}
-            onChange={(e) => {
-              const val = e.target.value;
-              setSearch(val);
-              setPage(0);
-              // Авто-выбор категории по названию
-              if (val.trim()) {
-                const match = categories.find((c) => c.name.toLowerCase().includes(val.trim().toLowerCase()));
-                if (match) {
-                  setActiveCategory(match.id);
-                } else {
-                  setActiveCategory(null);
-                }
-              } else {
-                setActiveCategory(null);
-              }
-            }}
-          />
-          {search && (
-            <button onClick={() => { setSearch(''); setActiveCategory(null); }} className="catalog-search__clear">
-              <X size={16} />
-            </button>
-          )}
-        </div>
         <div className="catalog-toolbar">
           <div className="catalog-sort">
             <Select

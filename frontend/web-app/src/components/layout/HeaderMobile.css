@@ -37,13 +37,13 @@
   height: 36px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.4);
-  color: var(--ink);
+  color: var(--ink-2);
   font-size: 13px;
   font-weight: 800;
 }
 
 .mhdr__avatar--auth {
-  background: var(--wasp);
+  background: linear-gradient(135deg, #f2cf3d, #ea9fe2);
   color: var(--on-wasp);
 }
 
@@ -98,7 +98,8 @@
 .macc__lang {
   padding: 6px 12px;
   border-radius: var(--radius-pill);
-  color: var(--ink-3);
+  background: var(--chip);
+  color: var(--ink);
   font-size: 12px;
   font-weight: 700;
   transition: background 0.2s, color 0.2s;

@@ -46,6 +46,7 @@
   font-size: 14px;
   font-weight: 700;
   color: var(--ink);
+  text-decoration: underline;
 }
 
 /* ── Переключатель блоков ── */

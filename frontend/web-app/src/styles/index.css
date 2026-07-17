@@ -25,7 +25,7 @@
   --transition-normal: 280ms cubic-bezier(0.22, 1, 0.36, 1);
   --transition-slow: 420ms cubic-bezier(0.22, 1, 0.36, 1);
 
-  --max-width: 1280px;
+  --max-width: 1200px;
   /* Шапка-таблетка: 8px паддинг + 40px иконка + 8px, плюс отступ сверху 12px */
   --header-height: 68px;
   /* Плавающая таблетка: 26px отступ снизу + 8 + 44 + 8 */
@@ -140,7 +140,7 @@ body.td-login-body .app-main--login {
 .container {
   width: min(var(--max-width), 100%);
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
 }
 
 .section {
