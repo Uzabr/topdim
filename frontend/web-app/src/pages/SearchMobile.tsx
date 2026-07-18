@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { ChevronLeft, Search, X } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { couponsApi } from '../api/coupons';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { calcDiscount } from '../utils/format';
-import { SITUATIONS } from '../data/situations';
+import { localizedTitle } from '../utils/localizedText';
 import './SearchMobile.css';
 
 /** Бэкенд ищет от 2 символов — раньше запрос бессмыслен. */
@@ -22,14 +22,11 @@ export default function SearchMobile() {
   const [query, setQuery] = useState(params.get('q') ?? '');
   const term = query.trim();
 
-  // Плитки ситуаций «Что хотите сегодня?» (Мобилка-9): счётчик — реальный поиск.
-  const counts = useQueries({
-    queries: SITUATIONS.map((s) => ({
-      queryKey: ['coupons', 'situation-count', s.query],
-      queryFn: () => couponsApi.getCatalog({ search: s.query, size: 1 }),
-      select: (res: Awaited<ReturnType<typeof couponsApi.getCatalog>>) =>
-        res.data.data.totalElements,
-    })),
+  // Плитки ситуаций «Что хотите сегодня?» (Мобилка-9) — из API.
+  const { data: situations = [] } = useQuery({
+    queryKey: ['situations'],
+    queryFn: () => couponsApi.getSituations(),
+    select: (res) => res.data.data,
   });
 
   const { data: results = [], isLoading } = useQuery({
@@ -114,22 +111,21 @@ export default function SearchMobile() {
           <h1 className="smob__title">{t('home.tiles.title')}</h1>
 
           <div className="smob__tiles">
-            {SITUATIONS.map((situation, i) => {
-              const count = counts[i]?.data;
-              return (
-                <button
-                  key={situation.key}
-                  type="button"
-                  onClick={() => setQuery(situation.query)}
-                  className={`stile${situation.featured ? ' stile--featured' : ''}`}
-                >
-                  <span className="stile__name">{t(`home.situations.${situation.key}`)}</span>
-                  {count !== undefined && count > 0 && (
-                    <span className="stile__count">{t('home.tiles.count', { count })}</span>
-                  )}
-                </button>
-              );
-            })}
+            {situations.map((situation) => (
+              <Link
+                key={situation.key}
+                to={`${lp('/coupons')}?situation=${encodeURIComponent(situation.key)}`}
+                className={`stile${situation.featured ? ' stile--featured' : ''}${situation.imageUrl ? ' stile--photo' : ''}`}
+                style={situation.imageUrl ? { backgroundImage: `url(${situation.imageUrl})` } : undefined}
+              >
+                <span className="stile__name">{localizedTitle(situation, i18n.language)}</span>
+                {situation.couponCount > 0 && (
+                  <span className="stile__count">
+                    {t('home.tiles.count', { count: situation.couponCount })}
+                  </span>
+                )}
+              </Link>
+            ))}
           </div>
 
           <h2 className="smob__subtitle">{t('header.frequentlySearched')}</h2>
