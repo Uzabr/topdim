@@ -15,7 +15,8 @@ export interface ReviewData {
 export interface CreateReviewRequest {
   couponOfferId: number;
   rating: number;
-  comment: string;
+  /** Необязателен, но если задан — backend требует от 10 до 2000 символов (@Size). */
+  comment?: string;
 }
 
 export interface ReviewEligibilityData {

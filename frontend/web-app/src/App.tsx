@@ -3,10 +3,12 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from './store/authStore';
+import { hidesBottomNav } from './utils/mobileScreens';
 import ScrollToTop from './components/ScrollToTop';
 import LocaleLayout from './components/LocaleLayout';
 import Header from './components/layout/Header';
 import BottomNav from './components/layout/BottomNav';
+import MobileBackdrop from './components/layout/MobileBackdrop';
 import Footer from './components/layout/Footer';
 import CartDrawer from './components/cart/CartDrawer';
 import CookieConsent from './components/ui/CookieConsent';
@@ -51,6 +53,8 @@ function AppShell() {
   const location = useLocation();
   const isPartnerLanding = /^\/(ru|uz)\/partners\/?$/.test(location.pathname);
   const isLoginPage = /^\/(ru|uz)\/login\/?$/.test(location.pathname);
+  // Купон/корзина/оплата/поиск: снизу своя кнопка — таблетка навигации налезала бы.
+  const noBottomNav = hidesBottomNav(location.pathname);
 
   useEffect(() => {
     if (isPartnerLanding) {
@@ -72,6 +76,7 @@ function AppShell() {
 
   return (
     <div className="app-shell">
+      {!isPartnerLanding && <MobileBackdrop />}
       {!isPartnerLanding && <Header />}
       <main className={`app-main${isLoginPage ? ' app-main--login' : ''}`}>
       <Routes>
@@ -103,7 +108,7 @@ function AppShell() {
       </Routes>
       </main>
       {!isPartnerLanding && !isLoginPage && <Footer />}
-      {!isPartnerLanding && !isLoginPage && <BottomNav />}
+      {!isPartnerLanding && !isLoginPage && !noBottomNav && <BottomNav />}
       <CartDrawer />
       <LimitModal />
       <CookieConsent />

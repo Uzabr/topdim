@@ -28,7 +28,7 @@ export default function DirectoryShopCard({ shop, compact = false }: Props) {
       <div className="dir-card__body">
         <div className="dir-card__badges">
           {shop.isExternal && (
-            <span className="dir-card__category" style={{ background: '#FF6660', color: 'white' }}>{t('directory.from2gis')}</span>
+            <span className="dir-card__category" style={{ background: 'var(--wasp)', color: 'var(--on-wasp)' }}>{t('directory.from2gis')}</span>
           )}
           {shop.category && (
             <span className="dir-card__category"><Tag size={12} /> {shop.category}</span>

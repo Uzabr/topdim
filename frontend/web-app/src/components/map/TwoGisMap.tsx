@@ -159,8 +159,8 @@ export default function TwoGisMap({
         const coords = [...drawPointsRef.current, drawPointsRef.current[0]];
         drawPolygonRef.current = new mapgl.Polygon(map, {
           coordinates: [coords],
-          color: 'rgba(255, 102, 96, 0.15)',
-          strokeColor: '#FF6660',
+          color: 'rgba(20, 20, 20, 0.12)',
+          strokeColor: '#141414',
           strokeWidth: 3,
         });
       }

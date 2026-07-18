@@ -117,7 +117,7 @@ spring:
             - Path=/eureka/**
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:dev-jwt-secret-key-do-not-use-in-production-32chars}
 
 # CORS — типобезопасная конфигурация через @ConfigurationProperties
 app:

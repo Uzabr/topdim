@@ -1,0 +1,254 @@
+/* Карточка входа 320px. Референс: design_handoff_sizbiz/«Главная - образец» → «Вход». */
+
+.lcard {
+  width: 320px;
+  max-width: 100%;
+  padding: 28px 24px 24px;
+  border-radius: var(--radius-card);
+  background: var(--paper);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.lcard__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: var(--heading-ls);
+}
+
+.lcard__subtitle {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+/* ── Провайдеры ── */
+.lcard__telegram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 20px;
+  padding: 15px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 14.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: filter var(--transition-fast);
+}
+
+.lcard__telegram:hover {
+  filter: brightness(1.35);
+}
+
+.lcard__tg-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.lcard__outline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--line);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  transition: background var(--transition-fast);
+}
+
+.lcard__outline:hover {
+  background: var(--card);
+}
+
+.lcard__divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  font-size: 11px;
+  color: var(--price-old);
+}
+
+.lcard__divider::before,
+.lcard__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.lcard__providers {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.lcard__provider {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.lcard__provider:hover {
+  background: var(--card);
+}
+
+.lcard__provider--active {
+  border-color: var(--ink);
+}
+
+.lcard__g-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  font-size: 10px;
+  font-weight: 800;
+  flex: none;
+}
+
+/* Провайдеры без бэкенда: не прячем (так в макете), но честно помечаем */
+.lcard__soon-tag {
+  flex: none;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+/* ── Форма ── */
+.lcard__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  text-align: left;
+}
+
+.lcard__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+  font-size: 13.5px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.lcard__input:focus {
+  border-color: var(--ink);
+}
+
+.lcard__input::placeholder {
+  color: var(--price-old);
+}
+
+.lcard__submit {
+  padding: 13px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 14px;
+  font-weight: 700;
+  transition: filter var(--transition-fast);
+}
+
+.lcard__submit:hover:not(:disabled) {
+  filter: brightness(1.35);
+}
+
+.lcard__submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.lcard__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lcard__link {
+  font-size: 11.5px;
+  color: var(--ink-2);
+  text-align: left;
+}
+
+.lcard__link:hover {
+  color: var(--ink);
+}
+
+.lcard__link--strong {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.lcard__hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+.lcard__notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.lcard__error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--warn-fg);
+}
+
+.lcard__terms {
+  margin: 16px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--price-old);
+}

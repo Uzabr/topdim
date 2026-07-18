@@ -1,0 +1,416 @@
+/* Мобильная страница купона. Референс: «Мобилка - 3 Купон». */
+
+/* Снизу — закреплённая покупка (.cmob__buy) поверх .app-main padding-bottom. */
+.cmob {
+  padding: 18px 22px 24px;
+}
+
+.cmob__loading {
+  padding: 60px 22px;
+  color: var(--ink-3);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ── Фото ── */
+.cmob__gallery {
+  position: relative;
+  margin-top: 14px;
+  animation: vUp 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.cmob__strip {
+  display: flex;
+  overflow-x: auto;
+  border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16);
+  scroll-snap-type: x mandatory;
+}
+
+.cmob__shot {
+  flex: none;
+  width: 100%;
+  height: 320px;
+  background: var(--chip);
+  scroll-snap-align: start;
+}
+
+.cmob__shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cmob__shot--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cmob__dots {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  display: flex;
+  gap: 6px;
+  transform: translateX(-50%);
+}
+
+.cmob__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transition: background 0.2s, width 0.2s;
+}
+
+.cmob__dot--on {
+  width: 18px;
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+}
+
+/* ── Заголовок ── */
+.cmob__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  animation: vUp 0.4s cubic-bezier(0.2, 0.7, 0.3, 1) 0.12s both;
+}
+
+.cmob__title {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.cmob__fav {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  color: var(--ink);
+}
+
+.cmob__fav--on {
+  color: var(--heart);
+}
+
+.cmob__fav--pop {
+  animation: heartPop 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.cmob__meta {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+/* ── Варианты ── */
+.cmob__section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 18px;
+}
+
+.cmob__section-title {
+  color: #999793;
+  font-size: 12.5px;
+}
+
+.cmob__section-count {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cmob__variants {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  margin: 10px -22px 0;
+  padding: 4px 22px 8px;
+  scroll-snap-type: x proximity;
+}
+
+.cvar {
+  flex: none;
+  box-sizing: border-box;
+  width: 132px;
+  padding: 13px 14px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+  color: var(--ink);
+  text-align: left;
+  scroll-snap-align: start;
+  transition: background 0.25s, color 0.25s, box-shadow 0.25s;
+}
+
+.cvar--on {
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--wasp);
+  color: #ffffff;
+}
+
+.cvar--out {
+  opacity: 0.45;
+}
+
+.cvar__label {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-height: 32px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.cvar__price {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.cvar__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.cvar__old {
+  font-size: 10px;
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.cvar__off {
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--wasp);
+  color: var(--on-wasp);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.cvar__left {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.6;
+}
+
+/* ── Стеклянные карточки ── */
+.glass {
+  overflow: hidden;
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: vUp 0.4s cubic-bezier(0.2, 0.7, 0.3, 1) 0.2s both;
+}
+
+.glass--fold {
+  margin-top: 10px;
+  padding: 0;
+}
+
+.glass__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 15px 16px;
+  color: var(--ink);
+  text-align: left;
+}
+
+.glass__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.glass__count {
+  color: var(--ink-3);
+  font-weight: 700;
+}
+
+.glass__arrow {
+  flex: none;
+  color: var(--ink-3);
+  transition: transform 0.25s;
+}
+
+.glass__arrow--up {
+  transform: rotate(180deg);
+}
+
+.glass__body {
+  padding: 0 16px 15px;
+  animation: vFade 0.25s ease both;
+}
+
+.glass__text {
+  margin: 8px 0 0;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.glass__note {
+  margin: 8px 0 0;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.glass__link {
+  display: inline-block;
+  margin-top: 10px;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* ── Отзыв ── */
+.crev {
+  padding: 12px 0;
+  border-top: 1px solid var(--chip);
+}
+
+.crev__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.crev__name {
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.crev__stars {
+  color: var(--wasp-deep);
+  font-size: 11px;
+}
+
+.crev__text {
+  margin: 5px 0 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.crev__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--used-bg);
+  color: var(--used-fg);
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.crev__badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4caf7d;
+}
+
+/* ── Закреплённая покупка ── */
+.cmob__buy {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 22px calc(26px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(252, 251, 248, 0), rgba(252, 251, 248, 0.94) 42%);
+}
+
+.cmob__old {
+  display: block;
+  color: #999793;
+  font-size: 11px;
+  text-decoration: line-through;
+}
+
+.cmob__price {
+  display: block;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.cmob__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Корзины в макете нет, но без неё нельзя набрать несколько купонов. */
+.cmob__cart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  color: var(--ink);
+}
+
+.cmob__cta {
+  padding: 16px 26px;
+  border-radius: var(--radius-pill);
+  background: var(--btn);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cmob__cta:disabled,
+.cmob__cart:disabled {
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmob__gallery,
+  .cmob__head,
+  .glass,
+  .glass__body,
+  .cmob__fav--pop {
+    animation: none;
+  }
+}

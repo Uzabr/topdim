@@ -1,0 +1,212 @@
+/* Мобильное оформление. Референс: «Мобилка - 5 Оплата». */
+
+.cmpay {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--bottom-nav-height));
+  box-sizing: border-box;
+  padding: 18px 22px 26px;
+}
+
+.cmpay__spacer {
+  width: 44px;
+}
+
+.cmpay__label {
+  margin: 22px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  animation: vFade 0.4s ease both;
+}
+
+.cmpay__card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 15px 18px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.07);
+  color: var(--ink);
+  text-align: left;
+  transition: box-shadow 0.25s;
+}
+
+.cmpay__card--on {
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.07), 0 0 0 2px var(--ink);
+}
+
+.cmpay__dot {
+  flex: none;
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #c9c7c3;
+  border-radius: 50%;
+  transition: border 0.2s;
+}
+
+.cmpay__dot--on {
+  border: 5.5px solid var(--ink);
+}
+
+.cmpay__card-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.cmpay__card-title {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.cmpay__card-sub {
+  display: block;
+  overflow: hidden;
+  margin-top: 1px;
+  color: #999793;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmpay__card-edit {
+  flex: none;
+  color: #999793;
+}
+
+.cmpay__hint {
+  margin: 8px 0 0;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+/* ── Способ оплаты ── */
+.cmpay__method {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 13px 6px;
+}
+
+.cmpay__method-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.cmpay__method-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Пояснение про демо-режим длинное — переносим, а не режем многоточием. */
+.cmpay__method .cmpay__card-sub {
+  line-height: 1.45;
+  white-space: normal;
+}
+
+.cmpay__error {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  font-size: 12.5px;
+}
+
+/* ── Итог ── */
+.cmpay__total {
+  margin-top: auto;
+  padding-top: 22px;
+}
+
+.cmpay__row {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+
+.cmpay__row-value {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.cmpay__grand {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.cmpay__cta {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 17px;
+  border-radius: var(--radius-pill);
+  background: var(--btn);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.cmpay__cta:disabled {
+  opacity: 0.6;
+}
+
+/* ── Стоп-состояния (нет входа / пустая корзина / нет контактов) ── */
+.cmpay__stop {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 10px;
+  text-align: center;
+}
+
+.cmpay__stop-icon {
+  color: var(--warn-fg);
+}
+
+.cmpay__stop-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.cmpay__stop-text {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.cmpay__stop .cmpay__cta {
+  width: auto;
+  margin-top: 8px;
+  padding: 14px 28px;
+  font-size: 13.5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmpay__label {
+    animation: none;
+  }
+}

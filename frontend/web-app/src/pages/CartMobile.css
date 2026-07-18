@@ -1,0 +1,223 @@
+/* Мобильная корзина. Референс: «Мобилка - 4 Корзина». */
+
+.cmcart {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--bottom-nav-height));
+  box-sizing: border-box;
+  padding: 18px 22px 26px;
+}
+
+.cmcart__count {
+  width: 44px;
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* ── Пусто ── */
+.cmcart__empty {
+  padding-top: 100px;
+  text-align: center;
+  animation: vFade 0.35s ease both;
+}
+
+.cmcart__empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--ink-3);
+}
+
+.cmcart__empty-title {
+  margin: 18px 0 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.cmcart__empty-text {
+  margin: 6px 0 0;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.cmcart__empty-btn {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 13px 28px;
+  border-radius: var(--radius-pill);
+  background: var(--btn);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+/* ── Позиции ── */
+.cmcart__list {
+  flex: 1;
+  margin-top: 10px;
+}
+
+.crow {
+  display: flex;
+  gap: 14px;
+  margin-top: 16px;
+  animation: vUp 0.4s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.crow--out {
+  animation: rowOut 0.3s ease-in both;
+}
+
+.crow__photo {
+  flex: none;
+  width: 96px;
+  height: 104px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--chip);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.1);
+}
+
+.crow__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.crow__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.crow__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.crow__title {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.crow__remove {
+  flex: none;
+  padding: 2px 4px;
+  color: var(--ink-3);
+}
+
+.crow__sub {
+  margin: 2px 0 0;
+  color: #999793;
+  font-size: 11.5px;
+}
+
+.crow__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.crow__sum {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.crow__qty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crow__step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.crow__num {
+  min-width: 14px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* ── Итоги ── */
+.cmcart__total {
+  padding-top: 18px;
+  border-top: 1.5px solid var(--line);
+  animation: vUp 0.4s cubic-bezier(0.2, 0.7, 0.3, 1) 0.25s both;
+}
+
+.cmcart__row {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+
+.cmcart__row + .cmcart__row {
+  margin-top: 8px;
+}
+
+.cmcart__row-value {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.cmcart__grand {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.cmcart__cta {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 17px;
+  border-radius: var(--radius-pill);
+  background: var(--btn);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+@keyframes rowOut {
+  to {
+    transform: translateX(-40px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmcart__empty,
+  .crow,
+  .crow--out,
+  .cmcart__total {
+    animation: none;
+  }
+}

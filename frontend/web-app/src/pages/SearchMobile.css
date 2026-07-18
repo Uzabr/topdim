@@ -1,0 +1,222 @@
+/* Мобильный поиск. Референс: «Мобилка - 9 Поиск». */
+
+.smob {
+  padding: 18px 20px 40px;
+}
+
+.smob__bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: vUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.smob__field {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  height: 48px;
+  padding: 0 18px;
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.08);
+}
+
+.smob__field-icon {
+  flex: none;
+  color: var(--ink-3);
+}
+
+.smob__field input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.smob__field input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.smob__clear {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--chip);
+  color: var(--ink-2);
+}
+
+/* ── Результаты ── */
+.smob__results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  animation: vFade 0.25s ease both;
+}
+
+.srow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.06);
+  color: var(--ink);
+}
+
+.srow__photo {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--chip);
+}
+
+.srow__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.srow__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.srow__title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.srow__price {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.srow__off {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--wasp);
+  color: var(--on-wasp);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.smob__empty {
+  padding: 60px 30px 0;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* ── Ситуации: «Что хотите сегодня?» ── */
+.smob__title {
+  margin: 26px 0 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  animation: vUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.smob__tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+  animation: vUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+}
+
+.stile {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  height: 110px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--ink);
+  text-align: left;
+}
+
+/* Первая плитка — крупная тёмная, на всю ширину (палитра поиска в макете). */
+.stile--featured {
+  grid-column: span 2;
+  height: 120px;
+  background: #050505;
+  color: #ffffff;
+}
+
+.stile__name {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.stile__count {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.6;
+}
+
+.smob__subtitle {
+  margin: 26px 0 0;
+  font-size: 15px;
+  font-weight: 800;
+  animation: vUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both;
+}
+
+.smob__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  animation: vUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+
+.smob__chip {
+  padding: 9px 16px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .smob__bar,
+  .smob__results,
+  .smob__title,
+  .smob__tiles,
+  .smob__subtitle,
+  .smob__chips {
+    animation: none;
+  }
+}

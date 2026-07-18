@@ -1,0 +1,110 @@
+/* ═══════════════════════════════════════════════════════════════
+   Дизайн-токены sizbiz, палитра «Оса»
+   Источник: design_handoff_sizbiz/README.md → «Design Tokens»
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Бренд ── */
+  --wasp: #ffd23c;              /* акцент: CTA, бейджи скидок, таймеры, лого */
+  --wasp-deep: #f5c542;         /* звёзды, ховер по жёлтому */
+  --ink: #141414;               /* текст, тёмные плитки, горящий тайл, футер */
+  --ink-hover: #3a3936;
+  --paper: #ffffff;             /* белые поверхности: таблетки, карточки, модалки */
+  --page: var(--paper);         /* фон страницы; на мобилке — тёплый #FCFBF8 */
+  --card: #faf9f6;              /* карточки и секции */
+  --chip: #f0efec;             /* чипы/иконки в шапке */
+  --chip-hover: #e8e6e2;
+
+  /* Текст на жёлтом ВСЕГДА чёрный */
+  --on-wasp: var(--ink);
+  --on-ink: #ffffff;
+
+  /* ── Текст ── */
+  --ink-2: #6b6965;             /* вторичный */
+  --ink-3: #999793;             /* приглушённый */
+  --price-old: #b0aeaa;         /* зачёркнутая цена */
+
+  /* ── Статусы (красный и фиолетовый в UI запрещены) ── */
+  --ok: #4caf7d;                /* успех / подключено */
+  --warn-bg: #f7eede;
+  --warn-fg: #b06a00;           /* предупреждение и ошибки — вместо красного */
+  --used-bg: #e8f3ec;
+  --used-fg: #2e7d54;           /* статус «использован» */
+
+  /* Единственное «тёплое» пятно в палитре: активное сердце. Явный токен из
+     хендоффа («сердце активное»), поэтому не подпадает под запрет красного. */
+  --heart: #e0508f;
+
+  --line: #ecebe7;
+  --line-strong: rgba(20, 20, 20, 0.18);
+
+  /* ── Радиусы ── */
+  --radius-photo: 12px;         /* вложенные фото */
+  --radius-card: 20px;          /* карточки */
+  --radius-block: 28px;         /* крупные блоки */
+
+  /* ── Тени ── */
+  --shadow-pill: 0 2px 10px rgba(0, 0, 0, 0.07);   /* таблетки шапки */
+  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.04);
+
+  /* ── Типографика ── */
+  --font-sans: Helvetica, Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, Menlo, Consolas, monospace;
+  --heading-ls: -0.02em;        /* заголовки: weight 800 + этот letter-spacing */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Совместимость: старые имена переменных → «Оса».
+   Компоненты, ещё не переписанные на новую вёрстку (шаги 2–7),
+   продолжают ссылаться на эти имена и получают новую палитру сразу.
+   По мере переписывания страниц алиасы уходят.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* --primary в коде используется и как цвет текста (53×), и как фон (19×),
+     поэтому это чёрный, а не жёлтый: жёлтый текст на белом нечитаем.
+     Жёлтый живёт в --accent и применяется только заливкой. */
+  --primary: var(--ink);
+  --primary-strong: var(--ink-hover);
+  --accent: var(--wasp);
+  --secondary: var(--ok);
+  --success: var(--ok);
+  --info: var(--ink-2);
+  --danger: var(--warn-fg);
+
+  --bg-app: var(--paper);
+  --bg-surface: var(--paper);
+  --bg-surface-strong: var(--paper);
+  --bg-muted: var(--card);
+  --bg-soft: var(--card);
+  --bg-chip: var(--chip);
+  --bg-gradient: var(--paper);
+
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-muted: var(--ink-3);
+  --text-inverse: var(--on-ink);
+
+  --border: var(--line);
+  --border-strong: var(--line-strong);
+
+  /* Градиенты заменены на плоские заливки: glass/gradient из дизайна убраны */
+  --gradient-primary: var(--ink);
+  --gradient-secondary: var(--card);
+  --gradient-hero: var(--paper);
+  --gradient-card: var(--card);
+  --gradient-map: linear-gradient(180deg, #f4f3f0 0%, #ecebe7 100%);
+
+  --shadow-sm: var(--shadow-card);
+  --shadow-md: var(--shadow-pill);
+  --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.1);
+  --shadow-focus: 0 0 0 3px rgba(255, 210, 60, 0.55);
+
+  --radius-sm: var(--radius-photo);
+  --radius-md: 16px;
+  --radius-lg: var(--radius-card);
+  --radius-xl: var(--radius-block);
+  --radius-pill: 999px;
+
+  --font-family: var(--font-sans);
+}

@@ -1,0 +1,87 @@
+.active-coupon {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px;
+  border-radius: var(--radius-card);
+  background: var(--paper);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.active-coupon__qr {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  padding: 8px;
+  border-radius: var(--radius-photo);
+  background: var(--card);
+}
+
+.active-coupon__code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  word-break: break-all;
+}
+
+.active-coupon__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.active-coupon__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.active-coupon__merchant {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.active-coupon__until {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.active-coupon__complaint {
+  margin: 8px 0 0;
+}
+
+.active-coupon__complaint span {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.active-coupon__actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.active-coupon__link {
+  font-size: 12px;
+  color: var(--ink-3);
+  text-decoration: underline;
+  transition: color var(--transition-fast);
+}
+
+.active-coupon__link:hover {
+  color: var(--ink);
+}

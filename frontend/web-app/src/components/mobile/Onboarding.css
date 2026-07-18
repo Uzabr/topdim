@@ -1,0 +1,479 @@
+/* Онбординг первого запуска. Референс: «Мобилка - 1 Онбординг». */
+
+.onb {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: calc(24px + env(safe-area-inset-top)) 26px calc(28px + env(safe-area-inset-bottom));
+  overflow: hidden;
+  background: var(--page);
+  color: var(--ink);
+  transition: opacity 0.35s ease;
+}
+
+.onb--out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Онбординг перекрывает MobileBackdrop (он ниже по z-index) — пятна свои. */
+.onb__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(82px);
+  pointer-events: none;
+}
+
+.onb__blob--1 {
+  top: -80px;
+  left: -90px;
+  width: 260px;
+  height: 260px;
+  background: var(--blob-pink);
+  opacity: 0.75;
+}
+
+.onb__blob--2 {
+  top: 60px;
+  left: -30px;
+  width: 220px;
+  height: 220px;
+  background: var(--blob-mint);
+  opacity: 0.7;
+}
+
+.onb__blob--3 {
+  top: 180px;
+  right: -110px;
+  width: 280px;
+  height: 280px;
+  background: var(--blob-lemon);
+  opacity: 0.7;
+}
+
+.onb__blob--4 {
+  bottom: -60px;
+  left: -80px;
+  width: 240px;
+  height: 240px;
+  background: var(--blob-pink);
+  opacity: 0.6;
+}
+
+.onb__skip {
+  position: relative;
+  align-self: flex-end;
+  padding: 6px 4px;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* ── Сцена слайда (position: relative — чтобы лежать поверх пятен) ── */
+.onb__stage {
+  position: relative;
+  height: 300px;
+  margin-top: 12px;
+}
+
+.onb__stage--center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Конвейер: карточки едут по диагонали и уменьшаются */
+.onb__convey {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  margin-left: -85px;
+  animation: convey 13.5s linear infinite;
+}
+
+.onb__card {
+  position: relative;
+  width: 170px;
+  height: 235px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--chip);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.15);
+}
+
+.onb__card--0 {
+  transform: rotate(-3deg);
+}
+
+.onb__card--1 {
+  transform: rotate(2deg);
+}
+
+.onb__card--2 {
+  transform: rotate(-2deg);
+}
+
+.onb__card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Подпись лежит на фото — без подложки тёмный текст тонет в тёмном снимке. */
+.onb__card-title {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  padding: 30px 14px 12px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  background: linear-gradient(180deg, rgba(252, 251, 248, 0), rgba(252, 251, 248, 0.92) 55%);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* ── Билет (слайд 2) ── */
+.onb__ticket {
+  width: 210px;
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.18));
+  transform: rotate(-3deg);
+  animation: inUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.onb__ticket-top {
+  padding: 16px 18px;
+  border-radius: 18px 18px 4px 4px;
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.onb__ticket-label {
+  display: block;
+  color: var(--wasp);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.onb__ticket-title {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 6px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.onb__ticket-meta {
+  display: block;
+  margin-top: 4px;
+  color: #b5b5b5;
+  font-size: 10.5px;
+}
+
+.onb__ticket-perf {
+  position: relative;
+  height: 0;
+  border-top: 2px dashed #3a3a3a;
+  background: var(--ink);
+}
+
+.onb__notch {
+  position: absolute;
+  top: -8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--page);
+}
+
+.onb__notch--l {
+  left: -8px;
+}
+
+.onb__notch--r {
+  right: -8px;
+}
+
+.onb__ticket-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 18px 18px;
+  border-radius: 4px 4px 18px 18px;
+  background: var(--ink);
+}
+
+.onb__qr {
+  box-sizing: border-box;
+  width: 92px;
+  height: 92px;
+  padding: 7px;
+  border-radius: 10px;
+  background:
+    repeating-conic-gradient(#090909 0% 25%, #ffffff 0% 50%) 0 0 / 11px 11px content-box,
+    #ffffff border-box;
+}
+
+/* ── Текст ── */
+.onb__text {
+  position: relative;
+  margin-top: 40px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.onb__line {
+  margin: 0;
+  animation: inUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.onb__line--1 {
+  animation-delay: 0.05s;
+}
+
+.onb__line--2 {
+  animation-delay: 0.16s;
+}
+
+.onb__line--3 {
+  animation-delay: 0.28s;
+}
+
+.onb__line--4 {
+  animation-delay: 0.4s;
+}
+
+.onb__line--5 {
+  animation-delay: 0.52s;
+}
+
+.onb__big {
+  font-size: 32px;
+  font-weight: 800;
+}
+
+/* Первое большое слово слайда крупнее — как в макете. */
+.onb__line--1 .onb__big {
+  font-size: 34px;
+}
+
+.onb__line strong {
+  font-weight: 800;
+}
+
+.onb__thin {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.onb__sub {
+  margin-top: 12px;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+/* ── Финальный слайд ── */
+.onb__final {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  letter-spacing: -0.015em;
+}
+
+.onb__final-text {
+  position: relative;
+  line-height: 1.12;
+}
+
+.onb__huge {
+  font-size: 42px;
+  font-weight: 800;
+}
+
+.onb__huge--xl {
+  font-size: 46px;
+}
+
+.onb__mid {
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.onb__final-text .onb__line--3 {
+  margin-top: 6px;
+}
+
+.onb__with {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.onb__final-text .onb__line--5 {
+  margin-top: 14px;
+}
+
+.onb__logo {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: var(--radius-pill);
+  background: var(--wasp);
+  box-shadow: 0 10px 30px rgba(242, 207, 61, 0.5);
+  color: var(--on-wasp);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  transform: rotate(-4deg);
+  animation: bob 3.6s ease-in-out 1s infinite;
+}
+
+.onb__conf {
+  position: absolute;
+  top: 0;
+  animation: confFall linear infinite;
+}
+
+/* ── Точки и кнопка ── */
+.onb__dots {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: auto;
+  animation: vFade 0.5s ease 0.4s both;
+}
+
+.onb__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: #d8d6d2;
+  transition: width 0.3s, background 0.3s;
+}
+
+.onb__dot--on {
+  width: 20px;
+  background: var(--ink);
+}
+
+.onb__foot {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 22px;
+}
+
+.onb__btn {
+  padding: 16px 30px;
+  border-radius: var(--radius-pill);
+  background: var(--btn);
+  color: #ffffff;
+  font-size: 14.5px;
+  font-weight: 700;
+  animation: popBtn 0.55s cubic-bezier(0.3, 1.4, 0.5, 1) 0.5s both;
+}
+
+@keyframes convey {
+  0% {
+    transform: translate(250px, -30px) scale(1.14);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(0, 0) scale(0.97);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-250px, 30px) scale(0.78);
+    opacity: 0;
+  }
+}
+
+@keyframes inUp {
+  from {
+    transform: translateY(46px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes popBtn {
+  0% {
+    transform: scale(0.4) translateY(26px);
+    opacity: 0;
+  }
+  65% {
+    transform: scale(1.07) translateY(-2px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: rotate(-4deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-4deg) translateY(-9px);
+  }
+}
+
+@keyframes confFall {
+  0% {
+    transform: translateY(-30px) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(300px) rotate(320deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onb__convey,
+  .onb__ticket,
+  .onb__line,
+  .onb__logo,
+  .onb__conf,
+  .onb__dots,
+  .onb__btn {
+    animation: none;
+  }
+
+  /* Без анимации карточки конвейера легли бы стопкой — оставляем одну. */
+  .onb__convey:not(:first-child) {
+    display: none;
+  }
+}

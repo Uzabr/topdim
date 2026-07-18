@@ -84,12 +84,12 @@
 .cookie-consent__btn--accept {
   background: var(--gradient-primary);
   color: #fff;
-  box-shadow: 0 8px 20px rgba(255, 102, 96, 0.25);
+  box-shadow: 0 8px 20px var(--chip);
 }
 
 .cookie-consent__btn--accept:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(255, 102, 96, 0.35);
+  box-shadow: 0 12px 24px var(--chip);
 }
 
 .cookie-consent__btn--decline {

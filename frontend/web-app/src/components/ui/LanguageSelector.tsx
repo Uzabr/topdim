@@ -2,9 +2,10 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Select from './Select';
 
-const Flag = ({ code }: { code: 'ru' | 'uz' }) => (
-  <span className="select-flag" aria-hidden="true">
-    {code === 'ru' ? '🇷🇺' : '🇺🇿'}
+/* Код языка текстом: эмодзи-флаги в UI запрещены (дизайн-система «Оса») */
+const LangCode = ({ code }: { code: 'ru' | 'uz' }) => (
+  <span className="select-lang-code" aria-hidden="true">
+    {code.toUpperCase()}
   </span>
 );
 
@@ -16,8 +17,8 @@ export default function LanguageSelector() {
   const currentLang = i18n.language?.substring(0, 2) || 'ru';
 
   const options = [
-    { id: 'ru', label: t('language.ru'), icon: <Flag code="ru" /> },
-    { id: 'uz', label: t('language.uz'), icon: <Flag code="uz" /> },
+    { id: 'ru', label: t('language.ru'), icon: <LangCode code="ru" /> },
+    { id: 'uz', label: t('language.uz'), icon: <LangCode code="uz" /> },
   ];
 
   return (
@@ -33,7 +34,7 @@ export default function LanguageSelector() {
         const pathWithoutLang = currentPath.replace(/^\/(ru|uz)/, '');
         navigate(`/${newLang}${pathWithoutLang || '/'}${location.search}`, { replace: true });
       }}
-      triggerIcon={<Flag code={currentLang as 'ru' | 'uz'} />}
+      triggerIcon={<LangCode code={currentLang as 'ru' | 'uz'} />}
       minWidth="105px"
       align="right"
     />

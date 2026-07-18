@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import { BAZAAR_NAV_ENABLED } from '../../config/features';
+import Logo from './Logo';
 import './Footer.css';
 
 export default function Footer() {
@@ -14,7 +15,7 @@ export default function Footer() {
       <div className="footer-content">
         {/* Brand */}
         <div className="footer-column footer-brand">
-          <h2 className="footer-logo text-gradient">TopDim</h2>
+          <Logo size="md" className="footer-logo" />
           <p className="footer-desc">{t('footer.desc')}</p>
           <div className="footer-socials">
             <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">

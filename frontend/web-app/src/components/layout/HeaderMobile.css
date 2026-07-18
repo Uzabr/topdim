@@ -1,0 +1,144 @@
+/* Мобильная шапка. Референс: design_handoff_sizbiz/«Мобилка - 2 Главная». */
+
+.mhdr {
+  position: relative;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 0;
+  animation: vUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mhdr .logo-pill {
+  height: 46px;
+  padding: 0 20px;
+  font-size: 18px;
+}
+
+.mhdr__pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.mhdr__icon,
+.mhdr__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.mhdr__avatar--auth {
+  background: linear-gradient(135deg, #f2cf3d, #ea9fe2);
+  color: var(--on-wasp);
+}
+
+/* ── Мини-шторка аккаунта ── */
+.macc {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  z-index: 40;
+  width: 252px;
+  padding: 8px;
+  border-radius: 20px;
+  background: var(--paper);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.16);
+  animation: vUp 0.3s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.macc__head {
+  padding: 12px 12px 10px;
+}
+
+.macc__name {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.macc__phone {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.macc__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.macc__label {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.macc__langs {
+  display: flex;
+  gap: 4px;
+}
+
+.macc__lang {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--chip);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 0.2s, color 0.2s;
+}
+
+.macc__lang--active {
+  background: var(--btn);
+  color: #ffffff;
+}
+
+.macc__item {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border-radius: 14px;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.macc__item:active {
+  background: var(--page);
+}
+
+.macc__item--muted {
+  color: var(--ink-3);
+}
+
+/* Шапка — только мобильная */
+@media (min-width: 768px) {
+  .mhdr {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mhdr,
+  .macc {
+    animation: none;
+  }
+}

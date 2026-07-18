@@ -1,0 +1,76 @@
+/* Избранное на мобиле. Референс: «Мобилка - 8 Избранное». */
+
+.fmob {
+  padding: 18px 20px 0;
+}
+
+.fmob .mbar {
+  animation: vUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.fmob__count {
+  width: 44px;
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.fmob__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 20px;
+  animation: vUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+/* ── Пусто ── */
+.fmob__empty {
+  padding: 90px 30px 0;
+  text-align: center;
+  animation: vFade 0.4s ease both;
+}
+
+.fmob__empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--ink-3);
+}
+
+.fmob__empty-title {
+  margin: 18px 0 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.fmob__empty-text {
+  margin: 6px 0 0;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.fmob__empty-btn {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 13px 28px;
+  border-radius: var(--radius-pill);
+  background: var(--btn);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fmob .mbar,
+  .fmob__grid,
+  .fmob__empty {
+    animation: none;
+  }
+}

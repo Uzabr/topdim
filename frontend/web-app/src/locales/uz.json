@@ -9,7 +9,21 @@
     "search": "Qidiruv",
     "cart": "Savat",
     "profile": "Profil",
-    "login": "Tizimga kirish"
+    "login": "Tizimga kirish",
+    "addressPrompt": "Manzilni kiriting",
+    "addressAction": "Kiritish",
+    "addressPlaceholder": "Ko'cha, uy…",
+    "catalog": "Katalog",
+    "searchPlaceholder": "Kupon va joylarni toping",
+    "frequentlySearched": "Ko'p qidiriladi",
+    "searchSuggestions": [
+      "SPA va hammom",
+      "Stomatologiya",
+      "Bolalar uchun akvapark",
+      "Ikki kishilik kechki ovqat",
+      "MRT va tekshiruvlar",
+      "Karting"
+    ]
   },
   "bottomNav": {
     "home": "Uy",
@@ -46,7 +60,7 @@
       "sum": "so'm"
     },
     "units": {
-      "pcs": "dona.",
+      "pcs": "dona",
       "daysShort": "kunlar",
       "items": "mahsulot(lar)"
     },
@@ -55,7 +69,11 @@
     "share": "Ulashish",
     "copy": "Nusxalash",
     "soon": "Tez orada",
-    "user": "Foydalanuvchi"
+    "user": "Foydalanuvchi",
+    "save": "Saqlash",
+    "edit": "O'zgartirish",
+    "add": "Qo'shish",
+    "hide": "Yashirish"
   },
   "search": {
     "title": "Qidiruv",
@@ -101,13 +119,32 @@
       "passwordWeak": "Parol: 8–128 belgi, katta va kichik harf, raqam va maxsus belgi (@$!%*?&#^()-_=+)",
       "firstNameMin": "Ism kamida 2 ta belgidan iborat boʻlishi kerak",
       "phoneFormat": "Format: +998XXXXXXXXX"
-    }
+    },
+    "oneTapTitle": "Bir bosishda kirish",
+    "oneTapSubtitle": "Kuponlar profilingizda saqlanadi — istalgan qurilmadan kiring",
+    "viaTelegram": "Telegram orqali kirish",
+    "viaPhone": "Telefon raqami bilan",
+    "viaEmail": "Pochta",
+    "or": "yoki",
+    "email": "Elektron pochta",
+    "soon": "{{provider}} — tez orada. Hozircha pochta orqali kiring.",
+    "terms": "Davom etish orqali xizmat shartlariga rozilik bildirasiz",
+    "forgot": "Parolni unutdingizmi?",
+    "resetTitle": "Parolni tiklash",
+    "resetHint": "Agar bunday hisob mavjud bo'lsa, pochtaga kod yuboramiz.",
+    "resetConfirmHint": "Xatdagi kodni va yangi parolni kiriting.",
+    "resetSend": "Kod yuborish",
+    "resetSent": "Agar hisob mavjud bo'lsa, kod pochtaga yuborildi.",
+    "resetToken": "Xatdagi kod",
+    "newPassword": "Yangi parol",
+    "resetSave": "Parolni saqlash",
+    "resetDone": "Parol o'zgartirildi — yangisi bilan kiring."
   },
   "favorites": {
     "title": "Sevimlilar",
     "emptyTitle": "Hozircha bo'sh",
-    "emptyDesc": "Kartadagi ❤️ belgisini bosish orqali o'zingizga yoqqan kuponlarni qo'shing",
-    "goCatalog": "Katalogga o'ting",
+    "emptyDesc": "Kuponlardagi yurakchani bosing — ular shu yerda paydo bo'ladi",
+    "goCatalog": "Kuponlarni ko'rish",
     "limitTitle": "Sevimlilar chegarasi",
     "limitOk": "Tushunarli",
     "limitLogin": "Hisobingizga kiring →",
@@ -122,24 +159,34 @@
   "cart": {
     "title": "Savat",
     "emptyTitle": "Arava bo‘sh",
+    "emptyTitleDesktop": "Savat bo‘sh",
     "emptyDesc": "Xarid qilishni boshlash uchun katalogdan kuponlarni qo'shing",
-    "toCoupons": "Kuponlar uchun",
+    "toCoupons": "Kuponlarni ko‘rish",
     "startShopping": "Xarid qilishni boshlang",
     "itemsCount": "{{count}} mahsulot(lar)",
     "gift": "Sovg'a sifatida",
     "giftTo": "Kimga: {{name}}",
     "summary": "Jami",
-    "itemsLine": "Mahsulotlar ({{count}})",
+    "itemsLine": "Kuponlar · {{count}}",
     "toPay": "To'lov uchun",
     "checkout": "Buyurtma bering",
+    "checkoutShort": "Rasmiylashtirish",
     "totalToPay": "Jami to'lanishi kerak:",
     "guestLimit": "Mehmonlar savatidagi maksimal {{limit}} mahsulot. Batafsil maʼlumot uchun tizimga kiring.",
     "guestLimitShort": "Mehmonlar savatidagi maksimal {{limit}} mahsulot.",
     "updateQtyError": "Miqdorni yangilab bo‘lmadi",
-    "addError": "Kuponni savatga qo‘shib bo‘lmadi"
+    "addError": "Kuponni savatga qo‘shib bo‘lmadi",
+    "discount": "Chegirma",
+    "savings": "Tejamkorlik",
+    "deliveryNote": "Kuponlar to'lovdan so'ng darhol Telegramga keladi. Kela olmasangiz — pulni qaytaramiz.",
+    "emptyHint": "«Kun kuponi»ga qarang — bugun −70% gacha",
+    "couponsCount_one": "{{count}} ta kupon",
+    "couponsCount_other": "{{count}} ta kupon"
   },
   "checkout": {
     "title": "Buyurtma berish",
+    "payTitle": "To'lov",
+    "payCta": "To'lash",
     "authRequiredTitle": "Hisobingizga kirishingiz kerak",
     "authRequiredDesc": "Buyurtma berish uchun tizimga kirishingiz kerak.",
     "login": "Tizimga kirish",
@@ -150,7 +197,7 @@
     "fillProfile": "Profilingizni to'ldiring",
     "contactTitle": "Aloqa ma'lumotlari",
     "phoneLabel": "Telefon:",
-    "paymentTitle": "To'lov",
+    "paymentTitle": "To'lov usuli",
     "card": "Bank kartasi",
     "processing": "Biz tayyorlayapmiz ...",
     "pay": "{{amount}} toʻlash",
@@ -192,7 +239,8 @@
     "step1": "Profilingizda kuponni oching.",
     "step2": "QR yoki PIN-kodni sherigingiz kassiriga ko'rsating.",
     "step3": "Foydalanishdan keyin sharh qoldirishingiz mumkin.",
-    "openCoupons": "Mening kuponlarimni oching",
+    "openCoupons": "Mening kuponlarim",
+    "toHome": "Bosh sahifaga",
     "orderHistory": "Buyurtma tarixi",
     "errorTitle": "Xato",
     "errorDefault": "To'lov tugallanmagan. Buyurtma saqlandi, siz qayta toʻlashga urinib koʻrishingiz mumkin.",
@@ -211,8 +259,8 @@
     "login": "Profilga kiring",
     "logout": "Chiqish",
     "tabs": {
-      "coupons": "Mening kuponlarim",
-      "orders": "Mening buyurtmalarim",
+      "coupons": "Kuponlarim",
+      "orders": "Xaridlar",
       "refunds": "Qaytadi",
       "complaints": "Apellyatsiya",
       "notifications": "Bildirishnomalar",
@@ -220,7 +268,7 @@
       "help": "Yordam"
     },
     "couponSubtabs": {
-      "active": "Faol",
+      "active": "Faol kuponlar",
       "refundPending": "Qaytishda",
       "used": "Ishlatilgan",
       "expired": "Muddati tugagan",
@@ -283,10 +331,17 @@
         "phoneRequired": "Iltimos, telefon raqamingizni kiriting",
         "phoneMin": "Telefon raqami juda qisqa (kamida 9 ta belgidan iborat)",
         "phoneMax": "Telefon raqami 20 belgidan oshmasligi kerak"
-      }
+      },
+      "name": "Ism",
+      "phoneLabel": "Telefon",
+      "phoneMissing": "Ko'rsatilmagan — merchantga bog'lanish uchun kerak",
+      "language": "Til",
+      "notifications": "Bildirishnomalar",
+      "notificationsDesc": "Yaqin atrofdagi yangi kuponlar · muddat tugashi · merchant javoblari",
+      "configure": "Sozlash"
     },
     "help": {
-      "title": "Yordam va qo'llab-quvvatlash",
+      "title": "Yordam kerakmi?",
       "refundsTitle": "Qaytadi",
       "refundsDesc": "Tez orada siz bu yerda toʻlovni qaytarishni soʻrashingiz va holatni koʻrishingiz mumkin boʻladi.",
       "complaintsTitle": "Shikoyatlar",
@@ -294,7 +349,27 @@
       "reviewsTitle": "Sharhlar",
       "reviewsDesc": "Sharhlar endi foydalanishdan keyin kupon sahifasida.",
       "notificationsTitle": "Bildirishnomalar",
-      "notificationsDesc": "Bu erda tez orada buyurtmalar va kuponlar bilan bog'liq muhim voqealar bo'ladi."
+      "notificationsDesc": "Bu erda tez orada buyurtmalar va kuponlar bilan bog'liq muhim voqealar bo'ladi.",
+      "faq": {
+        "redeem": {
+          "q": "Kupondan qanday foydalanaman?",
+          "a": "Profildagi yoki Telegram-botdagi QR-kodni kassada ko'rsating. Merchant skanerlaydi — kupon ishlatilgan deb belgilanadi."
+        },
+        "noShow": {
+          "q": "Bora olmadim — nima qilay?",
+          "a": "Muddati tugagunicha faol kuponda «Pulni qaytarish» tugmasini bosing. Kartaga qaytarish 3 ish kunigacha davom etadi."
+        },
+        "bonus": {
+          "q": "Nega sharh qoldirish kerak?",
+          "a": "Sharh boshqa xaridorlarga ko'rinadi va merchantga yordam beradi. U «Tasdiqlangan xarid» belgisi bilan chiqadi — faqat tashrifdan keyin qoldirish mumkin."
+        },
+        "refused": {
+          "q": "Merchant kuponni qabul qilmadi",
+          "a": "Kuponda «Shikoyat qilish» tugmasini bosing — tekshiramiz va kupon ishlatilmagan bo'lsa pulni qaytaramiz."
+        }
+      },
+      "contact": "Qo'llab-quvvatlashga yozish",
+      "contactHint": "Telegram orqali javob beramiz, odatda 10 daqiqada"
     },
     "refundModal": {
       "title": "Qaytish so'rovi",
@@ -388,7 +463,7 @@
       "validUntil": "{{date}} gacha amal qiladi",
       "toggleHide": "Tafsilotlarni yashirish",
       "toggleShow": "QR kodi va tafsilotlari",
-      "qrHint": "QR kodini kassirga ko'rsating",
+      "qrHint": "Kassada QR ni ko'rsating",
       "pinHint": "yoki kodni yozing",
       "couponFallback": "Kupon",
       "address": "Manzil",
@@ -405,61 +480,96 @@
       "orderNumber": "Buyurtma №{{number}}",
       "continuePay": "To'lovni davom ettiring",
       "viewCoupons": "Mening kuponlarim"
+    },
+    "ticket": {
+      "nearest": "Eng yaqin kupon",
+      "yours": "Sizning kuponingiz",
+      "expiresToday": "bugun tugaydi",
+      "expiresInDays_one": "{{count}} kundan keyin tugaydi",
+      "expiresInDays_other": "{{count}} kundan keyin tugaydi",
+      "until": "{{date}} gacha amal qiladi",
+      "paid": "to'langan",
+      "code": "Kod:",
+      "showAtCashier": "kassada QR ni ko'rsating, u Telegramda ham bor"
+    },
+    "complaintPending": "Shikoyat ko'rib chiqilmoqda",
+    "refundMoney": "Pulni qaytarish",
+    "refundShort": "Qaytarish",
+    "complain": "Shikoyat qilish",
+    "archive": {
+      "title": "Arxiv",
+      "subtitle": "ishlatilgan, muddati o'tgan va qaytarilgan",
+      "leaveReview": "Sharh qoldirish"
+    },
+    "orders": {
+      "empty": "Hozircha xaridlar yo'q",
+      "number": "Buyurtma №{{number}}",
+      "note": "Qaytarishlar va to'lov holati — har bir xarid ichida, alohida bo'lim kerak emas",
+      "status": {
+        "paid": "To'langan",
+        "pending": "To'lov kutilmoqda",
+        "completed": "Yakunlangan",
+        "cancelled": "Bekor qilingan"
+      }
+    },
+    "review": {
+      "title": "«{{merchant}}» da qanday o'tdi?",
+      "subtitle": "Siz u yerda {{date}} kuni kupon bo'yicha bo'lgansiz",
+      "commentPlaceholder": "Bir necha so'z — ixtiyoriy…",
+      "commentTooShort": "Sharh yozsangiz — kamida {{count}} belgi",
+      "ratingRequired": "Baho qo'ying",
+      "submit": "Yuborish",
+      "sending": "Yuborilmoqda…",
+      "later": "Keyinroq",
+      "verified": "Sharh «Tasdiqlangan xarid» belgisini oladi",
+      "error": "Sharhni yuborib bo'lmadi"
     }
   },
   "couponDetail": {
-    "loading": "Kupon yuklanmoqda...",
-    "addedToCart": "\"{{title}}\" savatga qo'shildi!",
-    "buyUntil": "Oldin sotib oling: {{date}}",
-    "useUntil": "Oldindan foydalanish: {{date}}",
-    "lastDay": "Oxirgi kun!",
-    "daysLeft": "{{count}} kun",
-    "purchases": "{{count}} xaridlar",
-    "gift": "Hozirgi",
-    "selectCert": "Sertifikatni tanlang",
+    "loading": "Kupon yuklanmoqda…",
+    "addedToCart": "«{{title}}» savatda",
     "tabInfo": "Ma'lumot",
     "tabReviews": "Sharhlar",
-    "favorite": "Sevimlilarga qo'shing",
+    "favorite": "Sevimlilarga",
+    "prevPhoto": "Oldingi surat",
+    "nextPhoto": "Keyingi surat",
+    "goToPhoto": "{{n}}-surat",
+    "share": "Ulashish",
+    "copyLink": "Havolani nusxalash",
+    "copied": "Havola nusxalandi",
+    "variants": "Variantlar",
+    "optionLeft": "{{count}} ta qoldi",
+    "optionSoldOut": "tugadi",
     "description": "Tavsif",
-    "loginToReview": "tizimga kirish",
-    "loginToReviewSuffix": "kupondan foydalangandan so'ng sharh qoldirish uchun",
-    "reviewAfterUse": "Kupondan foydalangandan so'ng sharh qoldirishingiz mumkin",
-    "noReviews": "Hozircha sharhlar yoʻq",
-    "beFirstReview": "Ushbu kuponni birinchi bo'lib ko'rib chiqing",
-    "reviewsCount": "{{count}} sharhlar",
-    "related": "Shunga o'xshash reklama aktsiyalari",
+    "where": "Qayerda",
+    "route": "Yo'nalishni ko'rsatish",
+    "reviews": "Sharhlar",
+    "reviewsCount": "{{count}} ta sharh",
+    "allReviews": "barchasi {{count}}",
+    "verifiedPurchase": "Tasdiqlangan xarid",
+    "noReviews": "Hozircha sharhlar yo'q — birinchi bo'ling.",
+    "sold": "{{count}} ta kupon sotilgan",
+    "buy": "Kupon sotib olish",
+    "addToCart": "Savatga qo'shish",
+    "soldOut": "Tugadi",
+    "saleOver": "Sotuv tugadi",
+    "giftable": "sovg'a qilish mumkin",
+    "buyUntilLabel": "Sotib olish muddati",
+    "useUntilLabel": "Foydalanish muddati",
+    "soldOf": "{{limit}} tadan {{sold}} tasi sotilgan",
+    "chainBuy": "Sotib oldingiz",
+    "chainQr": "QR Telegramda",
+    "chainCome": "Keldingiz",
+    "refundNote": "Kela olmadingizmi — muddat tugaguncha pulni qaytaramiz. To'lov Payme yoki Click orqali.",
+    "boughtViews": "{{bought}} ta sotilgan · {{views}} ta ko'rish",
+    "related": "O'xshash kuponlar",
     "unavailableTitle": "Kupon mavjud emas",
     "unavailableDesc": "Bu kupon endi hammaga ochiq emas yoki havola eskirgan.",
-    "unavailableBrowse": "Faol kuponlarni ko'rish",
-    "merchantSection": "Hamkor haqida",
-    "variantsTitle": "Sertifikat tanlang",
-    "boughtCount": "{{count}} kishi tomonidan sotib olingan",
-    "remaining": "{{count}} dona qoldi.",
-    "buy": "Sotib olish",
-    "addToCart": "Savatchaga qo'shish",
-    "importantInfoTitle": "Muhim ma'lumotlar",
-    "importantInfo": {
-      "address": "Manzil",
-      "buyUntil": "Oldin sotib oling",
-      "useUntil": "Oldindan foydalaning",
-      "hours": "Ish vaqti",
-      "usage": "Kupondan foydalanish",
-      "usageHint": "Tashrif paytida shaxsiy hisobingizdan QR/PIN kodni ko'rsating"
-    },
-    "reviewForm": {
-      "thanksTitle": "Fikr-mulohazangiz uchun tashakkur!",
-      "thanksDesc": "Sharhingiz moderatsiyaga yuborildi va tekshiruvdan so‘ng paydo bo‘ladi.",
-      "title": "Fikr qoldiring",
-      "rating": "Darajasi:",
-      "stars": "{{count}} yulduz",
-      "placeholder": "Taassurotlaringizni baham ko'ring (kamida 10 belgi)",
-      "submit": "Fikr-mulohaza yuboring",
-      "error": "Fikr-mulohaza yuborib bo‘lmadi"
-    }
+    "unavailableBrowse": "Faol kuponlarni ko'rish"
   },
   "couponCard": {
     "hot": "Yuqori",
-    "discountUpTo": "-{{percent}}% gacha",
+    "discountUpTo": "−{{percent}}% gacha",
     "purchases": "{{count}} xaridlar",
     "reviews": "/{{count}} sharhlar",
     "priceFrom": "dan {{price}} {{currency}}"
@@ -670,30 +780,105 @@
     "namePlaceholder": "Aziza"
   },
   "home": {
-    "heroTitle": "Sizning eng yaxshi daqiqalaringiz",
-    "heroTitleHighlight": "90% gacha chegirma",
-    "heroSubtitle": "Har kuni kafelar, restoranlar, SPA, o'yin-kulgi va sport uchun noyob takliflar. Hissiyotlarni foydali sotib oling.",
-    "searchPlaceholder": "Kategoriyalar va muassasalar boʻyicha qidirish...",
-    "btnOffers": "Takliflarni ko'rish",
-    "heroBadgeTitle": "Eng mashhur",
-    "heroBadgeDesc": "Yordam kuponi - eng shirali!",
-    "heroImageAlt": "Chegirmalar",
-    "categoryAll": "Hammasi",
-    "categoriesLabel": "Kategoriyalar",
-    "categoriesTitle": "Qiziqishlar boʻyicha suring",
-    "topDealsLabel": "Kunning eng yaxshi aksiyalari",
-    "topDealsTitle": "Eng tez torting",
-    "newDealsLabel": "Yangi",
-    "newDealsTitle": "Hozirgina qo'shildi",
-    "newDealsLink": "Hammasi yangi",
-    "trendingLabel": "Hozir trend",
-    "trendingTitle": "Oʻtishda davom etmoqchi boʻlgan tasma",
-    "bazaarCtaLabel": "Onlayn bozor",
-    "bazaarCtaTitle": "Xarita va sizga yaqin mahsulotlar",
-    "bazaarCtaCopy": "Pimlar, mahsulotlar va masofa o'rtasida almashinish. Eng yaxshi chegirmalarni Toshkent xaritasida toping.",
-    "bazaarCtaBtn": "Bozorni oching",
-    "emptyState": "Bu filtr uchun boʻsh",
-    "emptyStateDesc": "Boshqa turkumni yoki yuqoridagi tezkor qidiruvni sinab ko'ring."
+    "hero": {
+      "label": "Kun kuponi",
+      "endsIn": "{{time}} dan keyin tugaydi",
+      "endsOn": "{{date}} gacha sotib oling",
+      "buy": "Kupon sotib olish",
+      "left": "{{total}} tadan {{left}} ta qoldi"
+    },
+    "tiles": {
+      "title": "Bugun nima xohlaysiz?",
+      "count_one": "{{count}} ta kupon",
+      "count_other": "{{count}} ta kupon"
+    },
+    "situations": {
+      "kids": "Bolalar bilan dam olish",
+      "beauty": "O'zingizga g'amxo'rlik qilish",
+      "health": "Sog'liqni tekshirish",
+      "dinner": "Kechki ovqatga chiqish",
+      "weekend": "Shahar tashqarisida dam olish"
+    },
+    "feed": {
+      "title": "Siz uchun tanladik",
+      "hotTab": "Yonayotgan",
+      "hotLabel": "Yonayotgan kupon",
+      "bestLabel": "Eng katta chegirma",
+      "popularLabel": "Xaridorlar tanlovi",
+      "soldPercent": "{{percent}}% sotib olindi",
+      "leftCount": "{{count}} ta qoldi",
+      "empty": "Bu filtr bo'yicha hozircha bo'sh"
+    },
+    "how": {
+      "title": "Bu qanday ishlaydi",
+      "note": "Bora olmadingizmi — pulni qaytaramiz",
+      "buy": {
+        "title": "Kupon sotib oling",
+        "text": "To'lov Payme yoki Click orqali. Kupon darhol Telegramga keladi"
+      },
+      "show": {
+        "title": "Joyida QR ko'rsating",
+        "text": "Hech qanday chop etish kerak emas — faqat ekrandagi kod"
+      },
+      "save": {
+        "title": "Haqiqatan tejang",
+        "text": "Merchant bizga faqat siz kelganingizda to'laydi — shuning uchun chegirmalar halol"
+      }
+    }
+  },
+  "mobile": {
+    "home": {
+      "title": "Ko'nglingizga\nyoqqanini toping.",
+      "empty": "Bu turkumda hozircha bo'sh — keyinroq kiring"
+    },
+    "deck": {
+      "title": "Kun kuponlari",
+      "buy": "Sotib olish",
+      "hot": "Issiq",
+      "more_one": "yana {{count}} ta yonayotgan · suring",
+      "more_other": "yana {{count}} ta yonayotgan · suring"
+    },
+    "coupon": {
+      "title": "Kupon"
+    },
+    "checkout": {
+      "recipient": "Kuponni kim oladi",
+      "toMe": "Men",
+      "deliveryNote": "Kupon va QR-kod to'lovdan so'ng darhol profilingizda paydo bo'ladi. Ma'lumotlar profildan olinadi — o'zgartirish uchun bosing.",
+      "demoNote": "Payme va Click hali ulanmagan — xaridni keyingi qadamda tasdiqlaysiz"
+    },
+    "paid": {
+      "title": "To'landi!",
+      "text": "Kupon va QR-kod Telegramingizda.",
+      "until": "{{date}} gacha amal qiladi"
+    },
+    "onboarding": {
+      "skip": "O'tkazib yuborish",
+      "start": "Boshlash",
+      "s1": {
+        "a": "Eng yaxshisini",
+        "b": "tanlang,",
+        "c": "to'lang",
+        "d": "ikki barobar kam",
+        "sub": "Shahringizdagi restoranlar, SPA va ko'ngilochar joylar — 70% gacha chegirma bilan"
+      },
+      "s2": {
+        "a": "QR ko'rsating —",
+        "b": "va sizni",
+        "c": "kutib olishadi",
+        "sub": "Kupon Telegramga keladi va telefoningizda saqlanadi. Chop etish va qo'ng'iroqsiz",
+        "sample": "Ikki kishilik SPA-kun"
+      },
+      "s3": {
+        "a": "Tejashni",
+        "b": "boshlang",
+        "c": "yoqtirgan",
+        "d": "narsangizda,",
+        "e": "birga",
+        "f": "yoningizda",
+        "g": "doim"
+      }
+    }
   },
   "catalog": {
     "eyebrow": "Barcha shahar chegirmalari",
@@ -727,6 +912,6 @@
     "terms": "Foydalanuvchi shartnomasi",
     "business": "Biznes uchun (hamkorlar)",
     "mobileApp": "Mobil ilova",
-    "rights": "TopDim. Barcha huquqlar himoyalangan."
+    "rights": "sizbiz. Barcha huquqlar himoyalangan."
   }
 }

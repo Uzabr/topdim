@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Search, SlidersHorizontal, X, LayoutGrid, List, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
+import { SearchX, SlidersHorizontal, LayoutGrid, List, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
 import { couponsApi } from '../api/coupons';
 import CouponCard from '../components/coupon/CouponCard';
 import Select from '../components/ui/Select';
@@ -23,7 +24,6 @@ const CategoryIcon = ({ slug }: { slug?: string }) => {
 
 export default function CouponCatalogPage() {
   const { t, i18n } = useTranslation();
-  const [search, setSearch] = useState('');
 
   const sortOptions = useMemo(
     () => [
@@ -35,10 +35,25 @@ export default function CouponCatalogPage() {
     ],
     [t, i18n.language],
   );
-  const [activeCategory, setActiveCategory] = useState<number | null>(null);
+
+  // Категория — источник правды в URL (?categoryId=), чтобы deep-link из хлебных
+  // крошек/плиток реально фильтровал каталог, а «назад»/шаринг работали.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryIdParam = searchParams.get('categoryId');
+  const activeCategory =
+    categoryIdParam && !Number.isNaN(Number(categoryIdParam)) ? Number(categoryIdParam) : null;
+
   const [sortBy, setSortBy] = useState('popular');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [page, setPage] = useState(0);
+
+  const selectCategory = (id: number | null) => {
+    const next = new URLSearchParams(searchParams);
+    if (id === null) next.delete('categoryId');
+    else next.set('categoryId', String(id));
+    setSearchParams(next);
+    setPage(0);
+  };
 
   const {
     data: categoriesData,
@@ -55,10 +70,9 @@ export default function CouponCatalogPage() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ['coupons-catalog', activeCategory, search, sortBy, page],
+    queryKey: ['coupons-catalog', activeCategory, sortBy, page],
     queryFn: () => couponsApi.getCatalog({
       categoryId: activeCategory ?? undefined,
-      search: search || undefined,
       sortBy,
       page,
       size: 20,
@@ -87,37 +101,8 @@ export default function CouponCatalogPage() {
         </div>
       </div>
 
-      {/* Search & Sort */}
+      {/* Sort & view (поиск — только в шапке) */}
       <div className="catalog-controls container">
-        <div className="catalog-search">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder={t('catalog.searchPlaceholder')}
-            value={search}
-            onChange={(e) => {
-              const val = e.target.value;
-              setSearch(val);
-              setPage(0);
-              // Авто-выбор категории по названию
-              if (val.trim()) {
-                const match = categories.find((c) => c.name.toLowerCase().includes(val.trim().toLowerCase()));
-                if (match) {
-                  setActiveCategory(match.id);
-                } else {
-                  setActiveCategory(null);
-                }
-              } else {
-                setActiveCategory(null);
-              }
-            }}
-          />
-          {search && (
-            <button onClick={() => { setSearch(''); setActiveCategory(null); }} className="catalog-search__clear">
-              <X size={16} />
-            </button>
-          )}
-        </div>
         <div className="catalog-toolbar">
           <div className="catalog-sort">
             <Select
@@ -152,7 +137,7 @@ export default function CouponCatalogPage() {
       <div className="catalog-categories container">
         <button
           className={`filter-chip ${activeCategory === null ? 'filter-chip--active' : ''}`}
-          onClick={() => { setActiveCategory(null); setPage(0); }}
+          onClick={() => selectCategory(null)}
         >
           {t('common.all')}
         </button>
@@ -160,7 +145,7 @@ export default function CouponCatalogPage() {
           <button
             key={cat.id}
             className={`filter-chip ${activeCategory === cat.id ? 'filter-chip--active' : ''}`}
-            onClick={() => { setActiveCategory(cat.id); setPage(0); }}
+            onClick={() => selectCategory(cat.id)}
           >
             <CategoryIcon slug={cat.slug} /> {localizedName(cat, i18n.language)}
           </button>
@@ -190,7 +175,7 @@ export default function CouponCatalogPage() {
           </div>
         ) : coupons.length === 0 ? (
           <div className="catalog-empty">
-            <span className="catalog-empty__icon">🔍</span>
+            <SearchX className="catalog-empty__icon" size={44} strokeWidth={1.5} />
             <h3>{t('catalog.emptyTitle')}</h3>
             <p>{t('catalog.emptyDesc')}</p>
           </div>

@@ -1,0 +1,322 @@
+/* Стопка «Купон дня» + фуллскрин «Купоны дня». Референс: «Мобилка - 2 Главная». */
+
+.deck {
+  position: relative;
+  flex: none;
+  width: 238px;
+  height: 300px;
+  scroll-snap-align: center;
+}
+
+.deck__back {
+  position: absolute;
+  inset: 0;
+  border-radius: 26px;
+}
+
+.deck__back--1 {
+  background: #e8e0d0;
+  transform: rotate(6deg) translate(7px, 2px);
+}
+
+.deck__back--2 {
+  background: #f2e7cf;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  transform: rotate(-5deg) translate(-6px, 3px);
+}
+
+.deck__card {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  border-radius: 26px;
+  background: var(--btn);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
+}
+
+.deck__card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.62;
+}
+
+.deck__tag {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 6px 13px;
+  border-radius: var(--radius-pill);
+  background: var(--wasp);
+  color: var(--on-wasp);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.deck__timer {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 6px 11px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.deck__foot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 44px 16px 16px;
+  background: linear-gradient(180deg, rgba(5, 5, 5, 0), rgba(5, 5, 5, 0.88) 55%);
+  text-align: left;
+}
+
+.deck__text {
+  min-width: 0;
+}
+
+.deck__title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.deck__more {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.deck__off {
+  flex: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--wasp);
+  color: var(--on-wasp);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* ── Фуллскрин: горящие купоны веером ── */
+.deckview {
+  position: fixed;
+  inset: 0;
+  z-index: 960;
+  display: flex;
+  flex-direction: column;
+  background: rgba(9, 9, 9, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: vFade 0.25s ease both;
+}
+
+.deckview__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(20px + env(safe-area-inset-top)) 20px 6px;
+}
+
+.deckview__title {
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.deckview__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.deckview__row {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 10px 34px 26px;
+  scroll-snap-type: x mandatory;
+}
+
+.dcard {
+  position: relative;
+  flex: none;
+  width: 250px;
+  height: 380px;
+  overflow: hidden;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
+  scroll-snap-align: center;
+  animation: deckIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Кликабельна вся карточка; «Купить» лежит выше по z-index. */
+.dcard__link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.dcard__photo {
+  height: 56%;
+  background: var(--chip);
+}
+
+.dcard__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dcard__tag,
+.dcard__timer {
+  position: absolute;
+  top: 14px;
+  z-index: 2;
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+}
+
+.dcard__tag {
+  left: 14px;
+  padding: 5px 12px;
+  background: var(--wasp);
+  color: var(--on-wasp);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Не «купон дня», а просто горящие: тёмный полупрозрачный тег, жёлтый текст. */
+.dcard__tag--hot {
+  background: rgba(9, 9, 9, 0.75);
+  color: var(--wasp);
+}
+
+.dcard__timer {
+  right: 14px;
+  padding: 5px 10px;
+  background: rgba(9, 9, 9, 0.75);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dcard__body {
+  display: flex;
+  flex-direction: column;
+  height: 44%;
+  box-sizing: border-box;
+  padding: 16px;
+}
+
+.dcard__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dcard__title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 15.5px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.dcard__off {
+  flex: none;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--wasp);
+  color: var(--on-wasp);
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.dcard__price {
+  margin-top: 4px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dcard__bottom {
+  margin-top: auto;
+}
+
+.dcard__bar {
+  height: 5px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--chip);
+}
+
+.dcard__bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--wasp);
+}
+
+.dcard__left {
+  display: block;
+  margin-top: 5px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dcard__buy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  margin-top: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--btn);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deckview,
+  .dcard {
+    animation: none;
+  }
+}

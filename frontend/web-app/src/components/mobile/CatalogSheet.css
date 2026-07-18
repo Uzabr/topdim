@@ -1,0 +1,97 @@
+/* Общая шторка снизу — используют каталог и аккаунт (Мобилка - 2 Главная). */
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(20, 20, 20, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: vFade 0.25s ease both;
+}
+
+.sheet__body {
+  width: 100%;
+  max-height: 72vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 24px 22px calc(32px + env(safe-area-inset-bottom));
+  border-radius: 28px 28px 0 0;
+  background: var(--page);
+  animation: vUp 0.35s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.sheet__grip {
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin: 0 auto;
+  border-radius: var(--radius-pill);
+  background: #e5e3df;
+}
+
+.sheet__title {
+  margin: 16px 0 0;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+/* ── Каталог ── */
+.catalog__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.catalog__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 18px;
+  background: var(--paper);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  text-align: left;
+}
+
+.catalog__icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  color: var(--ink);
+}
+
+.catalog__text {
+  min-width: 0;
+}
+
+.catalog__name {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalog__count {
+  display: block;
+  margin-top: 1px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .sheet__body {
+    animation: none;
+  }
+}
