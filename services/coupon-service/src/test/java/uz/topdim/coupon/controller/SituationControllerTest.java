@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import uz.topdim.coupon.dto.CouponOfferResponse;
+import uz.topdim.coupon.dto.AdminSituationResponse;
 import uz.topdim.coupon.dto.SituationResponse;
 import uz.topdim.coupon.exception.GlobalExceptionHandler;
 import uz.topdim.coupon.service.CouponOfferService;
@@ -32,14 +33,19 @@ class SituationControllerTest {
     @Mock private SituationService situationService;
     @Mock private CouponOfferService couponOfferService;
     @InjectMocks private SituationController situationController;
+    @InjectMocks private AdminSituationController adminSituationController;
     @InjectMocks private CouponController couponController;
 
     private MockMvc situationsMvc;
+    private MockMvc adminSituationsMvc;
     private MockMvc couponsMvc;
 
     @BeforeEach
     void setUp() {
         situationsMvc = MockMvcBuilders.standaloneSetup(situationController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+        adminSituationsMvc = MockMvcBuilders.standaloneSetup(adminSituationController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
         couponsMvc = MockMvcBuilders.standaloneSetup(couponController)
@@ -93,6 +99,57 @@ class SituationControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    // ==================== GET /api/v1/admin/situations ====================
+
+    @Test
+    @DisplayName("GET /api/v1/admin/situations: админ получает active и inactive")
+    void getAdminSituations_returnsAll() throws Exception {
+        when(situationService.getAllSituationsForAdmin()).thenReturn(List.of(
+                AdminSituationResponse.builder()
+                        .id(1L)
+                        .key("kids")
+                        .title("Отдохнуть с детьми")
+                        .couponCount(2)
+                        .active(true)
+                        .build(),
+                AdminSituationResponse.builder()
+                        .id(2L)
+                        .key("hidden")
+                        .title("Скрытая")
+                        .couponCount(1)
+                        .active(false)
+                        .build()
+        ));
+
+        adminSituationsMvc.perform(get("/api/v1/admin/situations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].key").value("kids"))
+                .andExpect(jsonPath("$.data[0].active").value(true))
+                .andExpect(jsonPath("$.data[1].key").value("hidden"))
+                .andExpect(jsonPath("$.data[1].active").value(false));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/admin/situations/{id}: админ получает одну ситуацию")
+    void getAdminSituation_returnsOne() throws Exception {
+        when(situationService.getSituationForAdmin(1L)).thenReturn(
+                AdminSituationResponse.builder()
+                        .id(1L)
+                        .key("kids")
+                        .title("Отдохнуть с детьми")
+                        .couponCount(2)
+                        .active(true)
+                        .build());
+
+        adminSituationsMvc.perform(get("/api/v1/admin/situations/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.key").value("kids"))
+                .andExpect(jsonPath("$.data.couponCount").value(2));
     }
 
     // ==================== GET /api/v1/coupons?situation=... ====================

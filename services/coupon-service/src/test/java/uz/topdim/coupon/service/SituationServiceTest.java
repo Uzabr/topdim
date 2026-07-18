@@ -109,6 +109,36 @@ class SituationServiceTest {
     // ==================== createSituation ====================
 
     @Test
+    @DisplayName("getAllSituationsForAdmin: возвращает active и inactive с id и couponCount")
+    void getAllSituationsForAdmin_returnsAllWithCounts() {
+        Situation active = Situation.builder().id(1L).slug("kids").title("Дети").sortOrder(0).active(true).build();
+        Situation inactive = Situation.builder().id(2L).slug("hidden").title("Скрыто").sortOrder(1).active(false).build();
+        when(situationRepository.findAll(any(org.springframework.data.domain.Sort.class))).thenReturn(List.of(active, inactive));
+        when(situationCouponRepository.countActiveCouponsBySituation(eq(CouponStatus.ACTIVE), any(LocalDateTime.class)))
+                .thenReturn(List.of(new Object[]{1L, 3L}, new Object[]{2L, 1L}));
+
+        List<AdminSituationResponse> result = situationService.getAllSituationsForAdmin();
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getId()).isEqualTo(1L);
+        assertThat(result.get(0).getKey()).isEqualTo("kids");
+        assertThat(result.get(0).getCouponCount()).isEqualTo(3);
+        assertThat(result.get(0).isActive()).isTrue();
+        assertThat(result.get(1).getKey()).isEqualTo("hidden");
+        assertThat(result.get(1).getCouponCount()).isEqualTo(1);
+        assertThat(result.get(1).isActive()).isFalse();
+    }
+
+    @Test
+    @DisplayName("getSituationForAdmin: не найдена → ResourceNotFoundException")
+    void getSituationForAdmin_notFound_throws() {
+        when(situationRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> situationService.getSituationForAdmin(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     @DisplayName("createSituation: happy path")
     void createSituation_happyPath_returnsId() {
         CreateSituationRequest req = new CreateSituationRequest();

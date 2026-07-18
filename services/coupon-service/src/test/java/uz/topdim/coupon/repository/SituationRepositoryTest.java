@@ -72,7 +72,7 @@ class SituationRepositoryTest extends AbstractIntegrationTest {
 
         assertThat(counts).containsEntry(kids.getId(), 2L);
         assertThat(counts).containsEntry(beauty.getId(), 1L);
-        assertThat(counts).doesNotContainKey(hidden.getId());
+        assertThat(counts).containsEntry(hidden.getId(), 1L);
     }
 
     @Test

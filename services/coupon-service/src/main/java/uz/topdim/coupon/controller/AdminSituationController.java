@@ -6,10 +6,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
+import uz.topdim.coupon.dto.AdminSituationResponse;
 import uz.topdim.coupon.dto.CreateSituationRequest;
 import uz.topdim.coupon.dto.SituationCouponRequest;
 import uz.topdim.coupon.dto.UpdateSituationRequest;
 import uz.topdim.coupon.service.SituationService;
+
+import java.util.List;
 
 /**
  * Admin-контроллер ситуаций: CRUD + назначение купонов.
@@ -22,6 +25,16 @@ import uz.topdim.coupon.service.SituationService;
 public class AdminSituationController {
 
     private final SituationService situationService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<AdminSituationResponse>>> getAll() {
+        return ResponseEntity.ok(ApiResponse.success(situationService.getAllSituationsForAdmin()));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<AdminSituationResponse>> getOne(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(situationService.getSituationForAdmin(id)));
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<Long>> create(

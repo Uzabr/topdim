@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.coupon.dto.*;
@@ -22,9 +23,9 @@ import java.util.stream.Collectors;
 /**
  * Сервис управления ситуациями (подборками купонов).
  *
- * <p>Кэширование: @Cacheable("situations"), TTL = глобальный (5 мин, RedisCacheConfig).
+ * <p>Кэширование: @Cacheable("situations"), TTL = 1 час (RedisConfig), как у categories.
  * Счётчик couponCount eventually-consistent: при смене статуса купона
- * кэш situations НЕ сбрасывается — рассинхрон ≤ TTL (5 мин).
+ * кэш situations НЕ сбрасывается — рассинхрон ≤ TTL.
  */
 @Slf4j
 @Service
@@ -52,16 +53,7 @@ public class SituationService {
         }
 
         // Один агрегирующий запрос на все ситуации (INNER JOIN → ситуации без купонов отсутствуют)
-        LocalDateTime now = LocalDateTime.now();
-        List<Object[]> counts = situationCouponRepository.countActiveCouponsBySituation(
-                CouponStatus.ACTIVE, now);
-
-        // Map: situationId → count; отсутствующие = 0
-        Map<Long, Long> countMap = counts.stream()
-                .collect(Collectors.toMap(
-                        row -> (Long) row[0],
-                        row -> (Long) row[1]
-                ));
+        Map<Long, Long> countMap = loadActiveCouponCounts();
 
         return situations.stream()
                 .map(s -> {
@@ -73,6 +65,21 @@ public class SituationService {
     }
 
     // ==================== Admin API ====================
+
+    @Transactional(readOnly = true)
+    public List<AdminSituationResponse> getAllSituationsForAdmin() {
+        Map<Long, Long> countMap = loadActiveCouponCounts();
+        return situationRepository.findAll(Sort.by(Sort.Direction.ASC, "sortOrder", "id")).stream()
+                .map(s -> toAdminResponse(s, countMap))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public AdminSituationResponse getSituationForAdmin(Long id) {
+        Situation situation = situationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ситуация не найдена"));
+        return toAdminResponse(situation, loadActiveCouponCounts());
+    }
 
     /**
      * Создаёт новую ситуацию.
@@ -200,5 +207,28 @@ public class SituationService {
         return situationRepository.findBySlugAndActiveTrue(slug.trim())
                 .map(s -> situationCouponRepository.findCouponIdsBySituationId(s.getId()))
                 .orElse(List.of());
+    }
+
+    private Map<Long, Long> loadActiveCouponCounts() {
+        LocalDateTime now = LocalDateTime.now();
+        return situationCouponRepository.countActiveCouponsBySituation(CouponStatus.ACTIVE, now).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+    }
+
+    private AdminSituationResponse toAdminResponse(Situation situation, Map<Long, Long> countMap) {
+        return AdminSituationResponse.builder()
+                .id(situation.getId())
+                .key(situation.getSlug())
+                .title(situation.getTitle())
+                .titleUz(situation.getTitleUz())
+                .imageUrl(situation.getImageUrl())
+                .couponCount(countMap.getOrDefault(situation.getId(), 0L))
+                .featured(situation.isFeatured())
+                .sortOrder(situation.getSortOrder())
+                .active(situation.isActive())
+                .build();
     }
 }

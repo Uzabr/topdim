@@ -25,7 +25,6 @@ public interface SituationCouponRepository extends JpaRepository<SituationCoupon
             SELECT sc.situation.id, COUNT(sc)
             FROM SituationCoupon sc JOIN sc.coupon c
             WHERE c.status = :status
-              AND sc.situation.active = true
               AND (c.buyUntil IS NULL OR c.buyUntil >= :now)
             GROUP BY sc.situation.id
             """)
