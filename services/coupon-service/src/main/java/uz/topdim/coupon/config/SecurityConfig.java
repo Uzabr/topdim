@@ -42,6 +42,7 @@ public class SecurityConfig {
                         // Публичный каталог купонов (только чтение)
                         .requestMatchers(HttpMethod.GET, "/api/v1/coupons/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/situations/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/merchants/**").permitAll()
 
                         // Публичные отзывы (только approved, только чтение)

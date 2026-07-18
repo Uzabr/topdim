@@ -33,6 +33,7 @@ public class RedisConfig {
                 .cacheDefaults(defaultConfig.entryTtl(Duration.ofMinutes(10)))
                 .withInitialCacheConfigurations(Map.of(
                         "categories", defaultConfig.entryTtl(Duration.ofHours(1)),
+                        "situations", defaultConfig.entryTtl(Duration.ofHours(1)),
                         "topSelling", defaultConfig.entryTtl(Duration.ofMinutes(15)),
                         "couponDetail", defaultConfig.entryTtl(Duration.ofMinutes(5)),
                         "catalog", defaultConfig.entryTtl(Duration.ofMinutes(3))

@@ -26,12 +26,13 @@ public class CouponController {
     public ResponseEntity<ApiResponse<Page<CouponOfferResponse>>> getCatalog(
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String situation,
             @RequestParam(defaultValue = "popular") String sortBy,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                couponOfferService.getCatalog(categoryId, search, sortBy, page, size)));
+                couponOfferService.getCatalog(categoryId, search, situation, sortBy, page, size)));
     }
 
     @GetMapping("/{id}")

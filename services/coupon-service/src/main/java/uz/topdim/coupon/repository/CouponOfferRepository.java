@@ -77,6 +77,29 @@ public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> 
     List<CouponOffer> findPublicTopSelling(@Param("now") java.time.LocalDateTime now,
                                             Pageable pageable);
 
+    @Query(value = """
+            SELECT c FROM SituationCoupon sc
+            JOIN sc.coupon c
+            JOIN sc.situation s
+            WHERE s.slug = :slug
+              AND s.active = true
+              AND c.status = :status
+              AND (c.buyUntil IS NULL OR c.buyUntil >= :now)
+            """,
+            countQuery = """
+            SELECT COUNT(c) FROM SituationCoupon sc
+            JOIN sc.coupon c
+            JOIN sc.situation s
+            WHERE s.slug = :slug
+              AND s.active = true
+              AND c.status = :status
+              AND (c.buyUntil IS NULL OR c.buyUntil >= :now)
+            """)
+    Page<CouponOffer> findPublicBySituationSlug(@Param("status") CouponStatus status,
+                                                 @Param("slug") String slug,
+                                                 @Param("now") java.time.LocalDateTime now,
+                                                 Pageable pageable);
+
     List<CouponOffer> findByMerchantIdAndStatus(Long merchantId, CouponStatus status);
 
     Optional<CouponOffer> findByIdAndStatus(Long id, CouponStatus status);

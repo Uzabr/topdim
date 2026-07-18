@@ -71,7 +71,7 @@ class CouponOfferServiceTest {
         Page<CouponOffer> page = new PageImpl<>(List.of(offer));
         when(couponOfferRepository.findPublicByStatus(eq(CouponStatus.ACTIVE), any(java.time.LocalDateTime.class), any(Pageable.class))).thenReturn(page);
 
-        Page<CouponOfferResponse> result = couponOfferService.getCatalog(null, null, "popular", 0, 20);
+        Page<CouponOfferResponse> result = couponOfferService.getCatalog(null, null, null, "popular", 0, 20);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("SPA массаж 50%");
@@ -84,10 +84,39 @@ class CouponOfferServiceTest {
         Page<CouponOffer> page = new PageImpl<>(List.of(offer));
         when(couponOfferRepository.findPublicByStatusAndCategoryId(eq(CouponStatus.ACTIVE), eq(1L), any(java.time.LocalDateTime.class), any(Pageable.class))).thenReturn(page);
 
-        Page<CouponOfferResponse> result = couponOfferService.getCatalog(1L, null, "new", 0, 10);
+        Page<CouponOfferResponse> result = couponOfferService.getCatalog(1L, null, null, "new", 0, 10);
 
         assertThat(result.getContent()).hasSize(1);
         verify(couponOfferRepository).findPublicByStatusAndCategoryId(eq(CouponStatus.ACTIVE), eq(1L), any(java.time.LocalDateTime.class), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("Каталог: с фильтром по ситуации — использует публичный join по активной ситуации")
+    void getCatalog_withSituation_filtersByActiveSituationSlug() {
+        CouponOffer offer = createTestOffer();
+        Page<CouponOffer> page = new PageImpl<>(List.of(offer));
+        when(couponOfferRepository.findPublicBySituationSlug(
+                eq(CouponStatus.ACTIVE), eq("kids"), any(java.time.LocalDateTime.class), any(Pageable.class)))
+                .thenReturn(page);
+
+        Page<CouponOfferResponse> result = couponOfferService.getCatalog(null, null, " kids ", "popular", 0, 20);
+
+        assertThat(result.getContent()).hasSize(1);
+        verify(couponOfferRepository).findPublicBySituationSlug(
+                eq(CouponStatus.ACTIVE), eq("kids"), any(java.time.LocalDateTime.class), any(Pageable.class));
+        verify(couponOfferRepository, never()).findPublicByStatusAndCategoryId(any(), anyLong(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Каталог: несуществующая ситуация → пустая страница, не ошибка")
+    void getCatalog_unknownSituation_returnsEmptyPage() {
+        when(couponOfferRepository.findPublicBySituationSlug(
+                eq(CouponStatus.ACTIVE), eq("missing"), any(java.time.LocalDateTime.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        Page<CouponOfferResponse> result = couponOfferService.getCatalog(null, null, "missing", "popular", 0, 20);
+
+        assertThat(result.getContent()).isEmpty();
     }
 
     // ==================== GetById ====================
@@ -699,7 +728,7 @@ class CouponOfferServiceTest {
         when(couponOfferRepository.findPublicByStatus(eq(CouponStatus.ACTIVE), any(java.time.LocalDateTime.class), any(Pageable.class)))
                 .thenReturn(page);
 
-        Page<CouponOfferResponse> result = couponOfferService.getCatalog(null, null, "popular", 0, 20);
+        Page<CouponOfferResponse> result = couponOfferService.getCatalog(null, null, null, "popular", 0, 20);
 
         assertThat(result.getContent()).hasSize(1);
         verify(couponOfferRepository).findPublicByStatus(eq(CouponStatus.ACTIVE), any(java.time.LocalDateTime.class), any(Pageable.class));
