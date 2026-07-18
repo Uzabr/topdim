@@ -16,6 +16,9 @@ export interface LocalCartItem {
   couponTitle: string;
   optionTitle: string;
   unitPrice: number;
+  /** Обычная цена опции — для показа скидки в корзине. Может отсутствовать
+      у старых записей и у backend-корзины (там её не отдают). */
+  oldPrice?: number;
   quantity: number;
   coverImageUrl?: string;
   isGift?: boolean;
@@ -47,7 +50,7 @@ interface CartState {
   closeCart: () => void;
   toggleCart: () => void;
   setMode: (mode: CartMode) => void;
-  addToCart: (request: AddToCartRequest & { coverImageUrl?: string }) => void;
+  addToCart: (request: AddToCartRequest & { coverImageUrl?: string; oldPrice?: number }) => void;
   updateQuantity: (key: string, quantity: number) => void;
   removeFromCart: (key: string) => void;
   clearCart: () => void;
@@ -198,6 +201,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         couponTitle: request.couponTitle,
         optionTitle: request.optionTitle,
         unitPrice: request.unitPrice,
+        oldPrice: request.oldPrice,
         quantity: addQty,
         coverImageUrl: request.coverImageUrl,
         isGift: request.isGift,

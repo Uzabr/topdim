@@ -1,0 +1,155 @@
+.hero-coupon {
+  display: flex;
+  align-items: center;
+  gap: 44px;
+  margin-top: 18px;
+  padding: 44px 52px;
+  border-radius: var(--radius-block);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.hero-coupon__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-coupon__badges {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hero-coupon__label {
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero-coupon__timer {
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-coupon__title {
+  margin: 22px 0 0;
+  font-size: 44px;
+  line-height: 1.08;
+  font-weight: 800;
+  letter-spacing: var(--heading-ls);
+}
+
+.hero-coupon__prices {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.hero-coupon__price {
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.hero-coupon__old {
+  font-size: 17px;
+  color: var(--price-old);
+  text-decoration: line-through;
+}
+
+.hero-coupon__discount {
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.hero-coupon__actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 28px;
+}
+
+/* Тёмный CTA — палитра Главной в макете чёрно-белая, без жёлтого. */
+.hero-coupon__buy {
+  padding: 15px 32px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 15px;
+  font-weight: 700;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.hero-coupon__buy:hover {
+  background: var(--ink-hover);
+}
+
+.hero-coupon__buy:active {
+  transform: scale(0.97);
+}
+
+.hero-coupon__stock {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.hero-coupon__media {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 340px;
+  height: 310px;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--chip);
+}
+
+.hero-coupon__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-coupon__media-fallback {
+  padding: 0 20px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .hero-coupon {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 28px 24px;
+    gap: 24px;
+  }
+
+  .hero-coupon__title {
+    font-size: 30px;
+  }
+
+  .hero-coupon__media {
+    width: 100%;
+    height: 220px;
+    order: -1;
+  }
+}

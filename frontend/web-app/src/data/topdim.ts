@@ -1,5 +1,5 @@
 import type { Bazaar } from '../api/bazaars';
-import type { Category, CouponOffer } from '../api/coupons';
+import type { CouponOffer } from '../api/coupons';
 
 export interface TopdimDeal extends CouponOffer {
   rating: number;
@@ -37,15 +37,6 @@ export interface BazaarItem {
   badge: string;
   location: string;
 }
-
-export const topdimCategories: Category[] = [
-  { id: 1, name: 'Еда', nameUz: 'Ovqat', slug: 'food', sortOrder: 1, iconUrl: '🍔' },
-  { id: 2, name: 'Красота', nameUz: 'Go\'zallik', slug: 'beauty', sortOrder: 2, iconUrl: '💄' },
-  { id: 3, name: 'Спорт', nameUz: 'Sport', slug: 'sport', sortOrder: 3, iconUrl: '🏋️' },
-  { id: 4, name: 'Развлечения', nameUz: 'Ko\'ngilochar', slug: 'entertainment', sortOrder: 4, iconUrl: '🎮' },
-  { id: 5, name: 'Путешествия', nameUz: 'Sayohat', slug: 'travel', sortOrder: 5, iconUrl: '✈️' },
-  { id: 6, name: 'Дети', nameUz: 'Bolalar', slug: 'kids', sortOrder: 6, iconUrl: '🧸' },
-];
 
 const baseDeals: TopdimDeal[] = [
   {

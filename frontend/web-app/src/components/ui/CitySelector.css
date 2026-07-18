@@ -17,7 +17,7 @@
 }
 
 .city-selector__trigger:hover {
-  background: rgba(255, 122, 24, 0.12);
+  background: var(--chip);
   color: var(--primary);
 }
 

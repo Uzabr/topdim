@@ -1,4 +1,3 @@
-import { ChevronRight, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocalePath } from '../../hooks/useLocalePath';
@@ -26,11 +25,10 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
           itemType="https://schema.org/ListItem"
         >
           <Link to={lp('/')} className="breadcrumbs__link" itemProp="item">
-            <Home size={14} />
             <span itemProp="name">{t('common.home')}</span>
           </Link>
           <meta itemProp="position" content="1" />
-          <ChevronRight size={14} className="breadcrumbs__separator" />
+          <span className="breadcrumbs__separator" aria-hidden="true">·</span>
         </li>
         {items.map((item, index) => (
           <li
@@ -51,7 +49,7 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
             )}
             <meta itemProp="position" content={String(index + 2)} />
             {index < items.length - 1 && (
-              <ChevronRight size={14} className="breadcrumbs__separator" />
+              <span className="breadcrumbs__separator" aria-hidden="true">·</span>
             )}
           </li>
         ))}

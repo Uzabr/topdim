@@ -1,4 +1,4 @@
-import { X, Trash2, ShoppingBag, ArrowRight, Plus, Minus, Heart } from 'lucide-react';
+import { X, Trash2, ShoppingBag, ArrowRight, Plus, Minus, Heart, ShoppingCart, Ticket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCartStore } from '../../store/cartStore';
@@ -25,7 +25,7 @@ export default function CartDrawer() {
   return (
     <>
       <div className="cart-overlay" onClick={closeCart} />
-      <div className="cart-drawer glass">
+      <div className="cart-drawer">
         <div className="cart-drawer__header">
           <h2>
             <ShoppingBag size={20} />
@@ -39,7 +39,7 @@ export default function CartDrawer() {
 
         {items.length === 0 ? (
           <div className="cart-drawer__empty">
-            <span className="cart-drawer__empty-icon">🛒</span>
+            <ShoppingCart className="cart-drawer__empty-icon" size={56} strokeWidth={1.25} />
             <h3>{t('cart.emptyTitle')}</h3>
             <p>{t('cart.emptyDesc')}</p>
             <button className="primary-button cart-drawer__empty-btn" onClick={() => { closeCart(); navigate(lp('/coupons')); }}>
@@ -57,7 +57,7 @@ export default function CartDrawer() {
                       {item.coverImageUrl ? (
                         <img src={item.coverImageUrl} alt="" />
                       ) : (
-                        <span className="cart-drawer__item-img-placeholder">🎫</span>
+                        <span className="cart-drawer__item-img-placeholder"><Ticket size={22} strokeWidth={1.5} /></span>
                       )}
                     </div>
 
@@ -90,7 +90,7 @@ export default function CartDrawer() {
                         <h4 className="cart-drawer__item-title">{item.couponTitle}</h4>
                         <p className="cart-drawer__item-option">{item.optionTitle}</p>
                         {item.isGift && (
-                          <span className="cart-drawer__item-badge">🎁 {t('cart.gift')}</span>
+                          <span className="cart-drawer__item-badge">{t('cart.gift')}</span>
                         )}
                       </div>
 

@@ -75,7 +75,7 @@ export default function BazaarDetailPage() {
         {b.coverImageUrl ? (
           <img src={b.coverImageUrl} alt={b.name} />
         ) : (
-          <div className="bazaar-detail__placeholder">🏪</div>
+          <div className="bazaar-detail__placeholder"><Store size={88} strokeWidth={1.25} /></div>
         )}
       </div>
 

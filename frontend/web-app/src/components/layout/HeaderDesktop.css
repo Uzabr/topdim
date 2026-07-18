@@ -1,0 +1,475 @@
+/* ═══════════════════════════════════════════════════════════════
+   Десктопная шапка «Оса» — три плавающие таблетки.
+   Цвета вынесены в локальные переменные: при скролле меняется только
+   их значение, поэтому переход красится одним transition.
+   ═══════════════════════════════════════════════════════════════ */
+
+.hdr {
+  --hdr-pill-bg: var(--paper);
+  --hdr-fg: var(--ink);
+  --hdr-muted: var(--ink-3);
+  --hdr-icon-bg: var(--chip);
+  --hdr-icon-bg-hover: var(--chip-hover);
+  --hdr-accent-bg: var(--ink);
+  --hdr-accent-fg: var(--on-ink);
+
+  position: fixed;
+  top: 12px;
+  left: 24px;
+  right: 24px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Скролл >80px: таблетки темнеют и просвечивают, иконки и текст белеют */
+.hdr--scrolled {
+  --hdr-pill-bg: rgba(38, 38, 40, 0.58);
+  --hdr-fg: #ffffff;
+  --hdr-muted: rgba(255, 255, 255, 0.65);
+  --hdr-icon-bg: rgba(255, 255, 255, 0.16);
+  --hdr-icon-bg-hover: rgba(255, 255, 255, 0.26);
+  --hdr-accent-bg: #ffffff;
+  --hdr-accent-fg: var(--ink);
+}
+
+.hdr__pill {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--hdr-pill-bg);
+  color: var(--hdr-fg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-pill);
+  transition: background 0.35s, color 0.35s;
+}
+
+/* Лого — отдельная жёлтая таблетка слева, не сжимается */
+.hdr__logo {
+  flex: none;
+}
+
+/* Спейсеры прижимают центральную группу к центру */
+.hdr__spacer {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* ── Адрес ── */
+.hdr__address {
+  gap: 10px;
+  padding-left: 20px;
+}
+
+.hdr__address-label {
+  font-size: 13px;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.hdr__address-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--hdr-accent-bg);
+  color: var(--hdr-accent-fg);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.35s, color 0.35s;
+}
+
+.hdr__address-input {
+  width: 150px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--hdr-fg);
+}
+
+.hdr__address-input::placeholder {
+  color: var(--hdr-muted);
+}
+
+.hdr__address-value {
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
+}
+
+.hdr__pin {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--hdr-accent-bg);
+  color: var(--hdr-accent-fg);
+  transition: background 0.35s, color 0.35s;
+}
+
+/* Пин подпрыгивает, пока адрес не введён */
+.hdr__pin--hop {
+  animation: pinHop 1.3s ease-in-out infinite;
+}
+
+@keyframes pinHop {
+  0%, 55%, 100% { transform: translateY(0); }
+  15% { transform: translateY(-7px); }
+  30% { transform: translateY(0); }
+  40% { transform: translateY(-3px); }
+}
+
+/* ── Центральная группа: короткая (max 560px), строго по центру (README §Шапка) ── */
+.hdr__center {
+  position: relative;
+  flex: 0 1 560px;
+  max-width: 560px;
+  min-width: 0;
+  gap: 8px;
+}
+
+/* Спейсеры под каплю: схлопываются/раскрываются синхронно с её перелётом */
+.hdr__slot {
+  flex: none;
+  transition: width 0.6s cubic-bezier(0.55, 0, 0.3, 1);
+}
+
+.hdr__icon {
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--hdr-icon-bg);
+  color: var(--hdr-fg);
+  transition: background 0.35s, color 0.35s;
+}
+
+.hdr__icon:hover {
+  background: var(--hdr-icon-bg-hover);
+}
+
+/* Активная страница: белая таблетка с тёмной иконкой — в обоих состояниях шапки */
+.hdr__icon--active,
+.hdr__icon--active:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.hdr__icon-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--wasp-deep);
+  color: var(--on-wasp);
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.hdr__search {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--hdr-icon-bg);
+  color: var(--hdr-muted);
+  font-size: 14px;
+  text-align: left;
+  transition: background 0.35s, color 0.35s;
+}
+
+.hdr__search:hover {
+  background: var(--hdr-icon-bg-hover);
+}
+
+.hdr__search span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Капля: корзина ⇄ назад ── */
+.hdr__drop {
+  position: absolute;
+  top: 8px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--on-ink);
+  transition: left 0.6s cubic-bezier(0.55, 0, 0.3, 1), transform 0.28s ease, filter 0.15s;
+}
+
+.hdr__drop:hover {
+  filter: brightness(1.25);
+}
+
+/* В полёте каплю растягивает по ходу движения */
+.hdr__drop--stretch {
+  transform: scaleX(1.55) scaleY(0.82);
+}
+
+/* «Глоток» при добавлении в корзину */
+.hdr__drop--gulp {
+  transform: scale(1.18);
+}
+
+.hdr__cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--wasp-deep);
+  color: var(--on-wasp);
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+  transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.hdr__cart-badge--gulp {
+  transform: scale(1.4);
+}
+
+/* ── Микро-моушн ── */
+
+/* Гамбургер: полоски «дышат» при наведении */
+.hdr__burger {
+  flex-direction: column;
+  gap: 3.5px;
+}
+
+.hdr__bar {
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: width 0.25s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.hdr__burger:hover .hdr__bar:first-child {
+  width: 10px;
+}
+
+.hdr__burger:hover .hdr__bar:last-child {
+  width: 13px;
+  transition-delay: 0.05s;
+}
+
+/* Сердце: пульс + три разлетающихся мини-сердца */
+.hdr__fav {
+  transition: background 0.35s, color 0.2s, transform 0.28s cubic-bezier(0.3, 2, 0.5, 1);
+}
+
+.hdr__fav--pop {
+  transform: scale(1.22);
+}
+
+/* Сердце «избранного» в активном состоянии — красное, как в макете шапки. */
+.hdr__fav.hdr__icon--active {
+  color: #e0504f;
+}
+
+.hdr__hearts {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hdr__heart {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  background: #e0504f;
+  clip-path: polygon(50% 100%, 0% 35%, 15% 5%, 50% 25%, 85% 5%, 100% 35%);
+  opacity: 0;
+  animation: heartFloat 0.7s ease-out forwards;
+}
+
+.hdr__heart:nth-child(1) {
+  top: -2px;
+  left: 6px;
+}
+
+.hdr__heart:nth-child(2) {
+  top: -4px;
+  left: 17px;
+  width: 9px;
+  height: 9px;
+  animation-duration: 0.75s;
+  animation-delay: 0.08s;
+}
+
+.hdr__heart:nth-child(3) {
+  top: -2px;
+  left: 27px;
+  width: 6px;
+  height: 6px;
+  animation-duration: 0.65s;
+  animation-delay: 0.16s;
+}
+
+@keyframes heartFloat {
+  0% { opacity: 1; transform: translateY(0) scale(0.5); }
+  100% { opacity: 0; transform: translateY(-30px) scale(1.15); }
+}
+
+/* Плейсхолдер поиска: подсказки сменяются fade + slide */
+.hdr__ph {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 0.25s, transform 0.25s;
+}
+
+.hdr__ph--out {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+/* «Указать»: желейный сквош */
+.hdr__address-btn {
+  transition: background 0.35s, color 0.35s, transform 0.25s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.hdr__address-btn:hover {
+  transform: scale(1.08, 0.92);
+}
+
+.hdr__address-btn:active {
+  transform: scale(0.94);
+}
+
+/* «Войти»: стрелка выезжает при наведении */
+.hdr__login-arrow {
+  display: inline-block;
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateX(-6px);
+  transition: width 0.25s, opacity 0.25s, transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.hdr__login:hover .hdr__login-arrow {
+  width: 16px;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hdr__drop,
+  .hdr__slot,
+  .hdr__bar,
+  .hdr__fav,
+  .hdr__cart-badge,
+  .hdr__ph {
+    transition: none;
+  }
+
+  .hdr__pin--hop,
+  .hdr__heart {
+    animation: none;
+  }
+}
+
+/* ── Язык + вход ── */
+.hdr__auth {
+  gap: 4px;
+}
+
+.hdr__lang {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.hdr__lang-btn {
+  padding: 7px 9px;
+  border-radius: var(--radius-pill);
+  color: var(--hdr-muted);
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 0.35s, color 0.35s;
+}
+
+.hdr__lang-btn:hover {
+  background: var(--hdr-icon-bg);
+  color: var(--hdr-fg);
+}
+
+.hdr__lang-btn--active,
+.hdr__lang-btn--active:hover {
+  background: var(--hdr-icon-bg);
+  color: var(--hdr-fg);
+}
+
+.hdr__login {
+  display: flex;
+  align-items: center;
+  padding: 9px 20px;
+  border-radius: var(--radius-pill);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--hdr-fg);
+  white-space: nowrap;
+  transition: background 0.35s, color 0.35s;
+}
+
+.hdr__login:hover {
+  background: var(--hdr-icon-bg);
+}
+
+.hdr__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--hdr-accent-bg);
+  color: var(--hdr-accent-fg);
+  font-size: 14px;
+  font-weight: 800;
+  transition: background 0.35s, color 0.35s;
+}
+
+/* Между 768 и ~1000px адрес не помещается — прячем его, поиск важнее */
+@media (max-width: 1000px) {
+  .hdr__address {
+    display: none;
+  }
+}

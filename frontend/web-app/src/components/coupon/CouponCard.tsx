@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Clock3, Star, Users } from 'lucide-react';
 import FavoriteButton from '../ui/FavoriteButton';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import './CouponCard.css';
@@ -33,125 +31,67 @@ interface CouponCardProps {
   layout?: 'card' | 'carousel' | 'featured';
 }
 
+/** Район из адреса: «Яккасарай, ул. Шота Руставели 21» → «Яккасарай». */
+function district(address?: string): string | undefined {
+  return address?.split(',')[0]?.trim() || undefined;
+}
+
+/**
+ * Карточка купона — «четыре кита» (design_handoff_sizbiz → §10.5):
+ * скидка, цена «от N сум», район, покупки/рейтинг. Больше ничего — ни таймера,
+ * ни описания: они только у горящего тайла и на странице купона.
+ */
 export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps) {
   const { t, i18n } = useTranslation();
-  const [timeLeft, setTimeLeft] = useState<string | null>(coupon.countdownText || null);
   const lp = useLocalePath();
   const locale = i18n.language === 'uz' ? 'uz-UZ' : 'ru-RU';
   const currency = t('common.currency.sum');
 
-  useEffect(() => {
-    if (!coupon.countdownText || !coupon.countdownText.includes(':')) return;
-
-    const parts = coupon.countdownText.split(':').map(Number);
-    if (parts.length !== 3 || parts.some(isNaN)) return;
-
-    const [hours, minutes, seconds] = parts;
-    let totalSeconds = hours * 3600 + minutes * 60 + seconds;
-
-    const timer = setInterval(() => {
-      totalSeconds -= 1;
-      if (totalSeconds < 0) {
-        clearInterval(timer);
-        setTimeLeft('00:00:00');
-        return;
-      }
-      
-      const h = Math.floor(totalSeconds / 3600);
-      const m = Math.floor((totalSeconds % 3600) / 60);
-      const s = totalSeconds % 60;
-      setTimeLeft(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [coupon.countdownText]);
-
   const discount =
     coupon.discountPercent ||
-    (coupon.oldPrice
-      ? Math.round((1 - coupon.fromPrice / coupon.oldPrice) * 100)
-      : 0);
+    (coupon.oldPrice ? Math.round((1 - coupon.fromPrice / coupon.oldPrice) * 100) : 0);
+
+  const meta = [
+    district(coupon.address),
+    coupon.rating ? `★ ${coupon.rating.toFixed(1)}` : undefined,
+    coupon.totalSold
+      ? t('couponCard.purchases', { count: coupon.totalSold.toLocaleString(locale) })
+      : undefined,
+  ].filter(Boolean);
 
   return (
     <Link to={lp(`/coupons/${coupon.id}`)} className={`coupon-card coupon-card--${layout}`}>
-      {/* Image */}
       <div className="coupon-card__media">
         {coupon.coverImageUrl ? (
           <img src={coupon.coverImageUrl} alt={coupon.title} loading="lazy" />
         ) : (
           <div className="coupon-card__img-placeholder">
-            <span>{coupon.merchant?.name?.charAt(0) || '💎'}</span>
+            <span>{coupon.merchant?.name?.charAt(0) || coupon.title.charAt(0)}</span>
           </div>
         )}
 
-        <div className="coupon-card__overlay" />
-
-        {/* Top-left badges wrapper (Hot) */}
-        <div className="coupon-card__top-left">
-          {coupon.isHot && (
-            <span className="coupon-card__hot">
-              <span>🔥</span> {t('couponCard.hot')}
-            </span>
-          )}
-        </div>
-
-        {/* Discount badge */}
-        {discount > 0 && (
-          <span className="coupon-card__discount">{t('couponCard.discountUpTo', { percent: discount })}</span>
-        )}
-
-        {/* Favorite button */}
         <FavoriteButton couponId={coupon.id} />
 
-        {/* Countdown */}
-        {timeLeft && (
-          <span className="coupon-card__timer">
-            <Clock3 size={12} />
-            {timeLeft}
+        {discount > 0 && (
+          <span className="coupon-card__discount">
+            {t('couponCard.discountUpTo', { percent: discount })}
           </span>
         )}
       </div>
 
-      {/* Body */}
       <div className="coupon-card__body">
-        <div className="coupon-card__header">
-          <span className="coupon-card__merchant">{coupon.merchant?.name}</span>
-          {coupon.totalSold !== undefined && coupon.totalSold > 0 && (
-            <span className="coupon-card__sold">
-              <Users size={12} />
-              {t('couponCard.purchases', { count: coupon.totalSold.toLocaleString(locale) })}
-            </span>
+        <div className="coupon-card__pricing">
+          <span className="coupon-card__price">
+            {t('couponCard.priceFrom', { price: coupon.fromPrice.toLocaleString(locale), currency })}
+          </span>
+          {coupon.oldPrice && (
+            <span className="coupon-card__old-price">{coupon.oldPrice.toLocaleString(locale)}</span>
           )}
         </div>
 
         <h3 className="coupon-card__title">{coupon.title}</h3>
 
-        {coupon.shortDescription && layout !== 'carousel' && (
-          <p className="coupon-card__desc">{coupon.shortDescription}</p>
-        )}
-
-        {/* Rating */}
-        {coupon.rating !== undefined && coupon.rating > 0 && (
-          <div className="coupon-card__rating">
-            <Star size={13} fill="currentColor" className="coupon-card__star" />
-            <span className="coupon-card__rating-value">{coupon.rating.toFixed(1)}</span>
-            {coupon.reviewCount !== undefined && (
-              <span className="coupon-card__review-count">{t('couponCard.reviews', { count: coupon.reviewCount })}</span>
-            )}
-          </div>
-        )}
-
-        {/* Price */}
-        <div className="coupon-card__pricing">
-          <span className="coupon-card__price-pill">
-            {t('couponCard.priceFrom', { price: coupon.fromPrice.toLocaleString(locale), currency })}
-          </span>
-          {coupon.oldPrice && (
-            <span className="coupon-card__old-price">
-              {coupon.oldPrice.toLocaleString(locale)} {currency}
-            </span>
-          )}
-        </div>
+        {meta.length > 0 && <p className="coupon-card__meta">{meta.join(' · ')}</p>}
       </div>
     </Link>
   );

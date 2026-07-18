@@ -221,7 +221,7 @@
 }
 
 .catalog-empty__icon {
-  font-size: 3rem;
+  color: var(--ink-3);
   display: block;
   margin-bottom: var(--space-md);
 }

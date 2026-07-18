@@ -1,0 +1,158 @@
+/* Мобильная оплата и «Оплачено». Референс: «Мобилка - 6 Оплачено». */
+
+.cmdone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100dvh - var(--bottom-nav-height));
+  box-sizing: border-box;
+  padding: 30px;
+  text-align: center;
+}
+
+.cmdone__check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  animation: popIn 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) 0.45s both;
+}
+
+.cmdone__qr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 170px;
+  height: 170px;
+  margin-top: 34px;
+  padding: 18px;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.14);
+  animation: vUp 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.cmdone__title {
+  margin: 32px 0 0;
+  font-size: 24px;
+  font-weight: 800;
+  animation: vFade 0.4s ease 0.7s both;
+}
+
+.cmdone__text {
+  margin: 8px 0 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.cmdone__note {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.cmdone__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.cmdone__error {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  font-size: 12.5px;
+}
+
+.cmdone__warn {
+  color: var(--warn-fg);
+}
+
+.cmdone__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 28px;
+  animation: vFade 0.4s ease 0.9s both;
+}
+
+.cmdone__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 24px;
+  border-radius: var(--radius-pill);
+  background: var(--btn);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cmdone__btn:disabled {
+  opacity: 0.6;
+}
+
+.cmdone__btn--ghost {
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  color: var(--ink);
+}
+
+.cmdone__spin {
+  color: var(--ink-3);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmdone__check,
+  .cmdone__qr,
+  .cmdone__title,
+  .cmdone__actions {
+    animation: none;
+  }
+
+  .cmdone__spin {
+    animation: none;
+  }
+}

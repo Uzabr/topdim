@@ -1,0 +1,59 @@
+.where {
+  margin-top: 28px;
+}
+
+.where__row {
+  display: flex;
+  gap: 6px;
+}
+
+.where__card {
+  flex: 1;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.where__address {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.where__meta {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.where__route {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  text-decoration: underline;
+}
+
+.where__route:hover {
+  color: var(--ink);
+}
+
+/* Высота через .where — у TwoGisMap своя, контейнер иначе растягивает строку. */
+.where .where__map {
+  flex: none;
+  width: 220px;
+  height: 130px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+@media (max-width: 700px) {
+  .where__row {
+    flex-direction: column;
+  }
+
+  .where .where__map {
+    width: 100%;
+    height: 180px;
+  }
+}

@@ -18,7 +18,7 @@
   min-height: 46px;
   padding: 0 14px;
   background: var(--bg-soft);
-  border: 1px solid rgba(255, 150, 91, 0.18);
+  border: 1px solid var(--chip);
   border-radius: 14px;
   color: var(--text-secondary);
   outline: 0;

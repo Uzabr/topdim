@@ -42,7 +42,7 @@ export default function NotificationsSection() {
       </div>
 
       {notifications.length === 0 ? (
-        <div className="notifications-empty glass-card">
+        <div className="notifications-empty surface-card">
           <Bell size={32} />
           <h3>{t('profile.notifications.emptyTitle')}</h3>
           <p>{unreadOnly ? t('profile.notifications.allRead') : t('profile.notifications.empty')}</p>
@@ -50,7 +50,7 @@ export default function NotificationsSection() {
       ) : (
         <div className="notifications-list">
           {notifications.map((n: NotificationData) => (
-            <div key={n.id} className={`notification-card glass-card ${n.read ? '' : 'notification-card--unread'}`}>
+            <div key={n.id} className={`notification-card surface-card ${n.read ? '' : 'notification-card--unread'}`}>
               <div className="notification-card__content">
                 <h4>{n.title}</h4>
                 <p>{n.message}</p>

@@ -1,0 +1,92 @@
+/* Пятна фона мобильных экранов. Значения — из «Мобилка - 2 Главная». */
+
+.mbd {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mbd__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(82px);
+  /* Пятна переезжают между экранами, а не пересоздаются */
+  transition: left 0.6s ease, right 0.6s ease, top 0.6s ease, bottom 0.6s ease,
+    width 0.6s ease, height 0.6s ease, opacity 0.6s ease;
+}
+
+.mbd__blob--1 {
+  width: 240px;
+  height: 240px;
+  background: var(--blob-mint);
+  filter: blur(80px);
+  opacity: 0.65;
+}
+
+.mbd__blob--2 {
+  width: 260px;
+  height: 260px;
+  background: var(--blob-pink);
+  filter: blur(85px);
+  opacity: 0.6;
+}
+
+.mbd__blob--3 {
+  width: 280px;
+  height: 280px;
+  background: var(--blob-lemon);
+  filter: blur(85px);
+  opacity: 0.65;
+}
+
+.mbd__blob--4 {
+  width: 240px;
+  height: 240px;
+  background: var(--blob-violet);
+  filter: blur(85px);
+  opacity: 0.6;
+}
+
+/* ── Главная ── */
+.mbd--home .mbd__blob--1 { left: -80px; top: -50px; }
+.mbd--home .mbd__blob--2 { right: -90px; top: -60px; }
+.mbd--home .mbd__blob--3 { right: -100px; top: 300px; }
+.mbd--home .mbd__blob--4 { left: -70px; bottom: -50px; }
+
+/* ── Купон ── */
+.mbd--coupon .mbd__blob--1 { right: -90px; top: -60px; }
+.mbd--coupon .mbd__blob--2 { left: -100px; top: 120px; }
+.mbd--coupon .mbd__blob--3 { right: -110px; bottom: 60px; }
+.mbd--coupon .mbd__blob--4 { left: -80px; bottom: -70px; }
+
+/* ── Корзина / оплата ── */
+.mbd--cart .mbd__blob--1 { left: -90px; top: -70px; }
+.mbd--cart .mbd__blob--2 { right: -100px; top: 180px; }
+.mbd--cart .mbd__blob--3 { left: -110px; bottom: -40px; }
+.mbd--cart .mbd__blob--4 { right: -90px; bottom: 140px; }
+
+/* ── Профиль / избранное ── */
+.mbd--profile .mbd__blob--1 { right: -80px; top: -70px; }
+.mbd--profile .mbd__blob--2 { left: -90px; top: 60px; }
+.mbd--profile .mbd__blob--3 { left: -100px; bottom: -60px; }
+.mbd--profile .mbd__blob--4 { right: -100px; bottom: 80px; }
+
+/* ── Поиск ── */
+.mbd--search .mbd__blob--1 { left: -70px; top: 40px; }
+.mbd--search .mbd__blob--2 { right: -90px; top: -70px; }
+.mbd--search .mbd__blob--3 { right: -110px; bottom: -50px; }
+.mbd--search .mbd__blob--4 { left: -90px; bottom: 120px; }
+
+/* ── Остальные экраны: спокойный фон ── */
+.mbd--plain .mbd__blob--1 { left: -100px; top: -80px; opacity: 0.5; }
+.mbd--plain .mbd__blob--2 { right: -110px; top: 40px; opacity: 0.45; }
+.mbd--plain .mbd__blob--3 { right: -120px; bottom: -60px; opacity: 0.5; }
+.mbd--plain .mbd__blob--4 { left: -110px; bottom: 120px; opacity: 0.45; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mbd__blob {
+    transition: none;
+  }
+}
