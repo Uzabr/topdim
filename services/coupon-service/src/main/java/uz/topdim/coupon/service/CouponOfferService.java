@@ -53,17 +53,19 @@ public class CouponOfferService {
      * Получает каталог купонов с фильтрацией, поиском и пагинацией.
      * Результат кэшируется в Redis (TTL: 3 мин).
      *
-     * @param categoryId фильтр по категории (null = все)
-     * @param search поисковый запрос (null = без поиска)
-     * @param sortBy сортировка: popular, new, priceAsc, priceDesc, discount
-     * @param page номер страницы (0-based)
-     * @param size размер страницы
+     * @param categoryId   фильтр по категории (null = все)
+     * @param search       поисковый запрос (null = без поиска)
+     * @param situationKey фильтр по ситуации/подборке (null = без фильтра)
+     * @param sortBy       сортировка: popular, new, priceAsc, priceDesc, discount
+     * @param page         номер страницы (0-based)
+     * @param size         размер страницы
      * @return страница купонов
      */
     // TODO: восстановить кэширование после настройки Redis serializer
-    // @Cacheable(value = "catalog", key = "#categoryId + '-' + #search + '-' + #sortBy + '-' + #page + '-' + #size")
+    // @Cacheable(value = "catalog", key = "...")
     @Transactional(readOnly = true)
-    public Page<CouponOfferResponse> getCatalog(Long categoryId, String search, String sortBy, int page, int size) {
+    public Page<CouponOfferResponse> getCatalog(Long categoryId, String search, String situationKey,
+                                                 String sortBy, int page, int size) {
         Pageable pageable = createPageable(sortBy, page, size);
         LocalDateTime now = LocalDateTime.now();
 
@@ -71,6 +73,9 @@ public class CouponOfferService {
 
         if (search != null && !search.isBlank()) {
             offers = couponOfferRepository.searchPublicByTitleOrDescription(CouponStatus.ACTIVE, search, now, pageable);
+        } else if (situationKey != null && !situationKey.isBlank()) {
+            offers = couponOfferRepository.findPublicBySituationSlug(
+                    CouponStatus.ACTIVE, situationKey.trim(), now, pageable);
         } else if (categoryId != null) {
             offers = couponOfferRepository.findPublicByStatusAndCategoryId(CouponStatus.ACTIVE, categoryId, now, pageable);
         } else {
