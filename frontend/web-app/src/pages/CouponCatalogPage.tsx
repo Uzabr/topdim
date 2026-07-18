@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { SearchX, SlidersHorizontal, LayoutGrid, List, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
@@ -34,10 +35,25 @@ export default function CouponCatalogPage() {
     ],
     [t, i18n.language],
   );
-  const [activeCategory, setActiveCategory] = useState<number | null>(null);
+
+  // Категория — источник правды в URL (?categoryId=), чтобы deep-link из хлебных
+  // крошек/плиток реально фильтровал каталог, а «назад»/шаринг работали.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryIdParam = searchParams.get('categoryId');
+  const activeCategory =
+    categoryIdParam && !Number.isNaN(Number(categoryIdParam)) ? Number(categoryIdParam) : null;
+
   const [sortBy, setSortBy] = useState('popular');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [page, setPage] = useState(0);
+
+  const selectCategory = (id: number | null) => {
+    const next = new URLSearchParams(searchParams);
+    if (id === null) next.delete('categoryId');
+    else next.set('categoryId', String(id));
+    setSearchParams(next);
+    setPage(0);
+  };
 
   const {
     data: categoriesData,
@@ -121,7 +137,7 @@ export default function CouponCatalogPage() {
       <div className="catalog-categories container">
         <button
           className={`filter-chip ${activeCategory === null ? 'filter-chip--active' : ''}`}
-          onClick={() => { setActiveCategory(null); setPage(0); }}
+          onClick={() => selectCategory(null)}
         >
           {t('common.all')}
         </button>
@@ -129,7 +145,7 @@ export default function CouponCatalogPage() {
           <button
             key={cat.id}
             className={`filter-chip ${activeCategory === cat.id ? 'filter-chip--active' : ''}`}
-            onClick={() => { setActiveCategory(cat.id); setPage(0); }}
+            onClick={() => selectCategory(cat.id)}
           >
             <CategoryIcon slug={cat.slug} /> {localizedName(cat, i18n.language)}
           </button>
