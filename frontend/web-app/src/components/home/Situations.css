@@ -17,6 +17,8 @@
 }
 
 .tile {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -25,6 +27,32 @@
   background: var(--card);
   color: var(--ink);
   transition: transform 0.2s;
+}
+
+/* Плитка с фото мерчанта: фон + затемнение снизу под текст */
+.tile--photo {
+  background-size: cover;
+  background-position: center;
+  color: var(--on-ink);
+}
+
+.tile--photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 32%, rgba(0, 0, 0, 0.58) 100%);
+}
+
+.tile--photo .tile__name {
+  position: relative;
+  z-index: 1;
+  color: var(--on-ink);
+}
+
+.tile--photo .tile__count {
+  position: relative;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .tile:hover {
