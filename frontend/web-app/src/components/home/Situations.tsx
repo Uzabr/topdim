@@ -1,51 +1,49 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useQueries } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { couponsApi } from '../../api/coupons';
 import { useLocalePath } from '../../hooks/useLocalePath';
-import { SITUATIONS } from '../../data/situations';
+import { localizedTitle } from '../../utils/localizedText';
 import './Situations.css';
 
 /**
- * «Что хотите сегодня?» — кураторская подборка ситуаций (НЕ категории).
+ * «Что хотите сегодня?» — кураторская подборка ситуаций из API (не категории).
  * Первая плитка — чёрный «ситуация-хиро» на две колонки; остальные светлые.
- * Клик → поиск по каталогу (`/search?q=`). Счётчик — реальный `totalElements`,
- * скрыт при нуле. Референс: design_handoff_sizbiz → «Главная - образец».
- * Данные-заглушка живут в src/data/situations.ts (до backend-подборок).
+ * Клик → каталог, отфильтрованный по ситуации (`/coupons?situation=<key>`).
+ * Счётчик и картинка — из бэкенда (`GET /api/v1/situations`).
  */
 export default function Situations() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const lp = useLocalePath();
 
-  const counts = useQueries({
-    queries: SITUATIONS.map((s) => ({
-      queryKey: ['coupons', 'situation-count', s.query],
-      queryFn: () => couponsApi.getCatalog({ search: s.query, size: 1 }),
-      select: (res: Awaited<ReturnType<typeof couponsApi.getCatalog>>) =>
-        res.data.data.totalElements,
-    })),
+  const { data: situations = [] } = useQuery({
+    queryKey: ['situations'],
+    queryFn: () => couponsApi.getSituations(),
+    select: (res) => res.data.data,
   });
+
+  if (situations.length === 0) return null;
 
   return (
     <section className="tiles-section">
       <h2 className="tiles-section__title">{t('home.tiles.title')}</h2>
 
       <div className="tiles">
-        {SITUATIONS.map((situation, i) => {
-          const count = counts[i]?.data;
-          return (
-            <Link
-              key={situation.key}
-              to={`${lp('/search')}?q=${encodeURIComponent(situation.query)}`}
-              className={`tile${situation.featured ? ' tile--lead' : ''}`}
-            >
-              <span className="tile__name">{t(`home.situations.${situation.key}`)}</span>
-              {count !== undefined && count > 0 && (
-                <span className="tile__count">{t('home.tiles.count', { count })}</span>
-              )}
-            </Link>
-          );
-        })}
+        {situations.map((situation) => (
+          <Link
+            key={situation.key}
+            to={`${lp('/coupons')}?situation=${encodeURIComponent(situation.key)}`}
+            className={`tile${situation.featured ? ' tile--lead' : ''}${situation.imageUrl ? ' tile--photo' : ''}`}
+            style={situation.imageUrl ? { backgroundImage: `url(${situation.imageUrl})` } : undefined}
+          >
+            <span className="tile__name">{localizedTitle(situation, i18n.language)}</span>
+            {situation.couponCount > 0 && (
+              <span className="tile__count">
+                {t('home.tiles.count', { count: situation.couponCount })}
+              </span>
+            )}
+          </Link>
+        ))}
       </div>
     </section>
   );

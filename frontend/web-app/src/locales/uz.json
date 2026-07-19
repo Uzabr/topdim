@@ -792,13 +792,6 @@
       "count_one": "{{count}} ta kupon",
       "count_other": "{{count}} ta kupon"
     },
-    "situations": {
-      "kids": "Bolalar bilan dam olish",
-      "beauty": "O'zingizga g'amxo'rlik qilish",
-      "health": "Sog'liqni tekshirish",
-      "dinner": "Kechki ovqatga chiqish",
-      "weekend": "Shahar tashqarisida dam olish"
-    },
     "feed": {
       "title": "Siz uchun tanladik",
       "hotTab": "Yonayotgan",

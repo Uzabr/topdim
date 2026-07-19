@@ -36,19 +36,22 @@ export default function CouponCatalogPage() {
     [t, i18n.language],
   );
 
-  // Категория — источник правды в URL (?categoryId=), чтобы deep-link из хлебных
-  // крошек/плиток реально фильтровал каталог, а «назад»/шаринг работали.
+  // Фильтры — источник правды в URL (?categoryId= / ?situation=), чтобы deep-link
+  // из хлебных крошек/плиток реально фильтровал каталог, а «назад»/шаринг работали.
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryIdParam = searchParams.get('categoryId');
   const activeCategory =
     categoryIdParam && !Number.isNaN(Number(categoryIdParam)) ? Number(categoryIdParam) : null;
+  const situation = searchParams.get('situation');
 
   const [sortBy, setSortBy] = useState('popular');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [page, setPage] = useState(0);
 
+  // Выбор категории сбрасывает фильтр ситуации (это взаимоисключающие входы).
   const selectCategory = (id: number | null) => {
     const next = new URLSearchParams(searchParams);
+    next.delete('situation');
     if (id === null) next.delete('categoryId');
     else next.set('categoryId', String(id));
     setSearchParams(next);
@@ -70,9 +73,10 @@ export default function CouponCatalogPage() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ['coupons-catalog', activeCategory, sortBy, page],
+    queryKey: ['coupons-catalog', activeCategory, situation, sortBy, page],
     queryFn: () => couponsApi.getCatalog({
       categoryId: activeCategory ?? undefined,
+      situation: situation ?? undefined,
       sortBy,
       page,
       size: 20,
@@ -136,7 +140,7 @@ export default function CouponCatalogPage() {
       {/* Categories */}
       <div className="catalog-categories container">
         <button
-          className={`filter-chip ${activeCategory === null ? 'filter-chip--active' : ''}`}
+          className={`filter-chip ${activeCategory === null && !situation ? 'filter-chip--active' : ''}`}
           onClick={() => selectCategory(null)}
         >
           {t('common.all')}

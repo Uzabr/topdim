@@ -60,6 +60,18 @@ export interface Category {
   sortOrder: number;
 }
 
+/** Кураторская подборка «Что хотите сегодня?» (coupon-service). */
+export interface Situation {
+  /** Стабильный ключ = фильтр каталога `?situation=`. */
+  key: string;
+  title: string;
+  titleUz?: string;
+  imageUrl?: string;
+  couponCount: number;
+  featured: boolean;
+  sortOrder: number;
+}
+
 interface PagedResponse<T> {
   content: T[];
   totalElements: number;
@@ -72,6 +84,8 @@ interface PagedResponse<T> {
 export interface CouponListParams {
   categoryId?: number;
   search?: string;
+  /** Фильтр по ситуации/подборке (ключ). */
+  situation?: string;
   sortBy?: string;
   page?: number;
   size?: number;
@@ -89,4 +103,7 @@ export const couponsApi = {
 
   getCategories: () =>
     apiClient.get<ApiResponse<Category[]>>('/api/v1/categories'),
+
+  getSituations: () =>
+    apiClient.get<ApiResponse<Situation[]>>('/api/v1/situations'),
 };
