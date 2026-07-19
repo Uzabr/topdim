@@ -190,6 +190,35 @@ class JwtAuthenticationFilterTest {
         verify(gatewayFilterChain).filter(any());
     }
 
+    @Test
+    @DisplayName("L3: /api/v1/situations — публичный open endpoint (без токена)")
+    void situations_publicList_isOpen() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/api/v1/situations").build()
+        );
+
+        when(gatewayFilterChain.filter(any())).thenReturn(Mono.empty());
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        verify(gatewayFilterChain).filter(any());
+    }
+
+    @Test
+    @DisplayName("L3: /api/v1/admin/situations НЕ open — требует аутентификации")
+    void adminSituations_requiresAuth() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/api/v1/admin/situations").build()
+        );
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(gatewayFilterChain, never()).filter(any());
+    }
+
     private String createToken(String subject, String role, String email, String jti, long securityVersion) {
         SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET));
         return Jwts.builder()

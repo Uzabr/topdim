@@ -70,7 +70,7 @@ spring:
         - id: coupon-service
           uri: lb://coupon-service
           predicates:
-            - Path=/api/v1/coupons/**, /api/v1/categories/**, /api/v1/merchants/**, /api/v1/admin/coupons/**, /api/v1/admin/merchants/**, /api/v1/admin/categories/**, /api/v1/partner/coupons/**, /api/v1/partner/merchant/**, /api/v1/mod/coupons/**, /api/v1/mod/reviews/**, /api/v1/reviews/**, /api/v1/admin/promocodes/**
+            - Path=/api/v1/coupons/**, /api/v1/categories/**, /api/v1/situations/**, /api/v1/merchants/**, /api/v1/admin/coupons/**, /api/v1/admin/merchants/**, /api/v1/admin/categories/**, /api/v1/admin/situations/**, /api/v1/partner/coupons/**, /api/v1/partner/merchant/**, /api/v1/mod/coupons/**, /api/v1/mod/reviews/**, /api/v1/reviews/**, /api/v1/admin/promocodes/**
 
         # Order Service
         - id: order-service

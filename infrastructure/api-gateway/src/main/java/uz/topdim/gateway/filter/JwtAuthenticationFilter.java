@@ -60,6 +60,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final List<String> OPEN_ENDPOINTS = List.of(
             "/api/v1/coupons",
             "/api/v1/categories",
+            "/api/v1/situations",
             "/api/v1/bazaars",
             "/api/v1/shops",
             "/api/v1/partners/applications",
