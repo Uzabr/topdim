@@ -195,3 +195,9 @@ UI подготовлен под поля, которых пока нет в API
 | `OrderResponse.title?: string` | Строка заказа в профиле (`ProfileDesktop`/`ProfileMobile`) — макет ведёт строку названием оффера | `Заказ №{orderNumber}` | order-service: добавить представительное название (первая позиция + «и ещё N») в `OrderResponse` |
 
 Когда поля появятся в ответах API — UI автоматически начнёт показывать их как в макете, доработки фронта не потребуется.
+
+## Backend готов, UI ещё подключить
+
+| Фича | Backend-контракт | Статус web-app |
+|---|---|---|
+| Q&A на странице купона | `POST /api/v1/questions`, `GET /api/v1/questions/coupon/{offerId}`, `GET /api/v1/questions/my`; модерация в `admin-app` через `/api/v1/mod/questions` | В `frontend/web-app` Q&A-компонент и `questions` API-клиент пока не найдены; нужно добавить блок на `CouponDetailPage`/мобильной детали и форму вопроса для авторизованного пользователя |

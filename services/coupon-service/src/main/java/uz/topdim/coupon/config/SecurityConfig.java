@@ -49,6 +49,7 @@ public class SecurityConfig {
                         // NB: eligibility is user-specific — must be authenticated
                         .requestMatchers(HttpMethod.GET, "/api/v1/reviews/coupon/*/eligibility").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/reviews/coupon/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/questions/coupon/*").permitAll()
 
                         // Admin/Moderator endpoints (модаратору теперь тоже можно работать с контентом)
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "MODERATOR")

@@ -204,6 +204,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return "GET".equalsIgnoreCase(method) && path.startsWith("/api/v1/reviews/coupon");
         }
 
+        // Questions: public coupon Q&A list is open, creating and viewing own questions require auth
+        if (path.startsWith("/api/v1/questions")) {
+            if ("POST".equalsIgnoreCase(method) || path.startsWith("/api/v1/questions/my")) {
+                return false;
+            }
+            return "GET".equalsIgnoreCase(method) && path.startsWith("/api/v1/questions/coupon");
+        }
+
         return OPEN_ENDPOINTS.stream().anyMatch(prefix ->
                 path.equals(prefix) || path.startsWith(prefix + "/"));
     }
