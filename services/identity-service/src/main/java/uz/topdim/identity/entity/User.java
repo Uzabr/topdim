@@ -66,6 +66,24 @@ public class User {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    // ==================== Telegram / уровень доверия ====================
+
+    /** Telegram user id — ключ привязки/логина через Telegram. */
+    @Column(name = "telegram_chat_id", unique = true)
+    private Long telegramChatId;
+
+    @Column(name = "telegram_username")
+    private String telegramUsername;
+
+    @Column(name = "telegram_linked_at")
+    private LocalDateTime telegramLinkedAt;
+
+    /** Уровень доверия (ортогонален роли). По умолчанию L0. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "trust_level", nullable = false)
+    @Builder.Default
+    private TrustLevel trustLevel = TrustLevel.L0;
+
     @Column
     private boolean deleted;
 

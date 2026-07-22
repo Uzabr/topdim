@@ -53,6 +53,12 @@ jwt:
   access-token-expiration: 900000    # 15 minutes
   refresh-token-expiration: 604800000 # 7 days
 
+telegram:
+  # Токен бота покупателей (@BotFather). Пусто → вход через Telegram отключён (verify() → 401).
+  bot-token: ${TELEGRAM_BOT_TOKEN:}
+  # Макс. возраст auth_date из Login Widget (сек) — анти-replay.
+  auth-max-age-seconds: 300
+
 eureka:
   client:
     service-url:

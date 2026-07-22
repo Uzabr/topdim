@@ -14,13 +14,16 @@ import uz.topdim.identity.dto.GuestAuthRequest;
 import uz.topdim.identity.dto.LoginRequest;
 import uz.topdim.identity.dto.RefreshTokenRequest;
 import uz.topdim.identity.dto.RegisterRequest;
+import uz.topdim.identity.dto.TelegramAuthRequest;
 import uz.topdim.identity.entity.RefreshToken;
 import uz.topdim.identity.entity.Role;
+import uz.topdim.identity.entity.TrustLevel;
 import uz.topdim.identity.entity.User;
 import uz.topdim.identity.exception.AuthException;
 import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.UserRepository;
 import uz.topdim.identity.security.JwtService;
+import uz.topdim.identity.security.TelegramLoginVerifier;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -47,6 +50,7 @@ class AuthServiceTest {
     @Mock private LoginAttemptService loginAttemptService;
     @Mock private TokenBlacklistService tokenBlacklistService;
     @Mock private SecurityVersionService securityVersionService;
+    @Mock private TelegramLoginVerifier telegramLoginVerifier;
 
     @InjectMocks
     private AuthService authService;
@@ -367,5 +371,70 @@ class AuthServiceTest {
         assertThat(userCaptor.getValue().getPhone()).isEqualTo("+998901234567");
         assertThat(response.getUser().getRole()).isEqualTo("GUEST");
         verify(refreshTokenRepository, atLeastOnce()).save(any(RefreshToken.class));
+    }
+
+    @Test
+    @DisplayName("Telegram auth: новый telegram id → создаёт пользователя USER/L0 и выдаёт токены")
+    void telegramAuth_newUser_createsL0User() {
+        TelegramAuthRequest request = new TelegramAuthRequest();
+        request.setId(777L);
+        request.setFirstName("Иван");
+        request.setUsername("ivan");
+        request.setAuthDate(Instant.now().getEpochSecond());
+        request.setHash("valid"); // verifier замокан → verify() ничего не делает
+
+        when(userRepository.findByTelegramChatId(777L)).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("tg-hash");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User saved = invocation.getArgument(0);
+            saved.setId(42L);
+            return saved;
+        });
+        when(jwtService.generateAccessToken(any(User.class))).thenReturn("access-token");
+        when(jwtService.getAccessTokenExpiration()).thenReturn(900_000L);
+        when(jwtService.getRefreshTokenExpiration()).thenReturn(604_800_000L);
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AuthResponse response = authService.telegramAuth(request);
+
+        verify(telegramLoginVerifier).verify(request);
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        User created = userCaptor.getValue();
+        assertThat(created.getRole()).isEqualTo(Role.USER);
+        assertThat(created.getTrustLevel()).isEqualTo(TrustLevel.L0);
+        assertThat(created.getTelegramChatId()).isEqualTo(777L);
+        assertThat(created.getTelegramUsername()).isEqualTo("ivan");
+        assertThat(created.getTelegramLinkedAt()).isNotNull();
+        assertThat(created.getEmail()).isEqualTo("tg_777@topdim.uz");
+        assertThat(response.getAccessToken()).isEqualTo("access-token");
+        assertThat(response.getUser().getRole()).isEqualTo("USER");
+    }
+
+    @Test
+    @DisplayName("Telegram auth: существующий telegram id → логин без создания нового пользователя")
+    void telegramAuth_existingUser_logsIn() {
+        TelegramAuthRequest request = new TelegramAuthRequest();
+        request.setId(777L);
+        request.setUsername("ivan_new");
+        request.setAuthDate(Instant.now().getEpochSecond());
+        request.setHash("valid");
+
+        User existing = User.builder()
+                .id(42L).email("tg_777@topdim.uz").password("x")
+                .firstName("Иван").role(Role.USER).enabled(true)
+                .telegramChatId(777L).telegramUsername("ivan")
+                .trustLevel(TrustLevel.L0).build();
+        when(userRepository.findByTelegramChatId(777L)).thenReturn(Optional.of(existing));
+        when(jwtService.generateAccessToken(any(User.class))).thenReturn("access-token");
+        when(jwtService.getAccessTokenExpiration()).thenReturn(900_000L);
+        when(jwtService.getRefreshTokenExpiration()).thenReturn(604_800_000L);
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AuthResponse response = authService.telegramAuth(request);
+
+        verify(userRepository, never()).save(any(User.class));
+        assertThat(existing.getTelegramUsername()).isEqualTo("ivan_new"); // username обновился
+        assertThat(response.getUser().getId()).isEqualTo(42L);
     }
 }

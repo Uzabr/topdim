@@ -8,13 +8,16 @@ import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.identity.dto.*;
 import uz.topdim.identity.entity.RefreshToken;
 import uz.topdim.identity.entity.Role;
+import uz.topdim.identity.entity.TrustLevel;
 import uz.topdim.identity.entity.User;
 import uz.topdim.identity.exception.AuthException;
 import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.UserRepository;
 import uz.topdim.identity.security.JwtService;
+import uz.topdim.identity.security.TelegramLoginVerifier;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -34,6 +37,7 @@ public class AuthService {
     private final LoginAttemptService loginAttemptService;
     private final TokenBlacklistService tokenBlacklistService;
     private final SecurityVersionService securityVersionService;
+    private final TelegramLoginVerifier telegramLoginVerifier;
 
     /**
      * Регистрация нового пользователя.
@@ -248,6 +252,52 @@ public class AuthService {
         }
 
         return buildAuthResponse(user);
+    }
+
+    /**
+     * Авторизация/регистрация через Telegram Login Widget.
+     * Проверяет подпись (HMAC) и свежесть {@code auth_date}, затем логинит
+     * существующего пользователя по {@code telegram_chat_id} или создаёт нового
+     * с уровнем доверия {@link TrustLevel#L0} (без перков до верификации).
+     */
+    @Transactional
+    public AuthResponse telegramAuth(TelegramAuthRequest request) {
+        telegramLoginVerifier.verify(request);
+
+        User user = userRepository.findByTelegramChatId(request.getId()).orElse(null);
+        if (user == null) {
+            user = User.builder()
+                    .email("tg_" + request.getId() + "@topdim.uz")
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .firstName(nonBlankOr(request.getFirstName(), "Пользователь"))
+                    .lastName(request.getLastName())
+                    .role(Role.USER)
+                    .enabled(true)
+                    .emailVerified(false)
+                    .phoneVerified(false)
+                    .telegramChatId(request.getId())
+                    .telegramUsername(request.getUsername())
+                    .telegramLinkedAt(LocalDateTime.now())
+                    .trustLevel(TrustLevel.L0)
+                    .build();
+            user = userRepository.save(user);
+            log.info("SECURITY: Telegram user created: tgId={}", request.getId());
+        } else {
+            if (!user.isEnabled()) {
+                throw new AuthException("Аккаунт заблокирован");
+            }
+            // Держим username актуальным (в Telegram он может меняться).
+            if (request.getUsername() != null
+                    && !request.getUsername().equals(user.getTelegramUsername())) {
+                user.setTelegramUsername(request.getUsername());
+            }
+            log.info("SECURITY: Telegram auth for existing user: tgId={}", request.getId());
+        }
+        return buildAuthResponse(user);
+    }
+
+    private static String nonBlankOr(String value, String fallback) {
+        return value != null && !value.isBlank() ? value : fallback;
     }
 
     /**
