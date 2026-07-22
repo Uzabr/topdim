@@ -1,7 +1,14 @@
 import { create } from 'zustand';
 import { authApi } from '../api/auth';
-import type { UserDto, LoginRequest, RegisterRequest, UpdateProfileRequest } from '../api/auth';
+import type {
+  UserDto,
+  UserProfileResponse,
+  LoginRequest,
+  RegisterRequest,
+  UpdateProfileRequest,
+} from '../api/auth';
 import { useCartStore } from './cartStore';
+import { useFavoritesStore } from './favoritesStore';
 
 interface AuthState {
   user: UserDto | null;
@@ -12,10 +19,10 @@ interface AuthState {
   logout: () => void;
   loadFromStorage: () => void;
   refreshProfile: () => Promise<void>;
-  updateProfile: (data: UpdateProfileRequest) => Promise<UserDto>;
+  updateProfile: (data: UpdateProfileRequest) => Promise<UserProfileResponse>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
@@ -31,6 +38,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user, isAuthenticated: true, isLoading: false });
       // Sync guest cart → backend and switch to auth mode
       useCartStore.getState().syncLocalCartToBackend();
+      void useFavoritesStore.getState().syncWithBackend();
+      void get().refreshProfile();
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -48,6 +57,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user, isAuthenticated: true, isLoading: false });
       // Sync guest cart → backend and switch to auth mode
       useCartStore.getState().syncLocalCartToBackend();
+      void useFavoritesStore.getState().syncWithBackend();
+      void get().refreshProfile();
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -74,6 +85,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         const cartStore = useCartStore.getState();
         cartStore.setMode('auth');
         cartStore.fetchBackendCart();
+        void useFavoritesStore.getState().syncWithBackend();
+        void get().refreshProfile();
       }
     } catch {
       // Ignore

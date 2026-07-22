@@ -335,10 +335,56 @@
       "name": "Ism",
       "phoneLabel": "Telefon",
       "phoneMissing": "Ko'rsatilmagan — merchantga bog'lanish uchun kerak",
+      "avatar": {
+        "title": "Profil rasmi",
+        "hint": "20 MB gacha bo'lgan rasm",
+        "choose": "Rasm tanlash",
+        "uploading": "Yuklanmoqda...",
+        "typeError": "Faqat rasm yuklash mumkin",
+        "sizeError": "Rasm hajmi 20 MB dan oshmasligi kerak",
+        "success": "Profil rasmi yangilandi",
+        "error": "Rasmni yuklab bo'lmadi"
+      },
+      "email": {
+        "title": "Elektron pochta",
+        "verified": "Tasdiqlangan",
+        "unverified": "Tasdiqlanmagan",
+        "confirm": "Tasdiqlash",
+        "sending": "Yuborilmoqda...",
+        "sent": "Tasdiqlash kodi emailingizga yuborildi",
+        "enterCode": "Kodni kiritish",
+        "error": "Tasdiqlash kodini yuborib bo'lmadi"
+      },
+      "password": {
+        "title": "Parol",
+        "change": "O'zgartirish",
+        "current": "Joriy parol",
+        "currentRequired": "Joriy parolni kiriting",
+        "new": "Yangi parol",
+        "confirm": "Yangi parolni takrorlang",
+        "hint": "8–128 belgi: kichik va bosh harf, raqam va maxsus belgi.",
+        "weak": "Parol xavfsizlik talablariga javob bermaydi",
+        "mismatch": "Parollar mos kelmaydi",
+        "save": "Parolni o'zgartirish",
+        "success": "Parol o'zgartirildi. Qayta kirish sahifasiga yo'naltiramiz.",
+        "error": "Parolni o'zgartirib bo'lmadi"
+      },
       "language": "Til",
       "notifications": "Bildirishnomalar",
       "notificationsDesc": "Yaqin atrofdagi yangi kuponlar · muddat tugashi · merchant javoblari",
       "configure": "Sozlash"
+    },
+    "emailConfirmation": {
+      "title": "Emailni tasdiqlash",
+      "hint": "Emaildagi kodni kiriting. Agar emaildagi havolani ochgan bo'lsangiz, kod avtomatik qo'yiladi.",
+      "code": "Tasdiqlash kodi",
+      "submit": "Emailni tasdiqlash",
+      "confirming": "Tasdiqlanmoqda...",
+      "success": "Email muvaffaqiyatli tasdiqlandi",
+      "error": "Emailni tasdiqlab bo'lmadi",
+      "missingToken": "Tasdiqlash kodini kiriting",
+      "toProfile": "Profilga o'tish",
+      "toLogin": "Hisobga kirish"
     },
     "help": {
       "title": "Yordam kerakmi?",

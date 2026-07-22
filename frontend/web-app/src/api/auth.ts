@@ -22,6 +22,14 @@ export interface UserDto {
   lastName?: string;
   role: string;
   avatarUrl?: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+}
+
+export interface UserProfileResponse extends UserDto {
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  createdAt?: string;
 }
 
 export interface AuthResponse {
@@ -65,9 +73,22 @@ export const authApi = {
   confirmPasswordReset: (data: { token: string; newPassword: string; confirmPassword: string }) =>
     apiClient.post<ApiResponse<void>>('/api/v1/auth/password-reset/confirm', data),
 
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiClient.put<ApiResponse<void>>('/api/v1/auth/change-password', {
+      currentPassword,
+      newPassword,
+      confirmPassword: newPassword,
+    }),
+
+  requestEmailConfirm: () =>
+    apiClient.post<ApiResponse<void>>('/api/v1/auth/confirm/request'),
+
+  confirmEmail: (token: string) =>
+    apiClient.post<ApiResponse<void>>('/api/v1/auth/confirm/email', { token }),
+
   getMe: () =>
-    apiClient.get<ApiResponse<UserDto>>('/api/v1/users/me'),
+    apiClient.get<ApiResponse<UserProfileResponse>>('/api/v1/users/me'),
 
   updateProfile: (data: UpdateProfileRequest) =>
-    apiClient.put<ApiResponse<UserDto>>('/api/v1/users/me', data),
+    apiClient.put<ApiResponse<UserProfileResponse>>('/api/v1/users/me', data),
 };

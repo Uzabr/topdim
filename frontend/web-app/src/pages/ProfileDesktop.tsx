@@ -16,6 +16,7 @@ import ComplaintModal from '../components/profile/ComplaintModal';
 import ProfileSettingsSection from '../components/profile/ProfileSettingsSection';
 import ProfileHelpSection from '../components/profile/ProfileHelpSection';
 import DropTabs from '../components/ui/DropTabs';
+import UserAvatar from '../components/ui/UserAvatar';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { formatDate, formatPrice } from '../utils/format';
 import './ProfilePage.css';
@@ -134,9 +135,16 @@ export default function ProfileDesktop() {
     <div className="profile-page container">
       {/* ═══ Заголовок ═══ */}
       <header className="profile-head">
-        <div>
-          <h1 className="profile-name">{user?.firstName}</h1>
-          <p className="profile-email">{user?.email}</p>
+        <div className="profile-head__identity">
+          <UserAvatar
+            avatarUrl={user?.avatarUrl}
+            firstName={user?.firstName}
+            className="profile-head__avatar"
+          />
+          <div>
+            <h1 className="profile-name">{user?.firstName}</h1>
+            <p className="profile-email">{user?.email}</p>
+          </div>
         </div>
         <button type="button" className="profile-logout" onClick={logout}>
           {t('profile.logout')}
