@@ -6,6 +6,7 @@ import type {
   LoginRequest,
   RegisterRequest,
   UpdateProfileRequest,
+  TelegramAuthPayload,
 } from '../api/auth';
 import { useCartStore } from './cartStore';
 import { useFavoritesStore } from './favoritesStore';
@@ -15,6 +16,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (data: LoginRequest) => Promise<void>;
+  telegramLogin: (data: TelegramAuthPayload) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
   loadFromStorage: () => void;
@@ -37,6 +39,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem('user', JSON.stringify(user));
       set({ user, isAuthenticated: true, isLoading: false });
       // Sync guest cart → backend and switch to auth mode
+      useCartStore.getState().syncLocalCartToBackend();
+      void useFavoritesStore.getState().syncWithBackend();
+      void get().refreshProfile();
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  telegramLogin: async (data) => {
+    set({ isLoading: true });
+    try {
+      const response = await authApi.telegramAuth(data);
+      const { accessToken, user } = response.data.data;
+      // M4: refreshToken в httpOnly cookie, не в localStorage
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('user', JSON.stringify(user));
+      set({ user, isAuthenticated: true, isLoading: false });
       useCartStore.getState().syncLocalCartToBackend();
       void useFavoritesStore.getState().syncWithBackend();
       void get().refreshProfile();

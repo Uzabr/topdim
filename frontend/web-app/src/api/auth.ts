@@ -47,6 +47,17 @@ export interface UpdateProfileRequest {
   avatarUrl?: string;
 }
 
+/** Payload Telegram Login Widget (snake_case — отдаётся виджетом как есть на бэкенд). */
+export interface TelegramAuthPayload {
+  id: number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date: number;
+  hash: string;
+}
+
 export const authApi = {
   register: (data: RegisterRequest) =>
     apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/register', data),
@@ -64,6 +75,9 @@ export const authApi = {
 
   guestAuth: (data: { phone: string; name: string }) =>
     apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/guest', data),
+
+  telegramAuth: (data: TelegramAuthPayload) =>
+    apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/telegram', data),
 
   /** Всегда 202 — бэкенд не раскрывает, зарегистрирован ли email. */
   requestPasswordReset: (email: string) =>
