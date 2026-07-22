@@ -65,6 +65,13 @@ export const authApi = {
   confirmPasswordReset: (data: { token: string; newPassword: string; confirmPassword: string }) =>
     apiClient.post<ApiResponse<void>>('/api/v1/auth/password-reset/confirm', data),
 
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiClient.put<ApiResponse<void>>('/api/v1/auth/change-password', {
+      currentPassword,
+      newPassword,
+      confirmPassword: newPassword,
+    }),
+
   getMe: () =>
     apiClient.get<ApiResponse<UserDto>>('/api/v1/users/me'),
 

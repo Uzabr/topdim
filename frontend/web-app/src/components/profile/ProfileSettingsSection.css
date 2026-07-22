@@ -16,6 +16,10 @@
   box-shadow: var(--shadow-card);
 }
 
+.settings__row--stack {
+  align-items: flex-start;
+}
+
 .settings__field {
   min-width: 0;
   flex: 1;
@@ -42,6 +46,36 @@
   display: flex;
   gap: 8px;
   margin-top: 8px;
+}
+
+.settings__password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.settings__password-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.settings__hint {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.settings__field-error {
+  margin: 0;
+  color: var(--warn-fg);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .settings__input {
@@ -109,6 +143,16 @@
   background: var(--warn-bg);
   color: var(--warn-fg);
   font-size: 13px;
+}
+
+.settings__success {
+  margin: 0;
+  padding: 10px 22px;
+  border-radius: var(--radius-md);
+  background: var(--used-bg);
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .settings__notifications {

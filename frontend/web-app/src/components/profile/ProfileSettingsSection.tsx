@@ -1,16 +1,26 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
+import { isStrongPassword } from '../../utils/password';
 import NotificationsSection from './NotificationsSection';
 import './ProfileSettingsSection.css';
 
-type EditingField = 'name' | 'phone' | null;
+type EditableProfileField = 'name' | 'phone';
+type EditingField = EditableProfileField | 'password' | null;
+
+interface PasswordErrors {
+  currentPassword?: string;
+  newPassword?: string;
+  confirmPassword?: string;
+  general?: string;
+}
 
 /** Настройки — строки-карточки (design_handoff_sizbiz → «Профиль», таб «Настройки»). */
 export default function ProfileSettingsSection() {
   const { t, i18n } = useTranslation();
-  const { user, updateProfile } = useAuthStore();
+  const { user, updateProfile, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -18,14 +28,22 @@ export default function ProfileSettingsSection() {
   const [firstName, setFirstName] = useState(user?.firstName ?? '');
   const [lastName, setLastName] = useState(user?.lastName ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordErrors, setPasswordErrors] = useState<PasswordErrors>({});
+  const [passwordNotice, setPasswordNotice] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const reloginTimer = useRef<number | undefined>(undefined);
 
   const lang = i18n.language?.substring(0, 2) === 'uz' ? 'uz' : 'ru';
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ');
 
-  const save = async (field: Exclude<EditingField, null>) => {
+  useEffect(() => () => window.clearTimeout(reloginTimer.current), []);
+
+  const save = async (field: EditableProfileField) => {
     setError('');
 
     if (field === 'name' && !firstName.trim()) {
@@ -57,8 +75,57 @@ export default function ProfileSettingsSection() {
     setFirstName(user?.firstName ?? '');
     setLastName(user?.lastName ?? '');
     setPhone(user?.phone ?? '');
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordErrors({});
     setError('');
     setEditing(null);
+  };
+
+  const savePassword = async () => {
+    const errors: PasswordErrors = {};
+    if (!currentPassword) {
+      errors.currentPassword = t('profile.settings.password.currentRequired');
+    }
+    if (!isStrongPassword(newPassword)) {
+      errors.newPassword = t('profile.settings.password.weak');
+    }
+    if (confirmPassword !== newPassword) {
+      errors.confirmPassword = t('profile.settings.password.mismatch');
+    }
+    if (Object.keys(errors).length > 0) {
+      setPasswordErrors(errors);
+      return;
+    }
+
+    setSaving(true);
+    setPasswordErrors({});
+    setPasswordNotice('');
+    try {
+      await authApi.changePassword(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setEditing(null);
+      setPasswordNotice(t('profile.settings.password.success'));
+      reloginTimer.current = window.setTimeout(() => {
+        logout();
+        navigate(`/${lang}/login`, { replace: true });
+      }, 1800);
+    } catch (err: unknown) {
+      const e = err as { response?: { status?: number; data?: { message?: string; data?: Record<string, string> } } };
+      const fields = e.response?.data?.data;
+      const message =
+        (fields && Object.values(fields)[0]) ||
+        e.response?.data?.message ||
+        t('profile.settings.password.error');
+      setPasswordErrors(
+        e.response?.status === 401 ? { currentPassword: message } : { general: message },
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const switchLang = () => {
@@ -160,6 +227,93 @@ export default function ProfileSettingsSection() {
       </div>
 
       {error && <p className="settings__error">{error}</p>}
+
+      {/* Пароль */}
+      <div className="settings__row settings__row--stack">
+        <div className="settings__field">
+          <p className="settings__label">{t('profile.settings.password.title')}</p>
+          {editing === 'password' ? (
+            <div className="settings__password-form">
+              <label className="settings__password-field">
+                <span>{t('profile.settings.password.current')}</span>
+                <input
+                  className="settings__input"
+                  type="password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  autoFocus
+                />
+                {passwordErrors.currentPassword && (
+                  <small className="settings__field-error" role="alert">
+                    {passwordErrors.currentPassword}
+                  </small>
+                )}
+              </label>
+              <label className="settings__password-field">
+                <span>{t('profile.settings.password.new')}</span>
+                <input
+                  className="settings__input"
+                  type="password"
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+                {passwordErrors.newPassword && (
+                  <small className="settings__field-error" role="alert">
+                    {passwordErrors.newPassword}
+                  </small>
+                )}
+              </label>
+              <label className="settings__password-field">
+                <span>{t('profile.settings.password.confirm')}</span>
+                <input
+                  className="settings__input"
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                {passwordErrors.confirmPassword && (
+                  <small className="settings__field-error" role="alert">
+                    {passwordErrors.confirmPassword}
+                  </small>
+                )}
+              </label>
+              <p className="settings__hint">{t('profile.settings.password.hint')}</p>
+              {passwordErrors.general && (
+                <p className="settings__field-error" role="alert">{passwordErrors.general}</p>
+              )}
+              <div className="settings__edit-actions">
+                <button type="button" className="settings__save" disabled={saving} onClick={savePassword}>
+                  {saving ? t('profile.settings.saving') : t('profile.settings.password.save')}
+                </button>
+                <button type="button" className="settings__link" onClick={cancel}>
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="settings__value">••••••••</p>
+          )}
+        </div>
+        {editing !== 'password' && (
+          <button
+            type="button"
+            className="settings__link"
+            onClick={() => {
+              setPasswordNotice('');
+              setEditing('password');
+            }}
+          >
+            {t('profile.settings.password.change')}
+          </button>
+        )}
+      </div>
+
+      {passwordNotice && (
+        <p className="settings__success" role="status" aria-live="polite">{passwordNotice}</p>
+      )}
 
       {/* Язык */}
       <div className="settings__row">
