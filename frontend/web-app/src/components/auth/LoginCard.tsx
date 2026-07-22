@@ -6,6 +6,7 @@ import { IMaskInput } from 'react-imask';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
+import { STRONG_PASSWORD_PATTERN } from '../../utils/password';
 import './LoginCard.css';
 
 type Mode = 'login' | 'register' | 'resetRequest' | 'resetConfirm';
@@ -73,7 +74,7 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
           .string()
           .min(8, t('login.validation.passwordMin'))
           .regex(
-            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()\-_=+])[A-Za-z\d@$!%*?&#^()\-_=+]{8,128}$/,
+            STRONG_PASSWORD_PATTERN,
             t('login.validation.passwordWeak'),
           ),
       }),

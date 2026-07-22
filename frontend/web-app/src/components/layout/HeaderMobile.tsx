@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import CatalogSheet from '../mobile/CatalogSheet';
 import LoginModal from '../auth/LoginModal';
+import UserAvatar from '../ui/UserAvatar';
 import Logo from './Logo';
 import './HeaderMobile.css';
 
@@ -67,7 +68,7 @@ export default function HeaderMobile() {
             aria-label={t('header.profile')}
           >
             {isAuthenticated ? (
-              (user?.firstName?.charAt(0)?.toUpperCase() ?? '?')
+              <UserAvatar avatarUrl={user?.avatarUrl} firstName={user?.firstName} />
             ) : (
               <User size={16} strokeWidth={1.9} />
             )}

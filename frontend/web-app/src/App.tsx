@@ -31,6 +31,7 @@ import PartnersPage from './pages/legal/PartnersPage';
 import FAQPage from './pages/legal/FAQPage';
 import TermsPage from './pages/legal/TermsPage';
 import PrivacyPage from './pages/legal/PrivacyPage';
+import EmailConfirmationPage from './pages/EmailConfirmationPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -96,6 +97,7 @@ function AppShell() {
           <Route path="shops/:id" element={<ShopDetailPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="confirm-email" element={<EmailConfirmationPage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="favorites" element={<FavoritesPage />} />
           <Route path="partners" element={<PartnersPage />} />

@@ -16,9 +16,71 @@
   box-shadow: var(--shadow-card);
 }
 
+.settings__row--stack {
+  align-items: flex-start;
+}
+
 .settings__field {
   min-width: 0;
   flex: 1;
+}
+
+.settings__avatar-field {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 12px;
+}
+
+.settings__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blob-lemon, #f2cf3d), var(--blob-pink, #ea9fe2));
+  color: var(--on-wasp);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.settings__email-value {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 3px;
+}
+
+.settings__email-value .settings__value {
+  margin: 0;
+}
+
+.settings__badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.settings__badge--verified {
+  background: var(--used-bg);
+  color: var(--success);
+}
+
+.settings__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.settings__btn--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .settings__label {
@@ -42,6 +104,36 @@
   display: flex;
   gap: 8px;
   margin-top: 8px;
+}
+
+.settings__password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.settings__password-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.settings__hint {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.settings__field-error {
+  margin: 0;
+  color: var(--warn-fg);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .settings__input {
@@ -109,6 +201,16 @@
   background: var(--warn-bg);
   color: var(--warn-fg);
   font-size: 13px;
+}
+
+.settings__success {
+  margin: 0;
+  padding: 10px 22px;
+  border-radius: var(--radius-md);
+  background: var(--used-bg);
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .settings__notifications {

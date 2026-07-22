@@ -11,10 +11,26 @@
 /* ── Заголовок ── */
 .profile-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.profile-head__identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.profile-head__avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blob-lemon, #f2cf3d), var(--blob-pink, #ea9fe2));
+  color: var(--on-wasp);
+  font-size: 18px;
+  font-weight: 800;
 }
 
 .profile-name {
