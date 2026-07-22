@@ -5,9 +5,14 @@ import { z } from 'zod';
 import { IMaskInput } from 'react-imask';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../../api/auth';
+import type { TelegramAuthPayload } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 import { STRONG_PASSWORD_PATTERN } from '../../utils/password';
+import TelegramLoginButton from './TelegramLoginButton';
 import './LoginCard.css';
+
+/** Username бота покупателей (@BotFather). Публичное значение. */
+const TELEGRAM_BOT_USERNAME = 'sizbiz_uz_bot';
 
 type Mode = 'login' | 'register' | 'resetRequest' | 'resetConfirm';
 
@@ -32,7 +37,7 @@ function serverMessage(err: unknown, fallback: string): string {
  */
 export default function LoginCard({ onSuccess }: LoginCardProps) {
   const { t } = useTranslation();
-  const { login, register: registerUser, isLoading } = useAuthStore();
+  const { login, telegramLogin, register: registerUser, isLoading } = useAuthStore();
 
   const [mode, setMode] = useState<Mode>('login');
   const [emailOpen, setEmailOpen] = useState(false);
@@ -126,6 +131,17 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
   const showSoon = (provider: string) => {
     setSoon(t('login.soon', { provider }));
     setServerError('');
+  };
+
+  const handleTelegramAuth = async (user: TelegramAuthPayload) => {
+    setServerError('');
+    setSoon('');
+    try {
+      await telegramLogin(user);
+      onSuccess();
+    } catch (err) {
+      setServerError(serverMessage(err, t('login.serverError')));
+    }
   };
 
   const requestReset = async () => {
@@ -230,17 +246,10 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
       <h2 className="lcard__title">{t('login.oneTapTitle')}</h2>
       <p className="lcard__subtitle">{t('login.oneTapSubtitle')}</p>
 
-      {/* Telegram — основной путь в дизайне; бота-логина на бэкенде пока нет */}
-      <button
-        type="button"
-        className="lcard__telegram"
-        onClick={() => showSoon('Telegram')}
-        aria-disabled="true"
-      >
-        <span className="lcard__tg-mark">T</span>
-        {t('login.viaTelegram')}
-        <span className="lcard__soon-tag">{t('common.soon')}</span>
-      </button>
+      {/* Telegram Login Widget — реальный вход/регистрация через Telegram */}
+      <div className="lcard__telegram-widget">
+        <TelegramLoginButton botUsername={TELEGRAM_BOT_USERNAME} onAuth={handleTelegramAuth} />
+      </div>
 
       {/* Вход по номеру: на бэкенде есть /auth/guest, но он выдаёт токен без SMS-кода —
           подключать нельзя, иначе чужой номер = чужие купоны. */}
