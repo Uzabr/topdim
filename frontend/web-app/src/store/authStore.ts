@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { authApi } from '../api/auth';
 import type { UserDto, LoginRequest, RegisterRequest, UpdateProfileRequest } from '../api/auth';
 import { useCartStore } from './cartStore';
+import { useFavoritesStore } from './favoritesStore';
 
 interface AuthState {
   user: UserDto | null;
@@ -31,6 +32,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user, isAuthenticated: true, isLoading: false });
       // Sync guest cart → backend and switch to auth mode
       useCartStore.getState().syncLocalCartToBackend();
+      void useFavoritesStore.getState().syncWithBackend();
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -48,6 +50,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user, isAuthenticated: true, isLoading: false });
       // Sync guest cart → backend and switch to auth mode
       useCartStore.getState().syncLocalCartToBackend();
+      void useFavoritesStore.getState().syncWithBackend();
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -74,6 +77,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         const cartStore = useCartStore.getState();
         cartStore.setMode('auth');
         cartStore.fetchBackendCart();
+        void useFavoritesStore.getState().syncWithBackend();
       }
     } catch {
       // Ignore
