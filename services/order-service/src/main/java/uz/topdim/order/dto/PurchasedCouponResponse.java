@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -21,6 +22,8 @@ public class PurchasedCouponResponse {
     private Long couponOptionId;
     private String couponTitle;
     private String optionTitle;
+    /** Уплаченная цена за этот купон (unit_price на момент покупки). Null для старых заказов без бэкофилла. */
+    private BigDecimal pricePaid;
     private String couponCode;
     private String qrToken;
     private String status;

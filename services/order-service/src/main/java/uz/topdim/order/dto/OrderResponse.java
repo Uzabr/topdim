@@ -19,6 +19,8 @@ import java.time.LocalDateTime;
 public class OrderResponse {
     private Long id;
     private String orderNumber;
+    /** Представительное название заказа: первая позиция + «и ещё N». Может быть null для пустого заказа. */
+    private String title;
     private BigDecimal totalAmount;
     private String status;
     private String userEmail;

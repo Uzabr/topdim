@@ -38,6 +38,9 @@ public class PurchasedCoupon {
     @Column(name = "option_title")
     private String optionTitle;
 
+    @Column(name = "price_paid", precision = 12, scale = 2)
+    private java.math.BigDecimal pricePaid;
+
     @Column(name = "coupon_code", nullable = false, unique = true)
     private String couponCode;
 

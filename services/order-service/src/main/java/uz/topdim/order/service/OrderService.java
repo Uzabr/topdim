@@ -306,6 +306,7 @@ public class OrderService {
                         .couponOptionId(item.getCouponOptionId())
                         .couponTitle(item.getCouponTitle())
                         .optionTitle(item.getOptionTitle())
+                        .pricePaid(item.getUnitPrice())
                         .couponCode(couponCode)
                         .qrToken(UUID.randomUUID().toString())
                         .status(PurchasedCouponStatus.ACTIVE)
@@ -939,6 +940,21 @@ public class OrderService {
     }
 
     /**
+     * Строит представительное название заказа для UI списка заказов:
+     * название первой позиции + «и ещё N», где N — число остальных позиций.
+     * Возвращает null для заказа без позиций (фронт откатывается на «Заказ №...»).
+     */
+    private String buildOrderTitle(Order order) {
+        List<OrderItem> items = order.getItems();
+        if (items == null || items.isEmpty()) {
+            return null;
+        }
+        String first = items.get(0).getCouponTitle();
+        int more = items.size() - 1;
+        return more > 0 ? first + " и ещё " + more : first;
+    }
+
+    /**
      * Маппит Order entity в storefront-safe OrderResponse DTO.
      * Гарантирует наличие id, status, totalAmount.
      */
@@ -946,6 +962,7 @@ public class OrderService {
         return OrderResponse.builder()
                 .id(order.getId())
                 .orderNumber(order.getOrderNumber())
+                .title(buildOrderTitle(order))
                 .totalAmount(order.getTotalAmount())
                 .status(order.getStatus().name())
                 .userEmail(order.getUserEmail())
@@ -967,6 +984,7 @@ public class OrderService {
                 .couponOptionId(coupon.getCouponOptionId())
                 .couponTitle(coupon.getCouponTitle())
                 .optionTitle(coupon.getOptionTitle())
+                .pricePaid(coupon.getPricePaid())
                 .couponCode(coupon.getCouponCode())
                 .qrToken(coupon.getQrToken())
                 .status(coupon.getStatus().name())
