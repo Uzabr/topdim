@@ -25,6 +25,13 @@
 }
 
 /* ── Провайдеры ── */
+.lcard__telegram-widget {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  min-height: 46px;
+}
+
 .lcard__telegram {
   display: flex;
   align-items: center;
