@@ -111,6 +111,20 @@ public class AuthController {
     }
 
     /**
+     * Вход/регистрация через Telegram Login Widget.
+     * Подпись и свежесть проверяются на сервере; refresh-токен — в httpOnly cookie.
+     */
+    @PostMapping("/telegram")
+    public ResponseEntity<ApiResponse<AuthResponse>> telegramAuth(
+            @Valid @RequestBody TelegramAuthRequest request,
+            HttpServletResponse response) {
+        AuthResponse authResponse = authService.telegramAuth(request);
+        addRefreshTokenCookie(response, authResponse.getRefreshToken());
+        authResponse.setRefreshToken(null);
+        return ResponseEntity.ok(ApiResponse.success("Вход через Telegram выполнен", authResponse));
+    }
+
+    /**
      * Запрос сброса пароля.
      * Всегда 202 — защита от enumeration (не раскрываем, существует ли email).
      */

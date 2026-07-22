@@ -41,6 +41,20 @@ spring:
                 key-resolver: "#{@ipKeyResolver}"
                 deny-empty-key: false
 
+        # Auth Service — telegram login (rate limit как login: 2 req/sec, burst 3)
+        - id: auth-telegram
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/telegram
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 2
+                redis-rate-limiter.burstCapacity: 3
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
         # Identity Service — остальные endpoints (refresh, logout, change-password, super admin)
         - id: identity-service-auth
           uri: lb://identity-service
