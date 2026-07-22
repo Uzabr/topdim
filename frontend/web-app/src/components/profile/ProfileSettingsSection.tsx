@@ -2,8 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/auth';
+import { mediaApi } from '../../api/media';
 import { useAuthStore } from '../../store/authStore';
+import { validateAvatarFile } from '../../utils/avatar';
 import { isStrongPassword } from '../../utils/password';
+import UserAvatar from '../ui/UserAvatar';
 import NotificationsSection from './NotificationsSection';
 import './ProfileSettingsSection.css';
 
@@ -33,6 +36,9 @@ export default function ProfileSettingsSection() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordErrors, setPasswordErrors] = useState<PasswordErrors>({});
   const [passwordNotice, setPasswordNotice] = useState('');
+  const [avatarError, setAvatarError] = useState('');
+  const [avatarNotice, setAvatarNotice] = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -42,6 +48,30 @@ export default function ProfileSettingsSection() {
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ');
 
   useEffect(() => () => window.clearTimeout(reloginTimer.current), []);
+
+  const uploadAvatar = async (file?: File) => {
+    if (!file) return;
+
+    setAvatarError('');
+    setAvatarNotice('');
+    const validationError = validateAvatarFile(file);
+    if (validationError) {
+      setAvatarError(t(`profile.settings.avatar.${validationError}Error`));
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      const uploaded = await mediaApi.uploadFile(file);
+      await updateProfile({ avatarUrl: uploaded.url });
+      setAvatarNotice(t('profile.settings.avatar.success'));
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setAvatarError(e.response?.data?.message || t('profile.settings.avatar.error'));
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const save = async (field: EditableProfileField) => {
     setError('');
@@ -138,6 +168,36 @@ export default function ProfileSettingsSection() {
 
   return (
     <div className="settings">
+      {/* Аватар */}
+      <div className="settings__row">
+        <div className="settings__avatar-field">
+          <UserAvatar
+            avatarUrl={user?.avatarUrl}
+            firstName={user?.firstName}
+            className="settings__avatar"
+          />
+          <div>
+            <p className="settings__label">{t('profile.settings.avatar.title')}</p>
+            <p className="settings__value">{t('profile.settings.avatar.hint')}</p>
+          </div>
+        </div>
+        <label className={`settings__btn${avatarUploading ? ' settings__btn--disabled' : ''}`}>
+          {avatarUploading ? t('profile.settings.avatar.uploading') : t('profile.settings.avatar.choose')}
+          <input
+            className="settings__file-input"
+            type="file"
+            accept="image/*"
+            disabled={avatarUploading}
+            onChange={(event) => {
+              void uploadAvatar(event.target.files?.[0]);
+              event.target.value = '';
+            }}
+          />
+        </label>
+      </div>
+      {avatarError && <p className="settings__error" role="alert">{avatarError}</p>}
+      {avatarNotice && <p className="settings__success" role="status">{avatarNotice}</p>}
+
       {/* Имя */}
       <div className="settings__row">
         <div className="settings__field">

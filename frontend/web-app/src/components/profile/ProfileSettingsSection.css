@@ -25,6 +25,38 @@
   flex: 1;
 }
 
+.settings__avatar-field {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 12px;
+}
+
+.settings__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blob-lemon, #f2cf3d), var(--blob-pink, #ea9fe2));
+  color: var(--on-wasp);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.settings__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.settings__btn--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .settings__label {
   margin: 0;
   font-size: 14px;

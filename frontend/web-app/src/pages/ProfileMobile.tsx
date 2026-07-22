@@ -13,6 +13,7 @@ import ProfileHelpSection from '../components/profile/ProfileHelpSection';
 import ProfileSettingsSection from '../components/profile/ProfileSettingsSection';
 import RefundRequestModal from '../components/profile/RefundRequestModal';
 import ReviewModal from '../components/profile/ReviewModal';
+import UserAvatar from '../components/ui/UserAvatar';
 import { SUPPORT_TELEGRAM_URL } from '../config/features';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { useAuthStore } from '../store/authStore';
@@ -144,7 +145,11 @@ export default function ProfileMobile() {
           {tab === 'coupons' ? t('bottomNav.profile') : t(`profile.tabs.${tab}`)}
         </span>
 
-        <span className="pmob__avatar">{user?.firstName?.charAt(0)?.toUpperCase() ?? '?'}</span>
+        <UserAvatar
+          avatarUrl={user?.avatarUrl}
+          firstName={user?.firstName}
+          className="pmob__avatar"
+        />
       </div>
 
       {tab === 'coupons' && (

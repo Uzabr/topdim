@@ -10,6 +10,7 @@ import { useLocalePath } from '../../hooks/useLocalePath';
 import Logo from './Logo';
 import SearchOverlay from './SearchOverlay';
 import LoginModal from '../auth/LoginModal';
+import UserAvatar from '../ui/UserAvatar';
 import './HeaderDesktop.css';
 
 /** Ниже этого сдвига шапка светлая, выше — тёмная полупрозрачная. */
@@ -273,7 +274,7 @@ export default function HeaderDesktop() {
 
           {isAuthenticated ? (
             <Link to={lp('/profile')} className="hdr__avatar" aria-label={t('header.profile')}>
-              {user?.firstName?.charAt(0)?.toUpperCase() ?? '?'}
+              <UserAvatar avatarUrl={user?.avatarUrl} firstName={user?.firstName} />
             </Link>
           ) : (
             <button type="button" className="hdr__login" onClick={() => setLoginOpen(true)}>

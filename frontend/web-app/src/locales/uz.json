@@ -335,6 +335,16 @@
       "name": "Ism",
       "phoneLabel": "Telefon",
       "phoneMissing": "Ko'rsatilmagan — merchantga bog'lanish uchun kerak",
+      "avatar": {
+        "title": "Profil rasmi",
+        "hint": "20 MB gacha bo'lgan rasm",
+        "choose": "Rasm tanlash",
+        "uploading": "Yuklanmoqda...",
+        "typeError": "Faqat rasm yuklash mumkin",
+        "sizeError": "Rasm hajmi 20 MB dan oshmasligi kerak",
+        "success": "Profil rasmi yangilandi",
+        "error": "Rasmni yuklab bo'lmadi"
+      },
       "password": {
         "title": "Parol",
         "change": "O'zgartirish",

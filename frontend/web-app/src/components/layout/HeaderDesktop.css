@@ -467,6 +467,12 @@
   transition: background 0.35s, color 0.35s;
 }
 
+.hdr__avatar .user-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
 /* Между 768 и ~1000px адрес не помещается — прячем его, поиск важнее */
 @media (max-width: 1000px) {
   .hdr__address {

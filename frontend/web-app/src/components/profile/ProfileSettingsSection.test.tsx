@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { authApi } from '../../api/auth';
+import { mediaApi } from '../../api/media';
 import ProfileSettingsSection from './ProfileSettingsSection';
 
 const { navigate, logout, updateProfile } = vi.hoisted(() => ({
@@ -34,6 +35,10 @@ vi.mock('../../api/auth', () => ({
   authApi: { changePassword: vi.fn() },
 }));
 
+vi.mock('../../api/media', () => ({
+  mediaApi: { uploadFile: vi.fn() },
+}));
+
 vi.mock('./NotificationsSection', () => ({ default: () => null }));
 
 function openPasswordForm() {
@@ -53,11 +58,47 @@ function fillPasswords(current: string, next: string, confirmation: string) {
   });
 }
 
-describe('ProfileSettingsSection password change', () => {
+describe('ProfileSettingsSection profile actions', () => {
   afterEach(cleanup);
 
   beforeEach(() => {
     vi.mocked(authApi.changePassword).mockReset();
+    vi.mocked(mediaApi.uploadFile).mockReset();
+    updateProfile.mockReset();
+  });
+
+  it('rejects non-image avatar before upload', () => {
+    render(<ProfileSettingsSection />);
+    const input = screen.getByLabelText('profile.settings.avatar.choose');
+
+    fireEvent.change(input, {
+      target: { files: [new File(['text'], 'avatar.png', { type: 'text/plain' })] },
+    });
+
+    expect(screen.getByText('profile.settings.avatar.typeError')).toBeTruthy();
+    expect(mediaApi.uploadFile).not.toHaveBeenCalled();
+  });
+
+  it('uploads avatar and persists returned URL in profile', async () => {
+    const file = new File(['image'], 'avatar.png', { type: 'image/png' });
+    vi.mocked(mediaApi.uploadFile).mockResolvedValue({
+      fileName: 'generated_avatar.png',
+      url: '/api/v1/media/generated_avatar.png',
+    });
+    updateProfile.mockResolvedValue(undefined);
+    render(<ProfileSettingsSection />);
+
+    fireEvent.change(screen.getByLabelText('profile.settings.avatar.choose'), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => expect(mediaApi.uploadFile).toHaveBeenCalledWith(file));
+    expect(updateProfile).toHaveBeenCalledWith({
+      avatarUrl: '/api/v1/media/generated_avatar.png',
+    });
+    expect((await screen.findByRole('status')).textContent).toBe(
+      'profile.settings.avatar.success',
+    );
   });
 
   it('does not call backend when password rules or confirmation fail', () => {
