@@ -1084,5 +1084,67 @@ class OrderServiceTest {
         assertThat(result.isEligible()).isFalse();
         assertThat(result.getReason()).isEqualTo("REVIEW_ALLOWED_AFTER_COUPON_USAGE");
     }
+
+    // ==================== Profile-facing fields (title, pricePaid) ====================
+
+    @Test
+    @DisplayName("OrderResponse.title: одна позиция → её название без «и ещё»")
+    void mapToOrderResponse_singleItem_titleIsItemName() {
+        Order order = Order.builder()
+                .id(1L).orderNumber("ORD-1").status(OrderStatus.PAID)
+                .totalAmount(BigDecimal.valueOf(49000))
+                .items(List.of(OrderItem.builder().couponTitle("Пицца 30см").build()))
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        assertThat(orderService.mapToOrderResponse(order).getTitle()).isEqualTo("Пицца 30см");
+    }
+
+    @Test
+    @DisplayName("OrderResponse.title: несколько позиций → «первая и ещё N»")
+    void mapToOrderResponse_multipleItems_titleHasRemainderCount() {
+        Order order = Order.builder()
+                .id(2L).orderNumber("ORD-2").status(OrderStatus.PAID)
+                .totalAmount(BigDecimal.valueOf(90000))
+                .items(List.of(
+                        OrderItem.builder().couponTitle("Пицца").build(),
+                        OrderItem.builder().couponTitle("Суши").build(),
+                        OrderItem.builder().couponTitle("Кофе").build()))
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        assertThat(orderService.mapToOrderResponse(order).getTitle()).isEqualTo("Пицца и ещё 2");
+    }
+
+    @Test
+    @DisplayName("OrderResponse.title: заказ без позиций → null (фронт откатится на «Заказ №»)")
+    void mapToOrderResponse_noItems_titleIsNull() {
+        Order order = Order.builder()
+                .id(3L).orderNumber("ORD-3").status(OrderStatus.PAID)
+                .totalAmount(BigDecimal.ZERO)
+                .items(new ArrayList<>())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        assertThat(orderService.mapToOrderResponse(order).getTitle()).isNull();
+    }
+
+    @Test
+    @DisplayName("PurchasedCouponResponse.pricePaid: пробрасывается из entity")
+    void mapToCouponResponse_exposesPricePaid() {
+        PurchasedCoupon coupon = PurchasedCoupon.builder()
+                .id(5L).couponOfferId(1L).couponOptionId(2L)
+                .couponTitle("Пицца").optionTitle("30см")
+                .pricePaid(BigDecimal.valueOf(49000))
+                .couponCode("ABC-123").qrToken("qr")
+                .status(PurchasedCouponStatus.ACTIVE)
+                .build();
+        when(refundRequestRepository.findByPurchasedCouponIdOrderByCreatedAtDesc(5L))
+                .thenReturn(List.of());
+
+        PurchasedCouponResponse response = orderService.mapToCouponResponse(coupon);
+
+        assertThat(response.getPricePaid()).isEqualByComparingTo(BigDecimal.valueOf(49000));
+    }
 }
 
