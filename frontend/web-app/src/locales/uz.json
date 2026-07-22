@@ -345,6 +345,16 @@
         "success": "Profil rasmi yangilandi",
         "error": "Rasmni yuklab bo'lmadi"
       },
+      "email": {
+        "title": "Elektron pochta",
+        "verified": "Tasdiqlangan",
+        "unverified": "Tasdiqlanmagan",
+        "confirm": "Tasdiqlash",
+        "sending": "Yuborilmoqda...",
+        "sent": "Tasdiqlash kodi emailingizga yuborildi",
+        "enterCode": "Kodni kiritish",
+        "error": "Tasdiqlash kodini yuborib bo'lmadi"
+      },
       "password": {
         "title": "Parol",
         "change": "O'zgartirish",
@@ -363,6 +373,18 @@
       "notifications": "Bildirishnomalar",
       "notificationsDesc": "Yaqin atrofdagi yangi kuponlar · muddat tugashi · merchant javoblari",
       "configure": "Sozlash"
+    },
+    "emailConfirmation": {
+      "title": "Emailni tasdiqlash",
+      "hint": "Emaildagi kodni kiriting. Agar emaildagi havolani ochgan bo'lsangiz, kod avtomatik qo'yiladi.",
+      "code": "Tasdiqlash kodi",
+      "submit": "Emailni tasdiqlash",
+      "confirming": "Tasdiqlanmoqda...",
+      "success": "Email muvaffaqiyatli tasdiqlandi",
+      "error": "Emailni tasdiqlab bo'lmadi",
+      "missingToken": "Tasdiqlash kodini kiriting",
+      "toProfile": "Profilga o'tish",
+      "toLogin": "Hisobga kirish"
     },
     "help": {
       "title": "Yordam kerakmi?",

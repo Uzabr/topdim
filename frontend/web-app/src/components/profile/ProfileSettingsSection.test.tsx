@@ -32,7 +32,7 @@ vi.mock('../../store/authStore', () => ({
 }));
 
 vi.mock('../../api/auth', () => ({
-  authApi: { changePassword: vi.fn() },
+  authApi: { changePassword: vi.fn(), requestEmailConfirm: vi.fn() },
 }));
 
 vi.mock('../../api/media', () => ({
@@ -63,8 +63,23 @@ describe('ProfileSettingsSection profile actions', () => {
 
   beforeEach(() => {
     vi.mocked(authApi.changePassword).mockReset();
+    vi.mocked(authApi.requestEmailConfirm).mockReset();
     vi.mocked(mediaApi.uploadFile).mockReset();
     updateProfile.mockReset();
+  });
+
+  it('requests email confirmation and shows sent notice', async () => {
+    vi.mocked(authApi.requestEmailConfirm).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof authApi.requestEmailConfirm>>,
+    );
+    render(<ProfileSettingsSection />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.email.confirm' }));
+
+    await waitFor(() => expect(authApi.requestEmailConfirm).toHaveBeenCalledOnce());
+    expect((await screen.findByRole('status')).textContent).toBe(
+      'profile.settings.email.sent',
+    );
   });
 
   it('rejects non-image avatar before upload', () => {

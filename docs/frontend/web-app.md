@@ -137,6 +137,7 @@ frontend/web-app/src/
 | `/:lang/checkout` | CheckoutPage | ✅ |
 | `/:lang/payment/:orderId` | PaymentPage | ✅ |
 | `/:lang/profile` | ProfilePage | ✅ |
+| `/:lang/confirm-email` | EmailConfirmationPage | ❌ (подтверждение по токену публичное) |
 | `/:lang/favorites` | FavoritesPage | ❌ |
 | `/:lang/bazaar` | BazaarMapPage | ❌ |
 | `/:lang/bazaar/:id` | BazaarDetailPage | ❌ |
@@ -196,8 +197,12 @@ UI подготовлен под поля, которых пока нет в API
 
 Когда поля появятся в ответах API — UI автоматически начнёт показывать их как в макете, доработки фронта не потребуется.
 
-## Backend готов, UI ещё подключить
+## Backend готов: статус подключения UI
 
 | Фича | Backend-контракт | Статус web-app |
 |---|---|---|
 | Q&A на странице купона | `POST /api/v1/questions`, `GET /api/v1/questions/coupon/{offerId}`, `GET /api/v1/questions/my`; модерация в `admin-app` через `/api/v1/mod/questions` | В `frontend/web-app` Q&A-компонент и `questions` API-клиент пока не найдены; нужно добавить блок на `CouponDetailPage`/мобильной детали и форму вопроса для авторизованного пользователя |
+| Избранное | `GET/POST/DELETE /api/v1/users/me/favorites` | ✅ Гидратация и объединение с гостевым localStorage подключены при старте авторизованной сессии |
+| Смена пароля | `PUT /api/v1/auth/change-password` | ✅ Форма, backend-совместимая валидация и обязательный повторный вход подключены |
+| Аватар | `POST /api/v1/media/upload` + `PUT /api/v1/users/me` | ✅ Загрузка, клиентские ограничения и рендер во всех местах профиля подключены |
+| Подтверждение email | `POST /api/v1/auth/confirm/request` + `POST /api/v1/auth/confirm/email` | ✅ Статус, запрос кода и маршрут `/:lang/confirm-email` подключены |

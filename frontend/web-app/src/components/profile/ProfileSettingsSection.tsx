@@ -39,6 +39,9 @@ export default function ProfileSettingsSection() {
   const [avatarError, setAvatarError] = useState('');
   const [avatarNotice, setAvatarNotice] = useState('');
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [emailConfirming, setEmailConfirming] = useState(false);
+  const [emailNotice, setEmailNotice] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -70,6 +73,21 @@ export default function ProfileSettingsSection() {
       setAvatarError(e.response?.data?.message || t('profile.settings.avatar.error'));
     } finally {
       setAvatarUploading(false);
+    }
+  };
+
+  const requestEmailConfirmation = async () => {
+    setEmailConfirming(true);
+    setEmailNotice('');
+    setEmailError('');
+    try {
+      await authApi.requestEmailConfirm();
+      setEmailNotice(t('profile.settings.email.sent'));
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setEmailError(e.response?.data?.message || t('profile.settings.email.error'));
+    } finally {
+      setEmailConfirming(false);
     }
   };
 
@@ -197,6 +215,46 @@ export default function ProfileSettingsSection() {
       </div>
       {avatarError && <p className="settings__error" role="alert">{avatarError}</p>}
       {avatarNotice && <p className="settings__success" role="status">{avatarNotice}</p>}
+
+      {/* Email */}
+      <div className="settings__row">
+        <div className="settings__field">
+          <p className="settings__label">{t('profile.settings.email.title')}</p>
+          <div className="settings__email-value">
+            <span className="settings__value">{user?.email}</span>
+            <span
+              className={`settings__badge${user?.emailVerified ? ' settings__badge--verified' : ''}`}
+            >
+              {user?.emailVerified
+                ? t('profile.settings.email.verified')
+                : t('profile.settings.email.unverified')}
+            </span>
+          </div>
+        </div>
+        {!user?.emailVerified && (
+          <div className="settings__edit-actions">
+            <button
+              type="button"
+              className="settings__btn"
+              disabled={emailConfirming}
+              onClick={requestEmailConfirmation}
+            >
+              {emailConfirming
+                ? t('profile.settings.email.sending')
+                : t('profile.settings.email.confirm')}
+            </button>
+            <button
+              type="button"
+              className="settings__link"
+              onClick={() => navigate(`/${lang}/confirm-email`)}
+            >
+              {t('profile.settings.email.enterCode')}
+            </button>
+          </div>
+        )}
+      </div>
+      {emailError && <p className="settings__error" role="alert">{emailError}</p>}
+      {emailNotice && <p className="settings__success" role="status">{emailNotice}</p>}
 
       {/* Имя */}
       <div className="settings__row">
