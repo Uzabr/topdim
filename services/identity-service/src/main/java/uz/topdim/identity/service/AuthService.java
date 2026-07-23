@@ -98,7 +98,7 @@ public class AuthService {
                     return new AuthException("Неверный email или пароль");
                 });
 
-        if (!user.isEnabled()) {
+        if (!user.isEnabled() || user.isDeleted()) {
             loginAttemptService.recordFailedAttempt(email);
             throw new AuthException("Неверный email или пароль");
         }
@@ -124,7 +124,8 @@ public class AuthService {
      */
     @Transactional
     public AuthResponse refreshToken(RefreshTokenRequest request) {
-        RefreshToken refreshToken = refreshTokenRepository.findByToken(request.getRefreshToken())
+        String tokenHash = PasswordResetService.sha256(request.getRefreshToken());
+        RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new AuthException("Невалидный refresh token"));
 
         if (refreshToken.isRevoked()) {
@@ -207,7 +208,7 @@ public class AuthService {
 
         // Revoke refresh token
         if (refreshToken != null) {
-            refreshTokenRepository.findByToken(refreshToken)
+            refreshTokenRepository.findByTokenHash(PasswordResetService.sha256(refreshToken))
                     .ifPresent(token -> {
                         token.setRevoked(true);
                         refreshTokenRepository.save(token);
@@ -245,9 +246,10 @@ public class AuthService {
             if (user.getRole() != Role.GUEST) {
                 throw new AuthException("Этот номер уже привязан к зарегистрированному пользователю");
             }
-            if (!user.isEnabled()) {
+            if (!user.isEnabled() || user.isDeleted()) {
                 throw new AuthException("Гостевой аккаунт заблокирован");
             }
+            refreshTokenRepository.revokeAllByUser(user);
             log.info("SECURITY: Guest auth for existing guest user: phone={}", maskPhone(normalizedPhone));
         }
 
@@ -283,7 +285,7 @@ public class AuthService {
             user = userRepository.save(user);
             log.info("SECURITY: Telegram user created: tgId={}", request.getId());
         } else {
-            if (!user.isEnabled()) {
+            if (!user.isEnabled() || user.isDeleted()) {
                 throw new AuthException("Аккаунт заблокирован");
             }
             // Держим username актуальным (в Telegram он может меняться).
@@ -291,6 +293,7 @@ public class AuthService {
                     && !request.getUsername().equals(user.getTelegramUsername())) {
                 user.setTelegramUsername(request.getUsername());
             }
+            refreshTokenRepository.revokeAllByUser(user);
             log.info("SECURITY: Telegram auth for existing user: tgId={}", request.getId());
         }
         return buildAuthResponse(user);
@@ -325,15 +328,15 @@ public class AuthService {
     }
 
     private String createRefreshToken(User user) {
-        String token = UUID.randomUUID().toString();
+        String plainToken = UUID.randomUUID().toString();
         RefreshToken refreshToken = RefreshToken.builder()
-                .token(token)
+                .tokenHash(PasswordResetService.sha256(plainToken))
                 .user(user)
                 .expiresAt(Instant.now().plusMillis(jwtService.getRefreshTokenExpiration()))
                 .revoked(false)
                 .build();
         refreshTokenRepository.save(refreshToken);
-        return token;
+        return plainToken;
     }
 
     private String maskEmail(String email) {

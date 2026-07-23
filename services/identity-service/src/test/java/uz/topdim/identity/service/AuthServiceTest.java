@@ -3,6 +3,7 @@ package uz.topdim.identity.service;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -36,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,7 +75,7 @@ class AuthServiceTest {
 
     private RefreshToken createRefreshToken(User user, boolean revoked) {
         return RefreshToken.builder()
-                .token("refresh-token")
+                .tokenHash(PasswordResetService.sha256("refresh-token"))
                 .user(user)
                 .expiresAt(Instant.now().plusSeconds(600))
                 .revoked(revoked)
@@ -179,6 +181,53 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName("Логин: soft-deleted пользователь получает ту же generic auth error")
+    void login_deletedUser_throwsGenericErrorAndRecordsAttempt() {
+        LoginRequest request = new LoginRequest();
+        request.setEmail("USER@topdim.uz");
+        request.setPassword("SafePass123!");
+
+        User deletedUser = createUser(Role.USER, true);
+        deletedUser.setDeleted(true);
+
+        when(loginAttemptService.getDelay("user@topdim.uz")).thenReturn(Duration.ZERO);
+        when(userRepository.findByEmailIgnoreCase("user@topdim.uz")).thenReturn(Optional.of(deletedUser));
+
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(AuthException.class)
+                .hasMessage("Неверный email или пароль");
+
+        verify(loginAttemptService).recordFailedAttempt("user@topdim.uz");
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+        verify(refreshTokenRepository, never()).revokeAllByUser(any(User.class));
+    }
+
+    @Test
+    @DisplayName("Логин: сохраняет только SHA-256 refresh-токена, клиенту возвращает plain token")
+    void login_success_storesOnlyRefreshTokenHash() {
+        LoginRequest request = new LoginRequest();
+        request.setEmail("USER@topdim.uz");
+        request.setPassword("SafePass123!");
+
+        User user = createUser(Role.USER, true);
+        when(loginAttemptService.getDelay("user@topdim.uz")).thenReturn(Duration.ZERO);
+        when(userRepository.findByEmailIgnoreCase("user@topdim.uz")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("SafePass123!", "hashed-password")).thenReturn(true);
+        stubTokenGeneration(user);
+
+        AuthResponse response = authService.login(request);
+
+        ArgumentCaptor<RefreshToken> tokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
+        verify(refreshTokenRepository).save(tokenCaptor.capture());
+        assertThat(response.getRefreshToken()).isNotBlank();
+        assertThat(tokenCaptor.getValue().getTokenHash())
+                .isEqualTo(PasswordResetService.sha256(response.getRefreshToken()))
+                .isNotEqualTo(response.getRefreshToken());
+        verify(loginAttemptService).resetAttempts("user@topdim.uz");
+        verify(refreshTokenRepository).revokeAllByUser(user);
+    }
+
+    @Test
     @DisplayName("Refresh: заблокированный пользователь не получает новую пару токенов")
     void refreshToken_blockedUser_revokesTokenAndThrows() {
         User blockedUser = createUser(Role.USER, false);
@@ -186,7 +235,8 @@ class AuthServiceTest {
         RefreshTokenRequest request = new RefreshTokenRequest();
         request.setRefreshToken("refresh-token");
 
-        when(refreshTokenRepository.findByToken("refresh-token")).thenReturn(Optional.of(refreshToken));
+        when(refreshTokenRepository.findByTokenHash(PasswordResetService.sha256("refresh-token")))
+                .thenReturn(Optional.of(refreshToken));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         assertThatThrownBy(() -> authService.refreshToken(request))
@@ -206,7 +256,8 @@ class AuthServiceTest {
         RefreshTokenRequest request = new RefreshTokenRequest();
         request.setRefreshToken("refresh-token");
 
-        when(refreshTokenRepository.findByToken("refresh-token")).thenReturn(Optional.of(refreshToken));
+        when(refreshTokenRepository.findByTokenHash(PasswordResetService.sha256("refresh-token")))
+                .thenReturn(Optional.of(refreshToken));
         stubTokenGeneration(user);
 
         AuthResponse firstResponse = authService.refreshToken(request);
@@ -217,6 +268,22 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.refreshToken(request))
                 .isInstanceOf(AuthException.class)
                 .hasMessageContaining("отозван");
+    }
+
+    @Test
+    @DisplayName("Refresh: legacy plaintext в БД не совпадает с SHA-256 lookup и отклоняется")
+    void refreshToken_plaintextDatabaseValueDoesNotAuthenticate() {
+        RefreshTokenRequest request = new RefreshTokenRequest();
+        request.setRefreshToken("legacy-plaintext-token");
+        String expectedHash = PasswordResetService.sha256("legacy-plaintext-token");
+
+        assertThatThrownBy(() -> authService.refreshToken(request))
+                .isInstanceOf(AuthException.class)
+                .hasMessage("Невалидный refresh token");
+
+        verify(refreshTokenRepository).findByTokenHash(expectedHash);
+        verify(refreshTokenRepository, never()).findByTokenHash("legacy-plaintext-token");
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
     }
 
     @Test
@@ -271,7 +338,8 @@ class AuthServiceTest {
 
         when(jwtService.extractJti("access-token")).thenReturn("jti-123");
         when(jwtService.getRemainingExpiration("access-token")).thenReturn(5_000L);
-        when(refreshTokenRepository.findByToken("refresh-token")).thenReturn(Optional.of(refreshToken));
+        when(refreshTokenRepository.findByTokenHash(PasswordResetService.sha256("refresh-token")))
+                .thenReturn(Optional.of(refreshToken));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         authService.logout("access-token", "refresh-token");
@@ -284,12 +352,14 @@ class AuthServiceTest {
     @Test
     @DisplayName("Logout: повторный вызов с несуществующим refresh token остаётся идемпотентным")
     void logout_missingToken_isIdempotent() {
-        when(refreshTokenRepository.findByToken("missing-token")).thenReturn(Optional.empty());
+        when(refreshTokenRepository.findByTokenHash(PasswordResetService.sha256("missing-token")))
+                .thenReturn(Optional.empty());
 
         assertThatCode(() -> authService.logout(null, "missing-token"))
                 .doesNotThrowAnyException();
 
-        verify(refreshTokenRepository).findByToken("missing-token");
+        verify(refreshTokenRepository)
+                .findByTokenHash(PasswordResetService.sha256("missing-token"));
         verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
         verify(tokenBlacklistService, never()).blacklist(anyString(), anyLong());
     }
@@ -301,7 +371,8 @@ class AuthServiceTest {
         RefreshToken refreshToken = createRefreshToken(user, false);
 
         when(jwtService.extractJti("broken-access")).thenThrow(new RuntimeException("bad token state"));
-        when(refreshTokenRepository.findByToken("refresh-token")).thenReturn(Optional.of(refreshToken));
+        when(refreshTokenRepository.findByTokenHash(PasswordResetService.sha256("refresh-token")))
+                .thenReturn(Optional.of(refreshToken));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         assertThatCode(() -> authService.logout("broken-access", "refresh-token"))
@@ -345,6 +416,44 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName("Guest auth: soft-deleted guest не должен получать токены")
+    void guestAuth_deletedGuest_throws() {
+        GuestAuthRequest request = new GuestAuthRequest();
+        request.setPhone("+998901234567");
+        request.setName("Guest");
+
+        User deletedGuest = createUser(Role.GUEST, true);
+        deletedGuest.setDeleted(true);
+        when(userRepository.findByPhone("+998901234567")).thenReturn(Optional.of(deletedGuest));
+
+        assertThatThrownBy(() -> authService.guestAuth(request))
+                .isInstanceOf(AuthException.class)
+                .hasMessageContaining("заблокирован");
+
+        verify(refreshTokenRepository, never()).revokeAllByUser(any(User.class));
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
+    }
+
+    @Test
+    @DisplayName("Guest auth: существующий guest отзывает старые сессии перед выдачей новой")
+    void guestAuth_existingGuest_revokesOldSessions() {
+        GuestAuthRequest request = new GuestAuthRequest();
+        request.setPhone("+998901234567");
+        request.setName("Guest");
+
+        User existingGuest = createUser(Role.GUEST, true);
+        when(userRepository.findByPhone("+998901234567")).thenReturn(Optional.of(existingGuest));
+        stubTokenGeneration(existingGuest);
+
+        AuthResponse response = authService.guestAuth(request);
+
+        assertThat(response.getAccessToken()).isEqualTo("access-token");
+        InOrder sessionOrder = inOrder(refreshTokenRepository);
+        sessionOrder.verify(refreshTokenRepository).revokeAllByUser(existingGuest);
+        sessionOrder.verify(refreshTokenRepository).save(any(RefreshToken.class));
+    }
+
+    @Test
     @DisplayName("Guest auth: создаёт нового гостя и выдаёт ему токены")
     void guestAuth_newGuest_createsGuestUser() {
         GuestAuthRequest request = new GuestAuthRequest();
@@ -371,6 +480,7 @@ class AuthServiceTest {
         assertThat(userCaptor.getValue().getPhone()).isEqualTo("+998901234567");
         assertThat(response.getUser().getRole()).isEqualTo("GUEST");
         verify(refreshTokenRepository, atLeastOnce()).save(any(RefreshToken.class));
+        verify(refreshTokenRepository, never()).revokeAllByUser(any(User.class));
     }
 
     @Test
@@ -409,6 +519,29 @@ class AuthServiceTest {
         assertThat(created.getEmail()).isEqualTo("tg_777@topdim.uz");
         assertThat(response.getAccessToken()).isEqualTo("access-token");
         assertThat(response.getUser().getRole()).isEqualTo("USER");
+        verify(refreshTokenRepository, never()).revokeAllByUser(any(User.class));
+    }
+
+    @Test
+    @DisplayName("Telegram auth: soft-deleted пользователь не должен получать токены")
+    void telegramAuth_deletedUser_throws() {
+        TelegramAuthRequest request = new TelegramAuthRequest();
+        request.setId(777L);
+        request.setAuthDate(Instant.now().getEpochSecond());
+        request.setHash("valid");
+
+        User deletedUser = createUser(Role.USER, true);
+        deletedUser.setDeleted(true);
+        deletedUser.setTelegramChatId(777L);
+        when(userRepository.findByTelegramChatId(777L)).thenReturn(Optional.of(deletedUser));
+
+        assertThatThrownBy(() -> authService.telegramAuth(request))
+                .isInstanceOf(AuthException.class)
+                .hasMessageContaining("заблокирован");
+
+        verify(telegramLoginVerifier).verify(request);
+        verify(refreshTokenRepository, never()).revokeAllByUser(any(User.class));
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
     }
 
     @Test
@@ -434,6 +567,9 @@ class AuthServiceTest {
         AuthResponse response = authService.telegramAuth(request);
 
         verify(userRepository, never()).save(any(User.class));
+        InOrder sessionOrder = inOrder(refreshTokenRepository);
+        sessionOrder.verify(refreshTokenRepository).revokeAllByUser(existing);
+        sessionOrder.verify(refreshTokenRepository).save(any(RefreshToken.class));
         assertThat(existing.getTelegramUsername()).isEqualTo("ivan_new"); // username обновился
         assertThat(response.getUser().getId()).isEqualTo(42L);
     }
