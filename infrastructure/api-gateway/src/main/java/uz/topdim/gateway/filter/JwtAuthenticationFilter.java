@@ -42,6 +42,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    /**
+     * Общий секрет gateway↔сервисы. Проставляется в X-Gateway-Auth вместе с X-User-*,
+     * downstream-сервисы принимают X-User-* только при совпадении секрета (анти-спуф при
+     * прямом доступе к порту сервиса). Пусто → секрет не шлётся (сервисы не энфорсят).
+     */
+    @Value("${internal.auth-secret:}")
+    private String gatewaySecret;
+
     private final ReactiveTokenValidationService tokenValidationService;
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
@@ -96,6 +104,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     headers.remove("X-User-Email");
                     headers.remove("X-User-Role");
                     headers.remove("X-Merchant-Id");
+                    headers.remove("X-Gateway-Auth");
                 })
                 .build();
         exchange = exchange.mutate().request(cleanedRequest).build();
@@ -163,11 +172,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     }
 
                     // Forward user info to downstream services
-                    ServerHttpRequest modifiedRequest = finalExchange.getRequest().mutate()
+                    ServerHttpRequest.Builder requestBuilder = finalExchange.getRequest().mutate()
                             .header("X-User-Id", userId)
                             .header("X-User-Email", email)
-                            .header("X-User-Role", role)
-                            .build();
+                            .header("X-User-Role", role);
+                    // Подпись gateway: сервисы примут X-User-* только при совпадении секрета.
+                    if (gatewaySecret != null && !gatewaySecret.isBlank()) {
+                        requestBuilder.header("X-Gateway-Auth", gatewaySecret);
+                    }
+                    ServerHttpRequest modifiedRequest = requestBuilder.build();
 
                     return chain.filter(finalExchange.mutate().request(modifiedRequest).build());
                 });

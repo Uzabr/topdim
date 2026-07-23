@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -47,6 +48,25 @@ public class RoleHeaderAuthenticationFilter extends OncePerRequestFilter {
             "GUEST", "USER", "PARTNER", "MODERATOR", "ADMIN", "SUPER_ADMIN"
     );
 
+    private static final String HEADER_GATEWAY_AUTH = "X-Gateway-Auth";
+    private static final String INTERNAL_PREFIX = "/api/v1/internal/";
+
+    /** Общий секрет gateway↔сервисы. Пусто → энфорс выключен (совместимо со старым поведением). */
+    @Value("${internal.auth-secret:}")
+    private String gatewaySecret;
+
+    private boolean secretEnabled() {
+        return gatewaySecret != null && !gatewaySecret.isBlank();
+    }
+
+    /** Постоянное по времени сравнение X-Gateway-Auth с настроенным секретом. */
+    private boolean validGatewayAuth(HttpServletRequest request) {
+        String provided = request.getHeader(HEADER_GATEWAY_AUTH);
+        return provided != null && java.security.MessageDigest.isEqual(
+                gatewaySecret.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                provided.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -54,11 +74,29 @@ public class RoleHeaderAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+        // #1b: внутренние S2S-эндпоинты (/api/v1/internal/**) при заданном секрете требуют X-Gateway-Auth
+        if (secretEnabled() && request.getRequestURI().startsWith(INTERNAL_PREFIX)
+                && !validGatewayAuth(request)) {
+            log.warn("Доступ к {} без валидного X-Gateway-Auth", request.getRequestURI());
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"success\":false,\"message\":\"Требуется межсервисная авторизация\"}");
+            return;
+        }
+
         String userIdHeader = request.getHeader(HEADER_USER_ID);
         String userRoleHeader = request.getHeader(HEADER_USER_ROLE);
 
         // Если заголовков нет — пропускаем (анонимный запрос, SecurityConfig решит)
         if (userIdHeader == null || userRoleHeader == null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // #1a: анти-спуф — X-User-* принимаем только с валидным X-Gateway-Auth (когда секрет задан).
+        // Прямой запрос на порт сервиса с поддельными X-User-* → игнорируем личность (аноним).
+        if (secretEnabled() && !validGatewayAuth(request)) {
+            log.warn("X-User-* без валидного X-Gateway-Auth — личность проигнорирована (userId header={})", userIdHeader);
             filterChain.doFilter(request, response);
             return;
         }
