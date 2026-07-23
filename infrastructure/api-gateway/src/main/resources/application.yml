@@ -55,7 +55,63 @@ spring:
                 key-resolver: "#{@ipKeyResolver}"
                 deny-empty-key: false
 
-        # Identity Service — остальные endpoints (refresh, logout, change-password, super admin)
+        # Auth Service — guest account (строго: 1 req/sec, burst 2)
+        - id: auth-guest
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/guest
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 2
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
+        # Auth Service — password reset request (строго: 1 req/sec, burst 2)
+        - id: auth-password-reset-request
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/password-reset/request
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 2
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
+        # Auth Service — password reset confirm (2 req/sec, burst 3)
+        - id: auth-password-reset-confirm
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/password-reset/confirm
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 2
+                redis-rate-limiter.burstCapacity: 3
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
+        # Auth Service — refresh (3 req/sec, burst 5)
+        - id: auth-refresh
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/refresh
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 3
+                redis-rate-limiter.burstCapacity: 5
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
+        # Identity Service — остальные endpoints (logout, change-password, super admin)
         - id: identity-service-auth
           uri: lb://identity-service
           predicates:
