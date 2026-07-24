@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Ticket } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
@@ -84,10 +84,22 @@ export default function ProfileDesktop() {
   });
 
   // Лениво: только на табе покупок
-  const { data: orders = [] } = useQuery({
+  const {
+    data: orders = [],
+    isLoading: isOrdersLoading,
+    isLoadingError: isOrdersLoadingError,
+    isFetchNextPageError,
+    refetch: refetchOrders,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['my-orders'],
-    queryFn: () => ordersApi.getOrders(0, 50),
-    select: (res) => res.data.data.content,
+    queryFn: ({ pageParam }) => ordersApi.getOrders(pageParam, 20),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.data.data.last ? undefined : lastPage.data.data.number + 1,
+    select: (data) => data.pages.flatMap((page) => page.data.data.content),
     enabled: isAuthenticated && tab === 'orders',
   });
 
@@ -264,7 +276,20 @@ export default function ProfileDesktop() {
       {/* ═══ Покупки ═══ */}
       {tab === 'orders' && (
         <section className="profile-orders">
-          {orders.length === 0 ? (
+          {isOrdersLoading ? (
+            <p className="profile-loading">{t('profile.orders.loading')}</p>
+          ) : isOrdersLoadingError ? (
+            <div className="profile-orders__state">
+              <p>{t('profile.orders.error')}</p>
+              <button
+                type="button"
+                className="profile-orders__action"
+                onClick={() => void refetchOrders()}
+              >
+                {t('profile.orders.retry')}
+              </button>
+            </div>
+          ) : orders.length === 0 ? (
             <p className="profile-loading">{t('profile.orders.empty')}</p>
           ) : (
             <>
@@ -280,8 +305,40 @@ export default function ProfileDesktop() {
                   <span className={`order-row__status order-row__status--${o.status.toLowerCase()}`}>
                     {t(`profile.orders.status.${o.status.toLowerCase()}`, { defaultValue: o.status })}
                   </span>
+                  {o.status === 'PENDING' && (
+                    <button
+                      type="button"
+                      className="order-row__payment"
+                      onClick={() => navigate(lp(`/payment/${o.id}`))}
+                    >
+                      {t('profile.orders.continuePayment')}
+                    </button>
+                  )}
                 </div>
               ))}
+              {isFetchNextPageError ? (
+                <div className="profile-orders__pagination-error">
+                  <p>{t('profile.orders.loadMoreError')}</p>
+                  <button
+                    type="button"
+                    className="profile-orders__action"
+                    onClick={() => void fetchNextPage()}
+                  >
+                    {t('profile.orders.retry')}
+                  </button>
+                </div>
+              ) : hasNextPage && (
+                <button
+                  type="button"
+                  className="profile-orders__load-more"
+                  disabled={isFetchingNextPage}
+                  onClick={() => void fetchNextPage()}
+                >
+                  {isFetchingNextPage
+                    ? t('profile.orders.loading')
+                    : t('profile.orders.loadMore')}
+                </button>
+              )}
               <p className="profile-orders__note">{t('profile.orders.note')}</p>
             </>
           )}

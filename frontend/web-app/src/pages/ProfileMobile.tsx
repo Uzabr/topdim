@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Ticket } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { complaintsApi } from '../api/complaints';
 import { ordersApi } from '../api/orders';
@@ -77,10 +77,22 @@ export default function ProfileMobile() {
     enabled: isAuthenticated && tab === 'coupons',
   });
 
-  const { data: orders = [] } = useQuery({
+  const {
+    data: orders = [],
+    isLoading: isOrdersLoading,
+    isLoadingError: isOrdersLoadingError,
+    isFetchNextPageError,
+    refetch: refetchOrders,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['my-orders'],
-    queryFn: () => ordersApi.getOrders(0, 50),
-    select: (res) => res.data.data.content,
+    queryFn: ({ pageParam }) => ordersApi.getOrders(pageParam, 20),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.data.data.last ? undefined : lastPage.data.data.number + 1,
+    select: (data) => data.pages.flatMap((page) => page.data.data.content),
     enabled: isAuthenticated && tab === 'orders',
   });
 
@@ -403,29 +415,76 @@ export default function ProfileMobile() {
 
       {tab === 'orders' && (
         <div className="pmob__list pmob__list--top">
-          {orders.length === 0 ? (
+          {isOrdersLoading ? (
+            <p className="pmob__loading">{t('profile.orders.loading')}</p>
+          ) : isOrdersLoadingError ? (
+            <div className="pmob__orders-state">
+              <p>{t('profile.orders.error')}</p>
+              <button
+                type="button"
+                className="pmob__orders-action"
+                onClick={() => void refetchOrders()}
+              >
+                {t('profile.orders.retry')}
+              </button>
+            </div>
+          ) : orders.length === 0 ? (
             <p className="pmob__loading">{t('profile.orders.empty')}</p>
           ) : (
-            orders.map((o) => (
-              <div key={o.id} className="porder">
-                <div className="porder__text">
-                  <span className="prow__title">
-                    {/* Название оффера, когда backend его отдаёт (title); иначе «Заказ №N».
-                        См. TODO(backend) в api/orders.ts. */}
-                    {o.title || t('profile.orders.number', { number: o.orderNumber })}
-                  </span>
-                  <span className="prow__meta">{formatDate(o.createdAt)}</span>
+            <>
+              {orders.map((o) => (
+                <div key={o.id} className="porder">
+                  <div className="porder__text">
+                    <span className="prow__title">
+                      {/* Название оффера, когда backend его отдаёт (title); иначе «Заказ №N».
+                          См. TODO(backend) в api/orders.ts. */}
+                      {o.title || t('profile.orders.number', { number: o.orderNumber })}
+                    </span>
+                    <span className="prow__meta">{formatDate(o.createdAt)}</span>
+                  </div>
+                  <div className="porder__right">
+                    <span className="porder__sum">{formatPrice(o.totalAmount)}</span>
+                    <span className="porder__status">
+                      {t(`profile.orders.status.${o.status.toLowerCase()}`, {
+                        defaultValue: o.status,
+                      })}
+                    </span>
+                    {o.status === 'PENDING' && (
+                      <button
+                        type="button"
+                        className="porder__payment"
+                        onClick={() => navigate(lp(`/payment/${o.id}`))}
+                      >
+                        {t('profile.orders.continuePayment')}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="porder__right">
-                  <span className="porder__sum">{formatPrice(o.totalAmount)}</span>
-                  <span className="porder__status">
-                    {t(`profile.orders.status.${o.status.toLowerCase()}`, {
-                      defaultValue: o.status,
-                    })}
-                  </span>
+              ))}
+              {isFetchNextPageError ? (
+                <div className="pmob__orders-pagination-error">
+                  <p>{t('profile.orders.loadMoreError')}</p>
+                  <button
+                    type="button"
+                    className="pmob__orders-action"
+                    onClick={() => void fetchNextPage()}
+                  >
+                    {t('profile.orders.retry')}
+                  </button>
                 </div>
-              </div>
-            ))
+              ) : hasNextPage && (
+                <button
+                  type="button"
+                  className="pmob__orders-load-more"
+                  disabled={isFetchingNextPage}
+                  onClick={() => void fetchNextPage()}
+                >
+                  {isFetchingNextPage
+                    ? t('profile.orders.loading')
+                    : t('profile.orders.loadMore')}
+                </button>
+              )}
+            </>
           )}
         </div>
       )}

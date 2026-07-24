@@ -1,14 +1,48 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PurchasedCoupon } from '../api/orders';
+import type { OrderResponse, PurchasedCoupon } from '../api/orders';
 import ProfileMobile from './ProfileMobile';
+
+const navigateMock = vi.hoisted(() => vi.fn());
+const getOrdersMock = vi.hoisted(() => vi.fn());
 
 const queryState = vi.hoisted(() => ({
   coupons: [] as PurchasedCoupon[],
   complaints: [] as Array<{ purchasedCouponId: number; status: string }>,
   reviews: [] as Array<{ couponOfferId: number }>,
+  orderPages: [] as Array<{
+    data: {
+      data: {
+        content: OrderResponse[];
+        totalElements: number;
+        totalPages: number;
+        size: number;
+        number: number;
+        last: boolean;
+      };
+    };
+  }>,
+  ordersLoading: false,
+  ordersError: false,
+  ordersLoadingError: false,
+  ordersFetchNextPageError: false,
+  ordersFetchingNextPage: false,
+  refetchOrders: vi.fn(),
+  fetchNextPageOrders: vi.fn(),
+  locationSearch: '',
 }));
+
+vi.mock('../api/orders', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/orders')>();
+  return {
+    ...actual,
+    ordersApi: {
+      ...actual.ordersApi,
+      getOrders: getOrdersMock,
+    },
+  };
+});
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -24,6 +58,36 @@ vi.mock('@tanstack/react-query', () => ({
     if (queryKey[0] === 'my-reviews') return { data: queryState.reviews };
     return { data: [] };
   },
+  useInfiniteQuery: (options: {
+    queryFn: ({ pageParam }: { pageParam: number }) => unknown;
+    select?: (data: { pages: typeof queryState.orderPages; pageParams: number[] }) => unknown;
+    getNextPageParam: (
+      lastPage: (typeof queryState.orderPages)[number],
+      pages: typeof queryState.orderPages,
+    ) => number | undefined;
+  }) => {
+    const lastPage = queryState.orderPages.at(-1);
+    const nextPage = lastPage
+      ? options.getNextPageParam(lastPage, queryState.orderPages)
+      : undefined;
+    return {
+      data: options.select?.({
+        pages: queryState.orderPages,
+        pageParams: queryState.orderPages.map((page) => page.data.data.number),
+      }),
+      isLoading: queryState.ordersLoading,
+      isError: queryState.ordersError,
+      isLoadingError: queryState.ordersLoadingError,
+      isFetchNextPageError: queryState.ordersFetchNextPageError,
+      refetch: queryState.refetchOrders,
+      fetchNextPage: () => {
+        queryState.fetchNextPageOrders();
+        return nextPage === undefined ? Promise.resolve() : options.queryFn({ pageParam: nextPage });
+      },
+      hasNextPage: nextPage !== undefined,
+      isFetchingNextPage: queryState.ordersFetchingNextPage,
+    };
+  },
 }));
 
 vi.mock('../store/authStore', () => ({
@@ -36,8 +100,8 @@ vi.mock('../store/authStore', () => ({
 
 vi.mock('react-router-dom', () => ({
   Link: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useLocation: () => ({ pathname: '/ru/profile', search: '' }),
-  useNavigate: () => vi.fn(),
+  useLocation: () => ({ pathname: '/ru/profile', search: queryState.locationSearch }),
+  useNavigate: () => navigateMock,
 }));
 
 vi.mock('../hooks/useLocalePath', () => ({
@@ -63,6 +127,36 @@ const activeCoupon: PurchasedCoupon = {
   expiresAt: '2026-08-01T10:00:00Z',
 };
 
+const pendingOrder: OrderResponse = {
+  id: 91,
+  orderNumber: 'ORD-91',
+  totalAmount: 125000,
+  status: 'PENDING',
+  userEmail: 'user@example.com',
+  userPhone: '+998901234567',
+  itemCount: 1,
+  createdAt: '2026-07-25T10:00:00Z',
+};
+
+function orderPage(
+  content: OrderResponse[],
+  number = 0,
+  last = true,
+): (typeof queryState.orderPages)[number] {
+  return {
+    data: {
+      data: {
+        content,
+        totalElements: content.length,
+        totalPages: last ? number + 1 : number + 2,
+        size: 20,
+        number,
+        last,
+      },
+    },
+  };
+}
+
 function couponActions(title: string, selector: string) {
   const coupon = screen.getByText(title).closest(selector);
   expect(coupon).not.toBeNull();
@@ -73,6 +167,17 @@ describe('ProfileMobile coupon actions', () => {
   afterEach(cleanup);
 
   beforeEach(() => {
+    navigateMock.mockReset();
+    getOrdersMock.mockReset();
+    queryState.refetchOrders.mockReset();
+    queryState.fetchNextPageOrders.mockReset();
+    queryState.orderPages = [orderPage([], 0, true)];
+    queryState.ordersLoading = false;
+    queryState.ordersError = false;
+    queryState.ordersLoadingError = false;
+    queryState.ordersFetchNextPageError = false;
+    queryState.ordersFetchingNextPage = false;
+    queryState.locationSearch = '';
     queryState.coupons = [
       activeCoupon,
       {
@@ -145,5 +250,114 @@ describe('ProfileMobile coupon actions', () => {
     expect(cancelled.queryByRole('button', { name: 'profile.archive.leaveReview' })).toBeNull();
     expect(cancelled.queryByRole('button', { name: 'profile.complain' })).toBeNull();
     expect(cancelled.getByText('profile.complaintPending')).toBeTruthy();
+  });
+});
+
+describe('ProfileMobile order history', () => {
+  afterEach(cleanup);
+
+  beforeEach(() => {
+    navigateMock.mockReset();
+    getOrdersMock.mockReset();
+    queryState.refetchOrders.mockReset();
+    queryState.fetchNextPageOrders.mockReset();
+    queryState.coupons = [];
+    queryState.complaints = [];
+    queryState.reviews = [];
+    queryState.orderPages = [orderPage([], 0, true)];
+    queryState.ordersLoading = false;
+    queryState.ordersError = false;
+    queryState.ordersLoadingError = false;
+    queryState.ordersFetchNextPageError = false;
+    queryState.ordersFetchingNextPage = false;
+    queryState.locationSearch = '?tab=orders';
+  });
+
+  it('shows loading without claiming that order history is empty', () => {
+    queryState.ordersLoading = true;
+
+    render(<ProfileMobile />);
+
+    expect(screen.getByText('profile.orders.loading')).toBeTruthy();
+    expect(screen.queryByText('profile.orders.empty')).toBeNull();
+  });
+
+  it('shows an order loading failure and retries it', () => {
+    queryState.ordersError = true;
+    queryState.ordersLoadingError = true;
+
+    render(<ProfileMobile />);
+    fireEvent.click(screen.getByRole('button', { name: 'profile.orders.retry' }));
+
+    expect(screen.getByText('profile.orders.error')).toBeTruthy();
+    expect(queryState.refetchOrders).toHaveBeenCalledOnce();
+    expect(screen.queryByText('profile.orders.empty')).toBeNull();
+  });
+
+  it('shows the empty state only after an empty successful response', () => {
+    render(<ProfileMobile />);
+
+    expect(screen.getByText('profile.orders.empty')).toBeTruthy();
+    expect(screen.queryByText('profile.orders.loading')).toBeNull();
+    expect(screen.queryByText('profile.orders.error')).toBeNull();
+  });
+
+  it('lets the user continue payment only for a pending order', () => {
+    queryState.orderPages = [
+      orderPage([
+        pendingOrder,
+        { ...pendingOrder, id: 92, orderNumber: 'ORD-92', status: 'PAID' },
+      ]),
+    ];
+
+    render(<ProfileMobile />);
+    const continuePayment = screen.getByRole('button', {
+      name: 'profile.orders.continuePayment',
+    });
+    fireEvent.click(continuePayment);
+
+    expect(screen.getAllByText('profile.orders.continuePayment')).toHaveLength(1);
+    expect(navigateMock).toHaveBeenCalledWith('/ru/payment/91');
+  });
+
+  it('loads page 1 with 20 records when the first page is not last', () => {
+    queryState.orderPages = [orderPage([pendingOrder], 0, false)];
+    getOrdersMock.mockResolvedValue(orderPage([], 1, true));
+
+    render(<ProfileMobile />);
+    fireEvent.click(screen.getByRole('button', { name: 'profile.orders.loadMore' }));
+
+    expect(getOrdersMock).toHaveBeenCalledWith(1, 20);
+  });
+
+  it('renders records aggregated from page 0 and page 1', () => {
+    queryState.orderPages = [
+      orderPage([{ ...pendingOrder, id: 201, title: 'Page zero order' }], 0, false),
+      orderPage([{ ...pendingOrder, id: 202, title: 'Page one order' }], 1, true),
+    ];
+
+    render(<ProfileMobile />);
+
+    expect(screen.getByText('Page zero order')).toBeTruthy();
+    expect(screen.getByText('Page one order')).toBeTruthy();
+  });
+
+  it('keeps page 0 visible and retries only the failed next page', () => {
+    queryState.orderPages = [
+      orderPage([{ ...pendingOrder, id: 201, title: 'Page zero order' }], 0, false),
+    ];
+    queryState.ordersError = true;
+    queryState.ordersFetchNextPageError = true;
+
+    render(<ProfileMobile />);
+
+    expect(screen.getByText('Page zero order')).toBeTruthy();
+    expect(screen.getByText('profile.orders.loadMoreError')).toBeTruthy();
+    expect(screen.queryByText('profile.orders.error')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'profile.orders.retry' }));
+
+    expect(queryState.fetchNextPageOrders).toHaveBeenCalledOnce();
+    expect(queryState.refetchOrders).not.toHaveBeenCalled();
   });
 });
