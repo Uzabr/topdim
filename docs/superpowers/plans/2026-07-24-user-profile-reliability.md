@@ -132,6 +132,7 @@ Add to `UpdateProfileRequest.phone`:
 In `UserService#updateProfile`, compare the canonical new phone with the stored phone using `Objects.equals`; check uniqueness only when changed, save the phone, and set `phoneVerified` to false when changed. When `lastName` is non-null, trim it and store `null` if the trimmed string is empty.
 
 In `ProfileSettingsSection`, send `lastName.trim()` instead of `lastName.trim() || undefined`.
+Replace the current length-only phone check with the same `/^\+998\d{9}$/` rule before submitting, and show the existing inline validation error area when it fails.
 
 - [ ] **Step 4: Run backend and frontend tests**
 
@@ -219,11 +220,11 @@ git commit -m "fix: prevent duplicate pending complaints"
 
 **Interfaces:**
 - Produces: `getCouponActions(status, hasOpenComplaint, hasReview): { canRefund; canComplain; canReview }`.
-- Rules: refund only for `ACTIVE`; complaint for any status except `CANCELLED` when there is no pending complaint; review only for `USED` when no review exists.
+- Rules: refund only for `ACTIVE`; complaint when there is no pending complaint; review only for `USED` when no review exists. Backend services remain authoritative for each operation.
 
 - [ ] **Step 1: Write failing policy and component tests**
 
-Cover `ACTIVE`, `REFUND_PENDING`, `USED`, `CANCELLED`, pending complaint, and existing review. Assert that mobile and desktop expose the same refund and complaint controls.
+Cover `ACTIVE`, `REFUND_PENDING`, `USED`, `CANCELLED`, pending complaint, and existing review. `CANCELLED` must not allow refund or review, but complaint availability still depends on whether a pending complaint exists. Assert that mobile and desktop expose the same refund and complaint controls.
 
 - [ ] **Step 2: Run and confirm failure**
 
@@ -336,6 +337,7 @@ git commit -m "fix: make profile security and notifications reliable"
 - Modify: `frontend/web-app/src/components/profile/RefundRequestModal.tsx`
 - Modify: `frontend/web-app/src/components/profile/ComplaintModal.tsx`
 - Modify: `frontend/web-app/src/components/profile/ReviewModal.tsx`
+- Create: `frontend/web-app/src/components/profile/useDialogFocus.ts`
 - Create: `frontend/web-app/src/components/profile/ProfileModals.test.tsx`
 - Modify: `frontend/web-app/src/pages/ProfileDesktop.tsx`
 - Modify: `frontend/web-app/src/pages/ProfileMobile.tsx`
@@ -376,4 +378,3 @@ Expected: all commands exit 0.
 git add frontend/web-app
 git commit -m "fix: improve profile accessibility and copy"
 ```
-
