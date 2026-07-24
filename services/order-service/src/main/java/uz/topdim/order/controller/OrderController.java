@@ -98,12 +98,14 @@ public class OrderController {
 
     /** Список заказов пользователя (с пагинацией). */
     @GetMapping("/api/v1/orders")
-    public ResponseEntity<ApiResponse<Page<Order>>> getUserOrders(
+    public ResponseEntity<ApiResponse<Page<OrderResponse>>> getUserOrders(
             @RequestHeader("X-User-Id") Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(ApiResponse.success(orderService.getUserOrders(userId, page, size)));
+        Page<OrderResponse> response = orderService.getUserOrders(userId, page, size)
+                .map(orderService::mapToOrderResponse);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /** Получить конкретный заказ по ID (с проверкой владельца). */
