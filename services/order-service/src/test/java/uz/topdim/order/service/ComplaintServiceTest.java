@@ -3,6 +3,7 @@ package uz.topdim.order.service;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.hibernate.exception.ConstraintViolationException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
@@ -20,6 +21,7 @@ import uz.topdim.order.repository.ComplaintRepository;
 import uz.topdim.order.repository.OrderRepository;
 import uz.topdim.order.repository.PurchasedCouponRepository;
 
+import java.sql.SQLException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -146,22 +148,56 @@ class ComplaintServiceTest {
     }
 
     @Test
-    @DisplayName("При конфликте уникальности во время flush уведомление не публикуется")
-    void createComplaint_concurrentDuplicateAtFlush_doesNotPublishNotification() {
+    @DisplayName("Конфликт uq_complaints_pending_coupon переводится в бизнес-ошибку без уведомления")
+    void createComplaint_pendingCouponConstraintConflict_translatesToBusinessError() {
         PurchasedCoupon coupon = purchasedCoupon(46L, 7L);
         when(purchasedCouponRepository.findById(46L)).thenReturn(Optional.of(coupon));
         when(complaintRepository.existsByPurchasedCouponIdAndStatus(46L, ComplaintStatus.PENDING))
                 .thenReturn(false);
+        DataIntegrityViolationException conflict =
+                integrityViolationForConstraint("uq_complaints_pending_coupon");
         when(complaintRepository.saveAndFlush(any(Complaint.class)))
-                .thenThrow(new DataIntegrityViolationException("uq_complaints_pending_coupon"));
+                .thenThrow(conflict);
 
         assertThatThrownBy(() -> complaintService.createComplaint(7L, requestForCoupon(46L)))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("По этому купону уже есть открытое обращение")
+                .hasCause(conflict);
 
         verify(rabbitTemplate, never()).convertAndSend(
                 eq("notification.exchange"),
                 eq("notification.sent"),
                 any(NotificationEvent.class));
+    }
+
+    @Test
+    @DisplayName("Не связанная с pending-обращением ошибка целостности пробрасывается без перевода")
+    void createComplaint_unrelatedIntegrityViolation_propagatesUnchanged() {
+        PurchasedCoupon coupon = purchasedCoupon(47L, 7L);
+        when(purchasedCouponRepository.findById(47L)).thenReturn(Optional.of(coupon));
+        when(complaintRepository.existsByPurchasedCouponIdAndStatus(47L, ComplaintStatus.PENDING))
+                .thenReturn(false);
+        DataIntegrityViolationException unrelatedFailure =
+                integrityViolationForConstraint("complaints_order_id_fkey");
+        when(complaintRepository.saveAndFlush(any(Complaint.class)))
+                .thenThrow(unrelatedFailure);
+
+        assertThatThrownBy(() -> complaintService.createComplaint(7L, requestForCoupon(47L)))
+                .isSameAs(unrelatedFailure);
+
+        verify(rabbitTemplate, never()).convertAndSend(
+                eq("notification.exchange"),
+                eq("notification.sent"),
+                any(NotificationEvent.class));
+    }
+
+    private DataIntegrityViolationException integrityViolationForConstraint(String constraintName) {
+        ConstraintViolationException hibernateFailure = new ConstraintViolationException(
+                "could not execute statement",
+                new SQLException("duplicate key", "23505"),
+                "insert into complaints",
+                constraintName);
+        return new DataIntegrityViolationException("could not execute statement", hibernateFailure);
     }
 
     private PurchasedCoupon purchasedCoupon(Long couponId, Long userId) {
