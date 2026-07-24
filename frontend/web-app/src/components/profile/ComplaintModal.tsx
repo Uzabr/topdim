@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { complaintsApi } from '../../api/complaints';
 import { X } from 'lucide-react';
 import type { PurchasedCoupon } from '../../api/orders';
+import { useDialogFocus } from './useDialogFocus';
 import './RefundRequestModal.css';
 
 interface Props {
@@ -13,6 +14,10 @@ interface Props {
 
 export default function ComplaintModal({ coupon, onClose }: Props) {
   const { t } = useTranslation();
+  const titleId = useId();
+  const subjectId = useId();
+  const descriptionId = useId();
+  const dialogRef = useDialogFocus(onClose);
   const subjects = useMemo(() => [
     t('profile.complaintModal.topics.notAccepted'),
     t('profile.complaintModal.topics.qrFailed'),
@@ -50,10 +55,25 @@ export default function ComplaintModal({ coupon, onClose }: Props) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card surface-card" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        className="modal-card surface-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
-          <h3>{t('profile.complaintModal.title')}</h3>
-          <button className="modal-close" onClick={onClose}><X size={20} /></button>
+          <h3 id={titleId}>{t('profile.complaintModal.title')}</h3>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            aria-label={t('common.close')}
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <div className="modal-coupon-info">
@@ -66,8 +86,11 @@ export default function ComplaintModal({ coupon, onClose }: Props) {
         </div>
 
         <form onSubmit={handleSubmit}>
-          <label className="modal-label">{t('profile.complaintModal.topicLabel')}</label>
+          <label className="modal-label" htmlFor={subjectId}>
+            {t('profile.complaintModal.topicLabel')}
+          </label>
           <select
+            id={subjectId}
             className="modal-textarea"
             style={{ minHeight: 'auto' }}
             value={activeSubject}
@@ -76,8 +99,11 @@ export default function ComplaintModal({ coupon, onClose }: Props) {
             {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
 
-          <label className="modal-label" style={{ marginTop: 12 }}>{t('profile.complaintModal.descLabel')}</label>
+          <label className="modal-label" htmlFor={descriptionId} style={{ marginTop: 12 }}>
+            {t('profile.complaintModal.descLabel')}
+          </label>
           <textarea
+            id={descriptionId}
             className="modal-textarea"
             value={description}
             onChange={(e) => { setDescription(e.target.value); setError(''); }}

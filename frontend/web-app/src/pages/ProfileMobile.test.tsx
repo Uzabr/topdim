@@ -251,6 +251,28 @@ describe('ProfileMobile coupon actions', () => {
     expect(cancelled.queryByRole('button', { name: 'profile.complain' })).toBeNull();
     expect(cancelled.getByText('profile.complaintPending')).toBeTruthy();
   });
+
+  it('sorts an active coupon without expiry after dated active coupons', () => {
+    queryState.coupons = [
+      {
+        ...activeCoupon,
+        id: 6,
+        couponTitle: 'No expiry coupon',
+        expiresAt: undefined,
+      },
+      {
+        ...activeCoupon,
+        id: 7,
+        couponTitle: 'Dated coupon',
+        expiresAt: '2026-07-30T10:00:00Z',
+      },
+    ];
+
+    render(<ProfileMobile />);
+
+    expect(screen.getByText('Dated coupon').closest('.pticket')).not.toBeNull();
+    expect(screen.getByText('No expiry coupon').closest('.prow')).not.toBeNull();
+  });
 });
 
 describe('ProfileMobile order history', () => {

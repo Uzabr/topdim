@@ -99,7 +99,9 @@ export default function ProfileMobile() {
   const { ticket, rest, archive } = useMemo(() => {
     const live = coupons
       .filter((c) => LIVE.includes(c.status))
-      .sort((a, b) => (a.expiresAt ?? '').localeCompare(b.expiresAt ?? ''));
+      .sort((a, b) =>
+        (a.expiresAt ?? '9999-12-31').localeCompare(b.expiresAt ?? '9999-12-31'),
+      );
     return {
       ticket: live[0] ?? null,
       rest: live.slice(1),

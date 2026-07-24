@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { refundsApi } from '../../api/refunds';
 import { AlertTriangle, X } from 'lucide-react';
 import type { PurchasedCoupon } from '../../api/orders';
+import { useDialogFocus } from './useDialogFocus';
 import './RefundRequestModal.css';
 
 interface Props {
@@ -13,6 +14,9 @@ interface Props {
 
 export default function RefundRequestModal({ coupon, onClose }: Props) {
   const { t } = useTranslation();
+  const titleId = useId();
+  const reasonId = useId();
+  const dialogRef = useDialogFocus(onClose);
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   const queryClient = useQueryClient();
@@ -41,10 +45,25 @@ export default function RefundRequestModal({ coupon, onClose }: Props) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card surface-card" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        className="modal-card surface-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
-          <h3>{t('profile.refundModal.title')}</h3>
-          <button className="modal-close" onClick={onClose}><X size={20} /></button>
+          <h3 id={titleId}>{t('profile.refundModal.title')}</h3>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            aria-label={t('common.close')}
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <div className="modal-coupon-info">
@@ -63,8 +82,11 @@ export default function RefundRequestModal({ coupon, onClose }: Props) {
         </div>
 
         <form onSubmit={handleSubmit}>
-          <label className="modal-label">{t('profile.refundModal.reasonLabel')}</label>
+          <label className="modal-label" htmlFor={reasonId}>
+            {t('profile.refundModal.reasonLabel')}
+          </label>
           <textarea
+            id={reasonId}
             className="modal-textarea"
             value={reason}
             onChange={(e) => { setReason(e.target.value); setError(''); }}

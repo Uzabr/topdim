@@ -106,7 +106,9 @@ export default function ProfileDesktop() {
   const { live, archive, ticket, rest } = useMemo(() => {
     const liveList = coupons
       .filter((c) => LIVE_STATUSES.includes(c.status))
-      .sort((a, b) => (a.expiresAt ?? '').localeCompare(b.expiresAt ?? ''));
+      .sort((a, b) =>
+        (a.expiresAt ?? '9999-12-31').localeCompare(b.expiresAt ?? '9999-12-31'),
+      );
     const archiveList = coupons.filter((c) => !LIVE_STATUSES.includes(c.status));
     return {
       live: liveList,
