@@ -15,6 +15,7 @@ dist/
 .gemini/
 .agents/
 .agent/
+.superpowers/
 .cursorignore
 
 # IDE
