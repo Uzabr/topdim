@@ -227,9 +227,12 @@ git commit -m "fix: prevent duplicate pending complaints"
 - Create: `frontend/web-app/src/components/profile/couponActions.test.ts`
 - Modify: `frontend/web-app/src/components/profile/CouponTicket.tsx`
 - Modify: `frontend/web-app/src/components/profile/ActiveCouponCard.tsx`
+- Modify: `frontend/web-app/src/pages/ProfileDesktop.tsx`
 - Modify: `frontend/web-app/src/pages/ProfileMobile.tsx`
 - Create: `frontend/web-app/src/components/profile/CouponTicket.test.tsx`
 - Create: `frontend/web-app/src/components/profile/ActiveCouponCard.test.tsx`
+- Create: `frontend/web-app/src/pages/ProfileDesktop.test.tsx`
+- Create: `frontend/web-app/src/pages/ProfileMobile.test.tsx`
 
 **Interfaces:**
 - Produces: `getCouponActions(status, hasOpenComplaint, hasReview): { canRefund; canComplain; canReview }`.
@@ -247,7 +250,7 @@ cd frontend/web-app && npm run test -- couponActions.test.ts CouponTicket.test.t
 
 - [ ] **Step 3: Implement and consume the shared policy**
 
-Implement a pure typed helper. Replace inline status checks in both coupon components and the featured/secondary mobile coupon controls. Disabled actions must be absent; a pending complaint indicator remains visible.
+Implement a pure typed helper. Replace inline status checks in both coupon components, desktop archive actions, and featured/secondary mobile coupon controls. Disabled actions must be absent; a pending complaint indicator remains visible.
 
 - [ ] **Step 4: Run frontend tests**
 
@@ -270,8 +273,8 @@ git commit -m "fix: align coupon actions across profile layouts"
 - Modify: `frontend/web-app/src/pages/ProfilePage.css`
 - Modify: `frontend/web-app/src/pages/ProfileMobile.css`
 - Modify: `frontend/web-app/src/locales/ru.json`
-- Create: `frontend/web-app/src/pages/ProfileDesktop.test.tsx`
-- Create: `frontend/web-app/src/pages/ProfileMobile.test.tsx`
+- Modify: `frontend/web-app/src/pages/ProfileDesktop.test.tsx`
+- Modify: `frontend/web-app/src/pages/ProfileMobile.test.tsx`
 
 **Interfaces:**
 - Consumes: existing localized route helper `lp` and route `/payment/:orderId`.
