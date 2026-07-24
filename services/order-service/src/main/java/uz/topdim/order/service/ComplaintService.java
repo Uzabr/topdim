@@ -42,6 +42,11 @@ public class ComplaintService {
             if (order == null) {
                 throw new RuntimeException("Заказ для купона не найден");
             }
+
+            if (complaintRepository.existsByPurchasedCouponIdAndStatus(
+                    purchasedCoupon.getId(), ComplaintStatus.PENDING)) {
+                throw new IllegalStateException("По этому купону уже есть открытое обращение");
+            }
         } else if (request.getOrderId() != null) {
             // Legacy order-level complaint flow
             order = orderRepository.findById(request.getOrderId())
@@ -63,7 +68,7 @@ public class ComplaintService {
                 .status(ComplaintStatus.PENDING)
                 .build();
 
-        Long complaintId = complaintRepository.save(complaint).getId();
+        Long complaintId = complaintRepository.saveAndFlush(complaint).getId();
 
         sendNotification(userId, "Обращение создано",
                 "Ваше обращение «" + request.getSubject() + "» принято и находится на рассмотрении.",

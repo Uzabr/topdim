@@ -7,6 +7,8 @@ import uz.topdim.order.entity.Complaint;
 import uz.topdim.order.entity.ComplaintStatus;
 
 public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
+    boolean existsByPurchasedCouponIdAndStatus(Long purchasedCouponId, ComplaintStatus status);
+
     Page<Complaint> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
     Page<Complaint> findByStatusOrderByCreatedAtDesc(ComplaintStatus status, Pageable pageable);
 }
