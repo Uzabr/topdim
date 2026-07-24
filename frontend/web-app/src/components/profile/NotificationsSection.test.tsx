@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { notificationsApi, type NotificationData } from '../../api/notifications';
+import { profileQueryKeys } from '../../queries/profileQueries';
 import NotificationsSection from './NotificationsSection';
 
 vi.mock('react-i18next', () => ({
@@ -17,6 +18,11 @@ vi.mock('../../api/notifications', () => ({
     getMine: vi.fn(),
     markRead: vi.fn(),
   },
+}));
+
+vi.mock('../../store/authStore', () => ({
+  useAuthStore: (selector: (state: { user: { id: number } }) => unknown) =>
+    selector({ user: { id: 7 } }),
 }));
 
 const makeNotification = (id: number, read = false): NotificationData => ({
@@ -113,10 +119,13 @@ describe('NotificationsSection', () => {
     vi.mocked(notificationsApi.getMine).mockResolvedValue(
       makePage([]) as Awaited<ReturnType<typeof notificationsApi.getMine>>,
     );
-    renderNotifications();
+    const { queryClient } = renderNotifications();
 
     expect(await screen.findByText('profile.notifications.emptyTitle')).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
+    expect(queryClient.getQueryCache().find({
+      queryKey: profileQueryKeys.notifications(7, false),
+    })).toBeDefined();
   });
 
   it('requests only unread notifications when the filter is enabled', async () => {
@@ -153,7 +162,7 @@ describe('NotificationsSection', () => {
 
     await waitFor(() => expect(notificationsApi.markRead).toHaveBeenCalledWith(7));
     expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ['my-notifications'],
+      queryKey: ['my-notifications', 7],
     });
   });
 
@@ -182,5 +191,52 @@ describe('NotificationsSection', () => {
     expect(screen.queryByRole('button', {
       name: 'profile.notifications.loadMore',
     })).toBeNull();
+  });
+
+  it('retains page 0 and disables the next-page retry while recovery is pending', async () => {
+    let pageOneAttempts = 0;
+    let resolveRetry!: (value: ReturnType<typeof makePage>) => void;
+    const retryResponse = new Promise<ReturnType<typeof makePage>>((resolve) => {
+      resolveRetry = resolve;
+    });
+    vi.mocked(notificationsApi.getMine).mockImplementation(
+      (_unreadOnly, page) => {
+        if (page === 0) {
+          return Promise.resolve(
+            makePage([makeNotification(1)], 0, false),
+          ) as ReturnType<typeof notificationsApi.getMine>;
+        }
+        pageOneAttempts += 1;
+        if (pageOneAttempts === 1) {
+          return Promise.reject(new Error('page 1 unavailable'));
+        }
+        return retryResponse as ReturnType<typeof notificationsApi.getMine>;
+      },
+    );
+    renderNotifications();
+
+    expect(await screen.findByText('Notification 1')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', {
+      name: 'profile.notifications.loadMore',
+    }));
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'profile.notifications.loadMoreError',
+    );
+    expect(screen.getByText('Notification 1')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', {
+      name: 'profile.notifications.retry',
+    }));
+
+    const retry = await screen.findByRole('button', {
+      name: 'profile.loadingNotifications',
+    });
+    expect((retry as HTMLButtonElement).disabled).toBe(true);
+
+    await act(async () => {
+      resolveRetry(makePage([makeNotification(21)], 1, true));
+    });
+    expect(await screen.findByText('Notification 21')).toBeTruthy();
   });
 });

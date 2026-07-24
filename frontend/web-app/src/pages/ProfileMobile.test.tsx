@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OrderResponse, PurchasedCoupon } from '../api/orders';
+import type { ReviewStatus } from '../api/reviews';
 import ProfileMobile from './ProfileMobile';
 
 const navigateMock = vi.hoisted(() => vi.fn());
@@ -10,7 +11,16 @@ const getOrdersMock = vi.hoisted(() => vi.fn());
 const queryState = vi.hoisted(() => ({
   coupons: [] as PurchasedCoupon[],
   complaints: [] as Array<{ purchasedCouponId: number; status: string }>,
-  reviews: [] as Array<{ couponOfferId: number }>,
+  reviews: [] as Array<{ couponOfferId: number; status: ReviewStatus }>,
+  couponsLoading: false,
+  couponsError: false,
+  complaintsLoading: false,
+  complaintsError: false,
+  reviewsLoading: false,
+  reviewsError: false,
+  refetchCoupons: vi.fn(),
+  refetchComplaints: vi.fn(),
+  refetchReviews: vi.fn(),
   orderPages: [] as Array<{
     data: {
       data: {
@@ -51,11 +61,33 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@tanstack/react-query', () => ({
-  useQuery: ({ queryKey }: { queryKey: string[] }) => {
-    if (queryKey[0] === 'my-coupons') return { data: queryState.coupons, isLoading: false };
-    if (queryKey[0] === 'my-complaints') return { data: queryState.complaints };
-    if (queryKey[0] === 'my-reviews') return { data: queryState.reviews };
+vi.mock('@tanstack/react-query', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@tanstack/react-query')>(),
+  useQuery: ({ queryKey }: { queryKey: Array<string | number | boolean> }) => {
+    if (queryKey[0] === 'my-coupons') {
+      return {
+        data: queryState.coupons,
+        isLoading: queryState.couponsLoading,
+        isError: queryState.couponsError,
+        refetch: queryState.refetchCoupons,
+      };
+    }
+    if (queryKey[0] === 'my-complaints') {
+      return {
+        data: queryState.complaints,
+        isLoading: queryState.complaintsLoading,
+        isError: queryState.complaintsError,
+        refetch: queryState.refetchComplaints,
+      };
+    }
+    if (queryKey[0] === 'my-reviews') {
+      return {
+        data: queryState.reviews,
+        isLoading: queryState.reviewsLoading,
+        isError: queryState.reviewsError,
+        refetch: queryState.refetchReviews,
+      };
+    }
     return { data: [] };
   },
   useInfiniteQuery: (options: {
@@ -171,12 +203,21 @@ describe('ProfileMobile coupon actions', () => {
     getOrdersMock.mockReset();
     queryState.refetchOrders.mockReset();
     queryState.fetchNextPageOrders.mockReset();
+    queryState.refetchCoupons.mockReset();
+    queryState.refetchComplaints.mockReset();
+    queryState.refetchReviews.mockReset();
     queryState.orderPages = [orderPage([], 0, true)];
     queryState.ordersLoading = false;
     queryState.ordersError = false;
     queryState.ordersLoadingError = false;
     queryState.ordersFetchNextPageError = false;
     queryState.ordersFetchingNextPage = false;
+    queryState.couponsLoading = false;
+    queryState.couponsError = false;
+    queryState.complaintsLoading = false;
+    queryState.complaintsError = false;
+    queryState.reviewsLoading = false;
+    queryState.reviewsError = false;
     queryState.locationSearch = '';
     queryState.coupons = [
       activeCoupon,
@@ -218,7 +259,7 @@ describe('ProfileMobile coupon actions', () => {
       { purchasedCouponId: 1, status: 'PENDING' },
       { purchasedCouponId: 5, status: 'IN_REVIEW' },
     ];
-    queryState.reviews = [{ couponOfferId: 40 }];
+    queryState.reviews = [{ couponOfferId: 40, status: 'APPROVED' }];
   });
 
   it('shows policy-allowed actions on each live coupon', () => {
@@ -252,6 +293,74 @@ describe('ProfileMobile coupon actions', () => {
     expect(cancelled.getByText('profile.complaintPending')).toBeTruthy();
   });
 
+  it('withholds coupon actions while complaint or review policy is still loading', () => {
+    queryState.reviewsLoading = true;
+
+    render(<ProfileMobile />);
+
+    expect(screen.getByText('profile.loadingCoupons')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'profile.refundMoney' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'profile.complain' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'profile.archive.leaveReview' })).toBeNull();
+  });
+
+  it.each([
+    ['coupon', 'couponsError', 'refetchCoupons'],
+    ['complaint', 'complaintsError', 'refetchComplaints'],
+    ['review', 'reviewsError', 'refetchReviews'],
+  ] as const)(
+    'renders a retryable %s policy error instead of an empty success state',
+    (_name, errorKey, refetchKey) => {
+      queryState[errorKey] = true;
+
+      render(<ProfileMobile />);
+      fireEvent.click(screen.getByRole('button', { name: 'profile.couponPolicy.retry' }));
+
+      expect(screen.getByRole('alert').textContent).toContain('profile.couponPolicy.error');
+      expect(queryState[refetchKey]).toHaveBeenCalledOnce();
+      expect(screen.queryByText('profile.emptyCoupons.active.title')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'profile.refundMoney' })).toBeNull();
+    },
+  );
+
+  it('uses open complaints and blocking reviews found beyond the first 100 records', () => {
+    queryState.complaints = [
+      ...Array.from({ length: 100 }, (_, index) => ({
+        purchasedCouponId: 1000 + index,
+        status: 'RESOLVED',
+      })),
+      { purchasedCouponId: 1, status: 'PENDING' },
+    ];
+    queryState.reviews = [
+      ...Array.from({ length: 100 }, (_, index) => ({
+        couponOfferId: 1000 + index,
+        status: 'REJECTED' as const,
+      })),
+      { couponOfferId: 30, status: 'APPROVED' },
+    ];
+
+    render(<ProfileMobile />);
+
+    expect(couponActions('Active dinner', '.pticket')
+      .queryByRole('button', { name: 'profile.complain' })).toBeNull();
+    expect(couponActions('Used without review', '.parc')
+      .queryByRole('button', { name: 'profile.archive.leaveReview' })).toBeNull();
+  });
+
+  it('allows a rejected review to be resubmitted but blocks pending and approved reviews', () => {
+    queryState.reviews = [
+      { couponOfferId: 30, status: 'REJECTED' },
+      { couponOfferId: 40, status: 'PENDING' },
+    ];
+
+    render(<ProfileMobile />);
+
+    expect(couponActions('Used without review', '.parc')
+      .getByRole('button', { name: 'profile.archive.leaveReview' })).toBeTruthy();
+    expect(couponActions('Used with review', '.parc')
+      .queryByRole('button', { name: 'profile.archive.leaveReview' })).toBeNull();
+  });
+
   it('sorts an active coupon without expiry after dated active coupons', () => {
     queryState.coupons = [
       {
@@ -283,6 +392,9 @@ describe('ProfileMobile order history', () => {
     getOrdersMock.mockReset();
     queryState.refetchOrders.mockReset();
     queryState.fetchNextPageOrders.mockReset();
+    queryState.refetchCoupons.mockReset();
+    queryState.refetchComplaints.mockReset();
+    queryState.refetchReviews.mockReset();
     queryState.coupons = [];
     queryState.complaints = [];
     queryState.reviews = [];
@@ -292,6 +404,12 @@ describe('ProfileMobile order history', () => {
     queryState.ordersLoadingError = false;
     queryState.ordersFetchNextPageError = false;
     queryState.ordersFetchingNextPage = false;
+    queryState.couponsLoading = false;
+    queryState.couponsError = false;
+    queryState.complaintsLoading = false;
+    queryState.complaintsError = false;
+    queryState.reviewsLoading = false;
+    queryState.reviewsError = false;
     queryState.locationSearch = '?tab=orders';
   });
 
@@ -381,5 +499,18 @@ describe('ProfileMobile order history', () => {
 
     expect(queryState.fetchNextPageOrders).toHaveBeenCalledOnce();
     expect(queryState.refetchOrders).not.toHaveBeenCalled();
+  });
+
+  it('disables and relabels the next-page retry while it is fetching', () => {
+    queryState.orderPages = [
+      orderPage([{ ...pendingOrder, id: 201, title: 'Page zero order' }], 0, false),
+    ];
+    queryState.ordersFetchNextPageError = true;
+    queryState.ordersFetchingNextPage = true;
+
+    render(<ProfileMobile />);
+
+    const retry = screen.getByRole('button', { name: 'profile.orders.loading' });
+    expect((retry as HTMLButtonElement).disabled).toBe(true);
   });
 });

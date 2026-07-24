@@ -103,9 +103,8 @@ public class OrderController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        Page<OrderResponse> response = orderService.getUserOrders(userId, page, size)
-                .map(orderService::mapToOrderResponse);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(
+                orderService.getUserOrders(userId, page, size)));
     }
 
     /** Получить конкретный заказ по ID (с проверкой владельца). */
@@ -114,8 +113,8 @@ public class OrderController {
             @RequestHeader("X-User-Id") Long userId,
             @PathVariable Long id
     ) {
-        Order order = orderService.getOrderById(id, userId);
-        return ResponseEntity.ok(ApiResponse.success(orderService.mapToOrderResponse(order)));
+        return ResponseEntity.ok(ApiResponse.success(
+                orderService.getOrderResponseById(id, userId)));
     }
 
     // ==================== My Coupons ====================

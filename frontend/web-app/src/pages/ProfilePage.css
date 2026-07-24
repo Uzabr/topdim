@@ -232,6 +232,7 @@
   color: var(--on-wasp);
 }
 
+.profile-orders__action:disabled,
 .profile-orders__load-more:disabled {
   cursor: wait;
   opacity: 0.65;

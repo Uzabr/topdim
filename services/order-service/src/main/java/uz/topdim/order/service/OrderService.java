@@ -29,7 +29,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Сервис управления заказами.
@@ -44,6 +46,7 @@ public class OrderService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
     private final PurchasedCouponRepository purchasedCouponRepository;
     private final RedemptionRepository redemptionRepository;
     private final RefundRequestRepository refundRequestRepository;
@@ -367,11 +370,27 @@ public class OrderService {
      * @param userId ID пользователя
      * @param page номер страницы
      * @param size размер страницы
-     * @return страница заказов
+     * @return страница storefront-safe DTO
      */
     @Transactional(readOnly = true)
-    public Page<Order> getUserOrders(Long userId, int page, int size) {
-        return orderRepository.findByUserId(userId, PageRequest.of(page, size, Sort.by("createdAt").descending()));
+    public Page<OrderResponse> getUserOrders(Long userId, int page, int size) {
+        Page<Order> orders = orderRepository.findByUserId(
+                userId,
+                PageRequest.of(page, size, Sort.by("createdAt").descending()));
+        if (orders.isEmpty()) {
+            return orders.map(this::mapToOrderResponse);
+        }
+
+        List<Long> orderIds = orders.getContent().stream()
+                .map(Order::getId)
+                .toList();
+        Map<Long, List<OrderItem>> itemsByOrderId = orderItemRepository.findForOrderIds(orderIds)
+                .stream()
+                .collect(Collectors.groupingBy(item -> item.getOrder().getId()));
+
+        return orders.map(order -> mapToOrderResponse(
+                order,
+                itemsByOrderId.getOrDefault(order.getId(), List.of())));
     }
 
     // ==================== Admin Orders ====================
@@ -420,6 +439,14 @@ public class OrderService {
             throw new IllegalStateException("Заказ не принадлежит пользователю");
         }
         return order;
+    }
+
+    /**
+     * Получает storefront DTO заказа, пока lazy-позиции доступны в транзакции.
+     */
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderResponseById(Long orderId, Long userId) {
+        return mapToOrderResponse(getOrderById(orderId, userId));
     }
 
     /**
@@ -944,8 +971,7 @@ public class OrderService {
      * название первой позиции + «и ещё N», где N — число остальных позиций.
      * Возвращает null для заказа без позиций (фронт откатывается на «Заказ №...»).
      */
-    private String buildOrderTitle(Order order) {
-        List<OrderItem> items = order.getItems();
+    private String buildOrderTitle(List<OrderItem> items) {
         if (items == null || items.isEmpty()) {
             return null;
         }
@@ -959,15 +985,19 @@ public class OrderService {
      * Гарантирует наличие id, status, totalAmount.
      */
     public OrderResponse mapToOrderResponse(Order order) {
+        return mapToOrderResponse(order, order.getItems());
+    }
+
+    private OrderResponse mapToOrderResponse(Order order, List<OrderItem> items) {
         return OrderResponse.builder()
                 .id(order.getId())
                 .orderNumber(order.getOrderNumber())
-                .title(buildOrderTitle(order))
+                .title(buildOrderTitle(items))
                 .totalAmount(order.getTotalAmount())
                 .status(order.getStatus().name())
                 .userEmail(order.getUserEmail())
                 .userPhone(order.getUserPhone())
-                .itemCount(order.getItems() != null ? order.getItems().size() : 0)
+                .itemCount(items != null ? items.size() : 0)
                 .createdAt(order.getCreatedAt())
                 .paidAt(order.getPaidAt())
                 .build();

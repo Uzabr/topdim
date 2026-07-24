@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.order.client.CouponClient;
@@ -33,6 +34,7 @@ class OrderServiceTest {
     @Mock private CartRepository cartRepository;
     @Mock private CartItemRepository cartItemRepository;
     @Mock private OrderRepository orderRepository;
+    @Mock private OrderItemRepository orderItemRepository;
     @Mock private PurchasedCouponRepository purchasedCouponRepository;
     @Mock private RedemptionRepository redemptionRepository;
     @Mock private RefundRequestRepository refundRequestRepository;
@@ -747,6 +749,28 @@ class OrderServiceTest {
     }
 
     @Test
+    @DisplayName("Заказ по ID: storefront DTO строится внутри сервисной транзакции")
+    void getOrderResponseById_mapsOwnedOrderInService() {
+        Order order = Order.builder()
+                .id(100L)
+                .orderNumber("ORD-100")
+                .userId(10L)
+                .status(OrderStatus.PAID)
+                .totalAmount(BigDecimal.valueOf(49000))
+                .items(List.of(
+                        OrderItem.builder().couponTitle("Пицца").build(),
+                        OrderItem.builder().couponTitle("Кофе").build()))
+                .build();
+        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+
+        var result = orderService.getOrderResponseById(100L, 10L);
+
+        assertThat(result.getId()).isEqualTo(100L);
+        assertThat(result.getTitle()).isEqualTo("Пицца и ещё 1");
+        assertThat(result.getItemCount()).isEqualTo(2);
+    }
+
+    @Test
     @DisplayName("Заказ по ID: не найден → IllegalArgumentException")
     void getOrderById_notFound_throwsException() {
         when(orderRepository.findById(999L)).thenReturn(Optional.empty());
@@ -1088,6 +1112,56 @@ class OrderServiceTest {
     // ==================== Profile-facing fields (title, pricePaid) ====================
 
     @Test
+    @DisplayName("История заказов: DTO строятся в сервисе, позиции загружаются одним batch-запросом")
+    void getUserOrders_mapsInsideServiceWithSingleItemsQuery() {
+        Order first = Order.builder()
+                .id(11L).orderNumber("ORD-11").userId(7L).status(OrderStatus.PAID)
+                .totalAmount(BigDecimal.valueOf(49000))
+                .createdAt(LocalDateTime.of(2026, 7, 25, 10, 0))
+                .build();
+        Order second = Order.builder()
+                .id(12L).orderNumber("ORD-12").userId(7L).status(OrderStatus.COMPLETED)
+                .totalAmount(BigDecimal.valueOf(90000))
+                .createdAt(LocalDateTime.of(2026, 7, 24, 10, 0))
+                .build();
+        OrderItem firstItem = OrderItem.builder().id(101L).order(first).couponTitle("Пицца").build();
+        OrderItem secondItem = OrderItem.builder().id(102L).order(first).couponTitle("Кофе").build();
+        OrderItem thirdItem = OrderItem.builder().id(103L).order(second).couponTitle("Спа").build();
+        PageRequest pageRequest = PageRequest.of(
+                0, 20, org.springframework.data.domain.Sort.by("createdAt").descending());
+        when(orderRepository.findByUserId(7L, pageRequest))
+                .thenReturn(new PageImpl<>(List.of(first, second), pageRequest, 2));
+        when(orderItemRepository.findForOrderIds(List.of(11L, 12L)))
+                .thenReturn(List.of(firstItem, secondItem, thirdItem));
+
+        Page<uz.topdim.order.dto.OrderResponse> result =
+                orderService.getUserOrders(7L, 0, 20);
+
+        assertThat(result.getContent()).extracting(
+                uz.topdim.order.dto.OrderResponse::getTitle,
+                uz.topdim.order.dto.OrderResponse::getItemCount)
+                .containsExactly(
+                        tuple("Пицца и ещё 1", 2),
+                        tuple("Спа", 1));
+        verify(orderItemRepository).findForOrderIds(List.of(11L, 12L));
+    }
+
+    @Test
+    @DisplayName("История заказов: пустая страница не запускает запрос позиций")
+    void getUserOrders_emptyPage_skipsItemsQuery() {
+        PageRequest pageRequest = PageRequest.of(
+                0, 20, org.springframework.data.domain.Sort.by("createdAt").descending());
+        when(orderRepository.findByUserId(7L, pageRequest))
+                .thenReturn(Page.empty(pageRequest));
+
+        Page<uz.topdim.order.dto.OrderResponse> result =
+                orderService.getUserOrders(7L, 0, 20);
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(orderItemRepository);
+    }
+
+    @Test
     @DisplayName("OrderResponse.title: одна позиция → её название без «и ещё»")
     void mapToOrderResponse_singleItem_titleIsItemName() {
         Order order = Order.builder()
@@ -1147,4 +1221,3 @@ class OrderServiceTest {
         assertThat(response.getPricePaid()).isEqualByComparingTo(BigDecimal.valueOf(49000));
     }
 }
-

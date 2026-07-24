@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { useState, type ComponentType } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PurchasedCoupon } from '../../api/orders';
+import { reviewsApi } from '../../api/reviews';
 import ru from '../../locales/ru.json';
+import uz from '../../locales/uz.json';
 import ComplaintModal from './ComplaintModal';
 import RefundRequestModal from './RefundRequestModal';
 import ReviewModal from './ReviewModal';
@@ -18,6 +20,12 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../../utils/format', () => ({
   formatDate: (value: string) => value,
+}));
+
+vi.mock('../../api/reviews', () => ({
+  reviewsApi: {
+    create: vi.fn(),
+  },
 }));
 
 const coupon: PurchasedCoupon = {
@@ -149,5 +157,32 @@ describe('refund timing copy', () => {
   it('uses five working days in the FAQ and refund dialog', () => {
     expect(ru.profile.help.faq.noShow.a).toContain('5 рабочих дней');
     expect(ru.profile.refundModal.processingHint).toContain('5 рабочих дней');
+    expect(uz.profile.help.faq.noShow.a).toContain('5 ish kunigacha');
+    expect(uz.profile.refundModal.processingHint).toContain('5 ish kunigacha');
+  });
+});
+
+describe('optional review comment', () => {
+  afterEach(cleanup);
+
+  it('omits a blank comment while submitting a rating-only review', async () => {
+    vi.mocked(reviewsApi.create).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof reviewsApi.create>>,
+    );
+    openDialog(dialogCases[2]);
+
+    fireEvent.click(screen.getByRole('button', { name: '5' }));
+    fireEvent.change(screen.getByRole('textbox', {
+      name: 'profile.review.commentPlaceholder',
+    }), {
+      target: { value: '   ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.review.submit' }));
+
+    await waitFor(() => expect(reviewsApi.create).toHaveBeenCalledWith({
+      couponOfferId: 10,
+      rating: 5,
+      comment: undefined,
+    }));
   });
 });

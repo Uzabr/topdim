@@ -100,6 +100,25 @@ class ReviewServiceTest {
     }
 
     @Test
+    @DisplayName("Создание отзыва только с рейтингом: null-комментарий сохраняется пустой строкой")
+    void createReview_ratingOnly_normalizesNullCommentToEmptyString() {
+        CouponOffer coupon = createTestCoupon();
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(coupon));
+        when(reviewRepository.existsByUserIdAndCouponOfferIdAndStatusIn(
+                eq(42L), eq(1L), any())).thenReturn(false);
+        when(orderReviewEligibilityClient.getReviewEligibility(42L, 1L))
+                .thenReturn(ApiResponse.success(eligibleResponse()));
+        when(reviewRepository.findFirstByUserIdAndCouponOfferIdOrderByCreatedAtDesc(42L, 1L))
+                .thenReturn(Optional.empty());
+
+        reviewService.createReview(42L, "Иван", reviewRequest(1L, 5, null));
+
+        ArgumentCaptor<Review> captor = ArgumentCaptor.forClass(Review.class);
+        verify(reviewRepository).save(captor.capture());
+        assertThat(captor.getValue().getComment()).isEmpty();
+    }
+
+    @Test
     @DisplayName("Создание отзыва: купон не найден → IllegalArgumentException")
     void createReview_couponNotFound_throwsException() {
         when(couponOfferRepository.findById(999L)).thenReturn(Optional.empty());
@@ -176,6 +195,31 @@ class ReviewServiceTest {
         assertThat(rejected.getComment()).isEqualTo("Исправленный отзыв!!!");
         assertThat(rejected.getRejectReason()).isNull();
         assertThat(rejected.getUserName()).isEqualTo("Иван");
+        verify(reviewRepository).save(rejected);
+    }
+
+    @Test
+    @DisplayName("Переподача REJECTED отзыва только с рейтингом: null-комментарий сохраняется пустой строкой")
+    void createReview_rejectedRatingOnly_normalizesNullCommentToEmptyString() {
+        CouponOffer coupon = createTestCoupon();
+        Review rejected = Review.builder()
+                .id(99L).userId(42L).couponOffer(coupon)
+                .rating(2).comment("Старый текст")
+                .status(ReviewStatus.REJECTED).rejectReason("Спам")
+                .build();
+
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(coupon));
+        when(reviewRepository.existsByUserIdAndCouponOfferIdAndStatusIn(
+                eq(42L), eq(1L), any())).thenReturn(false);
+        when(orderReviewEligibilityClient.getReviewEligibility(42L, 1L))
+                .thenReturn(ApiResponse.success(eligibleResponse()));
+        when(reviewRepository.findFirstByUserIdAndCouponOfferIdOrderByCreatedAtDesc(42L, 1L))
+                .thenReturn(Optional.of(rejected));
+
+        reviewService.createReview(42L, "Иван", reviewRequest(1L, 4, null));
+
+        assertThat(rejected.getComment()).isEmpty();
+        assertThat(rejected.getStatus()).isEqualTo(ReviewStatus.PENDING);
         verify(reviewRepository).save(rejected);
     }
 

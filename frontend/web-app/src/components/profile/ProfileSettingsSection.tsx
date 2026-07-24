@@ -450,7 +450,7 @@ export default function ProfileSettingsSection() {
           className="settings__link"
           onClick={() => setNotificationsOpen((v) => !v)}
         >
-          {notificationsOpen ? t('common.hide') : t('profile.settings.configure')}
+          {notificationsOpen ? t('common.hide') : t('profile.settings.view')}
         </button>
       </div>
 

@@ -510,6 +510,7 @@
   color: var(--on-wasp);
 }
 
+.pmob__orders-action:disabled,
 .pmob__orders-load-more:disabled {
   cursor: wait;
   opacity: 0.65;

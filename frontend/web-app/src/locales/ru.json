@@ -374,7 +374,7 @@
       "language": "Язык",
       "notifications": "Уведомления",
       "notificationsDesc": "Новые купоны рядом · истечение срока · ответы мерчанта",
-      "configure": "Смотреть"
+      "view": "Смотреть"
     },
     "emailConfirmation": {
       "title": "Подтверждение email",
@@ -482,6 +482,10 @@
       "retry": "Повторить",
       "loadMore": "Показать ещё",
       "loadMoreError": "Не удалось загрузить ещё уведомления"
+    },
+    "couponPolicy": {
+      "error": "Не удалось загрузить данные для действий с купонами",
+      "retry": "Повторить"
     },
     "refundsSection": {
       "emptyTitle": "Нет заявок на возврат",

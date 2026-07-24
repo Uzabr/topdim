@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { favoritesApi } from '../api/favorites';
 import { useFavoritesStore } from './favoritesStore';
@@ -46,5 +47,48 @@ describe('favoritesStore backend hydration', () => {
 
     expect(useFavoritesStore.getState().favoriteIds).toEqual([7]);
     expect(favoritesApi.add).not.toHaveBeenCalled();
+  });
+
+  it('clears account-owned favorites from memory and persisted storage', () => {
+    useFavoritesStore.setState({
+      favoriteIds: [7, 8],
+      showLimitModal: true,
+      limitMessage: 'limit',
+    });
+
+    useFavoritesStore.getState().reset();
+
+    expect(useFavoritesStore.getState().favoriteIds).toEqual([]);
+    expect(useFavoritesStore.getState().showLimitModal).toBe(false);
+    expect(useFavoritesStore.getState().limitMessage).toBe('');
+    expect(JSON.parse(localStorage.getItem('favorites-storage') ?? '{}')).toMatchObject({
+      state: { favoriteIds: [] },
+    });
+  });
+
+  it('ignores an earlier account synchronization that finishes after reset', async () => {
+    let resolveOldAccount!: (
+      value: Awaited<ReturnType<typeof favoritesApi.getAll>>,
+    ) => void;
+    vi.mocked(favoritesApi.getAll).mockImplementation(
+      () => new Promise((resolve) => {
+        resolveOldAccount = resolve;
+      }),
+    );
+    const oldAccountSync = useFavoritesStore.getState().syncWithBackend();
+
+    useFavoritesStore.getState().reset();
+    resolveOldAccount({
+      data: {
+        success: true,
+        data: [
+          { id: 1, couponOfferId: 99, createdAt: '2026-07-25T10:00:00' },
+        ],
+        timestamp: '2026-07-25T10:00:00',
+      },
+    } as Awaited<ReturnType<typeof favoritesApi.getAll>>);
+    await oldAccountSync;
+
+    expect(useFavoritesStore.getState().favoriteIds).toEqual([]);
   });
 });

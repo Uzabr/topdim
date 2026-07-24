@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { authApi } from '../../api/auth';
 import { mediaApi } from '../../api/media';
 import ru from '../../locales/ru.json';
+import uz from '../../locales/uz.json';
 import ProfileSettingsSection from './ProfileSettingsSection';
 
 const { navigate, logout, updateProfile } = vi.hoisted(() => ({
@@ -169,6 +170,8 @@ describe('ProfileSettingsSection profile actions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'profile.settings.password.save' }));
 
     expect(await screen.findByText('Неверный текущий пароль')).toBeTruthy();
+    expect(logout).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('submits backend contract and shows re-login notice on success', async () => {
@@ -211,6 +214,9 @@ describe('ProfileSettingsSection profile actions', () => {
   });
 
   it('labels the notifications action as viewing rather than configuring', () => {
-    expect(ru.profile.settings.configure).toBe('Смотреть');
+    expect(ru.profile.settings.view).toBe('Смотреть');
+    expect(uz.profile.settings.view).toBe("Ko'rish");
+    expect('configure' in ru.profile.settings).toBe(false);
+    expect('configure' in uz.profile.settings).toBe(false);
   });
 });

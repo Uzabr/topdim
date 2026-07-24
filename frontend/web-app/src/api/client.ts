@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { invalidateClientSession } from '../sessionCleanup';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -46,7 +47,7 @@ apiClient.interceptors.response.use(
       } catch {
         // Only redirect to login if user was previously authenticated
         const hadToken = localStorage.getItem('accessToken');
-        localStorage.removeItem('accessToken');
+        invalidateClientSession();
         if (hadToken) {
           window.location.href = '/login';
         }

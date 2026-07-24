@@ -3,12 +3,15 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import { useTranslation } from 'react-i18next';
 import { notificationsApi, type NotificationData } from '../../api/notifications';
 import { Bell, Check } from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
+import { profileQueryKeys } from '../../queries/profileQueries';
 import './NotificationsSection.css';
 
 export default function NotificationsSection() {
   const { t, i18n } = useTranslation();
   const [unreadOnly, setUnreadOnly] = useState(false);
   const queryClient = useQueryClient();
+  const userId = useAuthStore((state) => state.user?.id) ?? 0;
   const locale = i18n.language === 'uz' ? 'uz-UZ' : 'ru-RU';
 
   const {
@@ -21,7 +24,7 @@ export default function NotificationsSection() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['my-notifications', unreadOnly],
+    queryKey: profileQueryKeys.notifications(userId, unreadOnly),
     queryFn: ({ pageParam }) =>
       notificationsApi.getMine(unreadOnly || undefined, pageParam, 20),
     initialPageParam: 0,
@@ -29,12 +32,15 @@ export default function NotificationsSection() {
       lastPage.data.data.last ? undefined : lastPage.data.data.number + 1,
     select: (result) =>
       result.pages.flatMap((page) => page.data.data.content),
+    enabled: userId !== 0,
   });
 
   const markRead = useMutation({
     mutationFn: (id: number) => notificationsApi.markRead(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-notifications'] });
+      queryClient.invalidateQueries({
+        queryKey: profileQueryKeys.notificationsRoot(userId),
+      });
     },
   });
 
@@ -106,9 +112,12 @@ export default function NotificationsSection() {
               <button
                 type="button"
                 className="notifications-action"
+                disabled={isFetchingNextPage}
                 onClick={() => void fetchNextPage()}
               >
-                {t('profile.notifications.retry')}
+                {isFetchingNextPage
+                  ? t('profile.loadingNotifications')
+                  : t('profile.notifications.retry')}
               </button>
             </div>
           ) : hasNextPage && (

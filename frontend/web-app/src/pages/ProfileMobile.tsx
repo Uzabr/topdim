@@ -4,10 +4,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { complaintsApi } from '../api/complaints';
 import { ordersApi } from '../api/orders';
 import type { PurchasedCoupon } from '../api/orders';
-import { reviewsApi } from '../api/reviews';
 import ComplaintModal from '../components/profile/ComplaintModal';
 import { getCouponActions } from '../components/profile/couponActions';
 import ProfileHelpSection from '../components/profile/ProfileHelpSection';
@@ -20,6 +18,11 @@ import { useLocalePath } from '../hooks/useLocalePath';
 import { useAuthStore } from '../store/authStore';
 import { buildQrPayload } from '../utils/coupon';
 import { daysUntil, formatDate, formatPrice } from '../utils/format';
+import {
+  loadAllComplaints,
+  loadAllReviews,
+  profileQueryKeys,
+} from '../queries/profileQueries';
 import './ProfileMobile.css';
 
 type Tab = 'coupons' | 'orders' | 'settings' | 'help';
@@ -47,6 +50,7 @@ export default function ProfileMobile() {
   const location = useLocation();
   const lp = useLocalePath();
   const { user, logout, isAuthenticated } = useAuthStore();
+  const userId = user?.id ?? 0;
 
   const tab = tabOf(location.search);
   const setTab = (next: Tab) =>
@@ -56,25 +60,38 @@ export default function ProfileMobile() {
   const [complaint, setComplaint] = useState<PurchasedCoupon | null>(null);
   const [review, setReview] = useState<PurchasedCoupon | null>(null);
 
-  const { data: coupons = [], isLoading } = useQuery({
-    queryKey: ['my-coupons', 'all'],
+  const {
+    data: coupons = [],
+    isLoading: areCouponsLoading,
+    isError: areCouponsError,
+    refetch: refetchCoupons,
+  } = useQuery({
+    queryKey: profileQueryKeys.coupons(userId),
     queryFn: () => ordersApi.getMyCoupons(),
     select: (res) => res.data.data,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && user != null,
   });
 
-  const { data: complaints = [] } = useQuery({
-    queryKey: ['my-complaints'],
-    queryFn: () => complaintsApi.getMine(0, 100),
-    select: (res) => res.data.data.content,
-    enabled: isAuthenticated && tab === 'coupons',
+  const {
+    data: complaints = [],
+    isLoading: areComplaintsLoading,
+    isError: areComplaintsError,
+    refetch: refetchComplaints,
+  } = useQuery({
+    queryKey: profileQueryKeys.complaints(userId),
+    queryFn: loadAllComplaints,
+    enabled: isAuthenticated && user != null && tab === 'coupons',
   });
 
-  const { data: myReviews = [] } = useQuery({
-    queryKey: ['my-reviews'],
-    queryFn: () => reviewsApi.getMine(0, 100),
-    select: (res) => res.data.data.content,
-    enabled: isAuthenticated && tab === 'coupons',
+  const {
+    data: myReviews = [],
+    isLoading: areReviewsLoading,
+    isError: areReviewsError,
+    refetch: refetchReviews,
+  } = useQuery({
+    queryKey: profileQueryKeys.reviews(userId),
+    queryFn: loadAllReviews,
+    enabled: isAuthenticated && user != null && tab === 'coupons',
   });
 
   const {
@@ -87,13 +104,13 @@ export default function ProfileMobile() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['my-orders'],
+    queryKey: profileQueryKeys.orders(userId),
     queryFn: ({ pageParam }) => ordersApi.getOrders(pageParam, 20),
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.data.data.last ? undefined : lastPage.data.data.number + 1,
     select: (data) => data.pages.flatMap((page) => page.data.data.content),
-    enabled: isAuthenticated && tab === 'orders',
+    enabled: isAuthenticated && user != null && tab === 'orders',
   });
 
   const { ticket, rest, archive } = useMemo(() => {
@@ -119,7 +136,28 @@ export default function ProfileMobile() {
     [complaints],
   );
 
-  const reviewed = useMemo(() => new Set(myReviews.map((r) => r.couponOfferId)), [myReviews]);
+  const reviewed = useMemo(
+    () =>
+      new Set(
+        myReviews
+          .filter((reviewData) =>
+            reviewData.status === 'PENDING' || reviewData.status === 'APPROVED')
+          .map((reviewData) => reviewData.couponOfferId),
+      ),
+    [myReviews],
+  );
+
+  const isCouponPolicyLoading =
+    areCouponsLoading || areComplaintsLoading || areReviewsLoading;
+  const isCouponPolicyError =
+    areCouponsError || areComplaintsError || areReviewsError;
+  const retryCouponPolicy = () => {
+    void Promise.all([
+      refetchCoupons(),
+      refetchComplaints(),
+      refetchReviews(),
+    ]);
+  };
 
   if (!isAuthenticated) {
     return (
@@ -181,8 +219,19 @@ export default function ProfileMobile() {
             <p className="pmob__contact">{user?.phone || user?.email}</p>
           </div>
 
-          {isLoading ? (
+          {isCouponPolicyLoading ? (
             <p className="pmob__loading">{t('profile.loadingCoupons')}</p>
+          ) : isCouponPolicyError ? (
+            <div className="pmob__orders-state" role="alert">
+              <p>{t('profile.couponPolicy.error')}</p>
+              <button
+                type="button"
+                className="pmob__orders-action"
+                onClick={retryCouponPolicy}
+              >
+                {t('profile.couponPolicy.retry')}
+              </button>
+            </div>
           ) : coupons.length === 0 ? (
             <div className="pmob__empty">
               <Ticket size={40} strokeWidth={1.5} className="pmob__guest-icon" />
@@ -469,9 +518,12 @@ export default function ProfileMobile() {
                   <button
                     type="button"
                     className="pmob__orders-action"
+                    disabled={isFetchingNextPage}
                     onClick={() => void fetchNextPage()}
                   >
-                    {t('profile.orders.retry')}
+                    {isFetchingNextPage
+                      ? t('profile.orders.loading')
+                      : t('profile.orders.retry')}
                   </button>
                 </div>
               ) : hasNextPage && (

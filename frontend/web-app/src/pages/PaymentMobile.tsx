@@ -9,6 +9,8 @@ import { paymentsApi, type PaymentResponse } from '../api/payments';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { buildQrPayload } from '../utils/coupon';
 import { formatDate, formatPrice } from '../utils/format';
+import { useAuthStore } from '../store/authStore';
+import { profileQueryKeys } from '../queries/profileQueries';
 import './PaymentMobile.css';
 
 type State = 'polling' | 'pending' | 'completed' | 'failed' | 'timeout';
@@ -26,6 +28,7 @@ export default function PaymentMobile() {
   const navigate = useNavigate();
   const lp = useLocalePath();
   const queryClient = useQueryClient();
+  const userId = useAuthStore((authState) => authState.user?.id) ?? 0;
 
   const id = Number(orderId);
 
@@ -92,13 +95,13 @@ export default function PaymentMobile() {
 
   // QR показываем настоящий: берём свежекупленный активный купон.
   const { data: fresh } = useQuery({
-    queryKey: ['my-coupons'],
+    queryKey: profileQueryKeys.coupons(userId),
     queryFn: () => ordersApi.getMyCoupons(),
     select: (res) =>
       [...res.data.data]
         .filter((c) => c.status === 'ACTIVE' && c.qrToken)
         .sort((a, b) => Date.parse(b.purchasedAt) - Date.parse(a.purchasedAt))[0] ?? null,
-    enabled: state === 'completed',
+    enabled: state === 'completed' && userId !== 0,
     retry: false,
   });
 

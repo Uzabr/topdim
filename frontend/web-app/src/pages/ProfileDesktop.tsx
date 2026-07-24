@@ -6,8 +6,6 @@ import { Ticket } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { ordersApi } from '../api/orders';
 import type { PurchasedCoupon } from '../api/orders';
-import { complaintsApi } from '../api/complaints';
-import { reviewsApi } from '../api/reviews';
 import CouponTicket from '../components/profile/CouponTicket';
 import ActiveCouponCard from '../components/profile/ActiveCouponCard';
 import ReviewModal from '../components/profile/ReviewModal';
@@ -20,6 +18,11 @@ import DropTabs from '../components/ui/DropTabs';
 import UserAvatar from '../components/ui/UserAvatar';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { formatDate, formatPrice } from '../utils/format';
+import {
+  loadAllComplaints,
+  loadAllReviews,
+  profileQueryKeys,
+} from '../queries/profileQueries';
 import './ProfilePage.css';
 
 export type ProfileTab = 'coupons' | 'orders' | 'settings' | 'help';
@@ -49,6 +52,7 @@ export default function ProfileDesktop() {
   const navigate = useNavigate();
   const location = useLocation();
   const lp = useLocalePath();
+  const userId = user?.id ?? 0;
 
   const [tab, setActiveTab] = useState<ProfileTab>(() => getInitialTab(location.search));
   const [refundCoupon, setRefundCoupon] = useState<PurchasedCoupon | null>(null);
@@ -61,26 +65,39 @@ export default function ProfileDesktop() {
   };
 
   // Один запрос за всеми купонами вместо пяти по статусам — делим на списки на клиенте
-  const { data: coupons = [], isLoading } = useQuery({
-    queryKey: ['my-coupons', 'all'],
+  const {
+    data: coupons = [],
+    isLoading: areCouponsLoading,
+    isError: areCouponsError,
+    refetch: refetchCoupons,
+  } = useQuery({
+    queryKey: profileQueryKeys.coupons(userId),
     queryFn: () => ordersApi.getMyCoupons(),
     select: (res) => res.data.data,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && user != null,
   });
 
   // Лениво: нужны только на табе купонов
-  const { data: complaints = [] } = useQuery({
-    queryKey: ['my-complaints'],
-    queryFn: () => complaintsApi.getMine(0, 100),
-    select: (res) => res.data.data.content,
-    enabled: isAuthenticated && tab === 'coupons',
+  const {
+    data: complaints = [],
+    isLoading: areComplaintsLoading,
+    isError: areComplaintsError,
+    refetch: refetchComplaints,
+  } = useQuery({
+    queryKey: profileQueryKeys.complaints(userId),
+    queryFn: loadAllComplaints,
+    enabled: isAuthenticated && user != null && tab === 'coupons',
   });
 
-  const { data: myReviews = [] } = useQuery({
-    queryKey: ['my-reviews'],
-    queryFn: () => reviewsApi.getMine(0, 100),
-    select: (res) => res.data.data.content,
-    enabled: isAuthenticated && tab === 'coupons',
+  const {
+    data: myReviews = [],
+    isLoading: areReviewsLoading,
+    isError: areReviewsError,
+    refetch: refetchReviews,
+  } = useQuery({
+    queryKey: profileQueryKeys.reviews(userId),
+    queryFn: loadAllReviews,
+    enabled: isAuthenticated && user != null && tab === 'coupons',
   });
 
   // Лениво: только на табе покупок
@@ -94,13 +111,13 @@ export default function ProfileDesktop() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['my-orders'],
+    queryKey: profileQueryKeys.orders(userId),
     queryFn: ({ pageParam }) => ordersApi.getOrders(pageParam, 20),
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.data.data.last ? undefined : lastPage.data.data.number + 1,
     select: (data) => data.pages.flatMap((page) => page.data.data.content),
-    enabled: isAuthenticated && tab === 'orders',
+    enabled: isAuthenticated && user != null && tab === 'orders',
   });
 
   const { live, archive, ticket, rest } = useMemo(() => {
@@ -129,9 +146,27 @@ export default function ProfileDesktop() {
   );
 
   const reviewedOffers = useMemo(
-    () => new Set(myReviews.map((r) => r.couponOfferId)),
+    () =>
+      new Set(
+        myReviews
+          .filter((review) =>
+            review.status === 'PENDING' || review.status === 'APPROVED')
+          .map((review) => review.couponOfferId),
+      ),
     [myReviews],
   );
+
+  const isCouponPolicyLoading =
+    areCouponsLoading || areComplaintsLoading || areReviewsLoading;
+  const isCouponPolicyError =
+    areCouponsError || areComplaintsError || areReviewsError;
+  const retryCouponPolicy = () => {
+    void Promise.all([
+      refetchCoupons(),
+      refetchComplaints(),
+      refetchReviews(),
+    ]);
+  };
 
   if (!isAuthenticated) {
     return (
@@ -181,8 +216,19 @@ export default function ProfileDesktop() {
       {/* ═══ Мои купоны ═══ */}
       {tab === 'coupons' && (
         <section>
-          {isLoading ? (
+          {isCouponPolicyLoading ? (
             <p className="profile-loading">{t('profile.loadingCoupons')}</p>
+          ) : isCouponPolicyError ? (
+            <div className="profile-orders__state" role="alert">
+              <p>{t('profile.couponPolicy.error')}</p>
+              <button
+                type="button"
+                className="profile-orders__action"
+                onClick={retryCouponPolicy}
+              >
+                {t('profile.couponPolicy.retry')}
+              </button>
+            </div>
           ) : live.length === 0 && archive.length === 0 ? (
             <div className="profile-empty">
               <Ticket className="profile-empty-icon" size={44} strokeWidth={1.5} />
@@ -324,9 +370,12 @@ export default function ProfileDesktop() {
                   <button
                     type="button"
                     className="profile-orders__action"
+                    disabled={isFetchingNextPage}
                     onClick={() => void fetchNextPage()}
                   >
-                    {t('profile.orders.retry')}
+                    {isFetchingNextPage
+                      ? t('profile.orders.loading')
+                      : t('profile.orders.retry')}
                   </button>
                 </div>
               ) : hasNextPage && (

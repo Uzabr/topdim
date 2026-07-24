@@ -10,6 +10,7 @@ import type {
 } from '../api/auth';
 import { useCartStore } from './cartStore';
 import { useFavoritesStore } from './favoritesStore';
+import { invalidateClientSession, registerSessionReset } from '../sessionCleanup';
 
 interface AuthState {
   user: UserDto | null;
@@ -88,11 +89,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: () => {
     // M4: POST /logout без body — cookie удаляется бэком через Set-Cookie Max-Age=0
     authApi.logout().catch(() => {});
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
-    set({ user: null, isAuthenticated: false });
-    // Switch cart back to guest mode
-    useCartStore.getState().setMode('guest');
+    invalidateClientSession();
   },
 
   loadFromStorage: () => {
@@ -132,3 +129,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return user;
   },
 }));
+
+registerSessionReset(() => {
+  useAuthStore.setState({
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+  });
+  useCartStore.getState().setMode('guest');
+  useFavoritesStore.getState().reset();
+});

@@ -9,7 +9,7 @@
 .notifications-error p,.notifications-pagination-error p{margin:0}
 .notifications-action,.notifications-load-more{align-self:center;border:1px solid var(--primary);border-radius:var(--radius-md);background:transparent;color:var(--primary);padding:8px 16px;font:inherit;font-weight:600;cursor:pointer}
 .notifications-action:hover,.notifications-load-more:hover{background:var(--primary);color:#fff}
-.notifications-load-more:disabled{cursor:wait;opacity:.65}
+.notifications-action:disabled,.notifications-load-more:disabled{cursor:wait;opacity:.65}
 .notifications-list{display:flex;flex-direction:column;gap:var(--space-sm)}
 .notification-card{padding:var(--space-md) var(--space-lg);display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-md)}
 .notification-card--unread{border-left:3px solid var(--primary)}

@@ -372,7 +372,7 @@
       "language": "Til",
       "notifications": "Bildirishnomalar",
       "notificationsDesc": "Yaqin atrofdagi yangi kuponlar · muddat tugashi · merchant javoblari",
-      "configure": "Sozlash"
+      "view": "Ko'rish"
     },
     "emailConfirmation": {
       "title": "Emailni tasdiqlash",
@@ -403,7 +403,7 @@
         },
         "noShow": {
           "q": "Bora olmadim — nima qilay?",
-          "a": "Muddati tugagunicha faol kuponda «Pulni qaytarish» tugmasini bosing. Kartaga qaytarish 3 ish kunigacha davom etadi."
+          "a": "Muddati tugagunicha faol kuponda «Pulni qaytarish» tugmasini bosing. Kartaga qaytarish 5 ish kunigacha davom etadi."
         },
         "bonus": {
           "q": "Nega sharh qoldirish kerak?",
@@ -475,7 +475,15 @@
       "empty": "Bildirishnomalaringiz shu yerda boʻladi.",
       "emptyTitle": "Hech qanday bildirishnoma yo'q",
       "unreadOnly": "Faqat o'qilmagan",
-      "markRead": "O'qilgan deb belgilang"
+      "markRead": "O'qilgan deb belgilang",
+      "error": "Bildirishnomalarni yuklab bo'lmadi",
+      "retry": "Qayta urinish",
+      "loadMore": "Yana ko'rsatish",
+      "loadMoreError": "Yana bildirishnomalarni yuklab bo'lmadi"
+    },
+    "couponPolicy": {
+      "error": "Kupon amallari uchun ma'lumotlarni yuklab bo'lmadi",
+      "retry": "Qayta urinish"
     },
     "refundsSection": {
       "emptyTitle": "Qaytish talablari yo'q",
@@ -548,8 +556,14 @@
       "leaveReview": "Sharh qoldirish"
     },
     "orders": {
+      "loading": "Xaridlar yuklanmoqda…",
+      "error": "Xaridlarni yuklab bo'lmadi",
+      "retry": "Qayta urinish",
       "empty": "Hozircha xaridlar yo'q",
       "number": "Buyurtma №{{number}}",
+      "continuePayment": "To'lovni davom ettirish",
+      "loadMore": "Yana ko'rsatish",
+      "loadMoreError": "Yana xaridlarni yuklab bo'lmadi",
       "note": "Qaytarishlar va to'lov holati — har bir xarid ichida, alohida bo'lim kerak emas",
       "status": {
         "paid": "To'langan",
