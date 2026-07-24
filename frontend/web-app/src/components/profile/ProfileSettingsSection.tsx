@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/auth';
@@ -45,12 +45,9 @@ export default function ProfileSettingsSection() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const reloginTimer = useRef<number | undefined>(undefined);
 
   const lang = i18n.language?.substring(0, 2) === 'uz' ? 'uz' : 'ru';
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ');
-
-  useEffect(() => () => window.clearTimeout(reloginTimer.current), []);
 
   const uploadAvatar = async (file?: File) => {
     if (!file) return;
@@ -157,10 +154,8 @@ export default function ProfileSettingsSection() {
       setConfirmPassword('');
       setEditing(null);
       setPasswordNotice(t('profile.settings.password.success'));
-      reloginTimer.current = window.setTimeout(() => {
-        logout();
-        navigate(`/${lang}/login`, { replace: true });
-      }, 1800);
+      logout();
+      navigate(`/${lang}/login`, { replace: true });
     } catch (err: unknown) {
       const e = err as { response?: { status?: number; data?: { message?: string; data?: Record<string, string> } } };
       const fields = e.response?.data?.data;

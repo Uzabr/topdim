@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { authApi } from '../../api/auth';
 import { mediaApi } from '../../api/media';
+import ru from '../../locales/ru.json';
 import ProfileSettingsSection from './ProfileSettingsSection';
 
 const { navigate, logout, updateProfile } = vi.hoisted(() => ({
@@ -66,6 +67,8 @@ describe('ProfileSettingsSection profile actions', () => {
     vi.mocked(authApi.requestEmailConfirm).mockReset();
     vi.mocked(mediaApi.uploadFile).mockReset();
     updateProfile.mockReset();
+    logout.mockReset();
+    navigate.mockReset();
   });
 
   it('requests email confirmation and shows sent notice', async () => {
@@ -179,5 +182,35 @@ describe('ProfileSettingsSection profile actions', () => {
     expect((await screen.findByRole('status')).textContent).toBe(
       'profile.settings.password.success',
     );
+  });
+
+  it('logs out and navigates immediately after password change even if unmounted', async () => {
+    let resolveChangePassword!: (
+      value: Awaited<ReturnType<typeof authApi.changePassword>>,
+    ) => void;
+    vi.mocked(authApi.changePassword).mockImplementation(
+      () => new Promise((resolve) => {
+        resolveChangePassword = resolve;
+      }),
+    );
+    const view = render(<ProfileSettingsSection />);
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.password.change' }));
+    fillPasswords('Current1!', 'NewStrong2!', 'NewStrong2!');
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.password.save' }));
+
+    await waitFor(() => expect(authApi.changePassword).toHaveBeenCalledOnce());
+    view.unmount();
+    await act(async () => {
+      resolveChangePassword(
+        {} as Awaited<ReturnType<typeof authApi.changePassword>>,
+      );
+    });
+
+    expect(logout).toHaveBeenCalledOnce();
+    expect(navigate).toHaveBeenCalledWith('/ru/login', { replace: true });
+  });
+
+  it('labels the notifications action as viewing rather than configuring', () => {
+    expect(ru.profile.settings.configure).toBe('Смотреть');
   });
 });
