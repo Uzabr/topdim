@@ -52,7 +52,10 @@ mockMvc.perform(get("/api/v1/orders")
 Run:
 
 ```bash
-./gradlew :services:order-service:test --tests 'uz.topdim.order.controller.OrderControllerResponseTest'
+./gradlew :services:order-service:test \
+  --tests 'uz.topdim.order.controller.OrderControllerResponseTest' \
+  -x jacocoTestReport \
+  -x jacocoTestCoverageVerification
 ```
 
 Expected: the test fails because the controller returns the raw `Order` page and does not invoke `mapToOrderResponse`.
@@ -118,7 +121,11 @@ lastName=null -> existing last name unchanged
 - [ ] **Step 2: Run the focused tests and confirm failure**
 
 ```bash
-./gradlew :services:identity-service:test --tests 'uz.topdim.identity.service.UserServiceTest' --tests 'uz.topdim.identity.controller.UserControllerValidationTest'
+./gradlew :services:identity-service:test \
+  --tests 'uz.topdim.identity.service.UserServiceTest' \
+  --tests 'uz.topdim.identity.controller.UserControllerValidationTest' \
+  -x jacocoTestReport \
+  -x jacocoTestCoverageVerification
 ```
 
 - [ ] **Step 3: Implement validation and normalization**
@@ -167,7 +174,10 @@ Cover first complaint success, duplicate pending rejection, resolved complaint a
 - [ ] **Step 2: Run and confirm failure**
 
 ```bash
-./gradlew :services:order-service:test --tests 'uz.topdim.order.service.ComplaintServiceTest'
+./gradlew :services:order-service:test \
+  --tests 'uz.topdim.order.service.ComplaintServiceTest' \
+  -x jacocoTestReport \
+  -x jacocoTestCoverageVerification
 ```
 
 - [ ] **Step 3: Implement application and database guards**
@@ -196,7 +206,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_complaints_pending_coupon
 - [ ] **Step 4: Run focused and full order tests**
 
 ```bash
-./gradlew :services:order-service:test --tests 'uz.topdim.order.service.ComplaintServiceTest'
+./gradlew :services:order-service:test \
+  --tests 'uz.topdim.order.service.ComplaintServiceTest' \
+  -x jacocoTestReport \
+  -x jacocoTestCoverageVerification
 ./gradlew :services:order-service:test
 ```
 
