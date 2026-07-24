@@ -13,6 +13,7 @@ import ActiveCouponCard from '../components/profile/ActiveCouponCard';
 import ReviewModal from '../components/profile/ReviewModal';
 import RefundRequestModal from '../components/profile/RefundRequestModal';
 import ComplaintModal from '../components/profile/ComplaintModal';
+import { getCouponActions } from '../components/profile/couponActions';
 import ProfileSettingsSection from '../components/profile/ProfileSettingsSection';
 import ProfileHelpSection from '../components/profile/ProfileHelpSection';
 import DropTabs from '../components/ui/DropTabs';
@@ -210,26 +211,48 @@ export default function ProfileDesktop() {
                   </div>
 
                   <div className="profile-archive">
-                    {archive.map((c) => (
-                      <div key={c.id} className="archive-row">
-                        <span className={`archive-row__status archive-row__status--${archiveStatusClass(c.status)}`}>
-                          {t(`profile.purchasedCoupon.status.${c.status.toLowerCase()}`)}
-                        </span>
-                        <span className="archive-row__title">{c.couponTitle}</span>
-                        <span className="archive-row__date">
-                          {formatDate(c.usedAt || c.expiresAt || c.purchasedAt)}
-                        </span>
-                        {c.status === 'USED' && !reviewedOffers.has(c.couponOfferId) && (
-                          <button
-                            type="button"
-                            className="archive-row__review"
-                            onClick={() => setReviewCoupon(c)}
-                          >
-                            {t('profile.archive.leaveReview')}
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                    {archive.map((c) => {
+                      const actions = getCouponActions(
+                        c.status,
+                        openComplaints.has(c.id),
+                        reviewedOffers.has(c.couponOfferId),
+                      );
+
+                      return (
+                        <div key={c.id} className="archive-row">
+                          <span className={`archive-row__status archive-row__status--${archiveStatusClass(c.status)}`}>
+                            {t(`profile.purchasedCoupon.status.${c.status.toLowerCase()}`)}
+                          </span>
+                          <span className="archive-row__title">{c.couponTitle}</span>
+                          <span className="archive-row__date">
+                            {formatDate(c.usedAt || c.expiresAt || c.purchasedAt)}
+                          </span>
+                          {actions.canComplain && (
+                            <button
+                              type="button"
+                              className="archive-row__review"
+                              onClick={() => setComplaintCoupon(c)}
+                            >
+                              {t('profile.complain')}
+                            </button>
+                          )}
+                          {openComplaints.has(c.id) && (
+                            <span className="ticket__complaint">
+                              {t('profile.complaintPending')}
+                            </span>
+                          )}
+                          {actions.canReview && (
+                            <button
+                              type="button"
+                              className="archive-row__review"
+                              onClick={() => setReviewCoupon(c)}
+                            >
+                              {t('profile.archive.leaveReview')}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
               )}

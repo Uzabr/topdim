@@ -9,6 +9,7 @@ import { ordersApi } from '../api/orders';
 import type { PurchasedCoupon } from '../api/orders';
 import { reviewsApi } from '../api/reviews';
 import ComplaintModal from '../components/profile/ComplaintModal';
+import { getCouponActions } from '../components/profile/couponActions';
 import ProfileHelpSection from '../components/profile/ProfileHelpSection';
 import ProfileSettingsSection from '../components/profile/ProfileSettingsSection';
 import RefundRequestModal from '../components/profile/RefundRequestModal';
@@ -122,6 +123,13 @@ export default function ProfileMobile() {
   }
 
   const days = ticket?.expiresAt ? daysUntil(ticket.expiresAt) : null;
+  const ticketActions = ticket
+    ? getCouponActions(
+        ticket.status,
+        openComplaints.has(ticket.id),
+        reviewed.has(ticket.couponOfferId),
+      )
+    : null;
 
   return (
     <div className="pmob">
@@ -215,25 +223,26 @@ export default function ProfileMobile() {
                       </p>
 
                       <div className="pticket__acts">
-                        {openComplaints.has(ticket.id) ? (
+                        {ticketActions?.canRefund && (
+                          <button
+                            type="button"
+                            className="pticket__act"
+                            onClick={() => setRefund(ticket)}
+                          >
+                            {t('profile.refundMoney')}
+                          </button>
+                        )}
+                        {ticketActions?.canComplain && (
+                          <button
+                            type="button"
+                            className="pticket__act"
+                            onClick={() => setComplaint(ticket)}
+                          >
+                            {t('profile.complain')}
+                          </button>
+                        )}
+                        {openComplaints.has(ticket.id) && (
                           <span className="pticket__pending">{t('profile.complaintPending')}</span>
-                        ) : (
-                          <>
-                            <button
-                              type="button"
-                              className="pticket__act"
-                              onClick={() => setRefund(ticket)}
-                            >
-                              {t('profile.refundMoney')}
-                            </button>
-                            <button
-                              type="button"
-                              className="pticket__act"
-                              onClick={() => setComplaint(ticket)}
-                            >
-                              {t('profile.complain')}
-                            </button>
-                          </>
                         )}
                       </div>
                     </div>
@@ -245,33 +254,57 @@ export default function ProfileMobile() {
                 <>
                   <h2 className="pmob__section">{t('profile.couponSubtabs.active')}</h2>
                   <div className="pmob__list">
-                    {rest.map((c) => (
-                      <div key={c.id} className="prow">
-                        <div className="prow__qr">
-                          {c.qrToken && (
-                            <QRCodeSVG value={buildQrPayload(c.qrToken)} size={46} level="M" />
-                          )}
-                        </div>
+                    {rest.map((c) => {
+                      const actions = getCouponActions(
+                        c.status,
+                        openComplaints.has(c.id),
+                        reviewed.has(c.couponOfferId),
+                      );
 
-                        <div className="prow__text">
-                          <span className="prow__title">{c.couponTitle}</span>
-                          <span className="prow__meta">
-                            {c.expiresAt &&
-                              `${t('profile.ticket.until', { date: formatDate(c.expiresAt) })} · `}
-                            <span className="prow__code">{c.couponCode}</span>
-                          </span>
-                        </div>
+                      return (
+                        <div key={c.id} className="prow">
+                          <div className="prow__qr">
+                            {c.qrToken && (
+                              <QRCodeSVG value={buildQrPayload(c.qrToken)} size={46} level="M" />
+                            )}
+                          </div>
 
-                        <button
-                          type="button"
-                          className="prow__more"
-                          onClick={() => setComplaint(c)}
-                          aria-label={t('profile.complain')}
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                      </div>
-                    ))}
+                          <div className="prow__text">
+                            <span className="prow__title">{c.couponTitle}</span>
+                            <span className="prow__meta">
+                              {c.expiresAt &&
+                                `${t('profile.ticket.until', { date: formatDate(c.expiresAt) })} · `}
+                              <span className="prow__code">{c.couponCode}</span>
+                            </span>
+                            <span className="pticket__acts">
+                              {actions.canRefund && (
+                                <button
+                                  type="button"
+                                  className="pticket__act"
+                                  onClick={() => setRefund(c)}
+                                >
+                                  {t('profile.refundShort')}
+                                </button>
+                              )}
+                              {actions.canComplain && (
+                                <button
+                                  type="button"
+                                  className="pticket__act"
+                                  onClick={() => setComplaint(c)}
+                                >
+                                  {t('profile.complain')}
+                                </button>
+                              )}
+                              {openComplaints.has(c.id) && (
+                                <span className="pticket__pending">
+                                  {t('profile.complaintPending')}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -280,34 +313,56 @@ export default function ProfileMobile() {
                 <>
                   <h2 className="pmob__section">{t('profile.archive.title')}</h2>
                   <div className="pmob__list">
-                    {archive.map((c) => (
-                      <div key={c.id} className="parc">
-                        <div className="parc__row">
-                          <div className="parc__text">
-                            <span className="parc__title">{c.couponTitle}</span>
-                            <span className="parc__date">
-                              {formatDate(c.usedAt || c.expiresAt || c.purchasedAt)}
+                    {archive.map((c) => {
+                      const actions = getCouponActions(
+                        c.status,
+                        openComplaints.has(c.id),
+                        reviewed.has(c.couponOfferId),
+                      );
+
+                      return (
+                        <div key={c.id} className="parc">
+                          <div className="parc__row">
+                            <div className="parc__text">
+                              <span className="parc__title">{c.couponTitle}</span>
+                              <span className="parc__date">
+                                {formatDate(c.usedAt || c.expiresAt || c.purchasedAt)}
+                              </span>
+                            </div>
+
+                            <span className={`parc__badge parc__badge--${archiveClass(c.status)}`}>
+                              {t(`profile.purchasedCoupon.status.${c.status.toLowerCase()}`)}
                             </span>
                           </div>
 
-                          <span className={`parc__badge parc__badge--${archiveClass(c.status)}`}>
-                            {t(`profile.purchasedCoupon.status.${c.status.toLowerCase()}`)}
-                          </span>
+                          {actions.canComplain && (
+                            <button
+                              type="button"
+                              className="parc__review"
+                              onClick={() => setComplaint(c)}
+                            >
+                              {t('profile.complain')}
+                            </button>
+                          )}
+                          {openComplaints.has(c.id) && (
+                            <span className="pticket__pending">
+                              {t('profile.complaintPending')}
+                            </span>
+                          )}
+                          {/* Отзыв можно оставить только по использованному купону —
+                              так же требует и бэкенд (reviews eligibility). */}
+                          {actions.canReview && (
+                            <button
+                              type="button"
+                              className="parc__review"
+                              onClick={() => setReview(c)}
+                            >
+                              {t('profile.archive.leaveReview')}
+                            </button>
+                          )}
                         </div>
-
-                        {/* Отзыв можно оставить только по использованному купону —
-                            так же требует и бэкенд (reviews eligibility). */}
-                        {c.status === 'USED' && !reviewed.has(c.couponOfferId) && (
-                          <button
-                            type="button"
-                            className="parc__review"
-                            onClick={() => setReview(c)}
-                          >
-                            {t('profile.archive.leaveReview')}
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               )}
