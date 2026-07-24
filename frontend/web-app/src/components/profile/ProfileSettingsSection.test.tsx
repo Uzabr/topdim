@@ -116,6 +116,35 @@ describe('ProfileSettingsSection profile actions', () => {
     );
   });
 
+  it('does not submit a phone outside the canonical Uzbekistan format', () => {
+    render(<ProfileSettingsSection />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.add' }));
+    fireEvent.change(screen.getByPlaceholderText('+998 90 123 45 67'), {
+      target: { value: '+998abcdefgh' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
+
+    expect(screen.getByText('profile.settings.validation.phoneMin')).toBeTruthy();
+    expect(updateProfile).not.toHaveBeenCalled();
+  });
+
+  it('submits an empty trimmed last name so the backend can clear it', async () => {
+    updateProfile.mockResolvedValue(undefined);
+    render(<ProfileSettingsSection />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.edit' }));
+    fireEvent.change(screen.getByPlaceholderText('profile.settings.lastNamePlaceholder'), {
+      target: { value: '   ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
+
+    await waitFor(() => expect(updateProfile).toHaveBeenCalledWith({
+      firstName: 'Ada',
+      lastName: '',
+    }));
+  });
+
   it('does not call backend when password rules or confirmation fail', () => {
     openPasswordForm();
     fillPasswords('Current1!', 'weak', 'different');

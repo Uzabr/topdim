@@ -98,7 +98,7 @@ export default function ProfileSettingsSection() {
       setError(t('profile.settings.validation.firstNameRequired'));
       return;
     }
-    if (field === 'phone' && phone.trim().length < 9) {
+    if (field === 'phone' && !/^\+998\d{9}$/.test(phone.trim())) {
       setError(t('profile.settings.validation.phoneMin'));
       return;
     }
@@ -107,7 +107,7 @@ export default function ProfileSettingsSection() {
     try {
       await updateProfile(
         field === 'name'
-          ? { firstName: firstName.trim(), lastName: lastName.trim() || undefined }
+          ? { firstName: firstName.trim(), lastName: lastName.trim() }
           : { phone: phone.trim() },
       );
       setEditing(null);
