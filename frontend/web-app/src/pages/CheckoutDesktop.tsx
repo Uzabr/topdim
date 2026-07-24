@@ -7,6 +7,10 @@ import { formatPrice } from '../utils/format';
 import { useAuthStore } from '../store/authStore';
 import { ordersApi } from '../api/orders';
 import { useLocalePath } from '../hooks/useLocalePath';
+import {
+  captureSessionGeneration,
+  isSessionGenerationCurrent,
+} from '../sessionCleanup';
 import './CheckoutPage.css';
 
 /**
@@ -22,8 +26,17 @@ export default function CheckoutDesktop() {
   const navigate = useNavigate();
   const lp = useLocalePath();
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const renderedSessionGeneration = captureSessionGeneration();
+  const [loadingSessionGeneration, setLoadingSessionGeneration] =
+    useState<number | null>(null);
+  const [sessionError, setSessionError] = useState<{
+    generation: number;
+    message: string;
+  } | null>(null);
+  const isLoading = loadingSessionGeneration === renderedSessionGeneration;
+  const error = sessionError?.generation === renderedSessionGeneration
+    ? sessionError.message
+    : '';
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'CLICK' | 'PAYME'>('CARD');
 
   // Auth guard: если не авторизован — показываем CTA для логина
@@ -92,21 +105,29 @@ export default function CheckoutDesktop() {
   }
 
   const handlePayment = async () => {
-
-    setIsLoading(true);
-    setError('');
+    const sessionGeneration = captureSessionGeneration();
+    setLoadingSessionGeneration(sessionGeneration);
+    setSessionError(null);
     try {
       // Создаём order из backend cart с валидным email + phone
       const response = await ordersApi.createOrder(userEmail, userPhone);
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const order = response.data.data;
       clearCart();
       // Переход на страницу оплаты (Stage 6) или профиль
       navigate(lp(`/payment/${order.id}`), { replace: true });
     } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || t('checkout.error'));
+      setSessionError({
+        generation: sessionGeneration,
+        message: error.response?.data?.message || t('checkout.error'),
+      });
     } finally {
-      setIsLoading(false);
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setLoadingSessionGeneration((current) =>
+          current === sessionGeneration ? null : current);
+      }
     }
   };
 

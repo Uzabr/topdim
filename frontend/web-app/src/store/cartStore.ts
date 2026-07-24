@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import { ordersApi } from '../api/orders';
 import type { AddToCartRequest, CartItem } from '../api/orders';
 import i18n from '../i18n';
+import {
+  captureSessionGeneration,
+  isSessionGenerationCurrent,
+} from '../sessionCleanup';
 
 // ═══ Constants ═══
 /** Максимальное количество позиций в guest-корзине (localStorage). */
@@ -153,6 +157,8 @@ export const useCartStore = create<CartState>((set, get) => ({
         backendCartId: null,
         localItems,
         items: localItems,
+        isLoading: false,
+        error: null,
         ...calcLocalTotals(localItems),
       });
     }
@@ -228,13 +234,17 @@ export const useCartStore = create<CartState>((set, get) => ({
         (i) => makeKey(i.couponOfferId, i.couponOptionId) === key
       );
       if (item) {
+        const sessionGeneration = captureSessionGeneration();
         set({ isLoading: true, error: null });
         ordersApi.updateCartItemQuantity(item.id, quantity)
           .then(async () => {
+            if (!isSessionGenerationCurrent(sessionGeneration)) return;
             await get().fetchBackendCart();
+            if (!isSessionGenerationCurrent(sessionGeneration)) return;
             set({ isLoading: false });
           })
           .catch((err: unknown) => {
+            if (!isSessionGenerationCurrent(sessionGeneration)) return;
             const error = err as { response?: { data?: { message?: string } } };
             const message = error.response?.data?.message || i18n.t('cart.updateQtyError');
             set({ isLoading: false, error: message });
@@ -281,9 +291,11 @@ export const useCartStore = create<CartState>((set, get) => ({
   // ═══ Auth-mode actions (backend API) ═══
 
   fetchBackendCart: async () => {
+    const sessionGeneration = captureSessionGeneration();
     set({ isLoading: true });
     try {
       const response = await ordersApi.getCart();
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const cart = response.data.data;
       set({
         backendItems: cart.items,
@@ -293,15 +305,18 @@ export const useCartStore = create<CartState>((set, get) => ({
         ...calcBackendTotals(cart.items),
       });
     } catch (error) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       console.error('Failed to fetch backend cart:', error);
       set({ isLoading: false });
     }
   },
 
   addToBackendCart: async (request: AddToCartRequest) => {
+    const sessionGeneration = captureSessionGeneration();
     set({ isLoading: true, error: null });
     try {
       const response = await ordersApi.addToCart(request);
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const cart = response.data.data;
       const backendItems = cart.items || [];
       set({
@@ -314,6 +329,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         ...calcBackendTotals(backendItems),
       });
     } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const error = err as { response?: { data?: { message?: string } } };
       const message = error.response?.data?.message || i18n.t('cart.addError');
       set({ isLoading: false, error: message });
@@ -322,12 +338,15 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   removeFromBackendCart: async (itemId: number) => {
+    const sessionGeneration = captureSessionGeneration();
     set({ isLoading: true });
     try {
       await ordersApi.removeFromCart(itemId);
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       // Re-fetch cart to get updated state
       await get().fetchBackendCart();
     } catch (error) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       console.error('Failed to remove from backend cart:', error);
       set({ isLoading: false });
     }
@@ -339,10 +358,12 @@ export const useCartStore = create<CartState>((set, get) => ({
    * Это гарантирует, что после логина backend — единственный source of truth.
    */
   syncLocalCartToBackend: async () => {
+    const sessionGeneration = captureSessionGeneration();
     const { localItems } = get();
     if (localItems.length === 0) {
       // Нечего синхронизировать, просто загружаем backend cart
       await get().fetchBackendCart();
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       set({ mode: 'auth' });
       return;
     }
@@ -362,16 +383,20 @@ export const useCartStore = create<CartState>((set, get) => ({
           giftRecipientName: item.giftRecipientName,
           giftRecipientPhone: item.giftRecipientPhone,
         });
+        if (!isSessionGenerationCurrent(sessionGeneration)) return;
       }
 
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       // Очищаем localStorage
       clearStorage();
       set({ localItems: [] });
 
       // Загружаем актуальную backend cart
       await get().fetchBackendCart();
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       set({ mode: 'auth', isLoading: false });
     } catch (error) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       console.error('Failed to sync local cart to backend:', error);
       set({ isLoading: false });
     }

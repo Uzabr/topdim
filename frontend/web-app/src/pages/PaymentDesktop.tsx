@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -7,6 +7,12 @@ import { paymentsApi, type PaymentResponse } from '../api/payments';
 import { ordersApi } from '../api/orders';
 import { formatPrice } from '../utils/format';
 import { useLocalePath } from '../hooks/useLocalePath';
+import {
+  captureSessionGeneration,
+  isSessionGenerationCurrent,
+  registerSessionReset,
+} from '../sessionCleanup';
+import { useAuthStore } from '../store/authStore';
 import './PaymentPage.css';
 
 /**
@@ -33,6 +39,7 @@ export default function PaymentDesktop() {
   const navigate = useNavigate();
   const lp = useLocalePath();
   const queryClient = useQueryClient();
+  const userId = useAuthStore((authState) => authState.user?.id) ?? 0;
 
   const [state, setState] = useState<PaymentState>('polling');
   const [payment, setPayment] = useState<PaymentResponse | null>(null);
@@ -41,34 +48,99 @@ export default function PaymentDesktop() {
   const [demoLoading, setDemoLoading] = useState(false);
   const pollCountRef = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollOperationRef = useRef(0);
+  const demoOperationRef = useRef(0);
 
   const numericOrderId = Number(orderId);
 
   const isDemoMode = payment?.paymentMode === 'demo';
 
+  const stopPolling = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    const unregister = registerSessionReset(() => {
+      demoOperationRef.current += 1;
+      pollOperationRef.current += 1;
+      stopPolling();
+      pollCountRef.current = 0;
+      setState('polling');
+      setPayment(null);
+      setOrderTotal(0);
+      setError('');
+      setDemoLoading(false);
+    });
+    return () => {
+      unregister();
+    };
+  }, [stopPolling]);
+
   // Fetch order info
   useEffect(() => {
-    if (!numericOrderId) return;
-    ordersApi.getOrder(numericOrderId)
-      .then((res) => setOrderTotal(res.data.data.totalAmount))
+    setOrderTotal(0);
+    if (!numericOrderId || userId === 0) return;
+    const sessionGeneration = captureSessionGeneration();
+    let active = true;
+    void ordersApi.getOrder(numericOrderId)
+      .then((res) => {
+        if (
+          active
+          && isSessionGenerationCurrent(sessionGeneration)
+        ) {
+          setOrderTotal(res.data.data.totalAmount);
+        }
+      })
       .catch(() => {});
-  }, [numericOrderId]);
+    return () => {
+      active = false;
+    };
+  }, [numericOrderId, userId]);
 
   // Polling for payment creation
   useEffect(() => {
-    if (!numericOrderId) return;
+    stopPolling();
+    pollCountRef.current = 0;
+    setState('polling');
+    setPayment(null);
+    setError('');
+    setDemoLoading(false);
+    if (!numericOrderId || userId === 0) return;
+    const sessionGeneration = captureSessionGeneration();
+    const pollOperation = pollOperationRef.current + 1;
+    pollOperationRef.current = pollOperation;
+    let active = true;
+    const ownsPolling = () =>
+      pollOperationRef.current === pollOperation;
+    const stopOwnedPolling = () => {
+      if (!ownsPolling()) return;
+      pollOperationRef.current += 1;
+      stopPolling();
+    };
+    const isCurrentPoll = () =>
+      active
+      && ownsPolling()
+      && isSessionGenerationCurrent(sessionGeneration);
 
     const poll = async () => {
+      if (!isCurrentPoll()) {
+        stopOwnedPolling();
+        return;
+      }
       try {
         const res = await paymentsApi.getByOrderId(numericOrderId);
+        if (!isCurrentPoll()) {
+          stopOwnedPolling();
+          return;
+        }
         const p = res.data.data;
         setPayment(p);
 
         // Payment found — stop polling
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
+        stopOwnedPolling();
 
         // Determine state based on payment status
         const status = p.statusName?.toUpperCase();
@@ -80,40 +152,37 @@ export default function PaymentDesktop() {
           setState('pending');
         }
       } catch (err: unknown) {
+        if (!isCurrentPoll()) {
+          stopOwnedPolling();
+          return;
+        }
         const error = err as { response?: { status?: number, data?: { message?: string } } };
         // 404 = payment not yet created by event-driven flow
         if (error.response?.status === 404) {
           pollCountRef.current += 1;
           if (pollCountRef.current >= MAX_POLL_ATTEMPTS) {
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current);
-              intervalRef.current = null;
-            }
+            stopOwnedPolling();
             setState('timeout');
           }
           // Continue polling
         } else {
           // Unexpected error
           setError(error.response?.data?.message || t('payment.checkError'));
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-          }
+          stopOwnedPolling();
           setState('failed');
         }
       }
     };
 
     // Start polling
-    poll(); // immediate first check
-    intervalRef.current = setInterval(poll, POLL_INTERVAL_MS);
+    void poll(); // immediate first check
+    intervalRef.current = setInterval(() => void poll(), POLL_INTERVAL_MS);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      active = false;
+      stopOwnedPolling();
     };
-  }, [numericOrderId]);
+  }, [numericOrderId, stopPolling, t, userId]);
 
   // Redirect to real payment URL (provider mode)
   const handlePaymentRedirect = () => {
@@ -126,11 +195,18 @@ export default function PaymentDesktop() {
   // Demo completion
   const handleDemoComplete = async () => {
     if (demoLoading) return;
+    const sessionGeneration = captureSessionGeneration();
+    const operation = demoOperationRef.current + 1;
+    demoOperationRef.current = operation;
     setDemoLoading(true);
     setError('');
 
     try {
       const res = await paymentsApi.demoComplete(numericOrderId);
+      if (
+        demoOperationRef.current !== operation
+        || !isSessionGenerationCurrent(sessionGeneration)
+      ) return;
       const p = res.data.data;
       setPayment(p);
       setState('completed');
@@ -138,6 +214,10 @@ export default function PaymentDesktop() {
       queryClient.invalidateQueries({ queryKey: ['my-coupons'] });
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
     } catch (err: unknown) {
+      if (
+        demoOperationRef.current !== operation
+        || !isSessionGenerationCurrent(sessionGeneration)
+      ) return;
       const error = err as { response?: { status?: number, data?: { message?: string } } };
       const msg = error.response?.data?.message || t('payment.confirmError');
       setError(msg);
@@ -145,7 +225,9 @@ export default function PaymentDesktop() {
         setError(t('payment.demoUnavailable'));
       }
     } finally {
-      setDemoLoading(false);
+      if (demoOperationRef.current === operation) {
+        setDemoLoading(false);
+      }
     }
   };
 

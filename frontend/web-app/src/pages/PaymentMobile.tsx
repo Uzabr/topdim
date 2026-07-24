@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertCircle, Check, ExternalLink, Loader2, ShieldCheck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -11,6 +11,11 @@ import { buildQrPayload } from '../utils/coupon';
 import { formatDate, formatPrice } from '../utils/format';
 import { useAuthStore } from '../store/authStore';
 import { profileQueryKeys } from '../queries/profileQueries';
+import {
+  captureSessionGeneration,
+  isSessionGenerationCurrent,
+  registerSessionReset,
+} from '../sessionCleanup';
 import './PaymentMobile.css';
 
 type State = 'polling' | 'pending' | 'completed' | 'failed' | 'timeout';
@@ -39,59 +44,127 @@ export default function PaymentMobile() {
   const [confirming, setConfirming] = useState(false);
   const pollsRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollOperationRef = useRef(0);
+  const demoOperationRef = useRef(0);
 
   const isDemo = payment?.paymentMode === 'demo';
 
-  useEffect(() => {
-    if (!id) return;
-    ordersApi
-      .getOrder(id)
-      .then((res) => setTotal(res.data.data.totalAmount))
-      .catch(() => {});
-  }, [id]);
+  const stopPolling = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+  }, []);
 
   useEffect(() => {
-    if (!id) return;
-
-    const stop = () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = null;
+    const unregister = registerSessionReset(() => {
+      demoOperationRef.current += 1;
+      pollOperationRef.current += 1;
+      stopPolling();
+      pollsRef.current = 0;
+      setState('polling');
+      setPayment(null);
+      setTotal(0);
+      setError('');
+      setConfirming(false);
+    });
+    return () => {
+      unregister();
     };
+  }, [stopPolling]);
+
+  useEffect(() => {
+    setTotal(0);
+    if (!id || userId === 0) return;
+    const sessionGeneration = captureSessionGeneration();
+    let active = true;
+    void ordersApi
+      .getOrder(id)
+      .then((res) => {
+        if (
+          active
+          && isSessionGenerationCurrent(sessionGeneration)
+        ) {
+          setTotal(res.data.data.totalAmount);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [id, userId]);
+
+  useEffect(() => {
+    stopPolling();
+    pollsRef.current = 0;
+    setState('polling');
+    setPayment(null);
+    setError('');
+    setConfirming(false);
+    if (!id || userId === 0) return;
+    const sessionGeneration = captureSessionGeneration();
+    const pollOperation = pollOperationRef.current + 1;
+    pollOperationRef.current = pollOperation;
+    let active = true;
+    const ownsPolling = () =>
+      pollOperationRef.current === pollOperation;
+    const stopOwnedPolling = () => {
+      if (!ownsPolling()) return;
+      pollOperationRef.current += 1;
+      stopPolling();
+    };
+    const isCurrentPoll = () =>
+      active
+      && ownsPolling()
+      && isSessionGenerationCurrent(sessionGeneration);
 
     const poll = async () => {
+      if (!isCurrentPoll()) {
+        stopOwnedPolling();
+        return;
+      }
       try {
         const res = await paymentsApi.getByOrderId(id);
+        if (!isCurrentPoll()) {
+          stopOwnedPolling();
+          return;
+        }
         const p = res.data.data;
         setPayment(p);
-        stop();
+        stopOwnedPolling();
 
         const status = p.statusName?.toUpperCase();
         if (status === 'COMPLETED' || status === 'SUCCESS') setState('completed');
         else if (status === 'FAILED' || status === 'CANCELLED') setState('failed');
         else setState('pending');
       } catch (err: unknown) {
+        if (!isCurrentPoll()) {
+          stopOwnedPolling();
+          return;
+        }
         const e = err as { response?: { status?: number; data?: { message?: string } } };
         // 404 — платёж ещё не создан событием; ждём.
         if (e.response?.status === 404) {
           pollsRef.current += 1;
           if (pollsRef.current >= MAX_POLLS) {
-            stop();
+            stopOwnedPolling();
             setState('timeout');
           }
           return;
         }
         setError(e.response?.data?.message || t('payment.checkError'));
-        stop();
+        stopOwnedPolling();
         setState('failed');
       }
     };
 
-    poll();
-    timerRef.current = setInterval(poll, POLL_MS);
-    return stop;
+    void poll();
+    timerRef.current = setInterval(() => void poll(), POLL_MS);
+    return () => {
+      active = false;
+      stopOwnedPolling();
+    };
     // t не влияет на опрос — перезапускать его при смене языка незачем.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, stopPolling, userId]);
 
   // QR показываем настоящий: берём свежекупленный активный купон.
   const { data: fresh } = useQuery({
@@ -107,15 +180,26 @@ export default function PaymentMobile() {
 
   const confirmDemo = async () => {
     if (confirming) return;
+    const sessionGeneration = captureSessionGeneration();
+    const operation = demoOperationRef.current + 1;
+    demoOperationRef.current = operation;
     setConfirming(true);
     setError('');
     try {
       const res = await paymentsApi.demoComplete(id);
+      if (
+        demoOperationRef.current !== operation
+        || !isSessionGenerationCurrent(sessionGeneration)
+      ) return;
       setPayment(res.data.data);
       setState('completed');
       queryClient.invalidateQueries({ queryKey: ['my-coupons'] });
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
     } catch (err: unknown) {
+      if (
+        demoOperationRef.current !== operation
+        || !isSessionGenerationCurrent(sessionGeneration)
+      ) return;
       const e = err as { response?: { status?: number; data?: { message?: string } } };
       setError(
         e.response?.status === 403
@@ -123,7 +207,9 @@ export default function PaymentMobile() {
           : e.response?.data?.message || t('payment.confirmError'),
       );
     } finally {
-      setConfirming(false);
+      if (demoOperationRef.current === operation) {
+        setConfirming(false);
+      }
     }
   };
 

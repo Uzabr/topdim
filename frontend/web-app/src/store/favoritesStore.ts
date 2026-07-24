@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { favoritesApi } from '../api/favorites';
 import i18n from '../i18n';
+import {
+  captureSessionGeneration,
+  isSessionGenerationCurrent,
+} from '../sessionCleanup';
 
 interface FavoritesState {
   /** Массив ID купонов в избранном */
@@ -68,21 +72,25 @@ export const useFavoritesStore = create<FavoritesState>()(
       syncWithBackend: async () => {
         if (!isAuthenticated()) return;
         const syncGeneration = get().syncGeneration;
+        const sessionGeneration = captureSessionGeneration();
+        const isCurrentSync = () =>
+          get().syncGeneration === syncGeneration
+          && isSessionGenerationCurrent(sessionGeneration);
         try {
           const response = await favoritesApi.getAll();
-          if (get().syncGeneration !== syncGeneration) return;
+          if (!isCurrentSync()) return;
           const backendIds = response.data.data.map((f) => f.couponOfferId);
           const localIds = get().favoriteIds;
           
           // Merge: local favorites that aren't on backend → push to backend
           const toAdd = localIds.filter((id) => !backendIds.includes(id));
           for (const id of toAdd) {
-            if (get().syncGeneration !== syncGeneration) return;
+            if (!isCurrentSync()) return;
             await favoritesApi.add(id).catch(() => {});
           }
           
           // Final state: union of both
-          if (get().syncGeneration !== syncGeneration) return;
+          if (!isCurrentSync()) return;
           const mergedIds = [...new Set([...backendIds, ...localIds])];
           set({ favoriteIds: mergedIds });
         } catch {

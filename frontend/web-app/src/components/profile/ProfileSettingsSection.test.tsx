@@ -5,6 +5,7 @@ import { authApi } from '../../api/auth';
 import { mediaApi } from '../../api/media';
 import ru from '../../locales/ru.json';
 import uz from '../../locales/uz.json';
+import { advanceSessionGeneration } from '../../sessionCleanup';
 import ProfileSettingsSection from './ProfileSettingsSection';
 
 const { navigate, logout, updateProfile } = vi.hoisted(() => ({
@@ -58,6 +59,16 @@ function fillPasswords(current: string, next: string, confirmation: string) {
   fireEvent.change(screen.getByLabelText('profile.settings.password.confirm'), {
     target: { value: confirmation },
   });
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((complete, fail) => {
+    resolve = complete;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
 }
 
 describe('ProfileSettingsSection profile actions', () => {
@@ -118,6 +129,29 @@ describe('ProfileSettingsSection profile actions', () => {
     expect((await screen.findByRole('status')).textContent).toBe(
       'profile.settings.avatar.success',
     );
+  });
+
+  it('does not apply an account A avatar upload after the session switches', async () => {
+    const lateUpload = deferred<Awaited<ReturnType<typeof mediaApi.uploadFile>>>();
+    const file = new File(['image'], 'avatar.png', { type: 'image/png' });
+    vi.mocked(mediaApi.uploadFile).mockReturnValue(lateUpload.promise);
+    render(<ProfileSettingsSection />);
+
+    fireEvent.change(screen.getByLabelText('profile.settings.avatar.choose'), {
+      target: { files: [file] },
+    });
+    await waitFor(() => expect(mediaApi.uploadFile).toHaveBeenCalledOnce());
+
+    advanceSessionGeneration();
+    await act(async () => {
+      lateUpload.resolve({
+        fileName: 'account_a_avatar.png',
+        url: '/api/v1/media/account_a_avatar.png',
+      });
+    });
+
+    expect(updateProfile).not.toHaveBeenCalled();
+    expect(screen.queryByText('profile.settings.avatar.success')).toBeNull();
   });
 
   it('does not submit a phone outside the canonical Uzbekistan format', () => {
@@ -211,6 +245,55 @@ describe('ProfileSettingsSection profile actions', () => {
 
     expect(logout).toHaveBeenCalledOnce();
     expect(navigate).toHaveBeenCalledWith('/ru/login', { replace: true });
+  });
+
+  it('does not log out account B when account A password change resolves late', async () => {
+    const latePasswordChange =
+      deferred<Awaited<ReturnType<typeof authApi.changePassword>>>();
+    vi.mocked(authApi.changePassword).mockReturnValue(
+      latePasswordChange.promise,
+    );
+    openPasswordForm();
+    fillPasswords('Current1!', 'NewStrong2!', 'NewStrong2!');
+    fireEvent.click(screen.getByRole('button', {
+      name: 'profile.settings.password.save',
+    }));
+    await waitFor(() => expect(authApi.changePassword).toHaveBeenCalledOnce());
+
+    advanceSessionGeneration();
+    await act(async () => {
+      latePasswordChange.resolve(
+        {} as Awaited<ReturnType<typeof authApi.changePassword>>,
+      );
+    });
+
+    expect(logout).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+    expect(screen.queryByText('profile.settings.password.success')).toBeNull();
+  });
+
+  it('does not surface an account A password error after the session switches', async () => {
+    const latePasswordChange =
+      deferred<Awaited<ReturnType<typeof authApi.changePassword>>>();
+    vi.mocked(authApi.changePassword).mockReturnValue(
+      latePasswordChange.promise,
+    );
+    openPasswordForm();
+    fillPasswords('Current1!', 'NewStrong2!', 'NewStrong2!');
+    fireEvent.click(screen.getByRole('button', {
+      name: 'profile.settings.password.save',
+    }));
+    await waitFor(() => expect(authApi.changePassword).toHaveBeenCalledOnce());
+
+    advanceSessionGeneration();
+    await act(async () => {
+      latePasswordChange.reject({
+        response: { status: 401, data: { message: 'Account A error' } },
+      });
+    });
+
+    expect(screen.queryByText('Account A error')).toBeNull();
+    expect(logout).not.toHaveBeenCalled();
   });
 
   it('labels the notifications action as viewing rather than configuring', () => {

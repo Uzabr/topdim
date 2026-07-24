@@ -3,6 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/auth';
 import { mediaApi } from '../../api/media';
+import {
+  captureSessionGeneration,
+  isSessionGenerationCurrent,
+} from '../../sessionCleanup';
 import { useAuthStore } from '../../store/authStore';
 import { validateAvatarFile } from '../../utils/avatar';
 import { isStrongPassword } from '../../utils/password';
@@ -60,31 +64,42 @@ export default function ProfileSettingsSection() {
       return;
     }
 
+    const sessionGeneration = captureSessionGeneration();
     setAvatarUploading(true);
     try {
       const uploaded = await mediaApi.uploadFile(file);
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       await updateProfile({ avatarUrl: uploaded.url });
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       setAvatarNotice(t('profile.settings.avatar.success'));
     } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const e = err as { response?: { data?: { message?: string } } };
       setAvatarError(e.response?.data?.message || t('profile.settings.avatar.error'));
     } finally {
-      setAvatarUploading(false);
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setAvatarUploading(false);
+      }
     }
   };
 
   const requestEmailConfirmation = async () => {
+    const sessionGeneration = captureSessionGeneration();
     setEmailConfirming(true);
     setEmailNotice('');
     setEmailError('');
     try {
       await authApi.requestEmailConfirm();
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       setEmailNotice(t('profile.settings.email.sent'));
     } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const e = err as { response?: { data?: { message?: string } } };
       setEmailError(e.response?.data?.message || t('profile.settings.email.error'));
     } finally {
-      setEmailConfirming(false);
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setEmailConfirming(false);
+      }
     }
   };
 
@@ -100,6 +115,7 @@ export default function ProfileSettingsSection() {
       return;
     }
 
+    const sessionGeneration = captureSessionGeneration();
     setSaving(true);
     try {
       await updateProfile(
@@ -107,12 +123,16 @@ export default function ProfileSettingsSection() {
           ? { firstName: firstName.trim(), lastName: lastName.trim() }
           : { phone: phone.trim() },
       );
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       setEditing(null);
     } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const e = err as { response?: { data?: { message?: string } } };
       setError(e.response?.data?.message || t('profile.settings.error'));
     } finally {
-      setSaving(false);
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setSaving(false);
+      }
     }
   };
 
@@ -144,11 +164,13 @@ export default function ProfileSettingsSection() {
       return;
     }
 
+    const sessionGeneration = captureSessionGeneration();
     setSaving(true);
     setPasswordErrors({});
     setPasswordNotice('');
     try {
       await authApi.changePassword(currentPassword, newPassword);
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -157,6 +179,7 @@ export default function ProfileSettingsSection() {
       logout();
       navigate(`/${lang}/login`, { replace: true });
     } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const e = err as { response?: { status?: number; data?: { message?: string; data?: Record<string, string> } } };
       const fields = e.response?.data?.data;
       const message =
@@ -167,7 +190,9 @@ export default function ProfileSettingsSection() {
         e.response?.status === 401 ? { currentPassword: message } : { general: message },
       );
     } finally {
-      setSaving(false);
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setSaving(false);
+      }
     }
   };
 
