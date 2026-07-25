@@ -7,6 +7,7 @@ import axios, {
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { authApi, type UserDto, type UserProfileResponse } from '../api/auth';
 import apiClient from '../api/client';
+import { favoritesApi, type FavoriteItem } from '../api/favorites';
 import { ordersApi, type Cart } from '../api/orders';
 import {
   advanceSessionGeneration,
@@ -15,11 +16,7 @@ import {
 } from '../sessionCleanup';
 import { useAuthStore } from './authStore';
 import { useCartStore } from './cartStore';
-
-const { resetFavorites, syncFavorites } = vi.hoisted(() => ({
-  resetFavorites: vi.fn(),
-  syncFavorites: vi.fn().mockResolvedValue(undefined),
-}));
+import { useFavoritesStore } from './favoritesStore';
 
 vi.mock('../api/auth', () => ({
   authApi: {
@@ -41,12 +38,11 @@ vi.mock('../api/orders', () => ({
   },
 }));
 
-vi.mock('./favoritesStore', () => ({
-  useFavoritesStore: {
-    getState: () => ({
-      reset: resetFavorites,
-      syncWithBackend: syncFavorites,
-    }),
+vi.mock('../api/favorites', () => ({
+  favoritesApi: {
+    getAll: vi.fn(),
+    add: vi.fn(),
+    remove: vi.fn(),
   },
 }));
 
@@ -113,6 +109,23 @@ function cartResponse(cart: Cart) {
       timestamp: '2026-07-25T10:00:00Z',
     },
   } as Awaited<ReturnType<typeof ordersApi.getCart>>;
+}
+
+function favoritesResponse(couponOfferIds: number[]) {
+  const favorites: FavoriteItem[] = couponOfferIds.map(
+    (couponOfferId, index) => ({
+      id: index + 1,
+      couponOfferId,
+      createdAt: '2026-07-25T10:00:00Z',
+    }),
+  );
+  return {
+    data: {
+      success: true,
+      data: favorites,
+      timestamp: '2026-07-25T10:00:00Z',
+    },
+  } as Awaited<ReturnType<typeof favoritesApi.getAll>>;
 }
 
 function unauthorized(config: InternalAxiosRequestConfig) {
@@ -192,6 +205,260 @@ describe('account-owned async session isolation', () => {
       totalItems: 0,
       totalPrice: 0,
     });
+    useFavoritesStore.setState({
+      favoriteIds: [],
+      showLimitModal: false,
+      limitMessage: '',
+    });
+    vi.mocked(favoritesApi.add).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof favoritesApi.add>>,
+    );
+  });
+
+  function hydrateAccountA() {
+    localStorage.setItem('accessToken', 'token-a');
+    localStorage.setItem('user', JSON.stringify(accountA));
+    useAuthStore.setState({
+      user: accountA,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+    useCartStore.setState({
+      mode: 'auth',
+      localItems: [],
+      backendItems: cartA.items,
+      backendCartId: cartA.id,
+      items: [{
+        key: '11-111',
+        couponOfferId: 11,
+        couponOptionId: 111,
+        couponTitle: 'A private cart item',
+        optionTitle: 'A option',
+        unitPrice: 10000,
+        quantity: 1,
+        addedAt: 0,
+      }],
+      isLoading: false,
+      error: null,
+      totalItems: 1,
+      totalPrice: 10000,
+    });
+    useFavoritesStore.setState({ favoriteIds: [11] });
+  }
+
+  function configureDelayedAccountBState() {
+    const accountBCart =
+      deferred<Awaited<ReturnType<typeof ordersApi.getCart>>>();
+    const accountBFavorites =
+      deferred<Awaited<ReturnType<typeof favoritesApi.getAll>>>();
+    vi.mocked(authApi.getMe).mockResolvedValue(
+      profileResponse(accountB, 'Account B final'),
+    );
+    vi.mocked(ordersApi.getCart).mockReturnValue(accountBCart.promise);
+    vi.mocked(favoritesApi.getAll).mockReturnValue(accountBFavorites.promise);
+    return { accountBCart, accountBFavorites };
+  }
+
+  it('account A cart is removed immediately after B authentication succeeds', async () => {
+    hydrateAccountA();
+    const { accountBCart, accountBFavorites } =
+      configureDelayedAccountBState();
+    vi.mocked(authApi.login).mockResolvedValue(
+      loginResponse(accountB, 'token-b'),
+    );
+
+    await expect(useAuthStore.getState().login({
+      email: accountB.email,
+      password: 'Strong1!',
+    })).resolves.toBe(true);
+
+    expect(useCartStore.getState().items).toEqual([]);
+    expect(useCartStore.getState().backendItems).toEqual([]);
+    accountBCart.resolve(cartResponse(cartB));
+    accountBFavorites.resolve(favoritesResponse([22]));
+  });
+
+  it('account A cart stays absent while B cart is loading', async () => {
+    hydrateAccountA();
+    const { accountBCart, accountBFavorites } =
+      configureDelayedAccountBState();
+    vi.mocked(authApi.login).mockResolvedValue(
+      loginResponse(accountB, 'token-b'),
+    );
+
+    await useAuthStore.getState().login({
+      email: accountB.email,
+      password: 'Strong1!',
+    });
+    await vi.waitFor(() => {
+      expect(ordersApi.getCart).toHaveBeenCalledOnce();
+      expect(useCartStore.getState().isLoading).toBe(true);
+    });
+
+    expect(useCartStore.getState().items).toEqual([]);
+    expect(useCartStore.getState().backendCartId).toBeNull();
+    accountBCart.resolve(cartResponse(cartB));
+    accountBFavorites.resolve(favoritesResponse([22]));
+  });
+
+  it('account A favorites are never sent to B', async () => {
+    hydrateAccountA();
+    const { accountBCart, accountBFavorites } =
+      configureDelayedAccountBState();
+    vi.mocked(authApi.login).mockResolvedValue(
+      loginResponse(accountB, 'token-b'),
+    );
+
+    await useAuthStore.getState().login({
+      email: accountB.email,
+      password: 'Strong1!',
+    });
+    await vi.waitFor(() => expect(favoritesApi.getAll).toHaveBeenCalledOnce());
+
+    expect(useFavoritesStore.getState().favoriteIds).toEqual([]);
+    expect(JSON.parse(
+      localStorage.getItem('favorites-storage') ?? '{}',
+    )).toMatchObject({ state: { favoriteIds: [] } });
+    accountBFavorites.resolve(favoritesResponse([22]));
+    accountBCart.resolve(cartResponse(cartB));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(favoritesApi.add).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      name: 'password login',
+      prepare: () => vi.mocked(authApi.login).mockResolvedValue(
+        loginResponse(accountB, 'token-b'),
+      ),
+      authenticate: () => useAuthStore.getState().login({
+        email: accountB.email,
+        password: 'Strong1!',
+      }),
+    },
+    {
+      name: 'registration',
+      prepare: () => vi.mocked(authApi.register).mockResolvedValue(
+        loginResponse(accountB, 'token-b'),
+      ),
+      authenticate: () => useAuthStore.getState().register({
+        email: accountB.email,
+        password: 'Strong1!',
+        firstName: accountB.firstName,
+      }),
+    },
+    {
+      name: 'Telegram login',
+      prepare: () => vi.mocked(authApi.telegramAuth).mockResolvedValue(
+        loginResponse(accountB, 'token-b'),
+      ),
+      authenticate: () => useAuthStore.getState().telegramLogin({
+        id: accountB.id,
+        first_name: accountB.firstName,
+        auth_date: 1_785_000_000,
+        hash: 'valid-telegram-hash',
+      }),
+    },
+  ])('$name uses the same replacement boundary', async ({
+    prepare,
+    authenticate,
+  }) => {
+    hydrateAccountA();
+    const { accountBCart, accountBFavorites } =
+      configureDelayedAccountBState();
+    prepare();
+
+    await expect(authenticate()).resolves.toBe(true);
+
+    expect(useCartStore.getState().items).toEqual([]);
+    expect(useFavoritesStore.getState().favoriteIds).toEqual([]);
+    expect(localStorage.getItem('accessToken')).toBe('token-b');
+    expect(useAuthStore.getState().user?.id).toBe(accountB.id);
+    accountBCart.resolve(cartResponse(cartB));
+    accountBFavorites.resolve(favoritesResponse([22]));
+  });
+
+  it('B responses leave only B cart and favorites', async () => {
+    hydrateAccountA();
+    const { accountBCart, accountBFavorites } =
+      configureDelayedAccountBState();
+    vi.mocked(authApi.login).mockResolvedValue(
+      loginResponse(accountB, 'token-b'),
+    );
+
+    await useAuthStore.getState().login({
+      email: accountB.email,
+      password: 'Strong1!',
+    });
+    accountBCart.resolve(cartResponse(cartB));
+    accountBFavorites.resolve(favoritesResponse([22]));
+
+    await waitFor(() => {
+      expect(useCartStore.getState().items.map(
+        (item) => item.couponTitle,
+      )).toEqual(['B private cart item']);
+      expect(useFavoritesStore.getState().favoriteIds).toEqual([22]);
+    });
+  });
+
+  it('late A responses cannot restore A state', async () => {
+    hydrateAccountA();
+    const lateAProfile =
+      deferred<Awaited<ReturnType<typeof authApi.getMe>>>();
+    const lateACart =
+      deferred<Awaited<ReturnType<typeof ordersApi.getCart>>>();
+    const lateAFavorites =
+      deferred<Awaited<ReturnType<typeof favoritesApi.getAll>>>();
+    const accountBProfile =
+      deferred<Awaited<ReturnType<typeof authApi.getMe>>>();
+    const accountBCart =
+      deferred<Awaited<ReturnType<typeof ordersApi.getCart>>>();
+    const accountBFavorites =
+      deferred<Awaited<ReturnType<typeof favoritesApi.getAll>>>();
+    vi.mocked(authApi.getMe)
+      .mockReturnValueOnce(lateAProfile.promise)
+      .mockReturnValueOnce(accountBProfile.promise);
+    vi.mocked(ordersApi.getCart)
+      .mockReturnValueOnce(lateACart.promise)
+      .mockReturnValueOnce(accountBCart.promise);
+    vi.mocked(favoritesApi.getAll)
+      .mockReturnValueOnce(lateAFavorites.promise)
+      .mockReturnValueOnce(accountBFavorites.promise);
+    vi.mocked(authApi.login).mockResolvedValue(
+      loginResponse(accountB, 'token-b'),
+    );
+
+    const oldProfileRequest = useAuthStore.getState().refreshProfile();
+    const oldCartRequest = useCartStore.getState().fetchBackendCart();
+    const oldFavoritesRequest =
+      useFavoritesStore.getState().syncWithBackend();
+    await useAuthStore.getState().login({
+      email: accountB.email,
+      password: 'Strong1!',
+    });
+
+    accountBProfile.resolve(profileResponse(accountB, 'Account B final'));
+    accountBCart.resolve(cartResponse(cartB));
+    accountBFavorites.resolve(favoritesResponse([22]));
+    await waitFor(() => {
+      expect(useAuthStore.getState().user?.firstName).toBe('Account B final');
+      expect(useCartStore.getState().backendCartId).toBe(cartB.id);
+      expect(useFavoritesStore.getState().favoriteIds).toEqual([22]);
+    });
+
+    lateAProfile.resolve(profileResponse(accountA, 'Account A late'));
+    lateACart.resolve(cartResponse(cartA));
+    lateAFavorites.resolve(favoritesResponse([11]));
+    await Promise.all([
+      oldProfileRequest,
+      oldCartRequest,
+      oldFavoritesRequest,
+    ]);
+
+    expect(useAuthStore.getState().user?.firstName).toBe('Account B final');
+    expect(useCartStore.getState().backendCartId).toBe(cartB.id);
+    expect(useFavoritesStore.getState().favoriteIds).toEqual([22]);
   });
 
   it('keeps account B user and cart when account A profile and cart responses arrive late', async () => {

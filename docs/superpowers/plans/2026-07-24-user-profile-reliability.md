@@ -394,3 +394,65 @@ Expected: all commands exit 0.
 git add frontend/web-app
 git commit -m "fix: improve profile accessibility and copy"
 ```
+
+### Task 8: Isolate direct authenticated session replacement
+
+**Files:**
+- Modify: `frontend/web-app/src/sessionCleanup.ts`
+- Modify: `frontend/web-app/src/store/authStore.ts`
+- Modify if the shared reset contract requires it: `frontend/web-app/src/store/cartStore.ts`
+- Modify if the shared reset contract requires it: `frontend/web-app/src/store/favoritesStore.ts`
+- Modify: `frontend/web-app/src/store/sessionRace.test.ts`
+
+**Interfaces:**
+- Produces: one session-establishment boundary used by password login, registration, and Telegram login.
+- Preserves: the newly authenticated account's access token and user while removing all query-cache and client-store state owned by the previous account.
+- Guarantees: account A cart is absent immediately after account B authenticates and while B cart is loading; account A favorites are never uploaded to B; late A responses cannot overwrite B.
+
+- [ ] **Step 1: Add failing no-logout regression tests**
+
+Hydrate account A cart and favorites, authenticate account B directly without calling logout, and delay the B cart and favorites responses. Assert:
+
+```text
+account A cart is removed immediately after B authentication succeeds
+account A cart stays absent while B cart is loading
+account A favorites are never sent to B
+password login, registration, and Telegram login all use the same replacement boundary
+B responses leave only B cart and favorites
+late A responses cannot restore A state
+```
+
+- [ ] **Step 2: Run the focused tests and confirm failure**
+
+```bash
+cd frontend/web-app && npm run test -- src/store/sessionRace.test.ts src/store/authStore.test.ts src/store/favoritesStore.test.ts
+```
+
+Expected: at least the direct account replacement regression fails because successful authentication currently advances the session generation but leaves account A's already-applied cart and favorites in memory.
+
+- [ ] **Step 3: Implement the session-establishment boundary**
+
+Add a session replacement operation separate from logout. It must invalidate prior asynchronous work, clear session-scoped TanStack Query data, clear account-owned cart and favorites state including persisted favorites, and then apply the new token and user before starting account B synchronization. Do not call the logout endpoint and do not remove or overwrite the newly authenticated credentials during cleanup.
+
+Use the same helper for password login, registration, and Telegram login. Keep guest-to-auth cart/favorites migration behavior for a genuinely unauthenticated guest, but never treat account A's persisted state as guest state to merge into account B.
+
+- [ ] **Step 4: Run focused and complete verification**
+
+```bash
+cd frontend/web-app && npm run test -- src/store/sessionRace.test.ts src/store/authStore.test.ts src/store/favoritesStore.test.ts
+cd frontend/web-app && npm run test
+cd frontend/web-app && npm run lint
+cd frontend/web-app && npm run build
+./gradlew :services:identity-service:test
+./gradlew :services:order-service:test
+./gradlew :services:coupon-service:test
+```
+
+Expected: all commands exit 0. The existing single lint warning in untouched `CouponCatalogPage.tsx` may remain, but no new warning or error is allowed.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add docs/superpowers/plans/2026-07-24-user-profile-reliability.md frontend/web-app/src
+git commit -m "fix: clear private state on session replacement"
+```

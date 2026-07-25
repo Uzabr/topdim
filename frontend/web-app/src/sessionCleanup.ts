@@ -90,6 +90,25 @@ export function registerSessionReset(reset: SessionReset) {
   return () => sessionResets.delete(reset);
 }
 
+export function establishAuthenticatedSession(
+  replacingAuthenticatedSession: boolean,
+  applySession: () => void,
+) {
+  abortSessionAuthenticationTransport();
+  const generation = advanceSessionGeneration();
+  clearSessionQueryData();
+  if (replacingAuthenticatedSession) {
+    for (const reset of sessionResets) {
+      reset();
+    }
+  }
+  applySession();
+  return {
+    generation,
+    replacedAuthenticatedSession: replacingAuthenticatedSession,
+  };
+}
+
 export function invalidateClientSession() {
   abortSessionAuthenticationTransport();
   advanceSessionGeneration();

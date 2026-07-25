@@ -14,6 +14,7 @@ import {
   abortSessionAuthenticationTransport,
   advanceSessionGeneration,
   captureSessionGeneration,
+  establishAuthenticatedSession,
   invalidateClientSession,
   isSessionGenerationCurrent,
   registerSessionReset,
@@ -108,6 +109,36 @@ function trackLogoutRequest(
   });
 }
 
+function applyAuthenticatedSession(accessToken: string, user: UserDto) {
+  const replacingAuthenticatedSession =
+    useAuthStore.getState().isAuthenticated
+    || localStorage.getItem('accessToken') != null;
+  const establishedSession = establishAuthenticatedSession(
+    replacingAuthenticatedSession,
+    () => {
+      // M4: refreshToken is stored in an httpOnly cookie by the backend.
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('user', JSON.stringify(user));
+      useAuthStore.setState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    },
+  );
+
+  const cartStore = useCartStore.getState();
+  if (establishedSession.replacedAuthenticatedSession) {
+    cartStore.setMode('auth');
+    void cartStore.fetchBackendCart();
+  } else {
+    void cartStore.syncLocalCartToBackend();
+  }
+  void useFavoritesStore.getState().syncWithBackend();
+  void useAuthStore.getState().refreshProfile();
+  return establishedSession.generation;
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
@@ -127,16 +158,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         attempt,
         sessionGeneration,
       )) return false;
-      sessionGeneration = advanceSessionGeneration();
       const { accessToken, user } = response.data.data;
-      // M4: refreshToken now in httpOnly cookie (set by backend), NOT in localStorage
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('user', JSON.stringify(user));
-      set({ user, isAuthenticated: true, isLoading: false });
-      // Sync guest cart → backend and switch to auth mode
-      useCartStore.getState().syncLocalCartToBackend();
-      void useFavoritesStore.getState().syncWithBackend();
-      void get().refreshProfile();
+      sessionGeneration = applyAuthenticatedSession(accessToken, user);
       return true;
     } catch (error) {
       if (!isAuthenticationAttemptCurrent(
@@ -164,15 +187,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         attempt,
         sessionGeneration,
       )) return false;
-      sessionGeneration = advanceSessionGeneration();
       const { accessToken, user } = response.data.data;
-      // M4: refreshToken в httpOnly cookie, не в localStorage
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('user', JSON.stringify(user));
-      set({ user, isAuthenticated: true, isLoading: false });
-      useCartStore.getState().syncLocalCartToBackend();
-      void useFavoritesStore.getState().syncWithBackend();
-      void get().refreshProfile();
+      sessionGeneration = applyAuthenticatedSession(accessToken, user);
       return true;
     } catch (error) {
       if (!isAuthenticationAttemptCurrent(
@@ -200,16 +216,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         attempt,
         sessionGeneration,
       )) return false;
-      sessionGeneration = advanceSessionGeneration();
       const { accessToken, user } = response.data.data;
-      // M4: refreshToken now in httpOnly cookie (set by backend), NOT in localStorage
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('user', JSON.stringify(user));
-      set({ user, isAuthenticated: true, isLoading: false });
-      // Sync guest cart → backend and switch to auth mode
-      useCartStore.getState().syncLocalCartToBackend();
-      void useFavoritesStore.getState().syncWithBackend();
-      void get().refreshProfile();
+      sessionGeneration = applyAuthenticatedSession(accessToken, user);
       return true;
     } catch (error) {
       if (!isAuthenticationAttemptCurrent(
