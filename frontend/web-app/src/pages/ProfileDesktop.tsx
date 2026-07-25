@@ -1,24 +1,28 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Ticket } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { ordersApi } from '../api/orders';
 import type { PurchasedCoupon } from '../api/orders';
-import { complaintsApi } from '../api/complaints';
-import { reviewsApi } from '../api/reviews';
 import CouponTicket from '../components/profile/CouponTicket';
 import ActiveCouponCard from '../components/profile/ActiveCouponCard';
 import ReviewModal from '../components/profile/ReviewModal';
 import RefundRequestModal from '../components/profile/RefundRequestModal';
 import ComplaintModal from '../components/profile/ComplaintModal';
+import { getCouponActions } from '../components/profile/couponActions';
 import ProfileSettingsSection from '../components/profile/ProfileSettingsSection';
 import ProfileHelpSection from '../components/profile/ProfileHelpSection';
 import DropTabs from '../components/ui/DropTabs';
 import UserAvatar from '../components/ui/UserAvatar';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { formatDate, formatPrice } from '../utils/format';
+import {
+  loadAllComplaints,
+  loadAllReviews,
+  profileQueryKeys,
+} from '../queries/profileQueries';
 import './ProfilePage.css';
 
 export type ProfileTab = 'coupons' | 'orders' | 'settings' | 'help';
@@ -48,6 +52,7 @@ export default function ProfileDesktop() {
   const navigate = useNavigate();
   const location = useLocation();
   const lp = useLocalePath();
+  const userId = user?.id ?? 0;
 
   const [tab, setActiveTab] = useState<ProfileTab>(() => getInitialTab(location.search));
   const [refundCoupon, setRefundCoupon] = useState<PurchasedCoupon | null>(null);
@@ -60,40 +65,67 @@ export default function ProfileDesktop() {
   };
 
   // Один запрос за всеми купонами вместо пяти по статусам — делим на списки на клиенте
-  const { data: coupons = [], isLoading } = useQuery({
-    queryKey: ['my-coupons', 'all'],
+  const {
+    data: coupons = [],
+    isLoading: areCouponsLoading,
+    isError: areCouponsError,
+    refetch: refetchCoupons,
+  } = useQuery({
+    queryKey: profileQueryKeys.coupons(userId),
     queryFn: () => ordersApi.getMyCoupons(),
     select: (res) => res.data.data,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && user != null,
   });
 
   // Лениво: нужны только на табе купонов
-  const { data: complaints = [] } = useQuery({
-    queryKey: ['my-complaints'],
-    queryFn: () => complaintsApi.getMine(0, 100),
-    select: (res) => res.data.data.content,
-    enabled: isAuthenticated && tab === 'coupons',
+  const {
+    data: complaints = [],
+    isLoading: areComplaintsLoading,
+    isError: areComplaintsError,
+    refetch: refetchComplaints,
+  } = useQuery({
+    queryKey: profileQueryKeys.complaints(userId),
+    queryFn: loadAllComplaints,
+    enabled: isAuthenticated && user != null && tab === 'coupons',
   });
 
-  const { data: myReviews = [] } = useQuery({
-    queryKey: ['my-reviews'],
-    queryFn: () => reviewsApi.getMine(0, 100),
-    select: (res) => res.data.data.content,
-    enabled: isAuthenticated && tab === 'coupons',
+  const {
+    data: myReviews = [],
+    isLoading: areReviewsLoading,
+    isError: areReviewsError,
+    refetch: refetchReviews,
+  } = useQuery({
+    queryKey: profileQueryKeys.reviews(userId),
+    queryFn: loadAllReviews,
+    enabled: isAuthenticated && user != null && tab === 'coupons',
   });
 
   // Лениво: только на табе покупок
-  const { data: orders = [] } = useQuery({
-    queryKey: ['my-orders'],
-    queryFn: () => ordersApi.getOrders(0, 50),
-    select: (res) => res.data.data.content,
-    enabled: isAuthenticated && tab === 'orders',
+  const {
+    data: orders = [],
+    isLoading: isOrdersLoading,
+    isLoadingError: isOrdersLoadingError,
+    isFetchNextPageError,
+    refetch: refetchOrders,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: profileQueryKeys.orders(userId),
+    queryFn: ({ pageParam }) => ordersApi.getOrders(pageParam, 20),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.data.data.last ? undefined : lastPage.data.data.number + 1,
+    select: (data) => data.pages.flatMap((page) => page.data.data.content),
+    enabled: isAuthenticated && user != null && tab === 'orders',
   });
 
   const { live, archive, ticket, rest } = useMemo(() => {
     const liveList = coupons
       .filter((c) => LIVE_STATUSES.includes(c.status))
-      .sort((a, b) => (a.expiresAt ?? '').localeCompare(b.expiresAt ?? ''));
+      .sort((a, b) =>
+        (a.expiresAt ?? '9999-12-31').localeCompare(b.expiresAt ?? '9999-12-31'),
+      );
     const archiveList = coupons.filter((c) => !LIVE_STATUSES.includes(c.status));
     return {
       live: liveList,
@@ -114,9 +146,27 @@ export default function ProfileDesktop() {
   );
 
   const reviewedOffers = useMemo(
-    () => new Set(myReviews.map((r) => r.couponOfferId)),
+    () =>
+      new Set(
+        myReviews
+          .filter((review) =>
+            review.status === 'PENDING' || review.status === 'APPROVED')
+          .map((review) => review.couponOfferId),
+      ),
     [myReviews],
   );
+
+  const isCouponPolicyLoading =
+    areCouponsLoading || areComplaintsLoading || areReviewsLoading;
+  const isCouponPolicyError =
+    areCouponsError || areComplaintsError || areReviewsError;
+  const retryCouponPolicy = () => {
+    void Promise.all([
+      refetchCoupons(),
+      refetchComplaints(),
+      refetchReviews(),
+    ]);
+  };
 
   if (!isAuthenticated) {
     return (
@@ -166,8 +216,19 @@ export default function ProfileDesktop() {
       {/* ═══ Мои купоны ═══ */}
       {tab === 'coupons' && (
         <section>
-          {isLoading ? (
+          {isCouponPolicyLoading ? (
             <p className="profile-loading">{t('profile.loadingCoupons')}</p>
+          ) : isCouponPolicyError ? (
+            <div className="profile-orders__state" role="alert">
+              <p>{t('profile.couponPolicy.error')}</p>
+              <button
+                type="button"
+                className="profile-orders__action"
+                onClick={retryCouponPolicy}
+              >
+                {t('profile.couponPolicy.retry')}
+              </button>
+            </div>
           ) : live.length === 0 && archive.length === 0 ? (
             <div className="profile-empty">
               <Ticket className="profile-empty-icon" size={44} strokeWidth={1.5} />
@@ -210,26 +271,48 @@ export default function ProfileDesktop() {
                   </div>
 
                   <div className="profile-archive">
-                    {archive.map((c) => (
-                      <div key={c.id} className="archive-row">
-                        <span className={`archive-row__status archive-row__status--${archiveStatusClass(c.status)}`}>
-                          {t(`profile.purchasedCoupon.status.${c.status.toLowerCase()}`)}
-                        </span>
-                        <span className="archive-row__title">{c.couponTitle}</span>
-                        <span className="archive-row__date">
-                          {formatDate(c.usedAt || c.expiresAt || c.purchasedAt)}
-                        </span>
-                        {c.status === 'USED' && !reviewedOffers.has(c.couponOfferId) && (
-                          <button
-                            type="button"
-                            className="archive-row__review"
-                            onClick={() => setReviewCoupon(c)}
-                          >
-                            {t('profile.archive.leaveReview')}
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                    {archive.map((c) => {
+                      const actions = getCouponActions(
+                        c.status,
+                        openComplaints.has(c.id),
+                        reviewedOffers.has(c.couponOfferId),
+                      );
+
+                      return (
+                        <div key={c.id} className="archive-row">
+                          <span className={`archive-row__status archive-row__status--${archiveStatusClass(c.status)}`}>
+                            {t(`profile.purchasedCoupon.status.${c.status.toLowerCase()}`)}
+                          </span>
+                          <span className="archive-row__title">{c.couponTitle}</span>
+                          <span className="archive-row__date">
+                            {formatDate(c.usedAt || c.expiresAt || c.purchasedAt)}
+                          </span>
+                          {actions.canComplain && (
+                            <button
+                              type="button"
+                              className="archive-row__review"
+                              onClick={() => setComplaintCoupon(c)}
+                            >
+                              {t('profile.complain')}
+                            </button>
+                          )}
+                          {openComplaints.has(c.id) && (
+                            <span className="ticket__complaint">
+                              {t('profile.complaintPending')}
+                            </span>
+                          )}
+                          {actions.canReview && (
+                            <button
+                              type="button"
+                              className="archive-row__review"
+                              onClick={() => setReviewCoupon(c)}
+                            >
+                              {t('profile.archive.leaveReview')}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -241,7 +324,20 @@ export default function ProfileDesktop() {
       {/* ═══ Покупки ═══ */}
       {tab === 'orders' && (
         <section className="profile-orders">
-          {orders.length === 0 ? (
+          {isOrdersLoading ? (
+            <p className="profile-loading">{t('profile.orders.loading')}</p>
+          ) : isOrdersLoadingError ? (
+            <div className="profile-orders__state">
+              <p>{t('profile.orders.error')}</p>
+              <button
+                type="button"
+                className="profile-orders__action"
+                onClick={() => void refetchOrders()}
+              >
+                {t('profile.orders.retry')}
+              </button>
+            </div>
+          ) : orders.length === 0 ? (
             <p className="profile-loading">{t('profile.orders.empty')}</p>
           ) : (
             <>
@@ -257,8 +353,43 @@ export default function ProfileDesktop() {
                   <span className={`order-row__status order-row__status--${o.status.toLowerCase()}`}>
                     {t(`profile.orders.status.${o.status.toLowerCase()}`, { defaultValue: o.status })}
                   </span>
+                  {o.status === 'PENDING' && (
+                    <button
+                      type="button"
+                      className="order-row__payment"
+                      onClick={() => navigate(lp(`/payment/${o.id}`))}
+                    >
+                      {t('profile.orders.continuePayment')}
+                    </button>
+                  )}
                 </div>
               ))}
+              {isFetchNextPageError ? (
+                <div className="profile-orders__pagination-error">
+                  <p>{t('profile.orders.loadMoreError')}</p>
+                  <button
+                    type="button"
+                    className="profile-orders__action"
+                    disabled={isFetchingNextPage}
+                    onClick={() => void fetchNextPage()}
+                  >
+                    {isFetchingNextPage
+                      ? t('profile.orders.loading')
+                      : t('profile.orders.retry')}
+                  </button>
+                </div>
+              ) : hasNextPage && (
+                <button
+                  type="button"
+                  className="profile-orders__load-more"
+                  disabled={isFetchingNextPage}
+                  onClick={() => void fetchNextPage()}
+                >
+                  {isFetchingNextPage
+                    ? t('profile.orders.loading')
+                    : t('profile.orders.loadMore')}
+                </button>
+              )}
               <p className="profile-orders__note">{t('profile.orders.note')}</p>
             </>
           )}

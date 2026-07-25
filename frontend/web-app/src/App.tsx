@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from './store/authStore';
 import { hidesBottomNav } from './utils/mobileScreens';
@@ -32,16 +32,7 @@ import FAQPage from './pages/legal/FAQPage';
 import TermsPage from './pages/legal/TermsPage';
 import PrivacyPage from './pages/legal/PrivacyPage';
 import EmailConfirmationPage from './pages/EmailConfirmationPage';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 min
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+import { queryClient } from './queryClient';
 
 /** Redirect bare "/" to "/:lang/" */
 function RootRedirect() {

@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Star, X } from 'lucide-react';
 import { reviewsApi } from '../../api/reviews';
 import type { PurchasedCoupon } from '../../api/orders';
 import { formatDate } from '../../utils/format';
+import { useDialogFocus } from './useDialogFocus';
 import './ReviewModal.css';
 
 interface ReviewModalProps {
@@ -22,18 +23,12 @@ const COMMENT_MIN = 10;
 export default function ReviewModal({ coupon, onClose }: ReviewModalProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const titleId = useId();
+  const dialogRef = useDialogFocus(onClose);
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
 
   const { mutate, isPending } = useMutation({
     mutationFn: () =>
@@ -68,10 +63,18 @@ export default function ReviewModal({ coupon, onClose }: ReviewModalProps) {
 
   return (
     <div className="review-modal-overlay" onClick={onClose} role="presentation">
-      <div className="review-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        className="review-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="review-modal__head">
           <div>
-            <h3 className="review-modal__title">
+            <h3 id={titleId} className="review-modal__title">
               {t('profile.review.title', { merchant: coupon.merchantName || coupon.couponTitle })}
             </h3>
             {coupon.usedAt && (
@@ -90,7 +93,11 @@ export default function ReviewModal({ coupon, onClose }: ReviewModalProps) {
           </button>
         </div>
 
-        <div className="review-modal__stars">
+        <div
+          className="review-modal__stars"
+          role="group"
+          aria-label={t('profile.review.ratingRequired')}
+        >
           {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
@@ -101,6 +108,7 @@ export default function ReviewModal({ coupon, onClose }: ReviewModalProps) {
                 setError('');
               }}
               aria-label={String(n)}
+              aria-pressed={n === rating}
             >
               <Star size={32} fill="currentColor" strokeWidth={0} />
             </button>
@@ -109,6 +117,7 @@ export default function ReviewModal({ coupon, onClose }: ReviewModalProps) {
 
         <div className="review-modal__comment">
           <textarea
+            aria-label={t('profile.review.commentPlaceholder')}
             value={comment}
             onChange={(e) => {
               setComment(e.target.value);

@@ -455,6 +455,67 @@
   font-weight: 600;
 }
 
+.porder__payment,
+.pmob__orders-action,
+.pmob__orders-load-more {
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.porder__payment,
+.pmob__orders-action {
+  padding: 8px 12px;
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.porder__payment {
+  margin-top: 8px;
+}
+
+.pmob__orders-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 36px 16px;
+  text-align: center;
+}
+
+.pmob__orders-state p {
+  margin: 0;
+  color: var(--ink-3);
+}
+
+.pmob__orders-pagination-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.pmob__orders-pagination-error p {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.pmob__orders-load-more {
+  align-self: center;
+  padding: 10px 20px;
+  background: var(--wasp);
+  color: var(--on-wasp);
+}
+
+.pmob__orders-action:disabled,
+.pmob__orders-load-more:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 /* Секции настроек и помощи переиспользуются с десктопа — им нужен только отступ */
 .pmob__pane {
   margin-top: 20px;

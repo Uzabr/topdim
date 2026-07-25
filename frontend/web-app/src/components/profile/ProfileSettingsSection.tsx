@@ -1,8 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/auth';
 import { mediaApi } from '../../api/media';
+import {
+  captureSessionGeneration,
+  isSessionGenerationCurrent,
+} from '../../sessionCleanup';
 import { useAuthStore } from '../../store/authStore';
 import { validateAvatarFile } from '../../utils/avatar';
 import { isStrongPassword } from '../../utils/password';
@@ -45,12 +49,9 @@ export default function ProfileSettingsSection() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const reloginTimer = useRef<number | undefined>(undefined);
 
   const lang = i18n.language?.substring(0, 2) === 'uz' ? 'uz' : 'ru';
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ');
-
-  useEffect(() => () => window.clearTimeout(reloginTimer.current), []);
 
   const uploadAvatar = async (file?: File) => {
     if (!file) return;
@@ -63,31 +64,42 @@ export default function ProfileSettingsSection() {
       return;
     }
 
+    const sessionGeneration = captureSessionGeneration();
     setAvatarUploading(true);
     try {
       const uploaded = await mediaApi.uploadFile(file);
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       await updateProfile({ avatarUrl: uploaded.url });
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       setAvatarNotice(t('profile.settings.avatar.success'));
     } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const e = err as { response?: { data?: { message?: string } } };
       setAvatarError(e.response?.data?.message || t('profile.settings.avatar.error'));
     } finally {
-      setAvatarUploading(false);
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setAvatarUploading(false);
+      }
     }
   };
 
   const requestEmailConfirmation = async () => {
+    const sessionGeneration = captureSessionGeneration();
     setEmailConfirming(true);
     setEmailNotice('');
     setEmailError('');
     try {
       await authApi.requestEmailConfirm();
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       setEmailNotice(t('profile.settings.email.sent'));
     } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const e = err as { response?: { data?: { message?: string } } };
       setEmailError(e.response?.data?.message || t('profile.settings.email.error'));
     } finally {
-      setEmailConfirming(false);
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setEmailConfirming(false);
+      }
     }
   };
 
@@ -98,24 +110,29 @@ export default function ProfileSettingsSection() {
       setError(t('profile.settings.validation.firstNameRequired'));
       return;
     }
-    if (field === 'phone' && phone.trim().length < 9) {
+    if (field === 'phone' && !/^\+998\d{9}$/.test(phone.trim())) {
       setError(t('profile.settings.validation.phoneMin'));
       return;
     }
 
+    const sessionGeneration = captureSessionGeneration();
     setSaving(true);
     try {
       await updateProfile(
         field === 'name'
-          ? { firstName: firstName.trim(), lastName: lastName.trim() || undefined }
+          ? { firstName: firstName.trim(), lastName: lastName.trim() }
           : { phone: phone.trim() },
       );
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       setEditing(null);
     } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const e = err as { response?: { data?: { message?: string } } };
       setError(e.response?.data?.message || t('profile.settings.error'));
     } finally {
-      setSaving(false);
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setSaving(false);
+      }
     }
   };
 
@@ -147,21 +164,22 @@ export default function ProfileSettingsSection() {
       return;
     }
 
+    const sessionGeneration = captureSessionGeneration();
     setSaving(true);
     setPasswordErrors({});
     setPasswordNotice('');
     try {
       await authApi.changePassword(currentPassword, newPassword);
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setEditing(null);
       setPasswordNotice(t('profile.settings.password.success'));
-      reloginTimer.current = window.setTimeout(() => {
-        logout();
-        navigate(`/${lang}/login`, { replace: true });
-      }, 1800);
+      logout();
+      navigate(`/${lang}/login`, { replace: true });
     } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const e = err as { response?: { status?: number; data?: { message?: string; data?: Record<string, string> } } };
       const fields = e.response?.data?.data;
       const message =
@@ -172,7 +190,9 @@ export default function ProfileSettingsSection() {
         e.response?.status === 401 ? { currentPassword: message } : { general: message },
       );
     } finally {
-      setSaving(false);
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setSaving(false);
+      }
     }
   };
 
@@ -455,7 +475,7 @@ export default function ProfileSettingsSection() {
           className="settings__link"
           onClick={() => setNotificationsOpen((v) => !v)}
         >
-          {notificationsOpen ? t('common.hide') : t('profile.settings.configure')}
+          {notificationsOpen ? t('common.hide') : t('profile.settings.view')}
         </button>
       </div>
 
