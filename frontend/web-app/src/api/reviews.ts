@@ -1,6 +1,8 @@
 import apiClient from './client';
 import type { ApiResponse } from './client';
 
+export type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
 export interface ReviewData {
   id: number;
   userId: number;
@@ -8,7 +10,7 @@ export interface ReviewData {
   couponOfferId: number;
   rating: number;
   comment: string;
-  status: string;
+  status: ReviewStatus;
   createdAt: string;
 }
 

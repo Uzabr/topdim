@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { authApi } from '../api/auth';
+import { advanceSessionGeneration } from '../sessionCleanup';
 import EmailConfirmationPage from './EmailConfirmationPage';
 
 const { refreshProfile } = vi.hoisted(() => ({ refreshProfile: vi.fn() }));
@@ -30,6 +31,16 @@ function renderPage(path: string) {
       </Routes>
     </MemoryRouter>,
   );
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((complete, fail) => {
+    resolve = complete;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
 }
 
 describe('EmailConfirmationPage', () => {
@@ -71,5 +82,88 @@ describe('EmailConfirmationPage', () => {
       'Недействительный или просроченный токен подтверждения',
     );
     expect(refreshProfile).not.toHaveBeenCalled();
+  });
+
+  it('does not refresh account B or show success when account A confirmation resolves late', async () => {
+    const lateConfirmation =
+      deferred<Awaited<ReturnType<typeof authApi.confirmEmail>>>();
+    vi.mocked(authApi.confirmEmail).mockReturnValue(lateConfirmation.promise);
+    renderPage('/ru/confirm-email');
+
+    fireEvent.change(screen.getByLabelText('profile.emailConfirmation.code'), {
+      target: { value: 'account-a-token' },
+    });
+    fireEvent.click(screen.getByRole('button', {
+      name: 'profile.emailConfirmation.submit',
+    }));
+    await waitFor(() => expect(authApi.confirmEmail).toHaveBeenCalledOnce());
+
+    advanceSessionGeneration();
+    await act(async () => {
+      lateConfirmation.resolve(
+        {} as Awaited<ReturnType<typeof authApi.confirmEmail>>,
+      );
+    });
+
+    expect(refreshProfile).not.toHaveBeenCalled();
+    expect(screen.queryByText('profile.emailConfirmation.success')).toBeNull();
+    expect(screen.getByRole('button', {
+      name: 'profile.emailConfirmation.confirming',
+    })).toHaveProperty('disabled', true);
+  });
+
+  it('does not show an account A error or clear loading when confirmation rejects late', async () => {
+    const lateConfirmation =
+      deferred<Awaited<ReturnType<typeof authApi.confirmEmail>>>();
+    vi.mocked(authApi.confirmEmail).mockReturnValue(lateConfirmation.promise);
+    renderPage('/uz/confirm-email');
+
+    fireEvent.change(screen.getByLabelText('profile.emailConfirmation.code'), {
+      target: { value: 'account-a-token' },
+    });
+    fireEvent.click(screen.getByRole('button', {
+      name: 'profile.emailConfirmation.submit',
+    }));
+    await waitFor(() => expect(authApi.confirmEmail).toHaveBeenCalledOnce());
+
+    advanceSessionGeneration();
+    await act(async () => {
+      lateConfirmation.reject({
+        response: { data: { message: 'Account A confirmation error' } },
+      });
+    });
+
+    expect(screen.queryByText('Account A confirmation error')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('button', {
+      name: 'profile.emailConfirmation.confirming',
+    })).toHaveProperty('disabled', true);
+  });
+
+  it('does not show success when the session switches during profile refresh', async () => {
+    const lateRefresh = deferred<void>();
+    vi.mocked(authApi.confirmEmail).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof authApi.confirmEmail>>,
+    );
+    refreshProfile.mockReturnValue(lateRefresh.promise);
+    renderPage('/ru/confirm-email');
+
+    fireEvent.change(screen.getByLabelText('profile.emailConfirmation.code'), {
+      target: { value: 'account-a-token' },
+    });
+    fireEvent.click(screen.getByRole('button', {
+      name: 'profile.emailConfirmation.submit',
+    }));
+    await waitFor(() => expect(refreshProfile).toHaveBeenCalledOnce());
+
+    advanceSessionGeneration();
+    await act(async () => {
+      lateRefresh.resolve();
+    });
+
+    expect(screen.queryByText('profile.emailConfirmation.success')).toBeNull();
+    expect(screen.getByRole('button', {
+      name: 'profile.emailConfirmation.confirming',
+    })).toHaveProperty('disabled', true);
   });
 });

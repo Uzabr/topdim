@@ -6,6 +6,10 @@ import { ordersApi } from '../api/orders';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { useLocalePath } from '../hooks/useLocalePath';
+import {
+  captureSessionGeneration,
+  isSessionGenerationCurrent,
+} from '../sessionCleanup';
 import { formatPrice } from '../utils/format';
 import './CheckoutMobile.css';
 
@@ -21,8 +25,17 @@ export default function CheckoutMobile() {
   const { items, totalItems, totalPrice, clearCart } = useCartStore();
   const { isAuthenticated, user } = useAuthStore();
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const renderedSessionGeneration = captureSessionGeneration();
+  const [loadingSessionGeneration, setLoadingSessionGeneration] =
+    useState<number | null>(null);
+  const [sessionError, setSessionError] = useState<{
+    generation: number;
+    message: string;
+  } | null>(null);
+  const loading = loadingSessionGeneration === renderedSessionGeneration;
+  const error = sessionError?.generation === renderedSessionGeneration
+    ? sessionError.message
+    : '';
 
   const email = user?.email ?? '';
   const phone = user?.phone ?? '';
@@ -95,17 +108,26 @@ export default function CheckoutMobile() {
 
   const submit = async () => {
     if (loading) return;
-    setLoading(true);
-    setError('');
+    const sessionGeneration = captureSessionGeneration();
+    setLoadingSessionGeneration(sessionGeneration);
+    setSessionError(null);
     try {
       const res = await ordersApi.createOrder(email, phone);
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       clearCart();
       navigate(lp(`/payment/${res.data.data.id}`), { replace: true });
     } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || t('checkout.error'));
+      setSessionError({
+        generation: sessionGeneration,
+        message: e.response?.data?.message || t('checkout.error'),
+      });
     } finally {
-      setLoading(false);
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setLoadingSessionGeneration((current) =>
+          current === sessionGeneration ? null : current);
+      }
     }
   };
 

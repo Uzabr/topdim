@@ -6,6 +6,10 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { authApi } from '../api/auth';
 import Logo from '../components/layout/Logo';
 import { useLocalePath } from '../hooks/useLocalePath';
+import {
+  captureSessionGeneration,
+  isSessionGenerationCurrent,
+} from '../sessionCleanup';
 import { useAuthStore } from '../store/authStore';
 import './EmailConfirmationPage.css';
 
@@ -31,14 +35,20 @@ export default function EmailConfirmationPage() {
         return;
       }
 
+      const sessionGeneration = captureSessionGeneration();
       setStatus('confirming');
       setMessage('');
       try {
         await authApi.confirmEmail(normalizedToken);
-        if (isAuthenticated) await refreshProfile();
+        if (!isSessionGenerationCurrent(sessionGeneration)) return;
+        if (isAuthenticated) {
+          await refreshProfile();
+          if (!isSessionGenerationCurrent(sessionGeneration)) return;
+        }
         setStatus('success');
         setMessage(t('profile.emailConfirmation.success'));
       } catch (err: unknown) {
+        if (!isSessionGenerationCurrent(sessionGeneration)) return;
         const e = err as { response?: { data?: { message?: string } } };
         setStatus('error');
         setMessage(e.response?.data?.message || t('profile.emailConfirmation.error'));

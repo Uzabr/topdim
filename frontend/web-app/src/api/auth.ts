@@ -1,5 +1,34 @@
 import apiClient from './client';
 import type { ApiResponse } from './client';
+import type { AxiosRequestConfig } from 'axios';
+import {
+  SESSION_AUTH_TRANSPORT_TIMEOUT_MS,
+  SESSION_LOGOUT_TRANSPORT_TIMEOUT_MS,
+} from '../sessionCleanup';
+
+interface SessionAxiosRequestConfig extends AxiosRequestConfig {
+  _sessionGeneration?: number;
+  _skipAuthRefresh?: boolean;
+}
+
+export interface AuthenticationRequestContext {
+  signal?: AbortSignal;
+}
+
+export interface LogoutRequestContext extends AuthenticationRequestContext {
+  accessToken?: string;
+  sessionGeneration?: number;
+}
+
+function authRequestConfig(
+  context?: AuthenticationRequestContext,
+): SessionAxiosRequestConfig {
+  return {
+    _skipAuthRefresh: true,
+    signal: context?.signal,
+    timeout: SESSION_AUTH_TRANSPORT_TIMEOUT_MS,
+  };
+}
 
 export interface LoginRequest {
   email: string;
@@ -59,25 +88,71 @@ export interface TelegramAuthPayload {
 }
 
 export const authApi = {
-  register: (data: RegisterRequest) =>
-    apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/register', data),
+  register: (
+    data: RegisterRequest,
+    context?: AuthenticationRequestContext,
+  ) =>
+    apiClient.post<ApiResponse<AuthResponse>>(
+      '/api/v1/auth/register',
+      data,
+      authRequestConfig(context),
+    ),
 
-  login: (data: LoginRequest) =>
-    apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/login', data),
+  login: (
+    data: LoginRequest,
+    context?: AuthenticationRequestContext,
+  ) =>
+    apiClient.post<ApiResponse<AuthResponse>>(
+      '/api/v1/auth/login',
+      data,
+      authRequestConfig(context),
+    ),
 
   // M4: POST без body — refreshToken приходит из httpOnly cookie
   refresh: () =>
-    apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/refresh'),
+    apiClient.post<ApiResponse<AuthResponse>>(
+      '/api/v1/auth/refresh',
+      undefined,
+      authRequestConfig(),
+    ),
 
   // M4: POST без body — refreshToken приходит из httpOnly cookie
-  logout: () =>
-    apiClient.post<ApiResponse<void>>('/api/v1/auth/logout'),
+  logout: (context?: LogoutRequestContext) => {
+    const config: SessionAxiosRequestConfig = {
+      ...authRequestConfig(context),
+      _sessionGeneration: context?.sessionGeneration,
+      timeout: SESSION_LOGOUT_TRANSPORT_TIMEOUT_MS,
+      ...(context?.accessToken
+        ? {
+            headers: {
+              Authorization: `Bearer ${context.accessToken}`,
+            },
+          }
+        : {}),
+    };
+    return apiClient.post<ApiResponse<void>>(
+      '/api/v1/auth/logout',
+      undefined,
+      config,
+    );
+  },
 
   guestAuth: (data: { phone: string; name: string }) =>
-    apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/guest', data),
+    apiClient.post<ApiResponse<AuthResponse>>(
+      '/api/v1/auth/guest',
+      data,
+      authRequestConfig(),
+    ),
 
-  telegramAuth: (data: TelegramAuthPayload) =>
-    apiClient.post<ApiResponse<AuthResponse>>('/api/v1/auth/telegram', data),
+  telegramAuth: (
+    data: TelegramAuthPayload,
+    context?: AuthenticationRequestContext,
+  ) =>
+    apiClient.post<ApiResponse<AuthResponse>>(
+      '/api/v1/auth/telegram',
+      data,
+      authRequestConfig(context),
+    ),
 
   /** Всегда 202 — бэкенд не раскрывает, зарегистрирован ли email. */
   requestPasswordReset: (email: string) =>

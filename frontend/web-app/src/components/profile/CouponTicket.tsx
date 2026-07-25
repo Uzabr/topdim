@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import type { PurchasedCoupon } from '../../api/orders';
 import { daysUntil, formatDate, formatPrice } from '../../utils/format';
 import { buildQrPayload } from '../../utils/coupon';
+import { getCouponActions } from './couponActions';
 import './CouponTicket.css';
 
 interface CouponTicketProps {
@@ -21,6 +22,7 @@ export default function CouponTicket({ coupon, hasComplaint, onRefund, onComplai
 
   const days = coupon.expiresAt ? daysUntil(coupon.expiresAt) : null;
   const place = [coupon.merchantName, coupon.merchantAddress].filter(Boolean).join(' · ');
+  const actions = getCouponActions(coupon.status, hasComplaint, false);
 
   return (
     <article className="ticket">
@@ -84,14 +86,16 @@ export default function CouponTicket({ coupon, hasComplaint, onRefund, onComplai
         </p>
 
         <div className="ticket__actions">
-          {coupon.status === 'ACTIVE' && (
+          {actions.canRefund && (
             <button type="button" className="ticket__link" onClick={() => onRefund(coupon)}>
               {t('profile.refundMoney')}
             </button>
           )}
-          <button type="button" className="ticket__link" onClick={() => onComplain(coupon)}>
-            {t('profile.complain')}
-          </button>
+          {actions.canComplain && (
+            <button type="button" className="ticket__link" onClick={() => onComplain(coupon)}>
+              {t('profile.complain')}
+            </button>
+          )}
         </div>
       </div>
     </article>

@@ -1,7 +1,9 @@
 package uz.topdim.order.service;
 
 import lombok.RequiredArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,10 @@ import uz.topdim.order.repository.PurchasedCouponRepository;
 @Service
 @RequiredArgsConstructor
 public class ComplaintService {
+
+    private static final String PENDING_COMPLAINT_CONSTRAINT = "uq_complaints_pending_coupon";
+    private static final String DUPLICATE_PENDING_COMPLAINT_MESSAGE =
+            "По этому купону уже есть открытое обращение";
 
     private final ComplaintRepository complaintRepository;
     private final OrderRepository orderRepository;
@@ -42,6 +48,11 @@ public class ComplaintService {
             if (order == null) {
                 throw new RuntimeException("Заказ для купона не найден");
             }
+
+            if (complaintRepository.existsByPurchasedCouponIdAndStatus(
+                    purchasedCoupon.getId(), ComplaintStatus.PENDING)) {
+                throw new IllegalStateException(DUPLICATE_PENDING_COMPLAINT_MESSAGE);
+            }
         } else if (request.getOrderId() != null) {
             // Legacy order-level complaint flow
             order = orderRepository.findById(request.getOrderId())
@@ -63,13 +74,33 @@ public class ComplaintService {
                 .status(ComplaintStatus.PENDING)
                 .build();
 
-        Long complaintId = complaintRepository.save(complaint).getId();
+        Long complaintId;
+        try {
+            complaintId = complaintRepository.saveAndFlush(complaint).getId();
+        } catch (DataIntegrityViolationException exception) {
+            if (isPendingComplaintConstraintViolation(exception)) {
+                throw new IllegalStateException(DUPLICATE_PENDING_COMPLAINT_MESSAGE, exception);
+            }
+            throw exception;
+        }
 
         sendNotification(userId, "Обращение создано",
                 "Ваше обращение «" + request.getSubject() + "» принято и находится на рассмотрении.",
                 "INFO");
 
         return complaintId;
+    }
+
+    private boolean isPendingComplaintConstraintViolation(DataIntegrityViolationException exception) {
+        Throwable cause = exception;
+        while (cause != null) {
+            if (cause instanceof ConstraintViolationException constraintViolation
+                    && PENDING_COMPLAINT_CONSTRAINT.equals(constraintViolation.getConstraintName())) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 
     @Transactional(readOnly = true)

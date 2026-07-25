@@ -75,7 +75,7 @@ public class ReviewService {
         if (existingReview.isPresent() && existingReview.get().getStatus() == ReviewStatus.REJECTED) {
             Review rejected = existingReview.get();
             rejected.setRating(request.getRating());
-            rejected.setComment(request.getComment().trim());
+            rejected.setComment(normalizeComment(request.getComment()));
             rejected.setUserName(userName);
             rejected.setStatus(ReviewStatus.PENDING);
             rejected.setRejectReason(null);
@@ -89,12 +89,16 @@ public class ReviewService {
                 .userName(userName)
                 .couponOffer(coupon)
                 .rating(request.getRating())
-                .comment(request.getComment().trim())
+                .comment(normalizeComment(request.getComment()))
                 .status(ReviewStatus.PENDING)
                 .build();
 
         reviewRepository.save(review);
         return review.getId();
+    }
+
+    private String normalizeComment(String comment) {
+        return comment == null ? "" : comment.trim();
     }
 
     @Transactional(readOnly = true)

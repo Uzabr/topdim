@@ -104,17 +104,21 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
   const submit = async (data: FormData) => {
     setServerError('');
     try {
+      let authenticated: boolean;
       if (isRegister) {
-        await registerUser({
+        authenticated = await registerUser({
           email: data.email,
           password: data.password,
           firstName: data.firstName ?? '',
           phone: data.phone,
         });
       } else {
-        await login({ email: data.email, password: data.password });
+        authenticated = await login({
+          email: data.email,
+          password: data.password,
+        });
       }
-      onSuccess();
+      if (authenticated) onSuccess();
     } catch (err) {
       setServerError(serverMessage(err, t('login.serverError')));
     }
@@ -137,8 +141,8 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
     setServerError('');
     setSoon('');
     try {
-      await telegramLogin(user);
-      onSuccess();
+      const authenticated = await telegramLogin(user);
+      if (authenticated) onSuccess();
     } catch (err) {
       setServerError(serverMessage(err, t('login.serverError')));
     }

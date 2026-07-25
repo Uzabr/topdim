@@ -81,6 +81,69 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("updateProfile: смена подтверждённого телефона сбрасывает его верификацию")
+    void updateProfile_changedVerifiedPhone_resetsVerification() {
+        User user = createUser();
+        user.setPhoneVerified(true);
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setPhone("+998901112233");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByPhone("+998901112233")).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserProfileResponse response = userService.updateProfile(1L, request);
+
+        assertThat(response.isPhoneVerified()).isFalse();
+    }
+
+    @Test
+    @DisplayName("updateProfile: неизменённый телефон сохраняет верификацию")
+    void updateProfile_unchangedPhone_preservesVerification() {
+        User user = createUser();
+        user.setPhoneVerified(true);
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setPhone(" +998901234567 ");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserProfileResponse response = userService.updateProfile(1L, request);
+
+        assertThat(response.isPhoneVerified()).isTrue();
+        verify(userRepository, never()).existsByPhone(any());
+    }
+
+    @Test
+    @DisplayName("updateProfile: пустая фамилия очищает сохранённое значение")
+    void updateProfile_emptyLastName_clearsStoredLastName() {
+        User user = createUser();
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setLastName("   ");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserProfileResponse response = userService.updateProfile(1L, request);
+
+        assertThat(response.getLastName()).isNull();
+    }
+
+    @Test
+    @DisplayName("updateProfile: отсутствующая фамилия не меняет сохранённое значение")
+    void updateProfile_nullLastName_preservesStoredLastName() {
+        User user = createUser();
+        UpdateProfileRequest request = new UpdateProfileRequest();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserProfileResponse response = userService.updateProfile(1L, request);
+
+        assertThat(response.getLastName()).isEqualTo("Valiyev");
+    }
+
+    @Test
     @DisplayName("getProfile: несуществующий пользователь -> UserNotFoundException")
     void getProfile_notFound_throws() {
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
