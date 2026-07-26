@@ -1,0 +1,57 @@
+package uz.topdim.identity.service;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import uz.topdim.identity.security.SmsSender;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.startsWith;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class OtpServiceTest {
+
+    @Mock StringRedisTemplate redis;
+    @Mock ValueOperations<String, String> ops;
+    @Mock SmsSender sms;
+
+    OtpService svc;
+
+    @BeforeEach
+    void init() {
+        svc = new OtpService(redis, sms);
+        when(redis.opsForValue()).thenReturn(ops);
+    }
+
+    @Test
+    void request_generatesAndSends() {
+        svc.requestOtp("+998901112233");
+
+        verify(sms).sendOtp(eq("+998901112233"), anyString());
+        verify(ops).set(startsWith("otp:"), anyString(), any());
+    }
+
+    @Test
+    void verify_wrongCode_false() {
+        when(ops.get("otp:+998901112233")).thenReturn(PasswordResetService.sha256("111111"));
+
+        assertThat(svc.verifyOtp("+998901112233", "000000")).isFalse();
+    }
+
+    @Test
+    void verify_correct_true_andClears() {
+        when(ops.get("otp:+998901112233")).thenReturn(PasswordResetService.sha256("111111"));
+
+        assertThat(svc.verifyOtp("+998901112233", "111111")).isTrue();
+        verify(redis).delete("otp:+998901112233");
+    }
+}
