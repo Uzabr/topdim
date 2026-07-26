@@ -34,6 +34,7 @@ public class UserService {
     private final FavoriteRepository favoriteRepository;
     private final SecurityVersionService securityVersionService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final TrustService trustService;
 
     // ==================== Profile ====================
 
@@ -166,6 +167,9 @@ public class UserService {
                 .emailVerified(user.isEmailVerified())
                 .phoneVerified(user.isPhoneVerified())
                 .createdAt(user.getCreatedAt())
+                // trustLevel — вычисляется через TrustService (phone_verified || paidAt != null),
+                // НЕ читается из хранимой колонки user.trustLevel (см. AuthService.buildAuthResponse).
+                .trustLevel(trustService.computeTrustLevel(user).name())
                 .build();
     }
 

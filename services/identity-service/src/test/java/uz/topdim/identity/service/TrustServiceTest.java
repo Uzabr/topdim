@@ -17,4 +17,5 @@ class TrustServiceTest {
     @Test void l0_whenNoProof() { assertThat(svc.computeTrustLevel(u(false, false))).isEqualTo(TrustLevel.L0); }
     @Test void l1_whenPhoneVerified() { assertThat(svc.computeTrustLevel(u(true, false))).isEqualTo(TrustLevel.L1); }
     @Test void l1_whenPaid() { assertThat(svc.computeTrustLevel(u(false, true))).isEqualTo(TrustLevel.L1); }
+    @Test void l1_whenPhoneVerifiedAndPaid() { assertThat(svc.computeTrustLevel(u(true, true))).isEqualTo(TrustLevel.L1); }
 }

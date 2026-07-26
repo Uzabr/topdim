@@ -1,5 +1,6 @@
 package uz.topdim.identity.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uz.topdim.identity.dto.UpdateProfileRequest;
 import uz.topdim.identity.dto.UserProfileResponse;
 import uz.topdim.identity.entity.Role;
+import uz.topdim.identity.entity.TrustLevel;
 import uz.topdim.identity.entity.User;
 import uz.topdim.identity.exception.UserNotFoundException;
 import uz.topdim.identity.repository.FavoriteRepository;
@@ -19,6 +21,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,9 +31,17 @@ class UserServiceTest {
 
     @Mock private UserRepository userRepository;
     @Mock private FavoriteRepository favoriteRepository;
+    @Mock private TrustService trustService;
 
     @InjectMocks
     private UserService userService;
+
+    @BeforeEach
+    void setUpTrustServiceDefault() {
+        // Тесты, не относящиеся к trustLevel, не должны падать с NPE на .name();
+        // lenient(), т.к. не все тесты вызывают mapToProfile (например, getProfile_notFound_throws).
+        lenient().when(trustService.computeTrustLevel(any(User.class))).thenReturn(TrustLevel.L0);
+    }
 
     private User createUser() {
         return User.builder()
@@ -150,5 +161,18 @@ class UserServiceTest {
 
         assertThatThrownBy(() -> userService.getProfile(999L))
                 .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("getProfile: отдаёт trustLevel, вычисленный через TrustService (не хранимую колонку)")
+    void getProfile_returnsComputedTrustLevel() {
+        User user = createUser();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(trustService.computeTrustLevel(user)).thenReturn(TrustLevel.L1);
+
+        UserProfileResponse response = userService.getProfile(1L);
+
+        assertThat(response.getTrustLevel()).isEqualTo("L1");
+        verify(trustService).computeTrustLevel(user);
     }
 }
