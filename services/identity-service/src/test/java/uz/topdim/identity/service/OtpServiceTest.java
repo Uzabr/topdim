@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,5 +54,21 @@ class OtpServiceTest {
 
         assertThat(svc.verifyOtp("+998901112233", "111111")).isTrue();
         verify(redis).delete("otp:+998901112233");
+    }
+
+    @Test
+    void verify_wrongCode_doesNotDeleteKey() {
+        when(ops.get("otp:+998901112233")).thenReturn(PasswordResetService.sha256("111111"));
+
+        assertThat(svc.verifyOtp("+998901112233", "000000")).isFalse();
+        verify(redis, never()).delete(anyString());
+    }
+
+    @Test
+    void verify_missingKey_falseAndNoDelete() {
+        when(ops.get("otp:+998901112233")).thenReturn(null);
+
+        assertThat(svc.verifyOtp("+998901112233", "111111")).isFalse();
+        verify(redis, never()).delete(anyString());
     }
 }
