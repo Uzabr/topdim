@@ -53,6 +53,7 @@ class AuthServiceTest {
     @Mock private TokenBlacklistService tokenBlacklistService;
     @Mock private SecurityVersionService securityVersionService;
     @Mock private TelegramLoginVerifier telegramLoginVerifier;
+    @Mock private TrustService trustService;
 
     @InjectMocks
     private AuthService authService;
@@ -87,6 +88,7 @@ class AuthServiceTest {
         when(jwtService.getAccessTokenExpiration()).thenReturn(900_000L);
         when(jwtService.getRefreshTokenExpiration()).thenReturn(604_800_000L);
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(trustService.computeTrustLevel(user)).thenReturn(TrustLevel.L1);
     }
 
     @Test
@@ -111,6 +113,7 @@ class AuthServiceTest {
         when(jwtService.getRefreshTokenExpiration()).thenReturn(604_800_000L);
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtService.generateAccessToken(any(User.class))).thenReturn("access-token");
+        when(trustService.computeTrustLevel(any(User.class))).thenReturn(TrustLevel.L0);
 
         AuthResponse response = authService.register(request);
 
@@ -225,6 +228,29 @@ class AuthServiceTest {
                 .isNotEqualTo(response.getRefreshToken());
         verify(loginAttemptService).resetAttempts("user@topdim.uz");
         verify(refreshTokenRepository).revokeAllByUser(user);
+    }
+
+    @Test
+    @DisplayName("Логин: trustLevel в ответе берётся из TrustService.computeTrustLevel, а не из хранимой колонки user.trustLevel")
+    void login_success_usesComputedTrustLevelNotStoredColumn() {
+        LoginRequest request = new LoginRequest();
+        request.setEmail("USER@topdim.uz");
+        request.setPassword("SafePass123!");
+
+        User user = createUser(Role.USER, true);
+        // Хранимая колонка сознательно "устарела" (L0) — ответ всё равно должен быть L1,
+        // т.к. источник правды — TrustService, а не user.trustLevel.
+        user.setTrustLevel(TrustLevel.L0);
+
+        when(loginAttemptService.getDelay("user@topdim.uz")).thenReturn(Duration.ZERO);
+        when(userRepository.findByEmailIgnoreCase("user@topdim.uz")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("SafePass123!", "hashed-password")).thenReturn(true);
+        stubTokenGeneration(user); // возвращает TrustLevel.L1 для trustService.computeTrustLevel(user)
+
+        AuthResponse response = authService.login(request);
+
+        assertThat(response.getUser().getTrustLevel()).isEqualTo("L1");
+        verify(trustService).computeTrustLevel(user);
     }
 
     @Test
@@ -471,6 +497,7 @@ class AuthServiceTest {
         when(jwtService.getAccessTokenExpiration()).thenReturn(900_000L);
         when(jwtService.getRefreshTokenExpiration()).thenReturn(604_800_000L);
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(trustService.computeTrustLevel(any(User.class))).thenReturn(TrustLevel.L0);
 
         AuthResponse response = authService.guestAuth(request);
 
@@ -504,6 +531,7 @@ class AuthServiceTest {
         when(jwtService.getAccessTokenExpiration()).thenReturn(900_000L);
         when(jwtService.getRefreshTokenExpiration()).thenReturn(604_800_000L);
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(trustService.computeTrustLevel(any(User.class))).thenReturn(TrustLevel.L0);
 
         AuthResponse response = authService.telegramAuth(request);
 
@@ -563,6 +591,7 @@ class AuthServiceTest {
         when(jwtService.getAccessTokenExpiration()).thenReturn(900_000L);
         when(jwtService.getRefreshTokenExpiration()).thenReturn(604_800_000L);
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(trustService.computeTrustLevel(existing)).thenReturn(TrustLevel.L0);
 
         AuthResponse response = authService.telegramAuth(request);
 

@@ -35,5 +35,6 @@ public class AuthResponse {
         private String lastName;
         private String role;
         private String avatarUrl;
+        private String trustLevel;
     }
 }

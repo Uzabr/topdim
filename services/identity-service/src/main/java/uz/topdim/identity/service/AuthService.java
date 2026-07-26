@@ -38,6 +38,7 @@ public class AuthService {
     private final TokenBlacklistService tokenBlacklistService;
     private final SecurityVersionService securityVersionService;
     private final TelegramLoginVerifier telegramLoginVerifier;
+    private final TrustService trustService;
 
     /**
      * Регистрация нового пользователя.
@@ -305,6 +306,8 @@ public class AuthService {
 
     /**
      * Формирует ответ аутентификации.
+     * trustLevel — вычисляется через {@link TrustService} (phone_verified || paidAt != null),
+     * НЕ читается из хранимой колонки {@code user.trustLevel} (deprecated, не источник правды).
      */
     private AuthResponse buildAuthResponse(User user) {
         String accessToken = jwtService.generateAccessToken(user);
@@ -323,6 +326,7 @@ public class AuthService {
                         .lastName(user.getLastName())
                         .role(user.getRole().name())
                         .avatarUrl(user.getAvatarUrl())
+                        .trustLevel(trustService.computeTrustLevel(user).name())
                         .build())
                 .build();
     }
