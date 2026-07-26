@@ -71,13 +71,21 @@ public class AccountResolutionService {
                 match.setGoogleSub(sub);
                 return users.save(match);
             }
-            // email у чужого аккаунта не доказан → освобождаем его
+            // email у чужого аккаунта не доказан → освобождаем его.
+            // saveAndFlush(!) — обязателен: Hibernate по умолчанию выполняет ВСЕ INSERT
+            // в очереди действий раньше ВСЕХ UPDATE независимо от порядка вызовов save() в коде
+            // (а для нового User здесь IDENTITY-генератор ID и вовсе форсирует немедленный INSERT).
+            // Без явного flush UPDATE (освобождение email у match) не долетит до БД раньше INSERT
+            // нового пользователя с тем же email → нарушение unique(email) в реальной БД
+            // (см. интеграционный тест AccountResolutionServiceIntegrationTest — RED без этой строки).
             match.setEmail("released_" + match.getId() + "@topdim.uz");
             match.setEmailVerified(false);
-            users.save(match);
+            users.saveAndFlush(match);
         }
 
         User u = User.builder()
+                // verified берём из провайдера (googleEmailVerified), а не хардкодим true:
+                // консервативно-безопаснее и эквивалентно на практике (Google почти всегда verified).
                 .email(email).emailVerified(googleEmailVerified)
                 .password(encoder.encode(UUID.randomUUID().toString()))
                 .firstName("Пользователь").googleSub(sub)
