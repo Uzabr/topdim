@@ -53,8 +53,7 @@ subprojects {
                         '**/entity/**',
                         '**/dto/**',
                         '**/config/**',
-                        '**/exception/**',
-                        '**/repository/**'
+                        '**/exception/**'
                 ])
             }))
         }
@@ -72,8 +71,7 @@ subprojects {
                         '**/entity/**',
                         '**/dto/**',
                         '**/config/**',
-                        '**/exception/**',
-                        '**/repository/**'
+                        '**/exception/**'
                 ])
             }))
         }
