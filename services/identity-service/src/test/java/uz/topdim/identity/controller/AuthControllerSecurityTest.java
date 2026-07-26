@@ -16,6 +16,7 @@ import uz.topdim.identity.security.RoleHeaderAuthenticationFilter;
 import uz.topdim.identity.dto.AuthResponse;
 import uz.topdim.identity.service.AuthService;
 import uz.topdim.identity.service.EmailConfirmationService;
+import uz.topdim.identity.service.OtpService;
 import uz.topdim.identity.service.PasswordResetService;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -45,6 +46,9 @@ class AuthControllerSecurityTest {
 
     @MockBean
     private EmailConfirmationService emailConfirmationService;
+
+    @MockBean
+    private OtpService otpService;
 
     @MockBean
     private CustomUserDetailsService customUserDetailsService;
@@ -84,6 +88,79 @@ class AuthControllerSecurityTest {
                 .andExpect(header().string("Set-Cookie",
                         org.hamcrest.Matchers.containsString("Path=/api/v1/auth")))
                 // JSON body: accessToken present, refreshToken absent
+                .andExpect(jsonPath("$.data.accessToken").value("access-jwt"))
+                .andExpect(jsonPath("$.data.refreshToken").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("T5: POST /guest → 410 Gone, гостевой вход отключён (не выполняет никакого входа)")
+    void guest_isGone() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/guest")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isGone())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(
+                        "Гостевой вход отключён, используйте вход по номеру телефона"));
+
+        verify(authService, never()).phoneAuth(any(), any());
+    }
+
+    @Test
+    @DisplayName("T5: POST /auth/phone/request — публичный endpoint, всегда 202 (anti-enumeration)")
+    void phoneOtpRequest_publicEndpoint_acceptsAnonymousRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/phone/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "phone": "+998901234567"
+                                }
+                                """))
+                .andExpect(status().isAccepted());
+
+        verify(otpService).requestOtp("+998901234567");
+    }
+
+    @Test
+    @DisplayName("T5: POST /auth/phone/request — некорректный формат телефона отклоняется до сервиса")
+    void phoneOtpRequest_invalidPhone_returnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/phone/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "phone": "not-a-phone"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(otpService, never()).requestOtp(any());
+    }
+
+    @Test
+    @DisplayName("T5: POST /auth/phone/confirm — публичный endpoint, ставит refreshToken в httpOnly cookie, не отдаёт в body")
+    void phoneOtpConfirm_setsHttpOnlyCookieAndOmitsRefreshTokenFromBody() throws Exception {
+        AuthResponse mockResponse = AuthResponse.builder()
+                .accessToken("access-jwt")
+                .refreshToken("rt-secret-value")
+                .tokenType("Bearer")
+                .expiresIn(900)
+                .user(AuthResponse.UserDto.builder()
+                        .id(1L).phone("+998901234567").firstName("Ali").role("USER").build())
+                .build();
+        when(authService.phoneAuth("+998901234567", "111111")).thenReturn(mockResponse);
+
+        mockMvc.perform(post("/api/v1/auth/phone/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "phone": "+998901234567",
+                                  "code": "111111"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Set-Cookie",
+                        org.hamcrest.Matchers.containsString("refreshToken=rt-secret-value")))
+                .andExpect(header().string("Set-Cookie",
+                        org.hamcrest.Matchers.containsString("HttpOnly")))
                 .andExpect(jsonPath("$.data.accessToken").value("access-jwt"))
                 .andExpect(jsonPath("$.data.refreshToken").doesNotExist());
     }

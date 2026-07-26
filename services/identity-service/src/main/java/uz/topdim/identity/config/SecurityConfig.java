@@ -50,6 +50,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/password-reset/confirm",
                                 "/api/v1/auth/confirm/email",
                                 "/api/v1/auth/guest",
+                                "/api/v1/auth/phone/request",
+                                "/api/v1/auth/phone/confirm",
                                 "/api/v1/auth/telegram").permitAll()
 
                         // Смена пароля требует аутентификации через Gateway headers

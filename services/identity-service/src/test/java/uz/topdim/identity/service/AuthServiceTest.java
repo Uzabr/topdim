@@ -11,7 +11,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import uz.topdim.identity.dto.AuthResponse;
 import uz.topdim.identity.dto.ChangePasswordRequest;
-import uz.topdim.identity.dto.GuestAuthRequest;
 import uz.topdim.identity.dto.LoginRequest;
 import uz.topdim.identity.dto.RefreshTokenRequest;
 import uz.topdim.identity.dto.RegisterRequest;
@@ -36,7 +35,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -54,6 +52,8 @@ class AuthServiceTest {
     @Mock private SecurityVersionService securityVersionService;
     @Mock private TelegramLoginVerifier telegramLoginVerifier;
     @Mock private TrustService trustService;
+    @Mock private OtpService otpService;
+    @Mock private AccountResolutionService accountResolutionService;
 
     @InjectMocks
     private AuthService authService;
@@ -408,106 +408,69 @@ class AuthServiceTest {
         verify(refreshTokenRepository).save(refreshToken);
     }
 
+    // ==================== Phone OTP auth (T5) ====================
+    // guestAuth() и связанные тесты удалены вместе с депрекацией AuthService.guestAuth
+    // (см. AuthControllerSecurityTest: guest_isGone — 410, бизнес-логика больше не нужна).
+
     @Test
-    @DisplayName("Guest auth: не должен логинить существующего обычного пользователя по одному телефону")
-    void guestAuth_existingRegularUser_throws() {
-        GuestAuthRequest request = new GuestAuthRequest();
-        request.setPhone("+998901234567");
-        request.setName("Guest");
+    @DisplayName("PhoneAuth: валидный OTP → выдаёт токены (вход/регистрация одним путём)")
+    void phoneAuth_validOtp_returnsTokens() {
+        when(otpService.verifyOtp("+998901112233", "111111")).thenReturn(true);
+        User u = User.builder().id(7L).phone("+998901112233").phoneVerified(true)
+                .role(Role.USER).enabled(true).email("phone_x@topdim.uz").build();
+        when(accountResolutionService.resolveByPhone("+998901112233")).thenReturn(u);
+        when(jwtService.generateAccessToken(any())).thenReturn("access");
+        when(jwtService.getAccessTokenExpiration()).thenReturn(900_000L);
+        when(jwtService.getRefreshTokenExpiration()).thenReturn(604_800_000L);
+        when(refreshTokenRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(trustService.computeTrustLevel(u)).thenReturn(TrustLevel.L1);
 
-        when(userRepository.findByPhone("+998901234567")).thenReturn(Optional.of(createUser(Role.USER, true)));
+        AuthResponse r = authService.phoneAuth("+998901112233", "111111");
 
-        assertThatThrownBy(() -> authService.guestAuth(request))
-                .isInstanceOf(AuthException.class)
-                .hasMessageContaining("уже привязан");
+        assertThat(r.getAccessToken()).isEqualTo("access");
+        verify(refreshTokenRepository).revokeAllByUser(u);
+    }
 
-        verify(userRepository, never()).save(any(User.class));
+    @Test
+    @DisplayName("PhoneAuth: неверный/просроченный OTP → AuthException, аккаунт не резолвится")
+    void phoneAuth_badOtp_throws() {
+        when(otpService.verifyOtp(anyString(), anyString())).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.phoneAuth("+998901112233", "000000"))
+                .isInstanceOf(AuthException.class);
+
+        verify(accountResolutionService, never()).resolveByPhone(anyString());
+        verify(refreshTokenRepository, never()).revokeAllByUser(any(User.class));
+    }
+
+    @Test
+    @DisplayName("PhoneAuth: заблокированный (enabled=false) аккаунт после верного OTP получает отказ, токены не выдаются")
+    void phoneAuth_disabledAccount_throwsWithoutIssuingTokens() {
+        when(otpService.verifyOtp("+998901112233", "111111")).thenReturn(true);
+        User disabled = User.builder().id(8L).phone("+998901112233").phoneVerified(true)
+                .role(Role.USER).enabled(false).email("phone_y@topdim.uz").build();
+        when(accountResolutionService.resolveByPhone("+998901112233")).thenReturn(disabled);
+
+        assertThatThrownBy(() -> authService.phoneAuth("+998901112233", "111111"))
+                .isInstanceOf(AuthException.class);
+
+        verify(refreshTokenRepository, never()).revokeAllByUser(any(User.class));
         verify(jwtService, never()).generateAccessToken(any(User.class));
     }
 
     @Test
-    @DisplayName("Guest auth: заблокированный guest не должен получать токены")
-    void guestAuth_blockedGuest_throws() {
-        GuestAuthRequest request = new GuestAuthRequest();
-        request.setPhone("+998901234567");
-        request.setName("Guest");
+    @DisplayName("PhoneAuth: soft-deleted аккаунт после верного OTP получает отказ, токены не выдаются")
+    void phoneAuth_deletedAccount_throwsWithoutIssuingTokens() {
+        when(otpService.verifyOtp("+998901112233", "111111")).thenReturn(true);
+        User deleted = User.builder().id(9L).phone("+998901112233").phoneVerified(true)
+                .role(Role.USER).enabled(true).deleted(true).email("phone_z@topdim.uz").build();
+        when(accountResolutionService.resolveByPhone("+998901112233")).thenReturn(deleted);
 
-        when(userRepository.findByPhone("+998901234567")).thenReturn(Optional.of(createUser(Role.GUEST, false)));
-
-        assertThatThrownBy(() -> authService.guestAuth(request))
-                .isInstanceOf(AuthException.class)
-                .hasMessageContaining("заблокирован");
-
-        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
-    }
-
-    @Test
-    @DisplayName("Guest auth: soft-deleted guest не должен получать токены")
-    void guestAuth_deletedGuest_throws() {
-        GuestAuthRequest request = new GuestAuthRequest();
-        request.setPhone("+998901234567");
-        request.setName("Guest");
-
-        User deletedGuest = createUser(Role.GUEST, true);
-        deletedGuest.setDeleted(true);
-        when(userRepository.findByPhone("+998901234567")).thenReturn(Optional.of(deletedGuest));
-
-        assertThatThrownBy(() -> authService.guestAuth(request))
-                .isInstanceOf(AuthException.class)
-                .hasMessageContaining("заблокирован");
+        assertThatThrownBy(() -> authService.phoneAuth("+998901112233", "111111"))
+                .isInstanceOf(AuthException.class);
 
         verify(refreshTokenRepository, never()).revokeAllByUser(any(User.class));
-        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
-    }
-
-    @Test
-    @DisplayName("Guest auth: существующий guest отзывает старые сессии перед выдачей новой")
-    void guestAuth_existingGuest_revokesOldSessions() {
-        GuestAuthRequest request = new GuestAuthRequest();
-        request.setPhone("+998901234567");
-        request.setName("Guest");
-
-        User existingGuest = createUser(Role.GUEST, true);
-        when(userRepository.findByPhone("+998901234567")).thenReturn(Optional.of(existingGuest));
-        stubTokenGeneration(existingGuest);
-
-        AuthResponse response = authService.guestAuth(request);
-
-        assertThat(response.getAccessToken()).isEqualTo("access-token");
-        InOrder sessionOrder = inOrder(refreshTokenRepository);
-        sessionOrder.verify(refreshTokenRepository).revokeAllByUser(existingGuest);
-        sessionOrder.verify(refreshTokenRepository).save(any(RefreshToken.class));
-    }
-
-    @Test
-    @DisplayName("Guest auth: создаёт нового гостя и выдаёт ему токены")
-    void guestAuth_newGuest_createsGuestUser() {
-        GuestAuthRequest request = new GuestAuthRequest();
-        request.setPhone(" +998901234567 ");
-        request.setName("Guest User");
-
-        when(userRepository.findByPhone("+998901234567")).thenReturn(Optional.empty());
-        when(passwordEncoder.encode(anyString())).thenReturn("guest-hash");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
-            User saved = invocation.getArgument(0);
-            saved.setId(15L);
-            return saved;
-        });
-        when(jwtService.generateAccessToken(any(User.class))).thenReturn("access-token");
-        when(jwtService.getAccessTokenExpiration()).thenReturn(900_000L);
-        when(jwtService.getRefreshTokenExpiration()).thenReturn(604_800_000L);
-        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(trustService.computeTrustLevel(any(User.class))).thenReturn(TrustLevel.L0);
-
-        AuthResponse response = authService.guestAuth(request);
-
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
-        assertThat(userCaptor.getValue().getRole()).isEqualTo(Role.GUEST);
-        assertThat(userCaptor.getValue().getPhone()).isEqualTo("+998901234567");
-        assertThat(response.getUser().getRole()).isEqualTo("GUEST");
-        verify(refreshTokenRepository, atLeastOnce()).save(any(RefreshToken.class));
-        verify(refreshTokenRepository, never()).revokeAllByUser(any(User.class));
+        verify(jwtService, never()).generateAccessToken(any(User.class));
     }
 
     @Test
