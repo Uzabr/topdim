@@ -296,6 +296,50 @@ class AuthControllerSecurityTest {
     }
 
     @Test
+    @DisplayName("T6: POST /auth/google — публичный endpoint, ставит refreshToken в httpOnly cookie, не отдаёт в body")
+    void googleAuth_setsHttpOnlyCookieAndOmitsRefreshTokenFromBody() throws Exception {
+        AuthResponse mockResponse = AuthResponse.builder()
+                .accessToken("access-jwt")
+                .refreshToken("rt-secret-value")
+                .tokenType("Bearer")
+                .expiresIn(900)
+                .user(AuthResponse.UserDto.builder()
+                        .id(1L).email("g@x.uz").firstName("Ali").role("USER").build())
+                .build();
+        when(authService.googleAuth("valid-id-token")).thenReturn(mockResponse);
+
+        mockMvc.perform(post("/api/v1/auth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "idToken": "valid-id-token"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Set-Cookie",
+                        org.hamcrest.Matchers.containsString("refreshToken=rt-secret-value")))
+                .andExpect(header().string("Set-Cookie",
+                        org.hamcrest.Matchers.containsString("HttpOnly")))
+                .andExpect(jsonPath("$.data.accessToken").value("access-jwt"))
+                .andExpect(jsonPath("$.data.refreshToken").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("T6: POST /auth/google — пустой idToken отклоняется до сервиса")
+    void googleAuth_blankIdToken_returnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "idToken": ""
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(authService, never()).googleAuth(any());
+    }
+
+    @Test
     @DisplayName("confirm/request: без gateway headers endpoint недоступен")
     void requestEmailConfirmation_withoutAuthentication_isRejected() throws Exception {
         mockMvc.perform(post("/api/v1/auth/confirm/request"))

@@ -154,6 +154,21 @@ public class AuthController {
     }
 
     /**
+     * Вход/регистрация через Google (ID-token из Google Identity Services).
+     * ID-token проверяется на сервере ({@code GoogleTokenVerifier}); refresh-токен —
+     * в httpOnly cookie, консистентно с login/telegram/phone.
+     */
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<AuthResponse>> googleAuth(
+            @Valid @RequestBody GoogleAuthRequest request,
+            HttpServletResponse response) {
+        AuthResponse authResponse = authService.googleAuth(request.getIdToken());
+        addRefreshTokenCookie(response, authResponse.getRefreshToken());
+        authResponse.setRefreshToken(null);
+        return ResponseEntity.ok(ApiResponse.success("Вход через Google выполнен", authResponse));
+    }
+
+    /**
      * Запрос сброса пароля.
      * Всегда 202 — защита от enumeration (не раскрываем, существует ли email).
      */

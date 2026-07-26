@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import uz.topdim.identity.dto.AuthResponse;
 import uz.topdim.identity.dto.ChangePasswordRequest;
+import uz.topdim.identity.dto.GoogleIdentity;
 import uz.topdim.identity.dto.LoginRequest;
 import uz.topdim.identity.dto.RefreshTokenRequest;
 import uz.topdim.identity.dto.RegisterRequest;
@@ -22,6 +23,7 @@ import uz.topdim.identity.entity.User;
 import uz.topdim.identity.exception.AuthException;
 import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.UserRepository;
+import uz.topdim.identity.security.GoogleTokenVerifier;
 import uz.topdim.identity.security.JwtService;
 import uz.topdim.identity.security.TelegramLoginVerifier;
 
@@ -54,6 +56,7 @@ class AuthServiceTest {
     @Mock private TrustService trustService;
     @Mock private OtpService otpService;
     @Mock private AccountResolutionService accountResolutionService;
+    @Mock private GoogleTokenVerifier googleTokenVerifier;
 
     @InjectMocks
     private AuthService authService;
@@ -564,5 +567,53 @@ class AuthServiceTest {
         sessionOrder.verify(refreshTokenRepository).save(any(RefreshToken.class));
         assertThat(existing.getTelegramUsername()).isEqualTo("ivan_new"); // username обновился
         assertThat(response.getUser().getId()).isEqualTo(42L);
+    }
+
+    // ==================== Google auth (T6) ====================
+
+    @Test
+    @DisplayName("GoogleAuth: валидный ID-token → резолвит аккаунт через AccountResolutionService и выдаёт токены")
+    void googleAuth_validToken_returnsTokens() {
+        when(googleTokenVerifier.verify("tok")).thenReturn(new GoogleIdentity("sub1", "g@x.uz", true));
+        User u = User.builder().id(5L).email("g@x.uz").emailVerified(true).googleSub("sub1")
+                .role(Role.USER).enabled(true).build();
+        when(accountResolutionService.resolveByGoogle("sub1", "g@x.uz", true)).thenReturn(u);
+        when(jwtService.generateAccessToken(any())).thenReturn("access");
+        when(jwtService.getAccessTokenExpiration()).thenReturn(900_000L);
+        when(jwtService.getRefreshTokenExpiration()).thenReturn(604_800_000L);
+        when(refreshTokenRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(trustService.computeTrustLevel(u)).thenReturn(TrustLevel.L1);
+
+        assertThat(authService.googleAuth("tok").getAccessToken()).isEqualTo("access");
+        // Консистентно с phoneAuth/telegramAuth: старые сессии отзываются при (пере)входе.
+        verify(refreshTokenRepository).revokeAllByUser(u);
+    }
+
+    @Test
+    @DisplayName("GoogleAuth: невалидный ID-token → verify бросает AuthException, аккаунт не резолвится, токены не выдаются")
+    void googleAuth_invalidToken_throwsWithoutIssuingTokens() {
+        when(googleTokenVerifier.verify("bad-tok")).thenThrow(new AuthException("Невалидный Google ID-token"));
+
+        assertThatThrownBy(() -> authService.googleAuth("bad-tok"))
+                .isInstanceOf(AuthException.class);
+
+        verify(accountResolutionService, never()).resolveByGoogle(anyString(), anyString(), org.mockito.ArgumentMatchers.anyBoolean());
+        verify(jwtService, never()).generateAccessToken(any());
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
+    }
+
+    @Test
+    @DisplayName("GoogleAuth: заблокированный (enabled=false) аккаунт после резолюции получает отказ, токены не выдаются")
+    void googleAuth_disabledAccount_throwsWithoutIssuingTokens() {
+        when(googleTokenVerifier.verify("tok")).thenReturn(new GoogleIdentity("sub2", "blocked@x.uz", true));
+        User disabled = User.builder().id(6L).email("blocked@x.uz").emailVerified(true).googleSub("sub2")
+                .role(Role.USER).enabled(false).build();
+        when(accountResolutionService.resolveByGoogle("sub2", "blocked@x.uz", true)).thenReturn(disabled);
+
+        assertThatThrownBy(() -> authService.googleAuth("tok"))
+                .isInstanceOf(AuthException.class);
+
+        verify(jwtService, never()).generateAccessToken(any());
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
     }
 }

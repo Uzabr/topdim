@@ -13,6 +13,7 @@ import uz.topdim.identity.entity.User;
 import uz.topdim.identity.exception.AuthException;
 import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.UserRepository;
+import uz.topdim.identity.security.GoogleTokenVerifier;
 import uz.topdim.identity.security.JwtService;
 import uz.topdim.identity.security.TelegramLoginVerifier;
 
@@ -43,6 +44,7 @@ public class AuthService {
     private final TrustService trustService;
     private final OtpService otpService;
     private final AccountResolutionService accountResolutionService;
+    private final GoogleTokenVerifier googleTokenVerifier;
 
     /**
      * Регистрация нового пользователя.
@@ -290,6 +292,33 @@ public class AuthService {
             refreshTokenRepository.revokeAllByUser(user);
             log.info("SECURITY: Telegram auth for existing user: tgId={}", request.getId());
         }
+        return buildAuthResponse(user);
+    }
+
+    /**
+     * Авторизация/регистрация через Google (ID-token из Google Identity Services).
+     * Верификация токена — {@link GoogleTokenVerifier#verify(String)} (бросает
+     * {@link AuthException} при невалидном/просроченном токене). Резолюция аккаунта
+     * (по google_sub → вход; по подтверждённому email → привязка; иначе — создание)
+     * полностью в {@link AccountResolutionService#resolveByGoogle}, логика не дублируется.
+     * Как и в {@code phoneAuth}: сервис не знает, новый пользователь или существующий,
+     * поэтому revoke старых refresh-токенов безусловен (для нового пользователя — no-op).
+     */
+    @Transactional
+    public AuthResponse googleAuth(String idToken) {
+        GoogleIdentity identity = googleTokenVerifier.verify(idToken);
+
+        User user = accountResolutionService.resolveByGoogle(
+                identity.sub(), identity.email(), identity.emailVerified());
+
+        if (!user.isEnabled() || user.isDeleted()) {
+            throw new AuthException("Аккаунт недоступен");
+        }
+
+        refreshTokenRepository.revokeAllByUser(user);
+
+        log.info("SECURITY: Google auth for userId: {}", user.getId());
+
         return buildAuthResponse(user);
     }
 
