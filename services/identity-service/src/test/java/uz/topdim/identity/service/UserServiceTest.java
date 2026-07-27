@@ -175,4 +175,20 @@ class UserServiceTest {
         assertThat(response.getTrustLevel()).isEqualTo("L1");
         verify(trustService).computeTrustLevel(user);
     }
+
+    @Test
+    @DisplayName("markPaid: ставит paidAt один раз (идемпотентно — повторный вызов не перезатирает)")
+    void markPaid_setsPaidAtOnce() {
+        User u = User.builder().id(3L).build();
+        when(userRepository.findById(3L)).thenReturn(Optional.of(u));
+
+        userService.markPaid(3L);
+
+        assertThat(u.getPaidAt()).isNotNull();
+        var first = u.getPaidAt();
+
+        userService.markPaid(3L); // идемпотентно — не перезатирает
+
+        assertThat(u.getPaidAt()).isEqualTo(first);
+    }
 }

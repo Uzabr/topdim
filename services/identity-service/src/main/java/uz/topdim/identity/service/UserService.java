@@ -153,6 +153,22 @@ public class UserService {
         return mapToAdminUser(user);
     }
 
+    // ==================== Payment (RabbitMQ: PaymentCompletedEvent) ====================
+
+    /**
+     * Фиксирует первую успешную оплату пользователя (→ вклад в L1 через TrustService).
+     * Идемпотентно: {@code paidAt} ставится один раз и больше не перезаписывается.
+     */
+    @Transactional
+    public void markPaid(Long userId) {
+        userRepository.findById(userId).ifPresent(u -> {
+            if (u.getPaidAt() == null) {
+                u.setPaidAt(java.time.LocalDateTime.now());
+                userRepository.save(u);
+            }
+        });
+    }
+
     // ==================== Mapping ====================
 
     private UserProfileResponse mapToProfile(User user) {
