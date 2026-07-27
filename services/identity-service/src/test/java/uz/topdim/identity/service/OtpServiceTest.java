@@ -71,4 +71,32 @@ class OtpServiceTest {
         assertThat(svc.verifyOtp("+998901112233", "111111")).isFalse();
         verify(redis, never()).delete(anyString());
     }
+
+    @Test
+    void verify_incrementsAttemptsOnWrongCode() {
+        when(ops.get("otp:+998901112233")).thenReturn(PasswordResetService.sha256("111111"));
+        when(ops.increment("otp:attempts:+998901112233")).thenReturn(1L);
+
+        assertThat(svc.verifyOtp("+998901112233", "000000")).isFalse();
+
+        verify(ops).increment("otp:attempts:+998901112233");
+    }
+
+    @Test
+    void verify_locksOutAfterMaxAttempts() {
+        when(ops.get("otp:+998901112233")).thenReturn(PasswordResetService.sha256("111111"));
+        when(ops.get("otp:attempts:+998901112233")).thenReturn("5");
+
+        // Даже верный код не проходит — залочено после MAX попыток
+        assertThat(svc.verifyOtp("+998901112233", "111111")).isFalse();
+
+        verify(redis).delete("otp:+998901112233");
+    }
+
+    @Test
+    void request_resetsAttempts() {
+        svc.requestOtp("+998901112233");
+
+        verify(redis).delete("otp:attempts:+998901112233");
+    }
 }
