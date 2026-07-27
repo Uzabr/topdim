@@ -23,20 +23,42 @@ public class AccountResolutionService {
     private final UserRepository users;
     private final PasswordEncoder encoder;
 
-    /** Вход/восстановление/создание по номеру (после успешного OTP — телефон уже доказан). */
+    /**
+     * Вход/восстановление/создание по номеру (после успешного OTP — телефон уже доказан
+     * вызывающим). Если номер занят аккаунтом, где он НЕ подтверждён (кто-то указал чужой
+     * номер при регистрации, но не доказал владение им) — номер там лишь заявлен, не доказан:
+     * освобождаем его у сквоттера, а доказанный владелец получает его на новом аккаунте.
+     * Иначе жертва OTP попала бы в чужой (сквоттера) аккаунт — account takeover.
+     */
     @Transactional
     public User resolveByPhone(String phoneE164) {
-        return users.findByPhone(phoneE164).orElseGet(() -> {
-            User u = User.builder()
-                    .email("phone_" + phoneE164 + "@topdim.uz")
-                    .password(encoder.encode(UUID.randomUUID().toString()))
-                    .firstName("Пользователь")
-                    .phone(phoneE164).phoneVerified(true)
-                    .role(Role.USER).enabled(true)
-                    .emailVerified(false)
-                    .build();
-            return users.save(u);
-        });
+        User match = users.findByPhone(phoneE164).orElse(null);
+        if (match != null) {
+            if (match.isPhoneVerified()) {
+                // тот же человек — номер доказан на этом аккаунте
+                return match;
+            }
+            // номер у чужого (непроверенного) аккаунта → освобождаем его.
+            // saveAndFlush(!) — обязателен: Hibernate по умолчанию выполняет ВСЕ INSERT
+            // в очереди действий раньше ВСЕХ UPDATE независимо от порядка вызовов save() в коде
+            // (а для нового User здесь IDENTITY-генератор ID и вовсе форсирует немедленный INSERT).
+            // Без явного flush UPDATE (освобождение phone у match) не долетит до БД раньше INSERT
+            // нового пользователя с тем же phone → нарушение unique(phone) в реальной БД
+            // (см. AccountResolutionServiceIntegrationTest — RED без этой строки, симметрично resolveByGoogle).
+            match.setPhone(null);
+            match.setPhoneVerified(false);
+            users.saveAndFlush(match);
+        }
+
+        User u = User.builder()
+                .email("phone_" + phoneE164 + "@topdim.uz")
+                .password(encoder.encode(UUID.randomUUID().toString()))
+                .firstName("Пользователь")
+                .phone(phoneE164).phoneVerified(true)
+                .role(Role.USER).enabled(true)
+                .emailVerified(false)
+                .build();
+        return users.save(u);
     }
 
     /** Привязка номера к текущему (залогиненному) аккаунту; занят другим → отказ (без слияния). */

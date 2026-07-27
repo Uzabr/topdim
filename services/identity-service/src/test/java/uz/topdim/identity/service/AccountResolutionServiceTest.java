@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,6 +62,50 @@ class AccountResolutionServiceTest {
         assertThat(r.isEmailVerified()).isFalse();
         assertThat(r.isEnabled()).isTrue();
         assertThat(r.getEmail()).isEqualTo("phone_+998901112233@topdim.uz");
+    }
+
+    @Test
+    @DisplayName("resolveByPhone: verified-владелец найден по номеру → войти в тот же аккаунт, новый не создаётся")
+    void resolveByPhone_verifiedExisting_returnsIt() {
+        User a = User.builder().id(1L).phone("+998901112233").phoneVerified(true).build();
+        when(users.findByPhone("+998901112233")).thenReturn(Optional.of(a));
+
+        User r = svc.resolveByPhone("+998901112233");
+
+        assertThat(r.getId()).isEqualTo(1L);
+        verify(users, never()).save(any());
+        verify(users, never()).saveAndFlush(any());
+    }
+
+    @Test
+    @DisplayName("resolveByPhone: номер занят НЕподтверждённым аккаунтом (сквоттер) → освободить у него номер, создать НОВЫЙ verified-аккаунт (не пускать жертву в чужой аккаунт)")
+    void resolveByPhone_unverifiedSquatter_releasesAndCreatesNew() {
+        User squatter = User.builder().id(1L).phone("+998901112233").phoneVerified(false).build();
+        when(users.findByPhone("+998901112233")).thenReturn(Optional.of(squatter));
+        when(encoder.encode(anyString())).thenReturn("h");
+        when(users.saveAndFlush(any(User.class))).thenAnswer(i -> i.getArgument(0));
+        when(users.save(any(User.class))).thenAnswer(i -> {
+            User u = i.getArgument(0);
+            if (u.getId() == null) u.setId(9L);
+            return u;
+        });
+
+        User r = svc.resolveByPhone("+998901112233");
+
+        // старый аккаунт (сквоттер) — номер освобождён, сам не входит
+        assertThat(squatter.getPhone()).isNull();
+        assertThat(squatter.isPhoneVerified()).isFalse();
+
+        // новый аккаунт — доказанный владелец номера
+        assertThat(r.getId()).isNotEqualTo(1L);
+        assertThat(r.getPhone()).isEqualTo("+998901112233");
+        assertThat(r.isPhoneVerified()).isTrue();
+        assertThat(r.getRole()).isEqualTo(Role.USER);
+
+        // saveAndFlush освобождения — строго до save() нового аккаунта (иначе INSERT нарушит unique(phone) в реальной БД)
+        var order = inOrder(users);
+        order.verify(users).saveAndFlush(squatter);
+        order.verify(users).save(any(User.class));
     }
 
     // ==================== linkPhone ====================

@@ -66,4 +66,32 @@ class AccountResolutionServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(reloadedOld.getEmail()).isEqualTo("released_" + oldId + "@topdim.uz");
         assertThat(reloadedOld.isEmailVerified()).isFalse();
     }
+
+    @Test
+    @DisplayName("resolveByPhone: реальная БД — освобождение номера у неподтверждённого сквоттера + создание нового аккаунта не должны нарушать unique(phone) (RED без saveAndFlush, GREEN с ним)")
+    void resolveByPhone_releaseUnverifiedSquatterAndCreateNew_noUniqueConstraintViolation() {
+        User squatter = User.builder()
+                .email("squatter@example.com")
+                .password("x")
+                .firstName("Squatter")
+                .role(Role.USER)
+                .enabled(true)
+                .phone("+998901112233")
+                .phoneVerified(false)
+                .build();
+        squatter = users.saveAndFlush(squatter);
+        Long squatterId = squatter.getId();
+
+        User result = svc.resolveByPhone("+998901112233");
+
+        // (б) новый аккаунт с доказанным (через OTP) номером
+        assertThat(result.getId()).isNotEqualTo(squatterId);
+        assertThat(result.getPhone()).isEqualTo("+998901112233");
+        assertThat(result.isPhoneVerified()).isTrue();
+
+        // (в) старый аккаунт (сквоттер) — номер освобождён, сам не входит в чужой аккаунт
+        User reloadedSquatter = users.findById(squatterId).orElseThrow();
+        assertThat(reloadedSquatter.getPhone()).isNull();
+        assertThat(reloadedSquatter.isPhoneVerified()).isFalse();
+    }
 }
