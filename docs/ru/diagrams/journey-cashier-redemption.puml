@@ -1,0 +1,22 @@
+@startuml
+title sizbiz — погашение купона кассиром
+actor "Покупатель" as buyer
+participant "Кассир" as cashier
+participant "Partner app" as app
+participant "Backend sizbiz" as backend
+
+buyer -> cashier : QR или PIN
+cashier -> app : сканировать / ввести код
+app -> backend : запрос погашения
+backend -> backend : проверить ACTIVE,\nmerchant и location
+alt всё допустимо
+  backend -> backend : атомарно установить USED\nи записать redemption
+  backend --> app : успех
+  app --> cashier : купон погашен
+  cashier --> buyer : подтвердить использование
+else отказ
+  backend --> app : бизнес-причина отказа
+  app --> cashier : не погашать
+  cashier --> buyer : объяснить / поддержка
+end
+@enduml

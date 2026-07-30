@@ -1,0 +1,30 @@
+@startuml
+!include <C4/C4_Component>
+title Order service — components
+Container_Boundary(ord, "order-service") {
+  Component(ctrl, "Order/Partner/Support controllers", "Spring MVC", "HTTP entry points")
+  Component(orderSvc, "OrderService", "Service", "Cart/checkout/issuance")
+  Component(partnerSvc, "PartnerService/Resolver", "Service", "Redemption and access")
+  Component(support, "Refund/Complaint services", "Service", "Support lifecycle")
+  Component(repo, "Repositories", "Spring Data JPA", "Persistence")
+  Component(listener, "PaymentEventListener", "AMQP", "Payment completion")
+  Component(clients, "Coupon/Identity clients", "OpenFeign", "Snapshots/access")
+}
+ContainerDb_Ext(db, "Order DB", "PostgreSQL")
+ContainerQueue_Ext(rabbit, "RabbitMQ", "Events")
+Container_Ext(coupon, "Coupon service", "Snapshot/sales")
+Container_Ext(identity, "Identity service", "User/partner context")
+Rel(ctrl, orderSvc, "Calls")
+Rel(ctrl, partnerSvc, "Calls")
+Rel(ctrl, support, "Calls")
+Rel(listener, orderSvc, "Creates purchased coupons")
+Rel(orderSvc, repo, "Reads/writes")
+Rel(partnerSvc, repo, "Reads/writes")
+Rel(support, repo, "Reads/writes")
+Rel(repo, db, "JDBC")
+Rel(orderSvc, rabbit, "Publishes", "AMQP")
+Rel(listener, rabbit, "Consumes", "AMQP")
+Rel(orderSvc, clients, "Snapshot/sale")
+Rel(clients, coupon, "REST", "HTTP/JSON")
+Rel(clients, identity, "REST", "HTTP/JSON")
+@enduml

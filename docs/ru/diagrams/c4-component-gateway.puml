@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Component>
+title API Gateway — компоненты
+Container_Boundary(gw, "api-gateway") {
+  Component(routes, "Route configuration", "YAML", "Path → lb://service")
+  Component(jwt, "JwtAuthenticationFilter", "WebFlux GlobalFilter", "JWT и trusted headers")
+  Component(tokens, "ReactiveTokenValidationService", "Service", "Blacklist/securityVersion")
+  Component(rate, "RateLimitConfig", "RedisRateLimiter", "IP key resolution")
+  Component(headers, "SecurityHeadersFilter", "WebFilter", "Security headers")
+  Component(cors, "SecurityConfig/CorsProperties", "Spring Security", "CORS и reactive chain")
+}
+Container_Ext(redis, "Redis", "Token/rate state")
+Container_Ext(eureka, "Eureka", "Discovery")
+Rel(routes, eureka, "Разрешает lb://", "HTTP")
+Rel(jwt, tokens, "Проверяет invalidation")
+Rel(tokens, redis, "Читает", "RESP")
+Rel(rate, redis, "Счётчики", "RESP")
+Rel(cors, jwt, "Пропускает запрос")
+Rel(jwt, headers, "Продолжает chain")
+@enduml

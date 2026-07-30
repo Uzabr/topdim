@@ -1,0 +1,55 @@
+@startuml
+title sizbiz — обзор владения данными
+hide methods
+entity "identity DB" as identity {
+  * users
+  --
+  refresh_tokens
+  auth_action_tokens
+  staff
+  partner_applications
+  favorites
+  audit_logs
+}
+entity "coupon DB" as coupon {
+  * coupon_offers
+  --
+  coupon_options
+  merchants
+  merchant_locations
+  categories
+  reviews/questions
+  situations
+  sale/redemption ledgers
+}
+entity "order DB" as orders {
+  * orders
+  --
+  carts/cart_items
+  order_items
+  purchased_coupons
+  redemptions
+  refunds/complaints
+}
+entity "payment DB" as payment {
+  * payments
+}
+entity "notification DB" as notification {
+  * notifications
+}
+entity "bazaar DB" as bazaar {
+  * bazaars
+  --
+  bazaar_maps
+  shops/categories/tags
+}
+identity ..> coupon : logical user/merchant IDs\n(no cross-DB FK)
+orders ..> coupon : coupon/option/merchant snapshots
+payment ..> orders : logical order_id
+notification ..> identity : logical user_id
+bazaar ..> coupon : logical coupon lookup
+note bottom
+  Solid relationships live inside each database.
+  Cross-database arrows are logical contracts only.
+end note
+@enduml

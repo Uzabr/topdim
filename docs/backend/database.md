@@ -1,4 +1,4 @@
-# Database Architecture — TopDim
+# Database Architecture — sizbiz
 
 > Полная документация по базам данных. Оптимизировано для 5M+ пользователей.
 
