@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Component>
+title Payment service — компоненты
+Container_Boundary(pay, "payment-service") {
+  Component(ctrl, "PaymentController", "Spring MVC", "Create/status/callback/demo")
+  Component(svc, "PaymentService", "Service", "State/idempotency/events")
+  Component(repo, "PaymentRepository", "Spring Data JPA", "Persistence")
+  Component(listener, "OrderCreatedListener", "AMQP", "Creates payment from order")
+}
+ContainerDb_Ext(db, "Payment DB", "PostgreSQL")
+ContainerQueue_Ext(rabbit, "RabbitMQ", "order/payment exchanges")
+Rel(ctrl, svc, "Вызывает")
+Rel(listener, svc, "Создаёт payment")
+Rel(svc, repo, "Читает/пишет")
+Rel(repo, db, "JDBC")
+Rel(listener, rabbit, "Получает order.created", "AMQP")
+Rel(svc, rabbit, "Публикует payment.completed", "AMQP")
+@enduml

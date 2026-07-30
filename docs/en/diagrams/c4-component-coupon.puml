@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Component>
+title Coupon service — components
+Container_Boundary(cp, "coupon-service") {
+  Component(public, "Public controllers", "Spring MVC", "Catalog/review/Q&A/situations")
+  Component(partner, "Partner/Bot controllers", "Spring MVC", "Lead/approval")
+  Component(admin, "Admin/Mod controllers", "Spring MVC", "Moderation/catalog")
+  Component(offer, "CouponOffer/PartnerCoupon services", "Service", "Lifecycle/stock/readiness")
+  Component(content, "Review/Question/Situation services", "Service", "UGC and curation")
+  Component(merchant, "Merchant/Directory services", "Service", "Merchant/location/directory")
+  Component(repo, "Repositories", "Spring Data JPA", "Persistence")
+  Component(events, "Rabbit listener/producer", "AMQP", "Redemption/notification")
+  Component(feign, "OrderReviewEligibilityClient", "OpenFeign", "Review eligibility")
+}
+ContainerDb_Ext(db, "Coupon DB", "PostgreSQL")
+ContainerDb_Ext(redis, "Redis", "Caches")
+ContainerQueue_Ext(rabbit, "RabbitMQ", "Events")
+Container_Ext(order, "Order service", "Eligibility")
+Rel(public, offer, "Reads")
+Rel(public, content, "Calls")
+Rel(partner, offer, "Changes lifecycle")
+Rel(admin, offer, "Moderates")
+Rel(admin, merchant, "Manages")
+Rel(offer, repo, "Reads/writes")
+Rel(content, repo, "Reads/writes")
+Rel(merchant, repo, "Reads/writes")
+Rel(repo, db, "JDBC")
+Rel(content, redis, "Cache", "RESP")
+Rel(events, rabbit, "AMQP")
+Rel(content, feign, "Checks")
+Rel(feign, order, "REST", "HTTP/JSON")
+@enduml

@@ -1,0 +1,36 @@
+@startuml
+!include <C4/C4_Deployment>
+title sizbiz — production deployment
+Deployment_Node(device, "User device", "Browser/mobile") {
+  Container(browser, "SPA", "React", "Buyer/admin/partner UI")
+}
+Deployment_Node(vps, "Contabo VPS", "Ubuntu 24.04 / Docker Swarm") {
+  Deployment_Node(edge, "EasyPanel and Traefik", "TLS/ingress") {
+    Container(frontends, "Frontend services", "nginx", "Three SPAs")
+    Container(gateway, "API Gateway", "Java 21", "Public API")
+  }
+  Deployment_Node(apps, "Internal overlay network", "Swarm services") {
+    Container(services, "Backend services", "Java 21", "Discovery and deployed services")
+    Container(bot, "Telegram bot", "Python", "Present in source; CD gap")
+  }
+  Deployment_Node(data, "Stateful services", "Docker volumes") {
+    ContainerDb(pg, "PostgreSQL", "PostgreSQL 17", "Service databases")
+    ContainerDb(redis, "Redis", "Redis 7", "Security/cache")
+    ContainerQueue(rabbit, "RabbitMQ", "RabbitMQ", "Events")
+    ContainerDb(minio, "MinIO", "S3 compatible", "Media")
+  }
+}
+System_Ext(ghcr, "GHCR", "Private images")
+System_Ext(github, "GitHub Actions", "CI/CD")
+System_Ext(s3, "AWS S3", "Backups")
+Rel(browser, frontends, "HTTPS")
+Rel(frontends, gateway, "HTTPS")
+Rel(gateway, services, "HTTP/overlay")
+Rel(services, pg, "JDBC")
+Rel(services, redis, "RESP")
+Rel(services, rabbit, "AMQP")
+Rel(services, minio, "S3 API")
+Rel(github, ghcr, "Push images", "OCI/HTTPS")
+Rel(ghcr, vps, "Pull images", "OCI/HTTPS")
+Rel(pg, s3, "Encrypted dumps", "S3/HTTPS")
+@enduml

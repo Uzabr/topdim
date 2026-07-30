@@ -1,0 +1,17 @@
+@startuml
+!include <C4/C4_Component>
+title Supporting services — relationships
+Component(payment, "Payment", "Spring Boot", "Order event to payment state to completion")
+Component(notification, "Notification", "Spring Boot", "In-app/email/SMS")
+Component(media, "Media", "Spring Boot", "MinIO object access")
+Component(bazaar, "Bazaar", "Spring Boot", "Standalone directory")
+ContainerQueue_Ext(rabbit, "RabbitMQ", "AMQP")
+ContainerDb_Ext(pg, "PostgreSQL", "Service databases")
+ContainerDb_Ext(minio, "MinIO", "Objects")
+Rel(payment, rabbit, "Consumes/produces", "AMQP")
+Rel(notification, rabbit, "Consumes", "AMQP")
+Rel(payment, pg, "JDBC")
+Rel(notification, pg, "JDBC")
+Rel(bazaar, pg, "JDBC")
+Rel(media, minio, "S3 API")
+@enduml

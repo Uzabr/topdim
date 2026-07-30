@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Component>
+title Bazaar service — компоненты
+Container_Boundary(bz, "bazaar-service") {
+  Component(ctrl, "Bazaar/PartnerShop controllers", "Spring MVC", "Public/admin/partner API")
+  Component(bazaarSvc, "BazaarService", "Service", "Bazaars/maps")
+  Component(shopSvc, "Shop/PartnerShop services", "Service", "Search/ownership")
+  Component(repo, "Repositories", "Spring Data JPA", "Persistence")
+  Component(feign, "CouponClient", "OpenFeign", "Coupon lookup")
+}
+ContainerDb_Ext(db, "Bazaar DB", "PostgreSQL")
+Container_Ext(coupon, "Coupon service", "Offer API")
+Rel(ctrl, bazaarSvc, "Вызывает")
+Rel(ctrl, shopSvc, "Вызывает")
+Rel(bazaarSvc, repo, "Читает/пишет")
+Rel(shopSvc, repo, "Читает/пишет")
+Rel(repo, db, "JDBC")
+Rel(shopSvc, feign, "Детали coupon")
+Rel(feign, coupon, "REST", "HTTP/JSON")
+@enduml

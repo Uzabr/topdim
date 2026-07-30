@@ -1,0 +1,22 @@
+@startuml
+title Погашение купона по QR/PIN
+actor "Кассир" as Cashier
+participant "Partner SPA" as SPA
+participant "API Gateway" as Gateway
+participant "order-service" as Order
+participant "identity-service" as Identity
+database "topdim_order" as DB
+queue "RabbitMQ" as MQ
+participant "coupon-service" as Coupon
+Cashier -> SPA: Сканирует QR / вводит PIN
+SPA -> Gateway: POST /partner/redemptions[/qr]\nBearer JWT
+Gateway -> Order: trusted X-User-* headers
+Order -> Identity: GET internal partner access
+Identity --> Order: merchant/location/staff context
+Order -> DB: lock and validate ACTIVE/owner/expiry
+Order -> DB: status=USED + redemption
+Order -> MQ: coupon.redeemed
+MQ -> Coupon: consume event
+Coupon -> Coupon: idempotent redemption ledger/statistics
+Order --> SPA: redemption response
+@enduml

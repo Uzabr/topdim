@@ -1,0 +1,23 @@
+@startuml
+title sizbiz — ценность для экосистемы
+left to right direction
+skinparam componentStyle rectangle
+
+actor "Покупатель" as buyer
+actor "Местный бизнес" as merchant
+actor "Команда sizbiz" as team
+rectangle "sizbiz\nлокальные предложения" as platform
+
+buyer --> platform : находит, покупает,\nиспользует
+platform --> buyer : понятные условия,\nQR/PIN, поддержка
+merchant --> platform : предложение,\nлокации, исполнение
+platform --> merchant : аудитория,\nучёт продаж и погашений
+team --> platform : подготовка,\nмодерация, операции
+platform --> team : статусы,\nобращения, аудит
+
+note bottom of platform
+Цель воздействия:
+выгода людям, рост бизнесу,
+польза локальному сообществу
+end note
+@enduml

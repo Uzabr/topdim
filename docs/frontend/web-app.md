@@ -1,6 +1,6 @@
 # Frontend Web App — Документация для разработчиков
 
-> React SPA (mobile-first) для платформы TopDim
+> React SPA (mobile-first) для платформы sizbiz
 
 ## Стек
 

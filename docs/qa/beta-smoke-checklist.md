@@ -11,8 +11,8 @@
 | USER | Покупатель с email и phone в профиле | `frontend/web-app` → `/login` |
 | PARTNER OWNER | Владелец бизнеса/мерчанта | `frontend/partner` → `/login` |
 | PARTNER CASHIER | Кассир как `staff.role=CASHIER`, login-user имеет JWT роль `PARTNER` и привязан к филиалу | `frontend/partner` → `/login` (email из staff setup) |
-| MODERATOR | Модератор TopDim | `frontend/admin-app` → `/login` |
-| ADMIN | Администратор TopDim | `frontend/admin-app` → `/login` |
+| MODERATOR | Модератор sizbiz | `frontend/admin-app` → `/login` |
+| ADMIN | Администратор sizbiz | `frontend/admin-app` → `/login` |
 
 ---
 

@@ -1,0 +1,16 @@
+@startuml
+!include <C4/C4_Dynamic>
+title Authentication and protected request
+Person(user, "User")
+Container(gateway, "API Gateway", "Spring Gateway", "JWT validation")
+Container(identity, "Identity", "Spring Boot", "Login/token issuance")
+ContainerDb(redis, "Redis", "Redis", "Attempts/blacklist/version")
+Container(service, "Downstream service", "Spring Boot", "Business API")
+RelIndex(1, user, gateway, "POST /auth/login", "HTTPS")
+RelIndex(2, gateway, identity, "Routes login", "HTTP")
+RelIndex(3, identity, redis, "Checks attempts/version", "RESP")
+RelIndex(4, identity, user, "Access and refresh JWT", "HTTPS/JSON")
+RelIndex(5, user, gateway, "Bearer access token", "HTTPS")
+RelIndex(6, gateway, redis, "Blacklist/securityVersion", "RESP")
+RelIndex(7, gateway, service, "X-User-* and X-Gateway-Auth", "HTTP")
+@enduml
