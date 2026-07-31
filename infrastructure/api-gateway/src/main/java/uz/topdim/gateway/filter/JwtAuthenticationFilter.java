@@ -63,7 +63,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/telegram",
             "/api/v1/auth/password-reset/request",
             "/api/v1/auth/password-reset/confirm",
-            "/api/v1/auth/confirm/email"
+            "/api/v1/auth/confirm/email",
+            "/api/v1/auth/phone/request",
+            "/api/v1/auth/phone/confirm",
+            "/api/v1/auth/google"
     );
 
     private static final List<String> OPEN_ENDPOINTS = List.of(

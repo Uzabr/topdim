@@ -262,6 +262,68 @@ class JwtAuthenticationFilterTest {
         verify(gatewayFilterChain, never()).filter(any());
     }
 
+    // ==================== T8: phone-OTP / google auth — новые open endpoints ====================
+
+    @Test
+    @DisplayName("T8: /api/v1/auth/phone/request без токена — open endpoint")
+    void phoneRequest_isOpen() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/auth/phone/request").build()
+        );
+
+        when(gatewayFilterChain.filter(any())).thenReturn(Mono.empty());
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        verify(gatewayFilterChain).filter(any());
+    }
+
+    @Test
+    @DisplayName("T8: /api/v1/auth/phone/confirm без токена — open endpoint")
+    void phoneConfirm_isOpen() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/auth/phone/confirm").build()
+        );
+
+        when(gatewayFilterChain.filter(any())).thenReturn(Mono.empty());
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        verify(gatewayFilterChain).filter(any());
+    }
+
+    @Test
+    @DisplayName("T8: /api/v1/auth/google без токена — open endpoint")
+    void googleAuth_isOpen() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/auth/google").build()
+        );
+
+        when(gatewayFilterChain.filter(any())).thenReturn(Mono.empty());
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        verify(gatewayFilterChain).filter(any());
+    }
+
+    @Test
+    @DisplayName("T8: /api/v1/auth/guest остаётся open endpoint (не удалён) — иначе 401 вместо 410 от identity")
+    void guest_stillOpen_notRemoved() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/auth/guest").build()
+        );
+
+        when(gatewayFilterChain.filter(any())).thenReturn(Mono.empty());
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        verify(gatewayFilterChain).filter(any());
+    }
+
     private String createToken(String subject, String role, String email, String jti, long securityVersion) {
         SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET));
         return Jwts.builder()
