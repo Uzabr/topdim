@@ -1,8 +1,10 @@
 name: CD — build & push images
 
-# Фаза 2: авто-сборка при мерже в main → образы в GHCR (:latest + :sha-<commit>).
-# Фаза 3: после сборки — авто-деплой ТОЛЬКО изменённых сервисов через EasyPanel
-# deploy-webhook (SSH forced-command на сервер, порт 3000 закрыт снаружи) + пред-деплой бэкап.
+# Сборка: авто при мерже в main → образы в GHCR (:latest + :sha-<commit>). CI валидирует каждый мерж.
+# Деплой: ТОЛЬКО вручную через workflow_dispatch (Actions → Run workflow), НЕ на push.
+#   Так «неправильный мерж» не уезжает в прод сам — прод обновляется только по явному запуску.
+#   Перед вызовом EasyPanel-вебхуков deploy-job проверяет вердикт PR-гейта и блокируется на FAIL.
+# Канал: EasyPanel deploy-webhook (SSH forced-command на сервер, порт 3000 закрыт снаружи).
 on:
   push:
     branches: [main]
@@ -129,7 +131,8 @@ jobs:
   detect-deploy:
     name: Detect services to deploy
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    # Только ручной запуск: на push деплой не идёт (прод обновляем осознанно).
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
     outputs:
@@ -238,10 +241,41 @@ jobs:
     name: Deploy changed services (EasyPanel webhooks)
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend, detect-deploy]
-    if: ${{ github.ref == 'refs/heads/main' && needs.detect-deploy.outputs.services != '' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && needs.detect-deploy.outputs.services != '' }}
     permissions:
       contents: read
+      pull-requests: read   # guard читает вердикт PR-гейта
     steps:
+      - name: Verify PR gate verdict (block on explicit FAIL)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Мягкий guard: деплой блокируется ТОЛЬКО при явном FAIL-вердикте PR-гейта
+          # у PR, из которого пришёл этот коммит main. Нет вердикта (гейт ещё не активен
+          # или прямой push) → деплой разрешён с предупреждением, чтобы не забетонировать
+          # доставку до активации гейта #78. Ужесточить (нет PASS → стоп) можно позже.
+          set +e
+          pr=$(gh api "repos/${REPO}/commits/${SHA}/pulls" \
+                 -H "Accept: application/vnd.github+json" --jq '.[0].number' 2>/dev/null)
+          if [ -z "$pr" ] || [ "$pr" = "null" ]; then
+            echo "::warning::Не нашёл PR для коммита ${SHA} — деплой без проверки вердикта гейта."
+            exit 0
+          fi
+          verdict=$(gh pr view "$pr" --repo "$REPO" --json comments \
+            --jq '[.comments[] | select(.author.login | endswith("[bot]")) | select(.body | test("## Вердикт:"))] | last | .body // ""' 2>/dev/null)
+          if printf '%s' "$verdict" | grep -q "## Вердикт: FAIL"; then
+            echo "::error::PR #${pr}: вердикт гейта FAIL — деплой заблокирован. Разберись перед деплоем."
+            exit 1
+          fi
+          if printf '%s' "$verdict" | grep -q "## Вердикт: PASS"; then
+            echo "PR #${pr}: вердикт гейта PASS — продолжаю."
+          else
+            echo "::warning::PR #${pr}: вердикта гейта нет — деплой без подтверждения (гейт #78 ещё не активен?)."
+          fi
+          exit 0
+
       - name: Trigger deploy over SSH (forced command)
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
