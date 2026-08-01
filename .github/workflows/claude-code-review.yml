@@ -63,7 +63,7 @@ jobs:
           additional_permissions: |
             actions: read
 
-          claude_args: '--allowed-tools "Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Read,Grep,Glob,Task"'
+          claude_args: '--allowed-tools "Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Read,Grep,Glob,Task"'
 
           prompt: |
             Ты запущен как гейт качества для pull request #${{ github.event.pull_request.number }}
@@ -92,8 +92,17 @@ jobs:
                Укажи его в отчёте. Если ветка не связана с задачей — это отдельное замечание,
                по правилам проекта PR должен ссылаться на задачу.
 
-            6. Опубликуй ОДИН комментарий к PR в формате из инструкции агента.
-               Первая строка — `## Вердикт: PASS` или `## Вердикт: FAIL`.
+            6. ОБЯЗАТЕЛЬНО опубликуй вердикт КОМАНДОЙ — claude-code-action сам комментарий
+               НЕ постит, поэтому без этого шага гейт увидит «нет вердикта» и упадёт.
+               Выполни ровно один такой Bash-вызов (тело — отчёт в формате из инструкции):
+
+                 gh pr comment ${{ github.event.pull_request.number }} --body-file - <<'MSG'
+                 ## Вердикт: FAIL
+                 ...остальной отчёт...
+                 MSG
+
+               Первая строка тела — строго `## Вердикт: PASS` или `## Вердикт: FAIL`
+               (по ней гейт определяет исход). Ровно ОДИН комментарий, не построчные.
 
             ГРАНИЦЫ
 
