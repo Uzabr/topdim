@@ -31,10 +31,11 @@ concurrency:
 jobs:
   claude-review:
     name: claude-review
-    # Черновики пропускаем. Ревью ботов тоже — иначе агент ревьюит сам себя.
+    # Гейт ревьюит ТОЛЬКО PR от коллаборатора shoxi0718. PR владельца (Uzabr) и всех
+    # прочих не ревьюятся — владелец сам себе ревьюер. Черновики тоже пропускаем.
     if: |
       github.event.pull_request.draft == false &&
-      github.event.pull_request.user.type != 'Bot'
+      github.event.pull_request.user.login == 'shoxi0718'
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -120,12 +121,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Берём последний вердикт ТОЛЬКО от бота ([bot]-логин): человек или внешний
-          # контрибьютор не может опубликоваться под [bot]-аккаунтом, поэтому подделать
-          # вердикт своим комментарием (например «## Вердикт: PASS») он не сможет.
-          verdict=$(gh pr view "$PR" --repo "${{ github.repository }}" \
-            --json comments \
-            --jq '[.comments[] | select(.author.login | endswith("[bot]")) | select(.body | test("## Вердикт:"))] | last | .body // ""')
+          # Берём последний вердикт ТОЛЬКО от бота. Используем REST (issues/comments),
+          # т.к. там есть user.type=="Bot" и логин с суффиксом [bot]; GraphQL
+          # (gh pr view --json comments) суффикс [bot] СРЕЗАЕТ — из-за этого фильтр
+          # раньше не матчил автора `claude`. Человек не может публиковаться ботом,
+          # поэтому подделать вердикт своим комментарием он не сможет.
+          verdict=$(gh api "repos/${{ github.repository }}/issues/${PR}/comments" \
+            --jq '[.[] | select(.user.type == "Bot") | select(.body | test("## Вердикт:"))] | last | .body // ""')
 
           if [ -z "$verdict" ]; then
             echo "::error::Агент не опубликовал вердикт. Проверка не пройдена — разбирайся вручную."
