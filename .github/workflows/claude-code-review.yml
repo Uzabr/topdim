@@ -31,11 +31,13 @@ concurrency:
 jobs:
   claude-review:
     name: claude-review
-    # Гейт ревьюит ТОЛЬКО PR от коллаборатора shoxi0718. PR владельца (Uzabr) и всех
-    # прочих не ревьюятся — владелец сам себе ревьюер. Черновики тоже пропускаем.
+    # Гейт ревьюит всех коллабораторов, КРОМЕ владельца Uzabr (сам себе ревьюер) и
+    # ботов (включая dependabot). Черновики по-прежнему отсекаются. Чёрный список
+    # вместо белого: новый коллаборатор автоматически под ревью, без ручного вайтлиста.
     if: |
       github.event.pull_request.draft == false &&
-      github.event.pull_request.user.login == 'shoxi0718'
+      github.event.pull_request.user.login != 'Uzabr' &&
+      github.event.pull_request.user.type != 'Bot'
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
