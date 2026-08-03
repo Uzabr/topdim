@@ -84,7 +84,7 @@
 - Produces: `npm test -- --run` and a jsdom environment available to every later frontend task.
 - Consumes: existing Vite/React configuration; no application behavior.
 
-- [ ] **Step 1: Add a smoke test that cannot run yet**
+- [x] **Step 1: Add a smoke test that cannot run yet**
 
 ```tsx
 // frontend/admin-app/src/test/smoke.test.tsx
@@ -99,13 +99,13 @@ describe('admin test environment', () => {
 });
 ```
 
-- [ ] **Step 2: Run RED and record the missing test command/dependencies**
+- [x] **Step 2: Run RED and record the missing test command/dependencies**
 
 Run: `cd frontend/admin-app && npm test -- --run`
 
 Expected: npm exits non-zero because `test` is not defined.
 
-- [ ] **Step 3: Install the exact test dependencies and add the script**
+- [x] **Step 3: Install the exact test dependencies and add the script**
 
 Run:
 
@@ -120,7 +120,7 @@ Add to `package.json`:
 "test": "vitest run"
 ```
 
-- [ ] **Step 4: Configure Vitest and storage**
+- [x] **Step 4: Configure Vitest and storage**
 
 ```ts
 // frontend/admin-app/vitest.config.ts
@@ -140,7 +140,7 @@ Copy the `MemoryStorage` implementation from `frontend/web-app/src/test/setup.ts
 into the new admin setup and stub `localStorage`. Add `vitest.config.ts` to the
 `include` array of `tsconfig.node.json`.
 
-- [ ] **Step 5: Run GREEN and frontend quality gates**
+- [x] **Step 5: Run GREEN and frontend quality gates**
 
 Run:
 
@@ -153,7 +153,7 @@ npm run build
 
 Expected: one smoke test passes; lint and build exit 0.
 
-- [ ] **Step 6: Commit and push the test foundation**
+- [x] **Step 6: Commit and push the test foundation**
 
 ```bash
 git add frontend/admin-app/package.json frontend/admin-app/package-lock.json frontend/admin-app/tsconfig.node.json frontend/admin-app/vitest.config.ts frontend/admin-app/src/test
@@ -183,7 +183,7 @@ git push origin admin/codex
 - Produces: staff-readable `GET /api/v1/admin/coupons/assignees` with distinct assigned moderator IDs and display names already stored on coupon records.
 - Consumes: existing `CouponOfferResponse` and descending `createdAt` sort.
 
-- [ ] **Step 1: Write repository RED tests for combined filters**
+- [x] **Step 1: Write repository RED tests for combined filters**
 
 Create an H2 `@DataJpaTest` extending `AbstractIntegrationTest`. Persist merchants
 `PizzaLab` and `Spa House`, then persist offers with statuses `LEAD`, `ACTIVE`, and
@@ -206,14 +206,14 @@ Persist 521 matching offers and request
 the deterministic records 501-520 and reports the full `totalElements`. This is
 the regression guard against the existing fixed 50/100/500 frontend limits.
 
-- [ ] **Step 2: Run RED for repository support**
+- [x] **Step 2: Run RED for repository support**
 
 Run: `./gradlew :services:coupon-service:test --tests '*CouponOfferAdminFilterTest' -x jacocoTestCoverageVerification`
 
 Expected: compilation fails because `AdminCouponFilter`, specifications, and
 `JpaSpecificationExecutor` support do not exist.
 
-- [ ] **Step 3: Implement the filter value and specification**
+- [x] **Step 3: Implement the filter value and specification**
 
 ```java
 public record AdminCouponFilter(
@@ -235,13 +235,13 @@ predicate = cb.and(predicate, cb.or(
 
 Extend `CouponOfferRepository` with `JpaSpecificationExecutor<CouponOffer>`.
 
-- [ ] **Step 4: Run repository GREEN**
+- [x] **Step 4: Run repository GREEN**
 
 Run: `./gradlew :services:coupon-service:test --tests '*CouponOfferAdminFilterTest' -x jacocoTestCoverageVerification`
 
 Expected: all filter cases pass.
 
-- [ ] **Step 5: Write controller RED tests for compatibility and validation**
+- [x] **Step 5: Write controller RED tests for compatibility and validation**
 
 Using `@WebMvcTest(AdminCouponController.class)` with `SecurityConfig`,
 `RoleHeaderAuthenticationFilter`, and `GlobalExceptionHandler`, assert with
@@ -268,13 +268,13 @@ expected status set for `statuses` and is never invoked for invalid bounds.
 Assert MODERATOR, ADMIN, and SUPER_ADMIN can read `/coupons/assignees`, and the
 response contains no account fields beyond `id` and `name`.
 
-- [ ] **Step 6: Run controller RED**
+- [x] **Step 6: Run controller RED**
 
 Run: `./gradlew :services:coupon-service:test --tests '*AdminCouponFilterControllerTest' -x jacocoTestCoverageVerification`
 
 Expected: new query parameters and bounded validation are absent.
 
-- [ ] **Step 7: Implement the compatible controller/service contract**
+- [x] **Step 7: Implement the compatible controller/service contract**
 
 Before constructing `PageRequest`, explicitly reject `page < 0`, `size < 1`, and
 `size > 100` with `IllegalArgumentException` so the existing
@@ -294,7 +294,7 @@ Add a distinct repository projection for non-null `assignedModeratorId` values,
 sorted by display name, and expose it through the controller. Do not call the
 SUPER_ADMIN-only identity staff endpoint from this workflow.
 
-- [ ] **Step 8: Run backend GREEN and full coupon-service regression**
+- [x] **Step 8: Run backend GREEN and full coupon-service regression**
 
 Run:
 
@@ -305,7 +305,7 @@ Run:
 
 Expected: focused tests and the full coupon-service suite pass.
 
-- [ ] **Step 9: Commit and push backend filtering**
+- [x] **Step 9: Commit and push backend filtering**
 
 ```bash
 git add services/coupon-service/src/main/java/uz/topdim/coupon/controller/AdminCouponController.java services/coupon-service/src/main/java/uz/topdim/coupon/dto/AdminCouponFilter.java services/coupon-service/src/main/java/uz/topdim/coupon/dto/CouponAssigneeResponse.java services/coupon-service/src/main/java/uz/topdim/coupon/repository/CouponOfferRepository.java services/coupon-service/src/main/java/uz/topdim/coupon/repository/CouponOfferSpecifications.java services/coupon-service/src/main/java/uz/topdim/coupon/service/CouponOfferService.java services/coupon-service/src/test/java/uz/topdim/coupon/controller/AdminCouponFilterControllerTest.java services/coupon-service/src/test/java/uz/topdim/coupon/repository/CouponOfferAdminFilterTest.java
@@ -332,7 +332,7 @@ git push origin admin/codex
 - Produces: `nextWorkspaceSearch(current, patch): URLSearchParams`.
 - Produces: `allowedCouponActions(coupon, user): CouponAction[]`.
 
-- [ ] **Step 1: Write URL-state RED tests**
+- [x] **Step 1: Write URL-state RED tests**
 
 Cover defaults, invalid values, page reset on tab change, filter preservation, and
 the exact published mapping:
@@ -356,13 +356,13 @@ published: ['ACTIVE', 'PAUSED', 'SOLD_OUT']
 archived: ['ARCHIVED']
 ```
 
-- [ ] **Step 2: Run state RED**
+- [x] **Step 2: Run state RED**
 
 Run: `cd frontend/admin-app && npm test -- src/features/coupons/workspace/state.test.ts`
 
 Expected: imports fail because the state module does not exist.
 
-- [ ] **Step 3: Implement minimal state types and functions**
+- [x] **Step 3: Implement minimal state types and functions**
 
 Use exact unions:
 
@@ -375,11 +375,11 @@ export type CouponAction = 'view' | 'take-to-work' | 'edit' | 'send-to-approval'
 
 Only accept page sizes `20 | 50 | 100`; debounce remains a UI concern.
 
-- [ ] **Step 4: Run state GREEN**
+- [x] **Step 4: Run state GREEN**
 
 Run: `cd frontend/admin-app && npm test -- src/features/coupons/workspace/state.test.ts`
 
-- [ ] **Step 5: Write permission RED tests**
+- [x] **Step 5: Write permission RED tests**
 
 Create one test per business rule, including ownership:
 
@@ -406,7 +406,7 @@ Use this exact matrix; `view` is always first and SUPER_ADMIN equals ADMIN:
 No role receives `delete` or `reject-request` because they are not workspace
 actions in the approved design.
 
-- [ ] **Step 6: Implement and verify the permission matrix**
+- [x] **Step 6: Implement and verify the permission matrix**
 
 Run RED, implement one exhaustive `switch (coupon.status)`, then run:
 
@@ -416,7 +416,7 @@ npm test -- src/features/coupons/workspace/permissions.test.ts
 npm run lint
 ```
 
-- [ ] **Step 7: Commit and push the pure workspace model**
+- [x] **Step 7: Commit and push the pure workspace model**
 
 ```bash
 git add frontend/admin-app/src/features/coupons/workspace
@@ -445,7 +445,7 @@ git push origin admin/codex
 - Produces: canonical route components and compatibility redirects.
 - Produces: one menu entry with key `/coupons`.
 
-- [ ] **Step 1: Write redirect RED tests**
+- [x] **Step 1: Write redirect RED tests**
 
 Render `LegacyCouponRedirect` inside `MemoryRouter` and assert final locations for
 all six mappings from the design spec, including edit ID preservation.
@@ -464,14 +464,14 @@ expect(screen.getByTestId('location').textContent)
   .toBe('/coupons/42/edit');
 ```
 
-- [ ] **Step 2: Run RED, implement redirects, run GREEN**
+- [x] **Step 2: Run RED, implement redirects, run GREEN**
 
 Run: `cd frontend/admin-app && npm test -- LegacyCouponRedirect.test.tsx`
 
 Use `useParams`, `useLocation`, and `<Navigate replace>`; never concatenate an
 unvalidated query supplied by a legacy route.
 
-- [ ] **Step 3: Write workspace-shell RED test**
+- [x] **Step 3: Write workspace-shell RED test**
 
 Assert the page renders heading `Купоны`, six tabs, `Таблица`, `Kanban`, and
 `Создать купон`, and that changing a tab updates the URL while preserving
@@ -480,19 +480,19 @@ Assert the page renders heading `Купоны`, six tabs, `Таблица`, `Kan
 `/api/v1/admin/coupons/assignees`; neither filter is built from the incomplete
 current coupon page.
 
-- [ ] **Step 4: Implement shell, toolbar, and tabs**
+- [x] **Step 4: Implement shell, toolbar, and tabs**
 
 Use `useSearchParams`; debounce the visible search input by 300 ms before writing
 `search` to the URL. Persist the selected table size as `size=20|50|100` and
 normalize any other value to 20. Navigate create CTA to `/coupons/new`.
 
-- [ ] **Step 5: Replace routes and menu**
+- [x] **Step 5: Replace routes and menu**
 
 Add canonical routes under the existing staff `ProtectedRoute`; add legacy
 redirect routes; remove four separate coupon menu children and expose one
 `Купоны` child. Update form back/success navigation to canonical paths.
 
-- [ ] **Step 6: Verify route behavior and frontend build**
+- [x] **Step 6: Verify route behavior and frontend build**
 
 ```bash
 cd frontend/admin-app
@@ -501,7 +501,7 @@ npm run lint
 npm run build
 ```
 
-- [ ] **Step 7: Commit and push canonical navigation**
+- [x] **Step 7: Commit and push canonical navigation**
 
 ```bash
 git add frontend/admin-app/src/App.tsx frontend/admin-app/src/components/layout/AdminLayout.tsx frontend/admin-app/src/features/coupons
@@ -526,17 +526,17 @@ git push origin admin/codex
 - Consumes: backend query contract from Task 2 and state mapping from Task 3.
 - Produces: table callbacks `onPageChange(page, pageSize)` and `onAction(coupon, action)`.
 
-- [ ] **Step 1: Write API parameter RED tests**
+- [x] **Step 1: Write API parameter RED tests**
 
 Spy on `api.get` and prove `published` sends `statuses=ACTIVE,PAUSED,SOLD_OUT`,
 while `new` sends `status=LEAD`, plus trimmed search and numeric filters.
 
-- [ ] **Step 2: Implement the typed API helper and observe GREEN**
+- [x] **Step 2: Implement the typed API helper and observe GREEN**
 
 The helper must omit empty parameters and use the query key prefix
 `['admin-coupons', 'workspace']` in callers.
 
-- [ ] **Step 3: Write table RED tests**
+- [x] **Step 3: Write table RED tests**
 
 Cover:
 
@@ -551,14 +551,14 @@ Cover:
   last successful load time;
 - successful empty page renders the tab-specific empty text.
 
-- [ ] **Step 4: Implement the minimal table and query state**
+- [x] **Step 4: Implement the minimal table and query state**
 
 Use `placeholderData` to retain the last valid page. Show an `Alert` when
 `isError`, a stale-data warning when retained data is visible, and the backend
 error message when present. Keep 401 handling delegated to the existing shared
 Axios refresh interceptor; do not add a second refresh loop inside the workspace.
 
-- [ ] **Step 5: Verify table behavior and quality gates**
+- [x] **Step 5: Verify table behavior and quality gates**
 
 ```bash
 cd frontend/admin-app
@@ -567,7 +567,7 @@ npm run lint
 npm run build
 ```
 
-- [ ] **Step 6: Commit and push the table view**
+- [x] **Step 6: Commit and push the table view**
 
 ```bash
 git add frontend/admin-app/src/features/coupons/workspace
@@ -590,7 +590,7 @@ git push origin admin/codex
 - Produces: four operational columns for `LEAD`, `DRAFT`, `REVISION_REQUESTED`, and `WAITING_FOR_MERCHANT`.
 - Produces: independent `fetchNextPage` per column with page size 20.
 
-- [ ] **Step 1: Write Kanban RED tests**
+- [x] **Step 1: Write Kanban RED tests**
 
 Mock two pages for `LEAD` and one page for other columns. Assert:
 
@@ -604,11 +604,11 @@ expect(api.get).toHaveBeenCalledWith('/api/v1/admin/coupons',
 
 Also prove one failed column shows its own retry without hiding successful columns.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `cd frontend/admin-app && npm test -- CouponKanbanView.test.tsx`
 
-- [ ] **Step 3: Implement one infinite query per column**
+- [x] **Step 3: Implement one infinite query per column**
 
 Use `useInfiniteQuery` with:
 
@@ -623,7 +623,7 @@ Flatten only the pages of the current column. Do not fetch published/archive
 statuses in Kanban. When the selected tab is not operational, the workspace
 automatically displays the table and updates `view=table`.
 
-- [ ] **Step 4: Run GREEN, lint, and build**
+- [x] **Step 4: Run GREEN, lint, and build**
 
 ```bash
 cd frontend/admin-app
@@ -632,7 +632,7 @@ npm run lint
 npm run build
 ```
 
-- [ ] **Step 5: Commit and push paginated Kanban**
+- [x] **Step 5: Commit and push paginated Kanban**
 
 ```bash
 git add frontend/admin-app/src/features/coupons/workspace
@@ -663,7 +663,7 @@ git push origin admin/codex
 - Changes: moderator send-to-approval and edit operations require exact ownership, including rejecting unassigned or another moderator's coupon.
 - Produces: support review restricted to `ADMIN`/`SUPER_ADMIN` with a non-blank reason and actor-aware logging.
 
-- [ ] **Step 1: Write controller security RED tests**
+- [x] **Step 1: Write controller security RED tests**
 
 Using `@WebMvcTest`, `SecurityConfig`, and `RoleHeaderAuthenticationFilter`,
 assert:
@@ -675,7 +675,7 @@ assert:
 - review moderation remains available to MODERATOR;
 - calls that pass security forward `X-User-Id` and `X-User-Role` to the service.
 
-- [ ] **Step 2: Run controller security RED**
+- [x] **Step 2: Run controller security RED**
 
 Run:
 
@@ -686,7 +686,7 @@ Run:
 Expected: MODERATOR can currently reach privileged coupon mutations and support
 review.
 
-- [ ] **Step 3: Write service RED tests for transitions, ownership, and reason**
+- [x] **Step 3: Write service RED tests for transitions, ownership, and reason**
 
 Assert:
 
@@ -700,7 +700,7 @@ Assert:
 - ADMIN/SUPER_ADMIN can edit/send any eligible coupon;
 - blank support reason is rejected before state transition and notification.
 
-- [ ] **Step 4: Implement the minimum backend enforcement**
+- [x] **Step 4: Implement the minimum backend enforcement**
 
 Apply method-level role restrictions to the privileged controller methods. Pass
 actor ID and role from `send-to-approval` into the service and centralize the
@@ -709,7 +709,7 @@ work as the only `LEAD -> DRAFT` path. In `reviewCoupon`, trim and require the
 reason, then log actor ID, coupon ID, decision, and reason only after the state
 transition succeeds.
 
-- [ ] **Step 5: Run focused and full backend GREEN**
+- [x] **Step 5: Run focused and full backend GREEN**
 
 ```bash
 ./gradlew :services:coupon-service:test --tests '*AdminCouponActionSecurityTest' --tests '*ModCouponReviewSecurityTest' -x jacocoTestCoverageVerification
@@ -718,7 +718,7 @@ transition succeeds.
 ./gradlew :services:coupon-service:test
 ```
 
-- [ ] **Step 6: Commit and push backend action enforcement**
+- [x] **Step 6: Commit and push backend action enforcement**
 
 ```bash
 git add services/coupon-service/src/main/java/uz/topdim/coupon/controller/AdminCouponController.java services/coupon-service/src/main/java/uz/topdim/coupon/controller/ModCouponController.java services/coupon-service/src/main/java/uz/topdim/coupon/service/CouponOfferService.java services/coupon-service/src/main/java/uz/topdim/coupon/service/ModCouponService.java services/coupon-service/src/test/java/uz/topdim/coupon/controller/AdminCouponActionSecurityTest.java services/coupon-service/src/test/java/uz/topdim/coupon/controller/ModCouponReviewSecurityTest.java services/coupon-service/src/test/java/uz/topdim/coupon/service/CouponOfferServiceBusinessLogicTest.java services/coupon-service/src/test/java/uz/topdim/coupon/service/CouponOfferServiceTest.java services/coupon-service/src/test/java/uz/topdim/coupon/service/ModCouponServiceTest.java
@@ -742,7 +742,7 @@ git push origin admin/codex
 - Produces: one action component used by both views.
 - Produces: no standalone support queue or menu item.
 
-- [ ] **Step 1: Write frontend RED tests for the complete matrix**
+- [x] **Step 1: Write frontend RED tests for the complete matrix**
 
 Assert table and Kanban render identical actions for every status/role/ownership
 case from the design. Specifically, a moderator waiting coupon has only
@@ -756,11 +756,11 @@ disabled; a valid reason sends:
 Assert moderator never sees pause, restore, archive, delete, reject-request, or
 support actions.
 
-- [ ] **Step 2: Run frontend RED**
+- [x] **Step 2: Run frontend RED**
 
 Run: `cd frontend/admin-app && npm test -- CouponActionMenu.test.tsx`
 
-- [ ] **Step 3: Implement the shared action component**
+- [x] **Step 3: Implement the shared action component**
 
 Use the dedicated take/send endpoints, generic status only for admin pause and
 restore, archive only for eligible admin statuses, and support review only from
@@ -768,13 +768,13 @@ restore, archive only for eligible admin statuses, and support review only from
 not expose reject or delete in this workspace. Do not optimistically change
 status.
 
-- [ ] **Step 4: Cover mutation failures**
+- [x] **Step 4: Cover mutation failures**
 
 Add tests proving 403 explains missing permission without retry, 404 reports a
 stale/deleted coupon, and 409 shows the backend conflict then invalidates
 `['admin-coupons', 'workspace']` so ownership/status refreshes.
 
-- [ ] **Step 5: Run frontend GREEN and quality gates**
+- [x] **Step 5: Run frontend GREEN and quality gates**
 
 ```bash
 cd frontend/admin-app
@@ -783,7 +783,7 @@ npm run lint
 npm run build
 ```
 
-- [ ] **Step 6: Commit and push shared actions**
+- [x] **Step 6: Commit and push shared actions**
 
 ```bash
 git add frontend/admin-app/src/features/coupons/workspace/CouponActionMenu.tsx frontend/admin-app/src/features/coupons/workspace/CouponActionMenu.test.tsx frontend/admin-app/src/features/coupons/workspace/CouponTableView.tsx frontend/admin-app/src/features/coupons/workspace/CouponKanbanView.tsx
@@ -821,7 +821,7 @@ git push origin admin/codex
 - Produces: buyer/admin “Купон” copy and partner “Предложение” copy.
 - Preserves: technical identifiers, API paths, entity names, and merchant-authored descriptions.
 
-- [ ] **Step 1: Write a source-copy contract and observe RED**
+- [x] **Step 1: Write a source-copy contract and observe RED**
 
 The Vitest test reads the explicitly listed active source files with `node:fs`.
 Assert admin/partner interface literals do not contain
@@ -837,7 +837,7 @@ Run: `cd frontend/admin-app && npm test -- terminology.test.ts`
 Expected: failures point to current `Мои акции`, `Заявка на акцию`, and related
 active UI copy.
 
-- [ ] **Step 2: Replace copy according to the approved dictionary**
+- [x] **Step 2: Replace copy according to the approved dictionary**
 
 Use exact replacements:
 
@@ -859,7 +859,7 @@ packages, storage keys, email domains, database identifiers, or historical
 documents. Backend validation responses and notifications are user-facing copy,
 so update them. Do not change log-only technical wording in this task.
 
-- [ ] **Step 3: Run terminology GREEN and all affected frontend checks**
+- [x] **Step 3: Run terminology GREEN and all affected frontend checks**
 
 ```bash
 cd frontend/admin-app
@@ -877,7 +877,7 @@ cd ../..
 ./gradlew :services:coupon-service:test
 ```
 
-- [ ] **Step 4: Commit and push terminology**
+- [x] **Step 4: Commit and push terminology**
 
 ```bash
 git add frontend/admin-app/src/components/layout/AdminLayout.tsx frontend/admin-app/src/features/auth/LoginPage.tsx frontend/admin-app/src/features/coupons/CouponFormPage.tsx frontend/admin-app/src/features/coupons/workspace/terminology.test.ts frontend/admin-app/src/features/coupons/workspace/CouponWorkspacePage.tsx frontend/admin-app/src/features/coupons/workspace/CouponWorkspaceToolbar.tsx frontend/admin-app/src/features/coupons/workspace/CouponStatusTabs.tsx frontend/admin-app/src/features/coupons/workspace/CouponTableView.tsx frontend/admin-app/src/features/coupons/workspace/CouponKanbanView.tsx frontend/admin-app/src/features/coupons/workspace/CouponActionMenu.tsx frontend/partner/src/layouts/PartnerLayout.tsx frontend/partner/src/pages/CouponRequestFormPage.tsx frontend/partner/src/pages/CouponsPage.tsx frontend/partner/src/pages/CouponApprovalPage.tsx frontend/partner/src/pages/LoginPage.tsx frontend/partner/src/pages/RedeemPage.tsx frontend/web-app/src/locales/ru.json frontend/web-app/src/locales/uz.json frontend/web-app/src/pages/legal/partners/PartnerLandingPage.tsx services/coupon-service/src/main/java/uz/topdim/coupon/controller/PartnerCouponController.java services/coupon-service/src/main/java/uz/topdim/coupon/dto/CreateCouponOfferRequest.java services/coupon-service/src/main/java/uz/topdim/coupon/dto/CreatePartnerCouponRequest.java services/coupon-service/src/main/java/uz/topdim/coupon/service/CouponOfferService.java services/coupon-service/src/main/java/uz/topdim/coupon/service/PartnerCouponService.java
@@ -904,20 +904,22 @@ git push origin admin/codex
 - Produces: no imports or menu/routes pointing to retired pages.
 - Produces: active documentation matching canonical routes, terminology, roles, and server pagination.
 
-- [ ] **Step 1: Write/extend a route regression test before deletion**
+- [x] **Step 1: Write/extend a route regression test before deletion**
 
 Assert every legacy URL reaches the workspace or canonical form and no route
 renders old headings `Все купоны`, `Канбан купонов`, `Заявки на акции от
 партнёров`, or `Ожидают подтверждения мерчанта` as standalone pages.
 
-- [ ] **Step 2: Run RED while legacy imports/pages still exist**
+- [x] **Step 2: Record the user-approved GREEN characterization baseline**
 
 Run: `cd frontend/admin-app && npm test -- LegacyCouponRedirect.test.tsx`
 
-Expected: the new “no standalone legacy page” assertion fails until imports and
-old route elements are removed.
+The originally specified RED is not applicable: before Task 10, the four pages
+were already orphaned and all legacy routes already rendered `LegacyCouponRedirect`.
+The user approved a GREEN behavioral characterization baseline instead; see the
+dated execution evidence below.
 
-- [ ] **Step 3: Remove legacy imports/files and update active docs**
+- [x] **Step 3: Remove legacy imports/files and update active docs**
 
 Delete only the four replaced pages. Keep `CouponFormPage` and publication
 readiness helpers. Update roles and coupon flow with:
@@ -928,7 +930,7 @@ readiness helpers. Update roles and coupon flow with:
 - ADMIN/SUPER_ADMIN support decision requiring a reason;
 - partner language “предложение” and buyer/admin language “купон”.
 
-- [ ] **Step 4: Run fresh full verification**
+- [x] **Step 4: Run fresh full verification**
 
 ```bash
 cd frontend/admin-app
@@ -951,14 +953,14 @@ git status --short
 Expected: all available test suites, lints, and builds exit 0; deleted files have
 no remaining imports; only Task 10 files are uncommitted.
 
-- [ ] **Step 5: Review requirements line by line**
+- [x] **Step 5: Review requirements line by line**
 
 Compare the diff with
 `docs/superpowers/specs/2026-08-03-coupon-workspace-and-terminology-design.md`.
 Record each verification command and result at the end of this plan. Do not mark
 the project complete while any criterion lacks evidence.
 
-- [ ] **Step 6: Commit and push final cleanup**
+- [x] **Step 6: Commit final cleanup (push is controller-owned)**
 
 ```bash
 git add frontend/admin-app/src/features/coupons/CouponsListPage.tsx frontend/admin-app/src/features/coupons/CouponKanbanPage.tsx frontend/admin-app/src/features/coupon-requests/CouponRequestsPage.tsx frontend/admin-app/src/features/coupons/MerchantReviewPage.tsx frontend/admin-app/src/features/coupons/workspace/LegacyCouponRedirect.test.tsx docs/product/roles.md docs/product/flows/coupon-flow.md docs/superpowers/plans/2026-08-03-coupon-workspace-and-terminology.md
@@ -979,3 +981,11 @@ local commits, remote synchronization, CI status, and PR/merge state.
 
 Append dated evidence here during execution. Each entry must include task number,
 RED command/result, GREEN command/result, commit SHA, and push confirmation.
+
+### 2026-08-04 — Task 10
+
+- **Approved RED deviation / baseline:** The required pre-deletion RED could not be observed without adding a fake source/file-existence assertion. Before this task, `rg` found no imports of the four legacy page components and `App.tsx` already routed every legacy URL through `LegacyCouponRedirect`. The user approved a behavioral characterization instead. After extending `LegacyCouponRedirect.test.tsx`, `cd frontend/admin-app && npm test -- LegacyCouponRedirect.test.tsx` exited 0: **1 file, 17 tests passed**. It verifies all six legacy URLs reach their canonical URLs and none renders the four former standalone headings.
+- **GREEN cleanup:** Deleted only `CouponsListPage.tsx`, `CouponKanbanPage.tsx`, `CouponRequestsPage.tsx`, and `MerchantReviewPage.tsx`; retained `CouponFormPage` and publication-readiness helpers. Updated active role and coupon-flow documentation for `/coupons`, six tabs, server pagination, Kanban's 20-record column pages, terminology, and the MODERATOR/ADMIN support-decision boundary.
+- **Full regression:** `cd frontend/admin-app && npm test -- --run` — 11 files, 123 tests passed; `npm run lint` — exit 0; `npm run build` — exit 0 (existing chunk-size warning only). `cd frontend/partner && npm run lint` — exit 0; `npm run build` — exit 0 (existing chunk-size warning only). `cd frontend/web-app && npm test -- --run` — 22 files, 149 tests passed; `npm run lint` — exit 0 (one pre-existing `CouponCatalogPage.tsx` exhaustive-deps warning); `npm run build` — exit 0 (existing chunk-size warning only). `./gradlew :services:coupon-service:test` — BUILD SUCCESSFUL, exit 0.
+- **Diff and scope review:** `rg` import check for all four retired page components returned no matches; `git diff --check` exited 0. The diff is restricted to the four deletions, `LegacyCouponRedirect.test.tsx`, the two active product documents, and this plan. Requirements reviewed against `docs/superpowers/specs/2026-08-03-coupon-workspace-and-terminology-design.md`: canonical redirects retained; six-tab/table/Kanban behavior documented; partner uses “предложение”; buyer/admin use “купон”; MODERATOR only views `WAITING_FOR_MERCHANT`; ADMIN/SUPER_ADMIN support decision requires a reason.
+- **Delivery:** commit SHA `PENDING — this plan is included in the final cleanup commit`; push **not run by design** (controller-owned after independent review and external-export approval).

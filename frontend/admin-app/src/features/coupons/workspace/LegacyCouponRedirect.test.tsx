@@ -52,6 +52,13 @@ const redirectCases: RedirectCase[] = [
   },
 ];
 
+const legacyStandaloneHeadings = [
+  'Все купоны',
+  'Канбан купонов',
+  'Заявки на акции от партнёров',
+  'Ожидают подтверждения мерчанта',
+];
+
 function LocationProbe() {
   const location = useLocation();
   return <output data-testid="location">{location.pathname}{location.search}</output>;
@@ -76,6 +83,15 @@ describe('legacy coupon redirects', () => {
     renderRedirect(testCase);
 
     expect(screen.getByTestId('location').textContent).toBe(testCase.expected);
+  });
+
+  it.each(redirectCases)('does not render standalone legacy headings for $from', (testCase) => {
+    renderRedirect(testCase);
+
+    expect(screen.getByTestId('location').textContent).toBe(testCase.expected);
+    for (const heading of legacyStandaloneHeadings) {
+      expect(screen.queryByRole('heading', { name: heading })).toBeNull();
+    }
   });
 
   it.each(['0', '-1', 'not-a-number', '9007199254740992'])(
