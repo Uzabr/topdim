@@ -13,6 +13,7 @@ import uz.topdim.identity.entity.User;
 import uz.topdim.identity.exception.AuthException;
 import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.UserRepository;
+import uz.topdim.identity.security.GoogleTokenVerifier;
 import uz.topdim.identity.security.JwtService;
 import uz.topdim.identity.security.TelegramLoginVerifier;
 
@@ -22,8 +23,10 @@ import java.util.UUID;
 
 /**
  * Сервис аутентификации.
- * Регистрация, логин, refresh, logout, change password, guest auth.
+ * Регистрация, логин, refresh, logout, change password, phone-OTP вход/восстановление.
  * (Outbox pattern удалён — профиль создаётся в той же БД.)
+ * <p>Гостевой вход (небезопасный, без проверки владения) депрекирован в T5 —
+ * см. {@code AuthController#guestAuth} (410 Gone); бизнес-логика удалена отсюда.
  */
 @Slf4j
 @Service
@@ -38,6 +41,10 @@ public class AuthService {
     private final TokenBlacklistService tokenBlacklistService;
     private final SecurityVersionService securityVersionService;
     private final TelegramLoginVerifier telegramLoginVerifier;
+    private final TrustService trustService;
+    private final OtpService otpService;
+    private final AccountResolutionService accountResolutionService;
+    private final GoogleTokenVerifier googleTokenVerifier;
 
     /**
      * Регистрация нового пользователя.
@@ -219,39 +226,28 @@ public class AuthService {
     }
 
     /**
-     * Гостевая аутентификация (Silent Registration).
-     * Создаёт пользователя с ролью GUEST если ещё не существует.
+     * Телефон-OTP вход (T5). Единый путь вход/регистрация/восстановление по спеку:
+     * {@link AccountResolutionService#resolveByPhone(String)} находит существующего
+     * пользователя ИЛИ создаёт нового (phone уже доказан успешным OTP).
+     * <p>Гонка find→save при создании не обрабатывается отдельно: OTP одноразовый
+     * ({@link OtpService#verifyOtp} удаляет ключ при первом успехе), поэтому повторный
+     * confirm с тем же кодом падает на verifyOtp раньше resolveByPhone.
      */
     @Transactional
-    public AuthResponse guestAuth(GuestAuthRequest request) {
-        String normalizedPhone = normalizePhone(request.getPhone());
-        User user = userRepository.findByPhone(normalizedPhone).orElse(null);
-
-        if (user == null) {
-            String guestEmail = "guest_" + normalizedPhone + "@topdim.uz";
-            user = User.builder()
-                    .email(guestEmail)
-                    .phone(normalizedPhone)
-                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
-                    .firstName(request.getName())
-                    .role(Role.GUEST)
-                    .enabled(true)
-                    .emailVerified(false)
-                    .phoneVerified(false)
-                    .build();
-            user = userRepository.save(user);
-
-            log.info("SECURITY: Guest user created: phone={}", maskPhone(normalizedPhone));
-        } else {
-            if (user.getRole() != Role.GUEST) {
-                throw new AuthException("Этот номер уже привязан к зарегистрированному пользователю");
-            }
-            if (!user.isEnabled() || user.isDeleted()) {
-                throw new AuthException("Гостевой аккаунт заблокирован");
-            }
-            refreshTokenRepository.revokeAllByUser(user);
-            log.info("SECURITY: Guest auth for existing guest user: phone={}", maskPhone(normalizedPhone));
+    public AuthResponse phoneAuth(String phone, String code) {
+        if (!otpService.verifyOtp(phone, code)) {
+            throw new AuthException("Неверный или просроченный код");
         }
+
+        User user = accountResolutionService.resolveByPhone(phone);
+
+        if (!user.isEnabled() || user.isDeleted()) {
+            throw new AuthException("Аккаунт недоступен");
+        }
+
+        refreshTokenRepository.revokeAllByUser(user);
+
+        log.info("SECURITY: Phone OTP auth for userId: {}", user.getId());
 
         return buildAuthResponse(user);
     }
@@ -299,12 +295,41 @@ public class AuthService {
         return buildAuthResponse(user);
     }
 
+    /**
+     * Авторизация/регистрация через Google (ID-token из Google Identity Services).
+     * Верификация токена — {@link GoogleTokenVerifier#verify(String)} (бросает
+     * {@link AuthException} при невалидном/просроченном токене). Резолюция аккаунта
+     * (по google_sub → вход; по подтверждённому email → привязка; иначе — создание)
+     * полностью в {@link AccountResolutionService#resolveByGoogle}, логика не дублируется.
+     * Как и в {@code phoneAuth}: сервис не знает, новый пользователь или существующий,
+     * поэтому revoke старых refresh-токенов безусловен (для нового пользователя — no-op).
+     */
+    @Transactional
+    public AuthResponse googleAuth(String idToken) {
+        GoogleIdentity identity = googleTokenVerifier.verify(idToken);
+
+        User user = accountResolutionService.resolveByGoogle(
+                identity.sub(), identity.email(), identity.emailVerified());
+
+        if (!user.isEnabled() || user.isDeleted()) {
+            throw new AuthException("Аккаунт недоступен");
+        }
+
+        refreshTokenRepository.revokeAllByUser(user);
+
+        log.info("SECURITY: Google auth for userId: {}", user.getId());
+
+        return buildAuthResponse(user);
+    }
+
     private static String nonBlankOr(String value, String fallback) {
         return value != null && !value.isBlank() ? value : fallback;
     }
 
     /**
      * Формирует ответ аутентификации.
+     * trustLevel — вычисляется через {@link TrustService} (phone_verified || paidAt != null),
+     * НЕ читается из хранимой колонки {@code user.trustLevel} (deprecated, не источник правды).
      */
     private AuthResponse buildAuthResponse(User user) {
         String accessToken = jwtService.generateAccessToken(user);
@@ -323,6 +348,7 @@ public class AuthService {
                         .lastName(user.getLastName())
                         .role(user.getRole().name())
                         .avatarUrl(user.getAvatarUrl())
+                        .trustLevel(trustService.computeTrustLevel(user).name())
                         .build())
                 .build();
     }
@@ -343,11 +369,6 @@ public class AuthService {
         int at = email.indexOf('@');
         if (at <= 1) return "***" + email.substring(at);
         return email.charAt(0) + "***" + email.substring(at);
-    }
-
-    private String maskPhone(String phone) {
-        if (phone == null || phone.length() < 4) return "***";
-        return "***" + phone.substring(phone.length() - 4);
     }
 
     private String normalizeEmail(String email) {

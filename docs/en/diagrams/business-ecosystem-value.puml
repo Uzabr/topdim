@@ -1,0 +1,23 @@
+@startuml
+title sizbiz — ecosystem value
+left to right direction
+skinparam componentStyle rectangle
+
+actor "Buyer" as buyer
+actor "Local business" as merchant
+actor "sizbiz team" as team
+rectangle "sizbiz\nlocal offers" as platform
+
+buyer --> platform : discovers, buys,\nuses
+platform --> buyer : clear terms,\nQR/PIN, support
+merchant --> platform : offer,\nlocations, fulfillment
+platform --> merchant : audience,\nsales and redemption records
+team --> platform : preparation,\nmoderation, operations
+platform --> team : statuses,\ncases, audit
+
+note bottom of platform
+Impact intention:
+value for people, growth for business,
+benefit for the local community
+end note
+@enduml

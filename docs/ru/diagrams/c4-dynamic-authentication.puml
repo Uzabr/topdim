@@ -1,0 +1,16 @@
+@startuml
+!include <C4/C4_Dynamic>
+title Аутентификация и защищённый запрос
+Person(user, "Пользователь")
+Container(gateway, "API Gateway", "Spring Gateway", "JWT validation")
+Container(identity, "Identity", "Spring Boot", "Login/token issuance")
+ContainerDb(redis, "Redis", "Redis", "Attempts/blacklist/version")
+Container(service, "Downstream service", "Spring Boot", "Business API")
+RelIndex(1, user, gateway, "POST /auth/login", "HTTPS")
+RelIndex(2, gateway, identity, "Передаёт login", "HTTP")
+RelIndex(3, identity, redis, "Проверяет attempts/version", "RESP")
+RelIndex(4, identity, user, "Access + refresh JWT", "HTTPS/JSON")
+RelIndex(5, user, gateway, "Bearer access token", "HTTPS")
+RelIndex(6, gateway, redis, "Blacklist/securityVersion", "RESP")
+RelIndex(7, gateway, service, "X-User-* + X-Gateway-Auth", "HTTP")
+@enduml

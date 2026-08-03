@@ -1,44 +1,142 @@
 name: Claude Code Review
 
+# Гейт качества для pull request'ов SizBiz.
+#
+# Что делает: запускает агента pr-gatekeeper, который знает правила этого проекта,
+# делегирует специализированным ревьюерам из .claude/agents/ и выносит вердикт
+# PASS или FAIL в комментарий к PR.
+#
+# Чего НЕ делает: не аппрувит PR. Approve всегда жмёт человек.
+#
+# Чтобы вердикт реально блокировал мерж, включи в GitHub:
+#   Settings -> Branches -> Add rule на основную ветку
+#   - Require a pull request before merging (минимум 1 approval)
+#   - Require status checks to pass -> отметить "Claude Code Review / claude-review"
+#   - Require branches to be up to date before merging
+#   - Do not allow bypassing the above settings
+#   - Запретить force-push
+
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
+    # opened — PR, открытый сразу как «ready»; ready_for_review — когда черновик становится готовым.
+    # Черновики отсекает `if: draft == false` ниже. Без opened готовый PR без последующих
+    # пушей ушёл бы в мерж вообще без ревью.
+    types: [opened, ready_for_review, synchronize, reopened]
+
+# Новый пуш в ветку отменяет предыдущий прогон — не платим за устаревшие ревью
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    name: claude-review
+    # Гейт ревьюит ТОЛЬКО PR от коллаборатора shoxi0718. PR владельца (Uzabr) и всех
+    # прочих не ревьюятся — владелец сам себе ревьюер. Черновики тоже пропускаем.
+    if: |
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.user.login == 'shoxi0718'
 
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write   # было read — без write агент не может опубликовать вердикт
       issues: read
+      checks: write          # для статуса проверки
+      actions: read          # чтобы агент видел результаты CI
       id-token: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          fetch-depth: 1
+          # Полная история нужна, чтобы получить корректный diff против базовой ветки
+          fetch-depth: 0
 
-      - name: Run Claude Code Review
+      - name: Run PR gatekeeper
         id: claude-review
         uses: anthropics/claude-code-action@51705da45eecce209d4700538bf8377d5b5fc695 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
-          plugins: 'code-review@claude-code-plugins'
-          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://code.claude.com/docs/en/cli-reference for available options
 
+          additional_permissions: |
+            actions: read
+
+          claude_args: '--allowed-tools "Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Read,Grep,Glob,Task"'
+
+          prompt: |
+            Ты запущен как гейт качества для pull request #${{ github.event.pull_request.number }}
+            в репозитории ${{ github.repository }}.
+
+            Ветка: ${{ github.event.pull_request.head.ref }}
+            Автор: ${{ github.event.pull_request.user.login }}
+
+            ЧТО СДЕЛАТЬ
+
+            1. Прочитай инструкцию агента `.claude/agents/pr-gatekeeper.md` и действуй строго по ней.
+               Она задаёт критерии, формат вывода и правило «сомневаешься — FAIL».
+
+            2. Загрузи контекст проекта: `CLAUDE.md`, все файлы `.claude/rules/`,
+               `docs/scrum/04-definition-of-done.md`.
+
+            3. Получи диф: `gh pr diff ${{ github.event.pull_request.number }}`.
+               Смотри только изменённые файлы, но при необходимости читай соседний код,
+               чтобы понять контекст изменения.
+
+            4. Определи, каких специалистов звать, и делегируй им через Task:
+               senior-java-reviewer, security-reviewer, devops-reviewer, business-logic-tester.
+               Маршрутизация описана в инструкции агента. Не ревьюй всё сам.
+
+            5. Из имени ветки вытащи ключ задачи Linear по шаблону `siz-<число>`.
+               Укажи его в отчёте. Если ветка не связана с задачей — это отдельное замечание,
+               по правилам проекта PR должен ссылаться на задачу.
+
+            6. ОБЯЗАТЕЛЬНО опубликуй вердикт КОМАНДОЙ — claude-code-action сам комментарий
+               НЕ постит, поэтому без этого шага гейт увидит «нет вердикта» и упадёт.
+               Выполни ровно один такой Bash-вызов (тело — отчёт в формате из инструкции):
+
+                 gh pr comment ${{ github.event.pull_request.number }} --body-file - <<'MSG'
+                 ## Вердикт: FAIL
+                 ...остальной отчёт...
+                 MSG
+
+               Первая строка тела — строго `## Вердикт: PASS` или `## Вердикт: FAIL`
+               (по ней гейт определяет исход). Ровно ОДИН комментарий, не построчные.
+
+            ГРАНИЦЫ
+
+            - Не редактируй код, не коммить, не пушь.
+            - Не аппрувь и не отклоняй PR средствами GitHub. Только комментарий с вердиктом.
+            - Не оставляй десятки построчных комментариев. Один сводный отчёт.
+            - Пиши по-русски. Кратко. Блокирующее — первым.
+
+      # Падаем, если вердикт FAIL. Именно этот шаг делает проверку блокирующей.
+      - name: Enforce verdict
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          # Берём последний вердикт ТОЛЬКО от бота. Используем REST (issues/comments),
+          # т.к. там есть user.type=="Bot" и логин с суффиксом [bot]; GraphQL
+          # (gh pr view --json comments) суффикс [bot] СРЕЗАЕТ — из-за этого фильтр
+          # раньше не матчил автора `claude`. Человек не может публиковаться ботом,
+          # поэтому подделать вердикт своим комментарием он не сможет.
+          verdict=$(gh api "repos/${{ github.repository }}/issues/${PR}/comments" \
+            --jq '[.[] | select(.user.type == "Bot") | select(.body | test("## Вердикт:"))] | last | .body // ""')
+
+          if [ -z "$verdict" ]; then
+            echo "::error::Агент не опубликовал вердикт. Проверка не пройдена — разбирайся вручную."
+            exit 1
+          fi
+
+          if echo "$verdict" | grep -q "## Вердикт: FAIL"; then
+            echo "::error::Гейт не пройден. Блокирующие замечания — в комментарии к PR."
+            exit 1
+          fi
+
+          echo "Гейт пройден. Approve по-прежнему за человеком."

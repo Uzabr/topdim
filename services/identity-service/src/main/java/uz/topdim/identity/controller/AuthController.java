@@ -14,6 +14,7 @@ import uz.topdim.identity.dto.*;
 import uz.topdim.identity.exception.AuthException;
 import uz.topdim.identity.service.AuthService;
 import uz.topdim.identity.service.EmailConfirmationService;
+import uz.topdim.identity.service.OtpService;
 import uz.topdim.identity.service.PasswordResetService;
 import uz.topdim.common.dto.ApiResponse;
 
@@ -24,8 +25,10 @@ import java.util.Arrays;
  * REST контроллер аутентификации.
  * M4: refresh token передаётся через httpOnly cookie, не в JSON body.
  *
- * <p>Endpoints: register, login, refresh, logout, change-password, guest,
+ * <p>Endpoints: register, login, refresh, logout, change-password,
+ * phone/request + phone/confirm (T5 — телефон-OTP вход/регистрация/восстановление),
  * password-reset/request, password-reset/confirm.
+ * {@code /guest} депрекирован (410 Gone) — небезопасный вход без проверки владения.
  */
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -35,6 +38,7 @@ public class AuthController {
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
     private final EmailConfirmationService emailConfirmationService;
+    private final OtpService otpService;
 
     private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
     private static final String COOKIE_PATH = "/api/v1/auth";
@@ -100,14 +104,39 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Пароль успешно изменён", null));
     }
 
+    /**
+     * Гостевой вход ОТКЛЮЧЁН (T5): позволял войти без проверки владения телефоном/email —
+     * небезопасно. Маршрут оставлен физически (не 404/500), чтобы старые клиенты получили
+     * явный сигнал вместо неожиданной ошибки. Используйте /auth/phone/request + /auth/phone/confirm.
+     */
     @PostMapping("/guest")
-    public ResponseEntity<ApiResponse<AuthResponse>> guestAuth(
-            @Valid @RequestBody GuestAuthRequest request,
+    public ResponseEntity<ApiResponse<Void>> guestAuth() {
+        return ResponseEntity.status(HttpStatus.GONE)
+                .body(ApiResponse.error("Гостевой вход отключён, используйте вход по номеру телефона"));
+    }
+
+    /**
+     * Запрос OTP-кода на телефон (T5). Всегда 202 — не раскрываем, существует ли аккаунт
+     * с этим номером (anti-enumeration, тот же принцип что и password-reset/request).
+     */
+    @PostMapping("/phone/request")
+    public ResponseEntity<ApiResponse<Void>> phoneOtpRequest(@Valid @RequestBody PhoneOtpRequest req) {
+        otpService.requestOtp(req.getPhone());
+        return ResponseEntity.accepted().body(ApiResponse.success("Код отправлен", null));
+    }
+
+    /**
+     * Подтверждение OTP-кода — вход/регистрация/восстановление одним путём.
+     * Refresh-токен уходит в httpOnly cookie, не в JSON body (консистентно с login/register).
+     */
+    @PostMapping("/phone/confirm")
+    public ResponseEntity<ApiResponse<AuthResponse>> phoneOtpConfirm(
+            @Valid @RequestBody PhoneOtpConfirmRequest req,
             HttpServletResponse response) {
-        AuthResponse authResponse = authService.guestAuth(request);
+        AuthResponse authResponse = authService.phoneAuth(req.getPhone(), req.getCode());
         addRefreshTokenCookie(response, authResponse.getRefreshToken());
         authResponse.setRefreshToken(null);
-        return ResponseEntity.ok(ApiResponse.success("Гостевой доступ предоставлен", authResponse));
+        return ResponseEntity.ok(ApiResponse.success("Вход выполнен", authResponse));
     }
 
     /**
@@ -122,6 +151,21 @@ public class AuthController {
         addRefreshTokenCookie(response, authResponse.getRefreshToken());
         authResponse.setRefreshToken(null);
         return ResponseEntity.ok(ApiResponse.success("Вход через Telegram выполнен", authResponse));
+    }
+
+    /**
+     * Вход/регистрация через Google (ID-token из Google Identity Services).
+     * ID-token проверяется на сервере ({@code GoogleTokenVerifier}); refresh-токен —
+     * в httpOnly cookie, консистентно с login/telegram/phone.
+     */
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<AuthResponse>> googleAuth(
+            @Valid @RequestBody GoogleAuthRequest request,
+            HttpServletResponse response) {
+        AuthResponse authResponse = authService.googleAuth(request.getIdToken());
+        addRefreshTokenCookie(response, authResponse.getRefreshToken());
+        authResponse.setRefreshToken(null);
+        return ResponseEntity.ok(ApiResponse.success("Вход через Google выполнен", authResponse));
     }
 
     /**

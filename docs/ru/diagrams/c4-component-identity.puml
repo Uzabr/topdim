@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Component>
+title Identity service — компоненты
+Container_Boundary(id, "identity-service") {
+  Component(ctrl, "Auth/User/Admin controllers", "Spring MVC", "HTTP entry points")
+  Component(auth, "AuthService", "Service", "Register/login/refresh/logout")
+  Component(profile, "User/Staff/Application services", "Service", "Profile и onboarding")
+  Component(jwt, "JwtService + security filters", "Spring Security", "Token и role context")
+  Component(repo, "Repositories", "Spring Data JPA", "Persistence")
+  Component(action, "Password/email action services", "Service", "Одноразовые токены")
+  Component(feign, "CouponMerchantClient", "OpenFeign", "Merchant onboarding")
+}
+ContainerDb_Ext(db, "Identity DB", "PostgreSQL")
+ContainerDb_Ext(redis, "Redis", "Blacklist/version/attempts")
+Container_Ext(coupon, "Coupon service", "Merchant API")
+Rel(ctrl, auth, "Вызывает")
+Rel(ctrl, profile, "Вызывает")
+Rel(auth, jwt, "Выпускает/проверяет")
+Rel(auth, repo, "Читает/пишет")
+Rel(profile, repo, "Читает/пишет")
+Rel(action, repo, "Читает/пишет")
+Rel(repo, db, "JDBC")
+Rel(jwt, redis, "Security state", "RESP")
+Rel(profile, feign, "Создаёт merchant")
+Rel(feign, coupon, "REST", "HTTP/JSON")
+@enduml

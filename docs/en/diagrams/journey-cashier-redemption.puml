@@ -1,0 +1,22 @@
+@startuml
+title sizbiz — cashier coupon redemption
+actor "Buyer" as buyer
+participant "Cashier" as cashier
+participant "Partner app" as app
+participant "sizbiz backend" as backend
+
+buyer -> cashier : QR or PIN
+cashier -> app : scan / enter code
+app -> backend : redemption request
+backend -> backend : verify ACTIVE,\nmerchant, and location
+alt allowed
+  backend -> backend : atomically set USED\nand record redemption
+  backend --> app : success
+  app --> cashier : coupon redeemed
+  cashier --> buyer : confirm use
+else rejected
+  backend --> app : business rejection reason
+  app --> cashier : do not redeem
+  cashier --> buyer : explain / support
+end
+@enduml

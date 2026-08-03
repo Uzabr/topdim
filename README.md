@@ -1,6 +1,21 @@
-# TopDim Platform
+# sizbiz Platform
 
 > Платформа купонов и скидок для базаров Узбекистана
+
+> Публичный бренд — **sizbiz** (`sizbiz.uz`). `topdim` сохраняется как
+> историческое внутреннее имя в пакетах, базах, инфраструктуре и командах.
+
+## Документация / Documentation
+
+- [Русская документация](docs/ru/README.md)
+- [English documentation](docs/en/README.md)
+- [Бизнес-документация для sales и сотрудников](docs/ru/business/README.md)
+- [Business documentation for sales and employees](docs/en/business/README.md)
+
+Обе версии имеют одинаковую структуру технических разделов, ADR,
+C4/PlantUML и отдельного бизнес-комплекта. Существующие предметные, QA,
+security и operational документы в `docs/` сохранены как дополнительные
+источники.
 
 ## Архитектура
 

@@ -1,0 +1,21 @@
+@startuml
+!include <C4/C4_Dynamic>
+title Покупка купона
+Person(user, "Покупатель")
+Container(gateway, "Gateway", "Spring Cloud Gateway", "API edge")
+Container(order, "Order", "Spring Boot", "Checkout/issuance")
+Container(coupon, "Coupon", "Spring Boot", "Snapshot/stock")
+Container(payment, "Payment", "Spring Boot", "Payment")
+ContainerQueue(rabbit, "RabbitMQ", "AMQP", "Events")
+RelIndex(1, user, gateway, "Checkout", "HTTPS")
+RelIndex(2, gateway, order, "POST /orders", "HTTP")
+RelIndex(3, order, coupon, "Purchase snapshot", "HTTP")
+RelIndex(4, order, rabbit, "order.created", "AMQP")
+RelIndex(5, rabbit, payment, "order.created", "AMQP")
+RelIndex(6, user, gateway, "demo-complete/callback", "HTTPS")
+RelIndex(7, gateway, payment, "Complete", "HTTP")
+RelIndex(8, payment, rabbit, "payment.completed", "AMQP")
+RelIndex(9, rabbit, order, "Payment completed", "AMQP")
+RelIndex(10, order, coupon, "Register sale once", "HTTP")
+RelIndex(11, order, rabbit, "coupon.purchased", "AMQP")
+@enduml

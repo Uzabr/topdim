@@ -84,6 +84,15 @@ public class User {
     @Builder.Default
     private TrustLevel trustLevel = TrustLevel.L0;
 
+    // ==================== Google OAuth / Оплата ====================
+
+    @Column(name = "google_sub", unique = true)
+    private String googleSub;
+
+    /** Время первой успешной оплаты. Не null → «была оплата» (навсегда), вклад в L1. */
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt;
+
     @Column
     private boolean deleted;
 

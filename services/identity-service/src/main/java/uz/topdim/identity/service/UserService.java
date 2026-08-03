@@ -34,6 +34,7 @@ public class UserService {
     private final FavoriteRepository favoriteRepository;
     private final SecurityVersionService securityVersionService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final TrustService trustService;
 
     // ==================== Profile ====================
 
@@ -152,6 +153,22 @@ public class UserService {
         return mapToAdminUser(user);
     }
 
+    // ==================== Payment (RabbitMQ: PaymentCompletedEvent) ====================
+
+    /**
+     * Фиксирует первую успешную оплату пользователя (→ вклад в L1 через TrustService).
+     * Идемпотентно: {@code paidAt} ставится один раз и больше не перезаписывается.
+     */
+    @Transactional
+    public void markPaid(Long userId) {
+        userRepository.findById(userId).ifPresent(u -> {
+            if (u.getPaidAt() == null) {
+                u.setPaidAt(java.time.LocalDateTime.now());
+                userRepository.save(u);
+            }
+        });
+    }
+
     // ==================== Mapping ====================
 
     private UserProfileResponse mapToProfile(User user) {
@@ -166,6 +183,9 @@ public class UserService {
                 .emailVerified(user.isEmailVerified())
                 .phoneVerified(user.isPhoneVerified())
                 .createdAt(user.getCreatedAt())
+                // trustLevel — вычисляется через TrustService (phone_verified || paidAt != null),
+                // НЕ читается из хранимой колонки user.trustLevel (см. AuthService.buildAuthResponse).
+                .trustLevel(trustService.computeTrustLevel(user).name())
                 .build();
     }
 

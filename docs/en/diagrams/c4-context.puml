@@ -1,0 +1,19 @@
+@startuml
+!include <C4/C4_Context>
+title sizbiz — system context
+Person(buyer, "Buyer", "Finds, purchases, and uses coupons")
+Person(partner, "Merchant/cashier", "Manages promotions and redemptions")
+Person(staff, "Moderator/administrator", "Moderates and operates the platform")
+System(topdim, "sizbiz", "Coupons, orders, payments, redemption, and directory")
+System_Ext(telegram, "Telegram", "Login, concierge bot, and webhooks")
+System_Ext(mailSms, "Email/SMS providers", "Notification delivery")
+System_Ext(maps, "2GIS", "Maps, search, and directions")
+System_Ext(s3, "AWS S3", "Production database backups")
+Rel(buyer, topdim, "Uses", "HTTPS")
+Rel(partner, topdim, "Uses", "HTTPS")
+Rel(staff, topdim, "Operates", "HTTPS")
+Rel(topdim, telegram, "Login/webhooks/messages", "HTTPS")
+Rel(topdim, mailSms, "Sends notifications", "SMTP/HTTPS")
+Rel(topdim, maps, "Displays/searches places", "HTTPS")
+Rel(topdim, s3, "Stores backups", "S3 API/HTTPS")
+@enduml

@@ -15,4 +15,5 @@ public class UserProfileResponse {
     private boolean emailVerified;
     private boolean phoneVerified;
     private LocalDateTime createdAt;
+    private String trustLevel;
 }

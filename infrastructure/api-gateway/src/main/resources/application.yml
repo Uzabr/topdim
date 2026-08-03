@@ -111,6 +111,48 @@ spring:
                 key-resolver: "#{@ipKeyResolver}"
                 deny-empty-key: false
 
+        # Auth Service — phone OTP request (строго: 1 req/sec, burst 2)
+        - id: auth-phone-request
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/phone/request
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 2
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
+        # Auth Service — phone OTP confirm (2 req/sec, burst 3)
+        - id: auth-phone-confirm
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/phone/confirm
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 2
+                redis-rate-limiter.burstCapacity: 3
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
+        # Auth Service — google login (2 req/sec, burst 3)
+        - id: auth-google
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/google
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 2
+                redis-rate-limiter.burstCapacity: 3
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
         # Identity Service — остальные endpoints (logout, change-password, super admin)
         - id: identity-service-auth
           uri: lb://identity-service

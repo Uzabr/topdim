@@ -1,0 +1,24 @@
+@startuml
+title sizbiz — merchant journey
+start
+:Submit partnership application;
+:Administrator review;
+if (Approved?) then (yes)
+  :Create/link merchant and owner;
+  :Prepare profile and primary location;
+  :Submit offer request — LEAD;
+  :Moderator prepares — DRAFT;
+  :Send for approval;
+  if (Partner approves?) then (yes)
+    :Publish — ACTIVE;
+    :Receive sales and redemptions;
+    :View statistics;
+  else (revision)
+    :REVISION_REQUESTED;
+    :Return to preparation;
+  endif
+else (no)
+  :Communicate decision;
+endif
+stop
+@enduml

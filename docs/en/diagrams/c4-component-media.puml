@@ -1,0 +1,13 @@
+@startuml
+!include <C4/C4_Component>
+title Media service — components
+Container_Boundary(media, "media-service") {
+  Component(filter, "RoleHeaderAuthenticationFilter", "Spring Security", "Trusted identity")
+  Component(ctrl, "MediaController", "Spring MVC", "Upload/get/delete")
+  Component(client, "MinioClient", "MinIO SDK", "Object operations")
+}
+ContainerDb_Ext(minio, "MinIO bucket", "S3 compatible")
+Rel(filter, ctrl, "Protects mutations")
+Rel(ctrl, client, "Reads/writes")
+Rel(client, minio, "S3 API", "HTTP")
+@enduml

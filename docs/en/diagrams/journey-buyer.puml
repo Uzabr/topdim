@@ -1,0 +1,25 @@
+@startuml
+title sizbiz — guest and buyer journey
+start
+:Open catalog;
+:Find and inspect an offer;
+if (Personal action required?) then (yes)
+  :Register or log in;
+endif
+:Choose option and add to cart;
+:Create order;
+:Demo payment;
+if (Payment confirmed?) then (yes)
+  :Receive QR/PIN coupon;
+  :Present to partner;
+  if (Coupon and merchant context valid?) then (yes)
+    :Redeem — USED;
+    :Review or repeat purchase;
+  else (no)
+    :Show rejection and contact support;
+  endif
+else (no)
+  :Do not issue coupon;
+endif
+stop
+@enduml

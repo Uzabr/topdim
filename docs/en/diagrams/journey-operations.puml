@@ -1,0 +1,26 @@
+@startuml
+title sizbiz — operations roles
+left to right direction
+
+rectangle "Moderator" as mod {
+  usecase "Leads and DRAFT" as m1
+  usecase "Approval flow" as m2
+  usecase "Reviews, questions,\ncomplaints" as m3
+}
+rectangle "Administrator" as admin {
+  usecase "Partnership requests" as a1
+  usecase "Merchants and catalog" as a2
+  usecase "Refunds and\noperational cases" as a3
+}
+rectangle "Super administrator" as super {
+  usecase "Staff and roles" as s1
+  usecase "Blocking" as s2
+  usecase "Audit log" as s3
+}
+
+m2 --> a2 : escalation
+m3 --> a3 : disputed case
+a1 --> s1 : privileged access
+a3 --> s3 : control
+s2 --> s3 : audit
+@enduml

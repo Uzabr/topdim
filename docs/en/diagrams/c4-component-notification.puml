@@ -1,0 +1,23 @@
+@startuml
+!include <C4/C4_Component>
+title Notification service — components
+Container_Boundary(notify, "notification-service") {
+  Component(ctrl, "NotificationController", "Spring MVC", "Inbox/read")
+  Component(svc, "NotificationService", "Service", "Persistence/ownership")
+  Component(repo, "NotificationRepository", "Spring Data JPA", "Persistence")
+  Component(eventListener, "NotificationEventListener", "AMQP", "In-app events")
+  Component(purchaseListener, "CouponPurchasedListener", "AMQP", "Email/SMS events")
+  Component(adapters, "EmailService/SmsService", "Adapters", "Delivery or stub")
+}
+ContainerDb_Ext(db, "Notification DB", "PostgreSQL")
+ContainerQueue_Ext(rabbit, "RabbitMQ", "Events")
+System_Ext(delivery, "SMTP/SMS", "External delivery")
+Rel(ctrl, svc, "Calls")
+Rel(eventListener, svc, "Creates")
+Rel(svc, repo, "Reads/writes")
+Rel(repo, db, "JDBC")
+Rel(eventListener, rabbit, "Consumes", "AMQP")
+Rel(purchaseListener, rabbit, "Consumes", "AMQP")
+Rel(purchaseListener, adapters, "Sends")
+Rel(adapters, delivery, "SMTP/HTTPS")
+@enduml
