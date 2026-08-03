@@ -180,7 +180,7 @@ export const CouponFormPage = () => {
     onSuccess: () => {
       message.success('Купон создан как LEAD и ожидает обработки');
       queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
-      navigate('/moderation/coupons/kanban');
+      navigate('/coupons?view=kanban');
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } };
@@ -204,7 +204,7 @@ export const CouponFormPage = () => {
       message.success('Купон успешно обновлён!');
       queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
       queryClient.invalidateQueries({ queryKey: ['admin-coupon', id] });
-      navigate('/moderation/coupons');
+      navigate('/coupons');
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } };
@@ -248,7 +248,7 @@ export const CouponFormPage = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/moderation/coupons')} />
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/coupons')} />
           <Title level={4} style={{ margin: 0 }}>
             {isEditMode ? `Редактировать купон #${id}` : 'Создать купон'}
           </Title>

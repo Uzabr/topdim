@@ -1,4 +1,5 @@
-import { vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import { afterEach, vi } from 'vitest';
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
@@ -29,3 +30,18 @@ class MemoryStorage implements Storage {
 }
 
 vi.stubGlobal('localStorage', new MemoryStorage());
+
+class ResizeObserverStub implements ResizeObserver {
+  disconnect() {}
+
+  observe() {}
+
+  unobserve() {}
+}
+
+vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+});

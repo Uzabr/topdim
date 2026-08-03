@@ -10,16 +10,14 @@ import { ForbiddenPage } from './features/auth/ForbiddenPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { PartnerApplicationsPage } from './features/partners/PartnerApplicationsPage';
 
-import { CouponsListPage } from './features/coupons/CouponsListPage';
 import { CouponFormPage } from './features/coupons/CouponFormPage';
-import { CouponKanbanPage } from './features/coupons/CouponKanbanPage';
-import { MerchantReviewPage } from './features/coupons/MerchantReviewPage';
+import { CouponWorkspacePage } from './features/coupons/workspace/CouponWorkspacePage';
+import { LegacyCouponRedirect } from './features/coupons/workspace/LegacyCouponRedirect';
 import { CategoriesPage } from './features/catalog/CategoriesPage';
 import { StaffPage } from './features/system/StaffPage';
 import { AuditLogPage } from './features/system/AuditLogPage';
 import { MerchantsPage } from './features/merchants/MerchantsPage';
 import { MerchantDetailPage } from './features/merchants/MerchantDetailPage';
-import { CouponRequestsPage } from './features/coupon-requests/CouponRequestsPage';
 import { OrdersPage } from './features/orders/OrdersPage';
 import { PurchasedCouponLookupPage } from './features/orders/PurchasedCouponLookupPage';
 import { ReviewsPage } from './features/support/ReviewsPage';
@@ -67,12 +65,17 @@ function App() {
                   <Route path="/dashboard" element={<DashboardPage />} />
 
                   {/* Управление купонами (MODERATOR, ADMIN, SUPER_ADMIN) */}
-                  <Route path="/moderation/coupons" element={<CouponsListPage />} />
-                  <Route path="/moderation/coupons/kanban" element={<CouponKanbanPage />} />
-                  <Route path="/moderation/coupons/create" element={<CouponFormPage />} />
-                  <Route path="/moderation/coupons/edit/:id" element={<CouponFormPage />} />
-                  <Route path="/moderation/coupons/review" element={<MerchantReviewPage />} />
-                  <Route path="/moderation/requests" element={<CouponRequestsPage />} />
+                  <Route path="/coupons" element={<CouponWorkspacePage />} />
+                  <Route path="/coupons/new" element={<CouponFormPage />} />
+                  <Route path="/coupons/:id/edit" element={<CouponFormPage />} />
+
+                  {/* Совместимость сохранённых ссылок на старые экраны купонов */}
+                  <Route path="/moderation/coupons" element={<LegacyCouponRedirect target="workspace" />} />
+                  <Route path="/moderation/coupons/kanban" element={<LegacyCouponRedirect target="kanban" />} />
+                  <Route path="/moderation/requests" element={<LegacyCouponRedirect target="new-tab" />} />
+                  <Route path="/moderation/coupons/create" element={<LegacyCouponRedirect target="create" />} />
+                  <Route path="/moderation/coupons/edit/:id" element={<LegacyCouponRedirect target="edit" />} />
+                  <Route path="/moderation/coupons/review" element={<LegacyCouponRedirect target="waiting-partner" />} />
                   
                   {/* Поддержка */}
                   <Route path="/support/reviews" element={<ReviewsPage />} />

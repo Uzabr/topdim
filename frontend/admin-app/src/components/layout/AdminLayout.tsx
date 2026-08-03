@@ -3,118 +3,18 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Avatar, Dropdown, Typography, theme } from 'antd';
 import type { MenuProps } from 'antd';
 import {
-  DashboardOutlined,
-  SafetyCertificateOutlined,
-  CommentOutlined,
-  StarOutlined,
-  ShopOutlined,
-  ShoppingCartOutlined,
-  TeamOutlined,
-  SettingOutlined,
-  AuditOutlined,
   LogoutOutlined,
   UserOutlined,
-  AppstoreOutlined,
-  TagOutlined,
-  FileTextOutlined,
-  ProjectOutlined,
-  InboxOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store/authStore';
-import type { UserRole } from '../../types';
+import {
+  allMenuItems,
+  filterMenuByRole,
+  type MenuItem,
+} from './adminMenu';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
-
-interface MenuItem {
-  key: string;
-  icon: React.ReactNode;
-  label: string;
-  roles: UserRole[];
-  children?: MenuItem[];
-}
-
-const allMenuItems: MenuItem[] = [
-  {
-    key: '/dashboard',
-    icon: <DashboardOutlined />,
-    label: 'Дашборд',
-    roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'],
-  },
-  {
-    key: '/moderation',
-    icon: <AppstoreOutlined />,
-    label: 'Контент (Купоны)',
-    roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'],
-    children: [
-      { key: '/moderation/coupons', icon: <TagOutlined />, label: 'Все купоны', roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'] },
-      { key: '/moderation/coupons/kanban', icon: <ProjectOutlined />, label: 'Канбан-доска', roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'] },
-      { key: '/moderation/coupons/review', icon: <SafetyCertificateOutlined />, label: 'Решения мерчанта', roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'] },
-      { key: '/moderation/coupons/create', icon: <FileTextOutlined />, label: 'Создать купон', roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'] },
-      { key: '/moderation/requests', icon: <InboxOutlined />, label: 'Заявки партнёров', roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'] },
-    ],
-  },
-  {
-    key: '/support',
-    icon: <SafetyCertificateOutlined />,
-    label: 'Поддержка',
-    roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'],
-    children: [
-      { key: '/support/refunds', icon: <ShoppingCartOutlined />, label: 'Возвраты', roles: ['ADMIN', 'SUPER_ADMIN'] },
-      { key: '/support/complaints', icon: <CommentOutlined />, label: 'Жалобы', roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'] },
-      { key: '/support/reviews', icon: <StarOutlined />, label: 'Отзывы', roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'] },
-    ],
-  },
-  {
-    key: '/catalog',
-    icon: <ShopOutlined />,
-    label: 'Справочники',
-    roles: ['ADMIN', 'SUPER_ADMIN'],
-    children: [
-      { key: '/catalog/merchants', icon: <ShopOutlined />, label: 'Мерчанты', roles: ['ADMIN', 'SUPER_ADMIN'] },
-      { key: '/catalog/categories', icon: <AppstoreOutlined />, label: 'Категории', roles: ['ADMIN', 'SUPER_ADMIN'] },
-    ],
-  },
-  {
-    key: '/orders',
-    icon: <ShoppingCartOutlined />,
-    label: 'Заказы',
-    roles: ['ADMIN', 'SUPER_ADMIN'],
-    children: [
-      { key: '/orders/list', icon: <FileTextOutlined />, label: 'Все заказы', roles: ['ADMIN', 'SUPER_ADMIN'] },
-      { key: '/orders/coupon-lookup', icon: <TagOutlined />, label: 'Поиск купона', roles: ['ADMIN', 'SUPER_ADMIN'] },
-    ],
-  },
-  {
-    key: '/users',
-    icon: <TeamOutlined />,
-    label: 'Пользователи',
-    roles: ['ADMIN', 'SUPER_ADMIN'],
-    children: [
-      { key: '/users/list', icon: <UserOutlined />, label: 'Все пользователи', roles: ['ADMIN', 'SUPER_ADMIN'] },
-      { key: '/users/partner-applications', icon: <FileTextOutlined />, label: 'Заявки партнёров', roles: ['ADMIN', 'SUPER_ADMIN'] },
-    ],
-  },
-  {
-    key: '/system',
-    icon: <SettingOutlined />,
-    label: 'Система',
-    roles: ['SUPER_ADMIN'],
-    children: [
-      { key: '/system/staff', icon: <TeamOutlined />, label: 'Сотрудники', roles: ['SUPER_ADMIN'] },
-      { key: '/system/audit', icon: <AuditOutlined />, label: 'Журнал действий', roles: ['SUPER_ADMIN'] },
-    ],
-  },
-];
-
-function filterMenuByRole(items: MenuItem[], role: UserRole): MenuItem[] {
-  return items
-    .filter((item) => item.roles.includes(role))
-    .map((item) => ({
-      ...item,
-      children: item.children ? filterMenuByRole(item.children, role) : undefined,
-    }));
-}
 
 function toAntMenuItems(items: MenuItem[]): MenuProps['items'] {
   return items.map(({ key, icon, label, children }) => ({
@@ -135,6 +35,9 @@ export const AdminLayout = () => {
   const userRole = user?.role || 'MODERATOR';
   const visibleMenu = filterMenuByRole(allMenuItems, userRole);
   const menuItems = toAntMenuItems(visibleMenu);
+  const selectedMenuKey = location.pathname.startsWith('/coupons')
+    ? '/coupons'
+    : location.pathname;
 
   const handleMenuClick = ({ key }: { key: string }) => {
     navigate(key);
@@ -207,7 +110,7 @@ export const AdminLayout = () => {
         <Menu
           theme="dark"
           mode="inline"
-          selectedKeys={[location.pathname]}
+          selectedKeys={[selectedMenuKey]}
           defaultOpenKeys={visibleMenu.filter((m) => m.children).map((m) => m.key)}
           items={menuItems}
           onClick={handleMenuClick}
