@@ -2,7 +2,9 @@ import { Heart, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
+import { useAuthStore } from '../store/authStore';
 import { useFavoritesStore } from '../store/favoritesStore';
+import GuestAuthPrompt from '../components/auth/GuestAuthPrompt';
 import CouponCard from '../components/coupon/CouponCard';
 import type { CouponCardData } from '../components/coupon/CouponCard';
 import { couponsApi } from '../api/coupons';
@@ -12,6 +14,7 @@ import './FavoritesPage.css';
 
 export default function FavoritesDesktop() {
   const { t } = useTranslation();
+  const { isAuthenticated } = useAuthStore();
   const { favoriteIds } = useFavoritesStore();
   const lp = useLocalePath();
 
@@ -19,7 +22,23 @@ export default function FavoritesDesktop() {
     queryKey: ['coupons-favorites'],
     queryFn: () => couponsApi.getCatalog({ size: 200 }),
     select: (res) => res.data.data.content,
+    enabled: isAuthenticated,
   });
+
+  if (!isAuthenticated) {
+    return (
+      <div className="favorites-page">
+        <div className="container">
+          <GuestAuthPrompt
+            icon={<Heart size={44} strokeWidth={1.5} />}
+            title={t('favorites.guestTitle')}
+            description={t('favorites.guestDesc')}
+            loginLabel={t('favorites.guestLogin')}
+          />
+        </div>
+      </div>
+    );
+  }
 
   const apiDeals = couponsData || [];
   const mappedDeals: CouponCardData[] = apiDeals.map(mapCouponOfferToCardData);

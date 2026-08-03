@@ -1,6 +1,8 @@
 import { Minus, Plus, ShoppingCart, Ticket, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import GuestAuthPrompt from '../components/auth/GuestAuthPrompt';
+import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { calcDiscount, formatPrice } from '../utils/format';
@@ -10,6 +12,7 @@ export default function CartDesktop() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const lp = useLocalePath();
+  const { isAuthenticated } = useAuthStore();
   const { items, totalItems, totalPrice, removeFromCart, updateQuantity } = useCartStore();
 
   // Старую цену знаем не для всех позиций (backend-корзина и старые записи её не
@@ -18,6 +21,20 @@ export default function CartDesktop() {
   const saving = oldTotal - totalPrice;
 
   const countLabel = t('cart.couponsCount', { count: totalItems });
+
+  if (!isAuthenticated) {
+    return (
+      <div className="cart container">
+        <h1 className="cart__title">{t('cart.title')}</h1>
+        <GuestAuthPrompt
+          icon={<ShoppingCart size={46} strokeWidth={1.6} />}
+          title={t('cart.guestTitle')}
+          description={t('cart.guestDesc')}
+          loginLabel={t('cart.guestLogin')}
+        />
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
