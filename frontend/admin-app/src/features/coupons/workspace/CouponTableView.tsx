@@ -8,6 +8,7 @@ import type {
   CouponStatus,
   CouponTab,
 } from './types';
+import { CouponActionMenu } from './CouponActionMenu';
 
 const { Text } = Typography;
 
@@ -122,6 +123,13 @@ const columns: ColumnsType<AdminCouponRow> = [
     title: 'Использовать до',
     dataIndex: 'useUntil',
     render: formatDate,
+  },
+  {
+    title: 'Действия',
+    key: 'actions',
+    fixed: 'right',
+    width: 150,
+    render: (_value, record) => <CouponActionMenu coupon={record} />,
   },
 ];
 

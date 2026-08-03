@@ -4,6 +4,7 @@ import {
   ADMIN_COUPONS_WORKSPACE_QUERY_KEY,
   fetchAdminCoupons,
 } from './api';
+import { CouponActionMenu } from './CouponActionMenu';
 import type {
   AdminCouponRow,
   CouponStatus,
@@ -113,6 +114,7 @@ function CouponKanbanColumn({
                 {coupon.assignedModeratorName ?? 'Ответственный не назначен'}
               </Text>
               <Tag color={config.color}>{coupon.status}</Tag>
+              <CouponActionMenu coupon={coupon} />
             </Flex>
           </Card>
         ))}
