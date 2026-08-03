@@ -58,7 +58,7 @@ export default function LoginPage() {
         <Space direction="vertical" size="large" style={{ width: '100%', textAlign: 'center' }}>
           <ShopOutlined style={{ fontSize: 48, color: '#1677ff' }} />
           <Title level={3} style={{ margin: 0 }}>Кабинет партнёра</Title>
-          <Text type="secondary">TopDim Partner Dashboard</Text>
+          <Text type="secondary">sizbiz Partner Dashboard</Text>
         </Space>
 
         <Form layout="vertical" onFinish={onFinish} style={{ marginTop: 32 }}>

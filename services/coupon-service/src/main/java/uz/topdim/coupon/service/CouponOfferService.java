@@ -439,7 +439,7 @@ public class CouponOfferService {
                     .sum();
             telegramPreviewService.sendPushMessage(
                     offer.getMerchant().getTelegramChatId(),
-                    "🎉 Ура! Акция запущена. Установлен лимит: " + limit + " сертификатов. Следить за продажами можно в разделе «📊 Статистика»."
+                    "🎉 Ура! Предложение запущено. Установлен лимит: " + limit + " сертификатов. Следить за продажами можно в разделе «📊 Статистика»."
             );
         }
 
@@ -1122,8 +1122,8 @@ public class CouponOfferService {
             if (offer.getMerchant() != null && offer.getMerchant().getTelegramChatId() != null) {
                 telegramPreviewService.sendPushMessage(
                         offer.getMerchant().getTelegramChatId(),
-                        "🛑 Сертификаты по акции распроданы! Публикация автоматически приостановлена. " +
-                        "Чтобы запустить новую, нажмите [➕ Создать купон]."
+                        "🛑 Сертификаты по предложению распроданы! Публикация автоматически приостановлена. " +
+                        "Чтобы запустить новое, подайте купонное предложение."
                 );
             }
         }

@@ -276,7 +276,7 @@ export const CouponFormPage = () => {
               />
               <Form.Item
                 name="title"
-                label="Название услуги/акции"
+                label="Название купона"
                 rules={[{ required: true, message: 'Введите название' }]}
                 extra="Крупный жирный шрифт в карточке купона."
               >
@@ -371,7 +371,7 @@ export const CouponFormPage = () => {
               <Form.Item
                 name="coverImageUrl"
                 label="Изображение (Миниатюра купона)"
-                rules={[{ required: true, message: 'Добавьте изображение для карточки товара' }]}
+                rules={[{ required: true, message: 'Добавьте изображение для карточки купона' }]}
               >
                 <Upload
                   name="file"
@@ -456,12 +456,12 @@ export const CouponFormPage = () => {
               </Card>
 
               <Alert 
-                title="Описание оффера" 
-                description="Одно поле для всего текста акции: краткое описание, подробности, условия, правила использования и инструкции. Поддерживается Markdown!"
+                title="Описание купона"
+                description="Одно поле для всего текста купона: краткое описание, подробности, условия, правила использования и инструкции. Поддерживается Markdown!"
                 type="info" showIcon style={{ marginBottom: 16, marginTop: 16 }} 
               />
               
-              <Form.Item name="offerDescription" label="Описание оффера (Markdown)">
+              <Form.Item name="offerDescription" label="Описание купона (Markdown)">
                 <TextArea 
                   rows={12} 
                   placeholder={`Любая пицца 33 см + напиток на выбор

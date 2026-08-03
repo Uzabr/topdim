@@ -69,7 +69,7 @@ export default function CouponRequestFormPage() {
     mutationFn: (data: Record<string, unknown>) =>
       api.post('/api/v1/partner/coupons', data),
     onSuccess: () => {
-      antMessage.success('Заявка на акцию отправлена! TopDim свяжется с вами для оформления.');
+      antMessage.success('Купонное предложение отправлено! sizbiz свяжется с вами для оформления.');
       queryClient.invalidateQueries({ queryKey: ['partner-coupons'] });
       navigate('/coupons');
     },
@@ -162,7 +162,7 @@ export default function CouponRequestFormPage() {
     };
 
     if (payload.options.length === 0) {
-      antMessage.error('Добавьте хотя бы один вариант акции');
+      antMessage.error('Добавьте хотя бы один вариант предложения');
       return;
     }
 
@@ -171,15 +171,15 @@ export default function CouponRequestFormPage() {
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <Title level={3}>🎯 Создать заявку на акцию</Title>
+      <Title level={3}>🎯 Подать купонное предложение</Title>
       <Paragraph type="secondary">
-        Заполните основную информацию об акции. TopDim поможет с оформлением и публикацией.
+        Заполните основную информацию о предложении. sizbiz поможет с оформлением и публикацией.
       </Paragraph>
 
       <Card style={{ borderRadius: 12 }}>
         <Form form={form} layout="vertical" onFinish={onFinish} requiredMark="optional">
 
-          <Form.Item name="title" label="Название акции" rules={[{ required: true, message: 'Укажите название' }]}>
+          <Form.Item name="title" label="Название предложения" rules={[{ required: true, message: 'Укажите название' }]}>
             <Input placeholder="Например: Скидка 50% на маникюр" maxLength={200} showCount />
           </Form.Item>
 
@@ -193,10 +193,10 @@ export default function CouponRequestFormPage() {
             />
           </Form.Item>
 
-          <Form.Item name="offerDescription" label="Описание акции" rules={[{ required: true, message: 'Опишите акцию' }]}>
+          <Form.Item name="offerDescription" label="Описание предложения" rules={[{ required: true, message: 'Опишите предложение' }]}>
             <TextArea
               rows={4}
-              placeholder="Опишите что входит в акцию, условия использования, ограничения"
+              placeholder="Опишите, что входит в предложение, условия использования и ограничения"
               maxLength={5000}
               showCount
             />
@@ -217,7 +217,7 @@ export default function CouponRequestFormPage() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="fromPrice" label="Цена по акции" rules={[{ required: true, message: 'Укажите цену' }]}>
+              <Form.Item name="fromPrice" label="Цена по предложению" rules={[{ required: true, message: 'Укажите цену' }]}>
                 <InputNumber
                   min={1}
                   style={{ width: '100%' }}
@@ -263,7 +263,7 @@ export default function CouponRequestFormPage() {
             <Switch />
           </Form.Item>
 
-          <Divider>Варианты акции</Divider>
+          <Divider>Варианты предложения</Divider>
 
           {options.map((opt, idx) => (
             <Card
@@ -326,7 +326,7 @@ export default function CouponRequestFormPage() {
             type="info"
             showIcon
             message="Фото необязательно"
-            description="Если есть фото услуги, блюда, помещения или результата работы — добавьте. Если нет, TopDim поможет оформить акцию."
+            description="Если есть фото услуги, блюда, помещения или результата работы — добавьте. Если нет, sizbiz поможет оформить предложение."
             style={{ marginBottom: 16 }}
           />
 

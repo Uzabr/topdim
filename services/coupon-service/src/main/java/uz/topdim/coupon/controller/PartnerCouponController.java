@@ -57,7 +57,7 @@ public class PartnerCouponController {
     ) {
         CouponOfferResponse response = partnerCouponService.createPartnerRequest(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Заявка на акцию принята. TopDim свяжется с вами для оформления.", response));
+                .body(ApiResponse.success("Купонное предложение принято. sizbiz свяжется с вами для оформления.", response));
     }
 
     /** Обновить заявку/купон (только LEAD/DRAFT/REVISION_REQUESTED). */

@@ -95,7 +95,7 @@ export default function PartnerLayout() {
       >
         <div style={{ padding: '20px 16px', textAlign: 'center' }}>
           <ShopOutlined style={{ fontSize: 28, color: '#1677ff' }} />
-          <div style={{ color: '#fff', fontSize: 14, marginTop: 8, fontWeight: 600 }}>TopDim Partner</div>
+          <div style={{ color: '#fff', fontSize: 14, marginTop: 8, fontWeight: 600 }}>sizbiz Partner</div>
         </div>
 
         <Menu

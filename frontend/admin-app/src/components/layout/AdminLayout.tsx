@@ -104,7 +104,7 @@ export const AdminLayout = () => {
               letterSpacing: 1,
             }}
           >
-            {collapsed ? 'TD' : 'TopDim Admin'}
+            {collapsed ? 'TD' : 'sizbiz Admin'}
           </Text>
         </div>
         <Menu

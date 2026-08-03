@@ -112,7 +112,7 @@ export default function CouponApprovalPage() {
     mutationFn: (comment: string) =>
       api.post(`/api/v1/partner/coupons/${couponId}/request-revision`, { comment }),
     onSuccess: async () => {
-      message.success('Купон возвращён TopDim на доработку');
+      message.success('Купон возвращён sizbiz на доработку');
       await queryClient.invalidateQueries({ queryKey: ['partner-coupons'] });
       navigate('/coupons');
     },
@@ -303,8 +303,8 @@ export default function CouponApprovalPage() {
         <Alert
           type="info"
           showIcon
-          message="Комментарий увидит команда TopDim"
-          description="Напишите конкретно: цена, текст, сроки, фото или условия акции."
+          message="Комментарий увидит команда sizbiz"
+          description="Напишите конкретно: цена, текст, сроки, фото или условия предложения."
           style={{ marginBottom: 16 }}
         />
         <TextArea

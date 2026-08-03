@@ -143,7 +143,7 @@ export default function RedeemPage() {
 
           const token = parseTopDimQrPayload(decodedText);
           if (!token) {
-            setScannerError('Это не QR-код TopDim. Попробуйте снова или используйте PIN-код.');
+            setScannerError('Это не QR-код sizbiz. Попробуйте снова или используйте PIN-код.');
             return;
           }
 
