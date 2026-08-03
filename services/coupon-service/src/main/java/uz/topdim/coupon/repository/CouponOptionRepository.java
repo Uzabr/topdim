@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import uz.topdim.coupon.entity.CouponOption;
 
 import java.util.List;
+import java.util.Collection;
 
 /**
  * Репозиторий вариантов купонов.
@@ -14,6 +15,7 @@ import java.util.List;
  */
 public interface CouponOptionRepository extends JpaRepository<CouponOption, Long> {
     List<CouponOption> findByCouponOfferId(Long couponOfferId);
+    List<CouponOption> findByCouponOfferIdInOrderById(Collection<Long> couponOfferIds);
 
     /**
      * Atomic increment quantitySold с проверкой лимита.
@@ -30,4 +32,3 @@ public interface CouponOptionRepository extends JpaRepository<CouponOption, Long
            "AND (o.quantityLimit IS NULL OR o.quantityLimit = 0 OR o.quantitySold + :qty <= o.quantityLimit)")
     int atomicIncrementSold(@Param("optionId") Long optionId, @Param("qty") int qty);
 }
-

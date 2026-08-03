@@ -19,10 +19,12 @@ import uz.topdim.coupon.service.MerchantService;
 import java.util.stream.Stream;
 
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @WebMvcTest(AdminCouponController.class)
 @Import({SecurityConfig.class, RoleHeaderAuthenticationFilter.class, GlobalExceptionHandler.class})
@@ -85,6 +87,20 @@ class AdminCouponActionSecurityTest {
 
         verify(couponOfferService).takeToWork(10L, 42L, "mod@sizbiz.uz");
         verify(couponOfferService).sendToApproval(10L, 42L, "MODERATOR");
+    }
+
+    @Test
+    void losingConcurrentClaim_returnsConflictWithBusinessMessage() throws Exception {
+        doThrow(new IllegalStateException("Купон уже взят в работу или больше не является лидом"))
+                .when(couponOfferService).takeToWork(10L, 42L, "mod@sizbiz.uz");
+
+        mockMvc.perform(withStaff(
+                        patch("/api/v1/admin/coupons/10/take-to-work")
+                                .header("X-User-Email", "mod@sizbiz.uz"),
+                        "MODERATOR"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message")
+                        .value("Купон уже взят в работу или больше не является лидом"));
     }
 
     private MockHttpServletRequestBuilder withStaff(

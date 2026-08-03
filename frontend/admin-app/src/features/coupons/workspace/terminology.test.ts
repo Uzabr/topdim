@@ -95,15 +95,7 @@ function withoutComments(source: string): string {
 }
 
 function userVisibleSource(path: string): string {
-  let source = withoutComments(readFileSync(resolve(FRONTEND_ROOT, path), 'utf8'));
-
-  // This is the only merchant-authored example in the listed sources. Keep the
-  // exact exclusion narrow so future UI literals remain contract-protected.
-  if (path === 'admin-app/src/features/coupons/CouponFormPage.tsx') {
-    const merchantExample = /placeholder=\{`[\s\S]*?`\}/g;
-    expect(source.match(merchantExample)).toHaveLength(1);
-    source = source.replace(merchantExample, 'placeholder={merchant-authored example}');
-  }
+  const source = withoutComments(readFileSync(resolve(FRONTEND_ROOT, path), 'utf8'));
 
   // Logs are deliberately excluded by the Task 9 scope; API validation and
   // notification strings remain in the source checked below.
@@ -169,6 +161,19 @@ describe('active coupon terminology', () => {
 
   it('uses sizbiz in public brand literals while preserving technical identifiers', () => {
     expect(violations(/TopDim/u, ACTIVE_SOURCE_FILES)).toEqual([]);
+    expect(literals(userVisibleSource('admin-app/src/components/layout/AdminLayout.tsx')))
+      .not.toContain('TD');
+  });
+
+  it('keeps active coupon-flow documentation free of retired offer wording', () => {
+    const activeDocs = [
+      '../docs/product/roles.md',
+      '../docs/product/flows/coupon-flow.md',
+    ];
+    const docViolations = activeDocs.filter((path) =>
+      /оффер/iu.test(readFileSync(resolve(FRONTEND_ROOT, path), 'utf8')));
+
+    expect(docViolations).toEqual([]);
   });
 
   it('uses proposal wording throughout partner proposal management without restricting redemption', () => {

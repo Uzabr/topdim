@@ -10,6 +10,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import uz.topdim.coupon.dto.AdminCouponFilter;
 import uz.topdim.coupon.dto.CouponOfferResponse;
 import uz.topdim.coupon.dto.CouponPurchaseSnapshotResponse;
 import uz.topdim.coupon.dto.CreateCouponOfferRequest;
@@ -23,6 +26,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -60,6 +64,24 @@ class CouponOfferServiceTest {
                 .giftAvailable(false)
                 .options(new ArrayList<>()).images(new ArrayList<>())
                 .build();
+    }
+
+    @Test
+    @DisplayName("Admin list: production pagination uses createdAt DESC then id DESC")
+    void getAllForAdmin_equalCreatedAt_usesStableIdTieBreaker() {
+        when(couponOfferRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        couponOfferService.getAllForAdmin(
+                new AdminCouponFilter(Set.of(CouponStatus.LEAD), null, null, null),
+                0,
+                20);
+
+        ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+        verify(couponOfferRepository).findAll(any(Specification.class), pageable.capture());
+        assertThat(pageable.getValue().getSort()).containsExactly(
+                Sort.Order.desc("createdAt"),
+                Sort.Order.desc("id"));
     }
 
     // ==================== Catalog ====================
@@ -264,9 +286,11 @@ class CouponOfferServiceTest {
     @DisplayName("State Machine: takeToWork LEAD → DRAFT")
     void takeToWork_fromLead_setsDraft() {
         CouponOffer offer = createTestOffer();
-        offer.setStatus(CouponStatus.LEAD);
+        offer.setStatus(CouponStatus.DRAFT);
+        offer.setAssignedModeratorId(100L);
+        offer.setAssignedModeratorName("mod@test.uz");
+        when(couponOfferRepository.claimLead(1L, 100L, "mod@test.uz")).thenReturn(1);
         when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
-        when(couponOfferRepository.save(any())).thenReturn(offer);
 
         CouponOfferResponse result = couponOfferService.takeToWork(1L, 100L, "mod@test.uz");
 
@@ -278,9 +302,8 @@ class CouponOfferServiceTest {
     @Test
     @DisplayName("State Machine: takeToWork из DRAFT → IllegalStateException")
     void takeToWork_fromDraft_throws() {
-        CouponOffer offer = createTestOffer();
-        offer.setStatus(CouponStatus.DRAFT);
-        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.claimLead(1L, 100L, "mod@test.uz")).thenReturn(0);
+        when(couponOfferRepository.existsById(1L)).thenReturn(true);
 
         assertThatThrownBy(() -> couponOfferService.takeToWork(1L, 100L, "mod@test.uz"))
                 .isInstanceOf(IllegalStateException.class);

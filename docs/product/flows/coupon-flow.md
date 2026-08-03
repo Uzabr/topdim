@@ -139,7 +139,7 @@ PATCH /api/v1/admin/coupons/{id}/status?status=ACTIVE
 | `SOLD_OUT`               | Система           | ❌                | Все сертификаты распроданы. Immutable.       |
 | `ARCHIVED`               | ADMIN / SUPER_ADMIN | ❌              | Снят с продажи. Купленные купоны не меняются. |
 
-> **Immutability:** `ACTIVE` и `SOLD_OUT` офферы нельзя редактировать.
+> **Immutability:** купоны в статусах `ACTIVE` и `SOLD_OUT` нельзя редактировать.
 > Для остановки продаж используйте архивирование с обязательной причиной.
 
 ### Диаграмма переходов

@@ -2,6 +2,8 @@ package uz.topdim.coupon.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -20,6 +22,10 @@ import java.util.Optional;
  */
 public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long>,
         JpaSpecificationExecutor<CouponOffer> {
+
+    @Override
+    @EntityGraph(attributePaths = {"merchant", "category"})
+    Page<CouponOffer> findAll(Specification<CouponOffer> specification, Pageable pageable);
 
     Page<CouponOffer> findByStatus(CouponStatus status, Pageable pageable);
 
@@ -114,6 +120,19 @@ public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long>,
     @Modifying
     @Query("UPDATE CouponOffer c SET c.viewCount = c.viewCount + 1 WHERE c.id = :id")
     void incrementViewCount(@Param("id") Long id);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE CouponOffer c
+               SET c.status = uz.topdim.coupon.entity.CouponStatus.DRAFT,
+                   c.assignedModeratorId = :moderatorId,
+                   c.assignedModeratorName = :moderatorName
+             WHERE c.id = :id
+               AND c.status = uz.topdim.coupon.entity.CouponStatus.LEAD
+            """)
+    int claimLead(@Param("id") Long id,
+                  @Param("moderatorId") Long moderatorId,
+                  @Param("moderatorName") String moderatorName);
 
     boolean existsByMerchantIdAndStatusIn(Long merchantId, List<CouponStatus> statuses);
 

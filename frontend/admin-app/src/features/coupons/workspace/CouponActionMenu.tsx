@@ -155,10 +155,12 @@ function AuthorizedCouponActionMenu({
         return;
       case 'support-review':
         setReason('');
+        setErrorText(null);
         setSupportOpen(true);
         return;
       case 'archive':
         setReason('');
+        setErrorText(null);
         setArchiveOpen(true);
         return;
       default:
@@ -173,7 +175,9 @@ function AuthorizedCouponActionMenu({
   return (
     <>
       <Space orientation="vertical" size={8} style={{ alignItems: 'flex-end' }}>
-        {errorText && <Alert type="error" showIcon message={errorText} />}
+        {errorText && !supportOpen && !archiveOpen && (
+          <Alert type="error" showIcon title={errorText} />
+        )}
         <Dropdown
           menu={{
             items: menuItems,
@@ -202,7 +206,10 @@ function AuthorizedCouponActionMenu({
         okText="Подтвердить решение"
         cancelText="Отмена"
         okButtonProps={{ disabled: reason.trim().length === 0, loading: actionMutation.isPending }}
-        onCancel={() => setSupportOpen(false)}
+        onCancel={() => {
+          setSupportOpen(false);
+          setErrorText(null);
+        }}
         onOk={() => runMutation('support-review', reason.trim())}
       >
         <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
@@ -211,6 +218,7 @@ function AuthorizedCouponActionMenu({
             showIcon
             title="Внимание: это служебное решение заменяет подтверждение партнёра."
           />
+          {errorText && <Alert type="error" showIcon title={errorText} />}
           <Input.TextArea
             aria-label="Причина служебного решения"
             rows={4}
@@ -226,15 +234,21 @@ function AuthorizedCouponActionMenu({
         okText="Архивировать"
         cancelText="Отмена"
         okButtonProps={{ disabled: reason.trim().length === 0, loading: actionMutation.isPending }}
-        onCancel={() => setArchiveOpen(false)}
+        onCancel={() => {
+          setArchiveOpen(false);
+          setErrorText(null);
+        }}
         onOk={() => runMutation('archive', reason.trim())}
       >
-        <Input.TextArea
-          aria-label="Причина архивации"
-          rows={4}
-          value={reason}
-          onChange={(event) => setReason(event.target.value)}
-        />
+        <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
+          {errorText && <Alert type="error" showIcon title={errorText} />}
+          <Input.TextArea
+            aria-label="Причина архивации"
+            rows={4}
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+          />
+        </Space>
       </Modal>
     </>
   );

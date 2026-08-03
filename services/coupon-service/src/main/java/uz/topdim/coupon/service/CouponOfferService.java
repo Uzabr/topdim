@@ -20,7 +20,9 @@ import uz.topdim.coupon.repository.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static uz.topdim.coupon.util.PhoneUtils.normalize;
@@ -351,18 +353,16 @@ public class CouponOfferService {
      */
     @Transactional
     public CouponOfferResponse takeToWork(Long id, Long moderatorId, String moderatorName) {
-        CouponOffer offer = couponOfferRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
-
-        if (offer.getStatus() != CouponStatus.LEAD) {
-            throw new IllegalStateException(
-                    "Взять в работу можно только из статуса LEAD. Текущий: " + offer.getStatus());
+        int claimed = couponOfferRepository.claimLead(id, moderatorId, moderatorName);
+        if (claimed == 0) {
+            if (!couponOfferRepository.existsById(id)) {
+                throw new ResourceNotFoundException("Купон не найден");
+            }
+            throw new IllegalStateException("Купон уже взят в работу или больше не является лидом");
         }
 
-        offer.setStatus(CouponStatus.DRAFT);
-        offer.setAssignedModeratorId(moderatorId);
-        offer.setAssignedModeratorName(moderatorName);
-        couponOfferRepository.save(offer);
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
         log.info("Купон #{} взят в работу модератором {} ({})", id, moderatorName, moderatorId);
 
@@ -756,9 +756,48 @@ public class CouponOfferService {
             int page,
             int size
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return couponOfferRepository.findAll(CouponOfferSpecifications.forAdmin(filter), pageable)
-                .map(this::mapToResponse);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(
+                Sort.Order.desc("createdAt"),
+                Sort.Order.desc("id")));
+        Page<CouponOffer> offers = couponOfferRepository.findAll(
+                CouponOfferSpecifications.forAdmin(filter), pageable);
+        if (offers.isEmpty()) {
+            return offers.map(this::mapToResponse);
+        }
+
+        List<Long> couponIds = offers.stream().map(CouponOffer::getId).toList();
+        List<Long> merchantIds = offers.stream()
+                .map(CouponOffer::getMerchant)
+                .filter(java.util.Objects::nonNull)
+                .map(Merchant::getId)
+                .distinct()
+                .toList();
+        Map<Long, MerchantLocationResponse> primaryLocations = merchantLocationRepository
+                .findByMerchantIdInAndPrimaryTrue(merchantIds).stream()
+                .collect(Collectors.toMap(
+                        location -> location.getMerchant().getId(),
+                        this::mapMerchantLocation,
+                        (first, ignored) -> first));
+        Map<Long, List<CouponOption>> options = couponOptionRepository
+                .findByCouponOfferIdInOrderById(couponIds).stream()
+                .collect(Collectors.groupingBy(option -> option.getCouponOffer().getId()));
+        Map<Long, List<CouponImage>> images = couponImageRepository
+                .findByCouponOfferIdInOrderBySortOrderAscIdAsc(couponIds).stream()
+                .collect(Collectors.groupingBy(image -> image.getCouponOffer().getId()));
+        Map<Long, CouponReviewSummary> reviews = reviewRepository
+                .summarizeApprovedByCouponIds(couponIds).stream()
+                .collect(Collectors.toMap(CouponReviewSummary::couponId, Function.identity()));
+
+        return offers.map(offer -> {
+            CouponReviewSummary review = reviews.get(offer.getId());
+            return mapToResponse(
+                    offer,
+                    primaryLocations.get(offer.getMerchant().getId()),
+                    review != null ? review.averageRating() : 0.0,
+                    review != null ? review.reviewCount().intValue() : 0,
+                    options.getOrDefault(offer.getId(), List.of()),
+                    images.getOrDefault(offer.getId(), List.of()));
+        });
     }
 
     @Transactional(readOnly = true)
@@ -790,19 +829,41 @@ public class CouponOfferService {
         if (offer.getMerchant() != null) {
             primaryLoc = merchantLocationRepository
                     .findByMerchantIdAndPrimaryTrue(offer.getMerchant().getId())
-                    .map(loc -> MerchantLocationResponse.builder()
-                            .id(loc.getId())
-                            .title(loc.getTitle())
-                            .address(loc.getAddress())
-                            .phone(loc.getPhone())
-                            .workingHours(loc.getWorkingHours())
-                            .latitude(loc.getLatitude())
-                            .longitude(loc.getLongitude())
-                            .primary(loc.isPrimary())
-                            .active(loc.isActive())
-                            .build())
+                    .map(this::mapMerchantLocation)
                     .orElse(null);
         }
+
+        return mapToResponse(
+                offer,
+                primaryLoc,
+                reviewRepository.getAverageRatingByCouponId(offer.getId()),
+                reviewRepository.countApprovedByCouponId(offer.getId()),
+                offer.getOptions(),
+                offer.getImages());
+    }
+
+    private MerchantLocationResponse mapMerchantLocation(MerchantLocation location) {
+        return MerchantLocationResponse.builder()
+                .id(location.getId())
+                .title(location.getTitle())
+                .address(location.getAddress())
+                .phone(location.getPhone())
+                .workingHours(location.getWorkingHours())
+                .latitude(location.getLatitude())
+                .longitude(location.getLongitude())
+                .primary(location.isPrimary())
+                .active(location.isActive())
+                .build();
+    }
+
+    private CouponOfferResponse mapToResponse(
+            CouponOffer offer,
+            MerchantLocationResponse primaryLoc,
+            double averageRating,
+            int reviewCount,
+            List<CouponOption> options,
+            List<CouponImage> images
+    ) {
 
         String offerDesc = offer.getOfferDescription();
 
@@ -840,9 +901,9 @@ public class CouponOfferService {
                 .redeemedCount(offer.getRedeemedCount())
                 .totalTurnover(offer.getTotalTurnover())
                 .viewCount(offer.getViewCount())
-                .averageRating(reviewRepository.getAverageRatingByCouponId(offer.getId()))
-                .reviewCount(reviewRepository.countApprovedByCouponId(offer.getId()))
-                .options(offer.getOptions().stream()
+                .averageRating(averageRating)
+                .reviewCount(reviewCount)
+                .options(options.stream()
                         .map(opt -> CouponOptionResponse.builder()
                                 .id(opt.getId())
                                 .title(opt.getTitle())
@@ -853,7 +914,7 @@ public class CouponOfferService {
                                 .status(opt.getStatus().name())
                                 .build())
                         .collect(Collectors.toList()))
-                .images(offer.getImages().stream()
+                .images(images.stream()
                         .map(CouponImage::getImageUrl)
                         .collect(Collectors.toList()))
                 .createdAt(offer.getCreatedAt())
