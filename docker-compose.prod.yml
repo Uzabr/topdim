@@ -1,3 +1,20 @@
+x-backend-env: &backend_env
+  SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+  EUREKA_HOST: discovery-server
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_USERNAME: ${DB_USERNAME}
+  DB_PASSWORD: ${DB_PASSWORD}
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: 5672
+  RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+  JWT_SECRET: ${JWT_SECRET}
+  MAIL_USERNAME: ${MAIL_USERNAME}
+  MAIL_PASSWORD: ${MAIL_PASSWORD}
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -115,22 +132,9 @@ services:
       args:
         MODULE_PATH: services:identity-service
     restart: unless-stopped
-    environment: &backend_env
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      EUREKA_HOST: discovery-server
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
+    environment:
+      <<: *backend_env
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
     depends_on: &backend_depends_on
       postgres:
         condition: service_healthy
