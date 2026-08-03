@@ -1,10 +1,11 @@
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
 import {
   LegacyCouponRedirect,
   type LegacyCouponRedirectTarget,
 } from './LegacyCouponRedirect';
+import App from '../../../App';
 
 interface RedirectCase {
   from: string;
@@ -59,6 +60,35 @@ const legacyStandaloneHeadings = [
   'Ожидают подтверждения мерчанта',
 ];
 
+vi.mock('../../../routes/ProtectedRoute', () => ({
+  ProtectedRoute: () => <Outlet />,
+}));
+
+vi.mock('../../../components/layout/AdminLayout', () => ({
+  AdminLayout: () => <Outlet />,
+}));
+
+vi.mock('./CouponWorkspacePage', () => ({
+  CouponWorkspacePage: () => <CanonicalRouteMarker destination="workspace" />,
+}));
+
+vi.mock('../CouponFormPage', () => ({
+  CouponFormPage: () => <CanonicalRouteMarker destination="form" />,
+}));
+
+function CanonicalRouteMarker({ destination }: { destination: 'workspace' | 'form' }) {
+  const location = useLocation();
+
+  return (
+    <section>
+      <h1>{destination === 'workspace' ? 'Купоны' : 'Форма купона'}</h1>
+      <output data-testid="canonical-route">
+        {destination}:{location.pathname}{location.search}
+      </output>
+    </section>
+  );
+}
+
 function LocationProbe() {
   const location = useLocation();
   return <output data-testid="location">{location.pathname}{location.search}</output>;
@@ -78,20 +108,42 @@ function renderRedirect(testCase: RedirectCase) {
   );
 }
 
+function renderAppAt(path: string) {
+  window.history.pushState({}, '', path);
+  render(<App />);
+}
+
 describe('legacy coupon redirects', () => {
-  it.each(redirectCases)('$from → $expected', (testCase) => {
-    renderRedirect(testCase);
+  it.each(redirectCases)('App routes $from to the canonical $expected destination', async (testCase) => {
+    renderAppAt(testCase.from);
 
-    expect(screen.getByTestId('location').textContent).toBe(testCase.expected);
-  });
-
-  it.each(redirectCases)('does not render standalone legacy headings for $from', (testCase) => {
-    renderRedirect(testCase);
-
-    expect(screen.getByTestId('location').textContent).toBe(testCase.expected);
+    expect((await screen.findByTestId('canonical-route')).textContent).toBe(
+      `${testCase.expected.startsWith('/coupons/new') || testCase.expected.includes('/edit') ? 'form' : 'workspace'}:${testCase.expected}`,
+    );
     for (const heading of legacyStandaloneHeadings) {
       expect(screen.queryByRole('heading', { name: heading })).toBeNull();
     }
+  });
+
+  it.each(['0', '-1', 'not-a-number', '9007199254740992'])(
+    'App routes unsafe edit id %s to the workspace',
+    async (id) => {
+      renderAppAt(`/moderation/coupons/edit/${id}`);
+
+      expect((await screen.findByTestId('canonical-route')).textContent).toBe('workspace:/coupons');
+    },
+  );
+
+  it('App does not carry arbitrary legacy query parameters into the canonical URL', async () => {
+    renderAppAt('/moderation/coupons?redirect=https://evil.example&tab=bad');
+
+    expect((await screen.findByTestId('canonical-route')).textContent).toBe('workspace:/coupons');
+  });
+
+  it.each(redirectCases)('redirect component maps $from → $expected', (testCase) => {
+    renderRedirect(testCase);
+
+    expect(screen.getByTestId('location').textContent).toBe(testCase.expected);
   });
 
   it.each(['0', '-1', 'not-a-number', '9007199254740992'])(
