@@ -36,6 +36,21 @@ const ADMIN_PARTNER_OR_BACKEND = new Set(ACTIVE_SOURCE_FILES.filter((path) =>
   !path.startsWith('web-app/'),
 ));
 
+const PARTNER_PROPOSAL_SOURCES = {
+  layout: 'partner/src/layouts/PartnerLayout.tsx',
+  request: 'partner/src/pages/CouponRequestFormPage.tsx',
+  list: 'partner/src/pages/CouponsPage.tsx',
+  approval: 'partner/src/pages/CouponApprovalPage.tsx',
+  controller: '../services/coupon-service/src/main/java/uz/topdim/coupon/controller/PartnerCouponController.java',
+} as const;
+
+const TECHNICAL_LITERALS = new Set([
+  'TOPDIM-QR:',
+  'topdim-qr-reader',
+  'offerDescription',
+]);
+const EMAIL_LITERAL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
+
 function withoutComments(source: string): string {
   let result = '';
   let quote: "'" | '"' | '`' | null = null;
@@ -115,7 +130,16 @@ function literals(source: string): string[] {
     values.push(value);
   }
   for (const match of source.matchAll(jsxText)) values.push(match[1]);
-  return values.map((value) => value.trim()).filter(Boolean);
+  return values
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .filter((value) => !isExplicitlyExcludedLiteral(value));
+}
+
+function isExplicitlyExcludedLiteral(value: string): boolean {
+  return EMAIL_LITERAL.test(value)
+    || TECHNICAL_LITERALS.has(value)
+    || value.startsWith('/api/');
 }
 
 function violations(pattern: RegExp, paths: readonly string[]): string[] {
@@ -132,5 +156,47 @@ describe('active coupon terminology', () => {
 
   it('uses sizbiz in public brand literals while preserving technical identifiers', () => {
     expect(violations(/TopDim/u, ACTIVE_SOURCE_FILES)).toEqual([]);
+  });
+
+  it('uses proposal wording throughout partner proposal management without restricting redemption', () => {
+    const expectedLiterals: Array<[string, string]> = [
+      [PARTNER_PROPOSAL_SOURCES.layout, 'Мои предложения'],
+      [PARTNER_PROPOSAL_SOURCES.request, 'Цена по предложению (сум)'],
+      [PARTNER_PROPOSAL_SOURCES.list, 'Ошибка загрузки предложений'],
+      [PARTNER_PROPOSAL_SOURCES.approval, 'Предложение одобрено и опубликовано'],
+      [PARTNER_PROPOSAL_SOURCES.approval, 'Не удалось одобрить предложение'],
+      [PARTNER_PROPOSAL_SOURCES.approval, 'Предложение возвращено sizbiz на доработку'],
+      [PARTNER_PROPOSAL_SOURCES.approval, 'Одобрить и опубликовать предложение?'],
+      [PARTNER_PROPOSAL_SOURCES.approval, 'Предложение "${coupon.title}" станет доступно клиентам.'],
+      [PARTNER_PROPOSAL_SOURCES.approval, 'Предложение не найдено'],
+      [PARTNER_PROPOSAL_SOURCES.approval, 'Назад к предложениям'],
+      [PARTNER_PROPOSAL_SOURCES.approval, 'У предложения нет обложки'],
+      [PARTNER_PROPOSAL_SOURCES.approval, 'Без корректного адреса предложение может не пройти публикацию. Проверьте данные перед одобрением.'],
+      [PARTNER_PROPOSAL_SOURCES.approval, 'Это предложение сейчас не ожидает вашего согласования'],
+      [PARTNER_PROPOSAL_SOURCES.controller, 'Предложение обновлено'],
+      [PARTNER_PROPOSAL_SOURCES.controller, 'Предложение одобрено и опубликовано'],
+      [PARTNER_PROPOSAL_SOURCES.controller, 'Предложение возвращено на доработку'],
+    ];
+
+    for (const [path, expected] of expectedLiterals) {
+      expect(literals(userVisibleSource(path)), `${path}: ${expected}`).toContain(expected);
+    }
+  });
+
+  it('mirrors the partner setup terminology in Russian and Uzbek', () => {
+    const ru = JSON.parse(userVisibleSource('web-app/src/locales/ru.json'));
+    const uz = JSON.parse(userVisibleSource('web-app/src/locales/uz.json'));
+
+    expect(ru.partners.steps.setup.title).toBe('Настройка предложения');
+    expect(uz.partners.steps.setup.title).toBe('Taklifni sozlash');
+  });
+
+  it('excludes only documented email and technical literals from copy checks', () => {
+    expect(isExplicitlyExcludedLiteral('merchant@example.uz')).toBe(true);
+    expect(isExplicitlyExcludedLiteral('TOPDIM-QR:')).toBe(true);
+    expect(isExplicitlyExcludedLiteral('topdim-qr-reader')).toBe(true);
+    expect(isExplicitlyExcludedLiteral('offerDescription')).toBe(true);
+    expect(isExplicitlyExcludedLiteral('/api/v1/partner/coupons')).toBe(true);
+    expect(isExplicitlyExcludedLiteral('Предложение одобрено и опубликовано')).toBe(false);
   });
 });

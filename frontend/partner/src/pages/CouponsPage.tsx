@@ -55,7 +55,7 @@ export default function CouponsPage() {
   });
 
   if (isLoading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
-  if (error) return <Result status="error" title="Ошибка загрузки купонов" subTitle={(error as Error).message} />;
+  if (error) return <Result status="error" title="Ошибка загрузки предложений" subTitle={(error as Error).message} />;
 
   const coupons = data?.content || [];
 

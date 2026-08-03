@@ -98,13 +98,13 @@ export default function CouponApprovalPage() {
   const approveMutation = useMutation({
     mutationFn: () => api.post(`/api/v1/partner/coupons/${couponId}/approve`),
     onSuccess: async () => {
-      message.success('Купон одобрен и опубликован');
+      message.success('Предложение одобрено и опубликовано');
       await queryClient.invalidateQueries({ queryKey: ['partner-coupons'] });
       navigate('/coupons');
     },
     onError: (err: unknown) => {
       const e = err as { response?: { data?: { message?: string } } };
-      message.error(e.response?.data?.message || 'Не удалось одобрить купон');
+      message.error(e.response?.data?.message || 'Не удалось одобрить предложение');
     },
   });
 
@@ -112,7 +112,7 @@ export default function CouponApprovalPage() {
     mutationFn: (comment: string) =>
       api.post(`/api/v1/partner/coupons/${couponId}/request-revision`, { comment }),
     onSuccess: async () => {
-      message.success('Купон возвращён sizbiz на доработку');
+      message.success('Предложение возвращено sizbiz на доработку');
       await queryClient.invalidateQueries({ queryKey: ['partner-coupons'] });
       navigate('/coupons');
     },
@@ -125,9 +125,9 @@ export default function CouponApprovalPage() {
   const handleApprove = () => {
     if (!coupon) return;
     modal.confirm({
-      title: 'Одобрить и опубликовать купон?',
+      title: 'Одобрить и опубликовать предложение?',
       icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
-      content: `Купон "${coupon.title}" станет доступен клиентам.`,
+      content: `Предложение "${coupon.title}" станет доступно клиентам.`,
       okText: 'Одобрить и опубликовать',
       cancelText: 'Отмена',
       onOk: () => approveMutation.mutate(),
@@ -144,7 +144,7 @@ export default function CouponApprovalPage() {
   };
 
   if (isLoading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
-  if (error || !coupon) return <Result status="error" title="Купон не найден" />;
+  if (error || !coupon) return <Result status="error" title="Предложение не найдено" />;
 
   const isWaiting = coupon.status === 'WAITING_FOR_MERCHANT';
 
@@ -152,7 +152,7 @@ export default function CouponApprovalPage() {
     <div style={{ maxWidth: 1040, margin: '0 auto' }}>
       <Space style={{ marginBottom: 16 }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/coupons')}>
-          Назад к купонам
+          Назад к предложениям
         </Button>
         <Tag color={isWaiting ? 'orange' : 'default'}>{coupon.status}</Tag>
       </Space>
@@ -167,7 +167,7 @@ export default function CouponApprovalPage() {
                 style={{ width: '100%', maxHeight: 360, objectFit: 'cover', borderRadius: 12 }}
               />
             ) : (
-              <Alert type="warning" showIcon message="У купона нет обложки" />
+              <Alert type="warning" showIcon message="У предложения нет обложки" />
             )}
             {coupon.images && coupon.images.length > 0 && (
               <>
@@ -206,7 +206,7 @@ export default function CouponApprovalPage() {
                 type="warning"
                 showIcon
                 message="Адрес primary location не указан"
-                description="Без корректного адреса купон может не пройти публикацию. Проверьте данные перед одобрением."
+                description="Без корректного адреса предложение может не пройти публикацию. Проверьте данные перед одобрением."
                 style={{ marginBottom: 16 }}
               />
             )}
@@ -262,7 +262,7 @@ export default function CouponApprovalPage() {
               <Alert
                 type="info"
                 showIcon
-                message="Этот купон сейчас не ожидает вашего согласования"
+                message="Это предложение сейчас не ожидает вашего согласования"
                 description="Действия доступны только для статуса WAITING_FOR_MERCHANT."
               />
             ) : (

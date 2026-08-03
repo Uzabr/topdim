@@ -56,7 +56,7 @@ export default function PartnerLayout() {
 
     // My Coupons — only for Owner and Manager
     if (isOwner || ctx.canViewDashboard) {
-      items.push({ key: '/coupons', icon: <GiftOutlined />, label: 'Мои купоны' });
+      items.push({ key: '/coupons', icon: <GiftOutlined />, label: 'Мои предложения' });
     }
 
     // Redeem — for all (cashier, manager, owner)

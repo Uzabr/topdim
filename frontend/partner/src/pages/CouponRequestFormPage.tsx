@@ -294,7 +294,7 @@ export default function CouponRequestFormPage() {
                   />
                 </Col>
                 <Col span={6}>
-                  <div style={{ marginBottom: 4, fontSize: 13, color: '#555' }}>Цена по купону (сум)</div>
+                  <div style={{ marginBottom: 4, fontSize: 13, color: '#555' }}>Цена по предложению (сум)</div>
                   <InputNumber
                     min={1} style={{ width: '100%' }}
                     placeholder="50 000"
