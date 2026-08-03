@@ -6,8 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import api from '../../../api/client';
 import { useAuthStore } from '../../../store/authStore';
 import { CouponActionMenu } from './CouponActionMenu';
-import { allowedCouponActions } from './permissions';
-import type { AdminCouponRow, CouponAction, CouponStatus, StaffRole } from './types';
+import type { AdminCouponRow, CouponStatus, StaffRole } from './types';
 
 vi.mock('../../../api/client', () => ({
   default: {
@@ -18,17 +17,6 @@ vi.mock('../../../api/client', () => ({
 
 const mockedPatch = vi.mocked(api.patch);
 const mockedPost = vi.mocked(api.post);
-
-const labels: Record<CouponAction, string> = {
-  view: 'Просмотреть',
-  'take-to-work': 'Взять в работу',
-  edit: 'Редактировать',
-  'send-to-approval': 'Отправить на согласование',
-  'support-review': 'Служебное решение',
-  pause: 'Приостановить',
-  restore: 'Восстановить',
-  archive: 'Архивировать',
-};
 
 function coupon(
   status: CouponStatus,
@@ -69,7 +57,7 @@ function renderMenu(
     },
   });
   const queryClient = new QueryClient({
-    defaultOptions: { mutations: { retry: false }, queries: { retry: false } },
+    defaultOptions: { queries: { retry: false } },
   });
 
   render(
@@ -101,43 +89,69 @@ describe('CouponActionMenu', () => {
   });
 
   it.each([
-    ['MODERATOR', 'LEAD', null],
-    ['MODERATOR', 'DRAFT', 7],
-    ['MODERATOR', 'DRAFT', 99],
-    ['MODERATOR', 'REVISION_REQUESTED', 7],
-    ['MODERATOR', 'REVISION_REQUESTED', 99],
-    ['MODERATOR', 'WAITING_FOR_MERCHANT', 7],
-    ['MODERATOR', 'ACTIVE', 7],
-    ['MODERATOR', 'PAUSED', 7],
-    ['MODERATOR', 'SOLD_OUT', 7],
-    ['MODERATOR', 'ARCHIVED', 7],
-    ['ADMIN', 'LEAD', null],
-    ['ADMIN', 'DRAFT', 99],
-    ['ADMIN', 'REVISION_REQUESTED', null],
-    ['ADMIN', 'WAITING_FOR_MERCHANT', 7],
-    ['ADMIN', 'ACTIVE', 7],
-    ['ADMIN', 'PAUSED', 7],
-    ['ADMIN', 'SOLD_OUT', 7],
-    ['ADMIN', 'ARCHIVED', 7],
-    ['SUPER_ADMIN', 'LEAD', null],
-    ['SUPER_ADMIN', 'DRAFT', 99],
-    ['SUPER_ADMIN', 'REVISION_REQUESTED', null],
-    ['SUPER_ADMIN', 'WAITING_FOR_MERCHANT', 7],
-    ['SUPER_ADMIN', 'ACTIVE', 7],
-    ['SUPER_ADMIN', 'PAUSED', 7],
-    ['SUPER_ADMIN', 'SOLD_OUT', 7],
-    ['SUPER_ADMIN', 'ARCHIVED', 7],
+    ['MODERATOR', 'LEAD', null, ['Просмотреть', 'Взять в работу']],
+    ['MODERATOR', 'DRAFT', 7, ['Просмотреть', 'Редактировать', 'Отправить на согласование']],
+    ['MODERATOR', 'DRAFT', 99, ['Просмотреть']],
+    ['MODERATOR', 'REVISION_REQUESTED', 7, ['Просмотреть', 'Редактировать', 'Отправить на согласование']],
+    ['MODERATOR', 'REVISION_REQUESTED', 99, ['Просмотреть']],
+    ['MODERATOR', 'WAITING_FOR_MERCHANT', 7, ['Просмотреть']],
+    ['MODERATOR', 'ACTIVE', 7, ['Просмотреть']],
+    ['MODERATOR', 'PAUSED', 7, ['Просмотреть']],
+    ['MODERATOR', 'SOLD_OUT', 7, ['Просмотреть']],
+    ['MODERATOR', 'ARCHIVED', 7, ['Просмотреть']],
+    ['ADMIN', 'LEAD', null, ['Просмотреть', 'Взять в работу']],
+    ['ADMIN', 'DRAFT', 99, ['Просмотреть', 'Редактировать', 'Отправить на согласование']],
+    ['ADMIN', 'REVISION_REQUESTED', null, ['Просмотреть', 'Редактировать', 'Отправить на согласование']],
+    ['ADMIN', 'WAITING_FOR_MERCHANT', 7, ['Просмотреть', 'Служебное решение']],
+    ['ADMIN', 'ACTIVE', 7, ['Просмотреть', 'Приостановить']],
+    ['ADMIN', 'PAUSED', 7, ['Просмотреть', 'Восстановить', 'Архивировать']],
+    ['ADMIN', 'SOLD_OUT', 7, ['Просмотреть', 'Архивировать']],
+    ['ADMIN', 'ARCHIVED', 7, ['Просмотреть']],
+    ['SUPER_ADMIN', 'LEAD', null, ['Просмотреть', 'Взять в работу']],
+    ['SUPER_ADMIN', 'DRAFT', 99, ['Просмотреть', 'Редактировать', 'Отправить на согласование']],
+    ['SUPER_ADMIN', 'REVISION_REQUESTED', null, ['Просмотреть', 'Редактировать', 'Отправить на согласование']],
+    ['SUPER_ADMIN', 'WAITING_FOR_MERCHANT', 7, ['Просмотреть', 'Служебное решение']],
+    ['SUPER_ADMIN', 'ACTIVE', 7, ['Просмотреть', 'Приостановить']],
+    ['SUPER_ADMIN', 'PAUSED', 7, ['Просмотреть', 'Восстановить', 'Архивировать']],
+    ['SUPER_ADMIN', 'SOLD_OUT', 7, ['Просмотреть', 'Архивировать']],
+    ['SUPER_ADMIN', 'ARCHIVED', 7, ['Просмотреть']],
   ] as const)('renders the exact centralized action set for %s %s owned by %s', async (
     role,
     status,
     assignedModeratorId,
+    expected,
   ) => {
     renderMenu(status, role, assignedModeratorId);
     const actual = await visibleActions();
-    const expected = allowedCouponActions(coupon(status, assignedModeratorId), { id: 7, role })
-      .map((action) => labels[action]);
 
     expect(actual).toEqual(expected);
+  });
+
+  it.each([
+    'LEAD',
+    'DRAFT',
+    'REVISION_REQUESTED',
+    'ACTIVE',
+    'PAUSED',
+    'SOLD_OUT',
+    'ARCHIVED',
+  ] as const)('does not expose support review to an admin outside WAITING_FOR_MERCHANT (%s)', async (status) => {
+    renderMenu(status, 'ADMIN', 7);
+
+    expect(await visibleActions()).not.toContain('Служебное решение');
+  });
+
+  it.each([
+    'LEAD',
+    'DRAFT',
+    'REVISION_REQUESTED',
+    'WAITING_FOR_MERCHANT',
+    'ACTIVE',
+    'ARCHIVED',
+  ] as const)('does not expose archive to an admin in an ineligible %s status', async (status) => {
+    renderMenu(status, 'ADMIN', 7);
+
+    expect(await visibleActions()).not.toContain('Архивировать');
   });
 
   it('keeps a moderator waiting coupon view-only and exposes no forbidden action', async () => {
@@ -158,6 +172,7 @@ describe('CouponActionMenu', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Служебное решение' }));
 
     expect(screen.getByText('Внимание: это служебное решение заменяет подтверждение партнёра.')).toBeTruthy();
+    expect(screen.queryByRole('radio', { name: 'Отклонить купон' })).toBeNull();
     expect((screen.getByRole('button', { name: 'Подтвердить решение' }) as HTMLButtonElement).disabled)
       .toBe(true);
 

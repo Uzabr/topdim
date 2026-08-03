@@ -6,7 +6,6 @@ import {
   Dropdown,
   Input,
   Modal,
-  Radio,
   Space,
   message,
 } from 'antd';
@@ -92,14 +91,12 @@ function AuthorizedCouponActionMenu({
   const [supportOpen, setSupportOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [reason, setReason] = useState('');
-  const [supportStatus, setSupportStatus] = useState<'APPROVE' | 'REJECT'>('APPROVE');
   const [errorText, setErrorText] = useState<string | null>(null);
 
   const actionMutation = useMutation({
-    mutationFn: async ({ action, actionReason, status }: {
+    mutationFn: async ({ action, actionReason }: {
       action: MutationAction;
       actionReason?: string;
-      status?: 'APPROVE' | 'REJECT';
     }) => {
       switch (action) {
         case 'take-to-work':
@@ -122,7 +119,7 @@ function AuthorizedCouponActionMenu({
           return api.post(`/api/v1/admin/coupons/${coupon.id}/archive`, { reason: actionReason });
         case 'support-review':
           return api.patch(`/api/v1/mod/coupons/${coupon.id}/review`, {
-            status,
+            status: 'APPROVE',
             reason: actionReason,
           });
       }
@@ -144,9 +141,9 @@ function AuthorizedCouponActionMenu({
   });
 
   const actions = allowedCouponActions(coupon, currentUser);
-  const runMutation = (action: MutationAction, actionReason?: string, status?: 'APPROVE' | 'REJECT') => {
+  const runMutation = (action: MutationAction, actionReason?: string) => {
     setErrorText(null);
-    actionMutation.mutate({ action, actionReason, status });
+    actionMutation.mutate({ action, actionReason });
   };
   const onAction = (action: CouponAction) => {
     switch (action) {
@@ -158,7 +155,6 @@ function AuthorizedCouponActionMenu({
         return;
       case 'support-review':
         setReason('');
-        setSupportStatus('APPROVE');
         setSupportOpen(true);
         return;
       case 'archive':
@@ -207,7 +203,7 @@ function AuthorizedCouponActionMenu({
         cancelText="Отмена"
         okButtonProps={{ disabled: reason.trim().length === 0, loading: actionMutation.isPending }}
         onCancel={() => setSupportOpen(false)}
-        onOk={() => runMutation('support-review', reason.trim(), supportStatus)}
+        onOk={() => runMutation('support-review', reason.trim())}
       >
         <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
           <Alert
@@ -215,13 +211,6 @@ function AuthorizedCouponActionMenu({
             showIcon
             title="Внимание: это служебное решение заменяет подтверждение партнёра."
           />
-          <Radio.Group
-            value={supportStatus}
-            onChange={(event) => setSupportStatus(event.target.value)}
-          >
-            <Radio value="APPROVE">Подтвердить купон</Radio>
-            <Radio value="REJECT">Отклонить купон</Radio>
-          </Radio.Group>
           <Input.TextArea
             aria-label="Причина служебного решения"
             rows={4}
