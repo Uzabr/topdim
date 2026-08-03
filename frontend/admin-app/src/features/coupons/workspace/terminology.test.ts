@@ -50,6 +50,8 @@ const TECHNICAL_LITERALS = new Set([
   'offerDescription',
 ]);
 const EMAIL_LITERAL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
+const APPROVED_COUPON_ADJECTIVE = /купонное\s+предложение/giu;
+const STANDALONE_COUPON_NOUN = /(?<![\p{L}])купон(?:ами|ов|ам|ах|ы|а|у|ом|е)?(?![\p{L}])/iu;
 
 function withoutComments(source: string): string {
   let result = '';
@@ -148,6 +150,17 @@ function violations(pattern: RegExp, paths: readonly string[]): string[] {
     .map((literal) => `${path}: ${literal}`));
 }
 
+function proposalVocabularyViolations(
+  values: string[],
+  scope: 'proposal-management' | 'redemption' = 'proposal-management',
+): string[] {
+  if (scope === 'redemption') return [];
+
+  return values.filter((value) => STANDALONE_COUPON_NOUN.test(
+    value.replace(APPROVED_COUPON_ADJECTIVE, ''),
+  ));
+}
+
 describe('active coupon terminology', () => {
   it('keeps admin, partner, and backend user-visible literals free of retired coupon terms', () => {
     expect(violations(/акци(?:я|и|ю|ей|ям|ями|ях|е)|оффер|товар/iu, [...ADMIN_PARTNER_OR_BACKEND]))
@@ -181,6 +194,26 @@ describe('active coupon terminology', () => {
     for (const [path, expected] of expectedLiterals) {
       expect(literals(userVisibleSource(path)), `${path}: ${expected}`).toContain(expected);
     }
+  });
+
+  it('rejects a new standalone coupon noun in proposal-management copy', () => {
+    const syntheticBadProposalLiteral = 'Купоны ожидают согласования';
+
+    expect(proposalVocabularyViolations([syntheticBadProposalLiteral]))
+      .toEqual([syntheticBadProposalLiteral]);
+  });
+
+  it('allows the approved coupon adjective and redemption copy independently', () => {
+    expect(proposalVocabularyViolations(['Купонное предложение принято'])).toEqual([]);
+    expect(proposalVocabularyViolations(['Купон погашен по QR!'], 'redemption')).toEqual([]);
+  });
+
+  it('keeps every proposal-management source free of standalone coupon nouns', () => {
+    const sourceViolations = Object.values(PARTNER_PROPOSAL_SOURCES).flatMap((path) =>
+      proposalVocabularyViolations(literals(userVisibleSource(path)))
+        .map((literal) => `${path}: ${literal}`));
+
+    expect(sourceViolations).toEqual([]);
   });
 
   it('mirrors the partner setup terminology in Russian and Uzbek', () => {
