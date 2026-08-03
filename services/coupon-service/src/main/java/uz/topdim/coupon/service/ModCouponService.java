@@ -1,6 +1,7 @@
 package uz.topdim.coupon.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,7 @@ import uz.topdim.coupon.repository.ReviewRepository;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ModCouponService {
 
     private final CouponOfferRepository couponOfferRepository;
@@ -35,24 +37,38 @@ public class ModCouponService {
 
     @Transactional
     public void reviewCoupon(Long modId, Long couponId, String decision, String reason) {
-        if ("APPROVE".equalsIgnoreCase(decision)) {
+        String normalizedReason = reason == null ? "" : reason.trim();
+        if (normalizedReason.isBlank()) {
+            throw new IllegalArgumentException("Причина служебного решения обязательна");
+        }
+        String normalizedDecision = decision == null ? "" : decision.trim().toUpperCase(java.util.Locale.ROOT);
+
+        if ("APPROVE".equals(normalizedDecision)) {
             // Делегируем — валидация State Machine (WAITING_FOR_MERCHANT → ACTIVE) внутри
             couponOfferService.approveByMerchant(couponId);
-        } else if ("REJECT".equalsIgnoreCase(decision)) {
+        } else if ("REJECT".equals(normalizedDecision)) {
             // Делегируем — валидация + сохранение revisionComment внутри
-            couponOfferService.requestRevisionByMerchant(couponId, reason);
+            couponOfferService.requestRevisionByMerchant(couponId, normalizedReason);
         } else {
             throw new IllegalArgumentException("Unknown decision: " + decision);
         }
 
+        log.info(
+                "Служебное решение по купону: actorId={}, couponId={}, decision={}, reason={}",
+                modId,
+                couponId,
+                normalizedDecision,
+                normalizedReason
+        );
+
         // Отправляем уведомление после успешного перехода
         CouponOffer coupon = couponOfferRepository.findById(couponId).orElseThrow();
-        if ("APPROVE".equalsIgnoreCase(decision)) {
+        if ("APPROVE".equals(normalizedDecision)) {
             sendNotification(coupon.getMerchant().getUserId(), "Купон одобрен",
                     "Ваш купон '" + coupon.getTitle() + "' был успешно промодерирован и опубликован.", "SUCCESS");
         } else {
             sendNotification(coupon.getMerchant().getUserId(), "Купон отклонен",
-                    "Ваш купон '" + coupon.getTitle() + "' был отклонен. Причина: " + reason, "ALERT");
+                    "Ваш купон '" + coupon.getTitle() + "' был отклонен. Причина: " + normalizedReason, "ALERT");
         }
     }
 

@@ -105,7 +105,7 @@ public class AdminCouponController {
         return ResponseEntity.ok(ApiResponse.success("Купон обновлён", couponOfferService.update(id, request, userId, userRole)));
     }
 
-    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PatchMapping("/coupons/{id}/status")
     public ResponseEntity<ApiResponse<CouponOfferResponse>> updateCouponStatus(
             @PathVariable Long id,
@@ -114,14 +114,14 @@ public class AdminCouponController {
         return ResponseEntity.ok(ApiResponse.success("Статус обновлён", couponOfferService.updateStatus(id, status)));
     }
 
-    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @DeleteMapping("/coupons/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteCoupon(@PathVariable Long id) {
         couponOfferService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("Купон удалён", null));
     }
 
-    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PostMapping("/coupons/{id}/archive")
     public ResponseEntity<ApiResponse<CouponOfferResponse>> archiveCoupon(
             @PathVariable Long id,
@@ -134,13 +134,18 @@ public class AdminCouponController {
     /** Отправить купон на согласование мерчанту (DRAFT/REVISION_REQUESTED → WAITING_FOR_MERCHANT). */
     @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
     @PostMapping("/coupons/{id}/send-to-approval")
-    public ResponseEntity<ApiResponse<CouponOfferResponse>> sendToApproval(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<CouponOfferResponse>> sendToApproval(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader("X-User-Role") String userRole
+    ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Купон отправлен на согласование", couponOfferService.sendToApproval(id)));
+                "Купон отправлен на согласование",
+                couponOfferService.sendToApproval(id, userId, userRole)));
     }
 
     /** Отклонить заявку партнёра (LEAD/DRAFT → ARCHIVED с причиной). */
-    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PostMapping("/coupons/{id}/reject-request")
     public ResponseEntity<ApiResponse<CouponOfferResponse>> rejectRequest(
             @PathVariable Long id,

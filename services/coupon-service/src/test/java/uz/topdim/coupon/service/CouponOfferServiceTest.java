@@ -294,7 +294,7 @@ class CouponOfferServiceTest {
         when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
         when(couponOfferRepository.save(any())).thenReturn(offer);
 
-        CouponOfferResponse result = couponOfferService.sendToApproval(1L);
+        CouponOfferResponse result = couponOfferService.sendToApproval(1L, 99L, "ADMIN");
 
         assertThat(result.getStatus()).isEqualTo("WAITING_FOR_MERCHANT");
     }
@@ -306,8 +306,38 @@ class CouponOfferServiceTest {
         offer.setStatus(CouponStatus.ACTIVE);
         when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
 
-        assertThatThrownBy(() -> couponOfferService.sendToApproval(1L))
+        assertThatThrownBy(() -> couponOfferService.sendToApproval(1L, 99L, "ADMIN"))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("State Machine: MODERATOR не отправляет незакреплённый купон")
+    void sendToApproval_unassignedModerator_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        offer.setAssignedModeratorId(null);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.sendToApproval(1L, 99L, "MODERATOR"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("не закреплён");
+
+        verify(couponOfferRepository, never()).save(any());
+        verify(telegramPreviewService, never()).sendPreview(any());
+    }
+
+    @Test
+    @DisplayName("State Machine: MODERATOR отправляет только закреплённый за ним купон")
+    void sendToApproval_ownedModerator_allowed() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        offer.setAssignedModeratorId(99L);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.save(any())).thenReturn(offer);
+
+        CouponOfferResponse result = couponOfferService.sendToApproval(1L, 99L, "MODERATOR");
+
+        assertThat(result.getStatus()).isEqualTo("WAITING_FOR_MERCHANT");
     }
 
     @Test
@@ -494,6 +524,24 @@ class CouponOfferServiceTest {
     }
 
     @Test
+    @DisplayName("Update: MODERATOR не редактирует незакреплённый купон")
+    void update_unassignedModeratorCoupon_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        offer.setAssignedModeratorId(null);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.update(
+                1L,
+                new CreateCouponOfferRequest(),
+                100L,
+                "MODERATOR"
+        ))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("не закреплён");
+    }
+
+    @Test
     @DisplayName("Delete: WAITING_FOR_MERCHANT — запрещено")
     void delete_waitingForMerchant_throws() {
         CouponOffer offer = createTestOffer();
@@ -537,6 +585,21 @@ class CouponOfferServiceTest {
 
         assertThat(result.getStatus()).isEqualTo("ARCHIVED");
         assertThat(result.getArchiveReason()).isEqualTo("Оффер больше не актуален");
+    }
+
+    @Test
+    @DisplayName("Archive: PAUSED → ARCHIVED разрешён и причина обрезается")
+    void archive_fromPaused_trimsReason() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.PAUSED);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.save(any(CouponOffer.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        CouponOfferResponse result = couponOfferService.archive(1L, "  Завершено по договору  ");
+
+        assertThat(result.getStatus()).isEqualTo("ARCHIVED");
+        assertThat(result.getArchiveReason()).isEqualTo("Завершено по договору");
     }
 
     @Test

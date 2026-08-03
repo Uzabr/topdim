@@ -96,7 +96,7 @@ class CouponOfferServiceBusinessLogicTest {
         when(couponOfferRepository.save(any(CouponOffer.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(couponCoverFallbackService.getFallbackCover("food")).thenReturn("/defaults/covers/food.jpg");
 
-        CouponOfferResponse result = couponOfferService.sendToApproval(10L);
+        CouponOfferResponse result = couponOfferService.sendToApproval(10L, 99L, "ADMIN");
 
         assertThat(result.getStatus()).isEqualTo("WAITING_FOR_MERCHANT");
         assertThat(result.getRevisionComment()).isNull();
@@ -104,47 +104,51 @@ class CouponOfferServiceBusinessLogicTest {
     }
 
     @Test
-    @DisplayName("updateStatus: LEAD -> DRAFT разрешён")
-    void updateStatus_leadToDraft_allowed() {
+    @DisplayName("updateStatus: LEAD -> DRAFT запрещён, используется takeToWork")
+    void updateStatus_leadToDraft_rejected() {
         CouponOffer offer = createOffer(CouponStatus.LEAD);
         when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(offer));
-        when(couponOfferRepository.save(any(CouponOffer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CouponOfferResponse result = couponOfferService.updateStatus(10L, CouponStatus.DRAFT);
-
-        assertThat(result.getStatus()).isEqualTo("DRAFT");
+        assertThatThrownBy(() -> couponOfferService.updateStatus(10L, CouponStatus.DRAFT))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("запрещён");
+        verify(couponOfferRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("updateStatus: WAITING_FOR_MERCHANT -> ACTIVE разрешён")
-    void updateStatus_waitingForMerchantToActive_allowed() {
+    @DisplayName("updateStatus: WAITING_FOR_MERCHANT -> ACTIVE запрещён, решение принимает partner/support")
+    void updateStatus_waitingForMerchantToActive_rejected() {
         CouponOffer offer = createOffer(CouponStatus.WAITING_FOR_MERCHANT);
-        uz.topdim.coupon.entity.MerchantLocation location = uz.topdim.coupon.entity.MerchantLocation.builder()
-                .id(5L)
-                .merchant(offer.getMerchant())
-                .address("Ташкент, ул. Шота Руставели, 1")
-                .primary(true)
-                .active(true)
-                .build();
         when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(offer));
-        when(merchantLocationRepository.findByMerchantIdAndPrimaryTrue(1L)).thenReturn(Optional.of(location));
-        when(couponOfferRepository.save(any(CouponOffer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CouponOfferResponse result = couponOfferService.updateStatus(10L, CouponStatus.ACTIVE);
-
-        assertThat(result.getStatus()).isEqualTo("ACTIVE");
+        assertThatThrownBy(() -> couponOfferService.updateStatus(10L, CouponStatus.ACTIVE))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("запрещён");
+        verify(couponOfferRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("updateStatus: WAITING_FOR_MERCHANT -> ACTIVE без active primary location запрещён")
-    void updateStatus_waitingForMerchantToActive_withoutPrimaryLocation_throws() {
-        CouponOffer offer = createOffer(CouponStatus.WAITING_FOR_MERCHANT);
+    @DisplayName("updateStatus: PAUSED -> ACTIVE без active primary location запрещён")
+    void updateStatus_pausedToActive_withoutPrimaryLocation_throws() {
+        CouponOffer offer = createOffer(CouponStatus.PAUSED);
         when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(offer));
         when(merchantLocationRepository.findByMerchantIdAndPrimaryTrue(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> couponOfferService.updateStatus(10L, CouponStatus.ACTIVE))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("primary location");
+    }
+
+    @Test
+    @DisplayName("updateStatus: ACTIVE -> PAUSED разрешён")
+    void updateStatus_activeToPaused_allowed() {
+        CouponOffer offer = createOffer(CouponStatus.ACTIVE);
+        when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.save(any(CouponOffer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CouponOfferResponse result = couponOfferService.updateStatus(10L, CouponStatus.PAUSED);
+
+        assertThat(result.getStatus()).isEqualTo("PAUSED");
     }
 
     @Test

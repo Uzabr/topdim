@@ -84,7 +84,7 @@ class ModCouponServiceTest {
 
         when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(coupon));
 
-        modCouponService.reviewCoupon(3L, 10L, "APPROVE", null);
+        modCouponService.reviewCoupon(3L, 10L, "APPROVE", "SUP-42: подтверждено");
 
         verify(couponOfferService).approveByMerchant(10L);
 
@@ -109,7 +109,7 @@ class ModCouponServiceTest {
 
         when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(coupon));
 
-        modCouponService.reviewCoupon(3L, 10L, "REJECT", "Добавьте фото");
+        modCouponService.reviewCoupon(3L, 10L, "REJECT", "  Добавьте фото  ");
 
         verify(couponOfferService).requestRevisionByMerchant(10L, "Добавьте фото");
 
@@ -129,9 +129,21 @@ class ModCouponServiceTest {
     @Test
     @DisplayName("reviewCoupon: неизвестное решение отклоняется без вызова state transition")
     void reviewCoupon_unknownDecision_throws() {
-        assertThatThrownBy(() -> modCouponService.reviewCoupon(3L, 10L, "HOLD", ""))
+        assertThatThrownBy(() -> modCouponService.reviewCoupon(3L, 10L, "HOLD", "SUP-42"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unknown decision");
+
+        verify(couponOfferService, never()).approveByMerchant(any());
+        verify(couponOfferService, never()).requestRevisionByMerchant(any(), any());
+        verify(rabbitTemplate, never()).convertAndSend(any(), any(), any(NotificationEvent.class));
+    }
+
+    @Test
+    @DisplayName("reviewCoupon: пустая бизнес-причина отклоняется до state transition")
+    void reviewCoupon_blankReason_throwsBeforeTransition() {
+        assertThatThrownBy(() -> modCouponService.reviewCoupon(3L, 10L, "APPROVE", "   "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Причина");
 
         verify(couponOfferService, never()).approveByMerchant(any());
         verify(couponOfferService, never()).requestRevisionByMerchant(any(), any());
@@ -147,7 +159,7 @@ class ModCouponServiceTest {
         org.mockito.Mockito.doThrow(new IllegalStateException("Нельзя публиковать купон без active primary location у мерчанта"))
                 .when(couponOfferService).approveByMerchant(10L);
 
-        assertThatThrownBy(() -> modCouponService.reviewCoupon(3L, 10L, "APPROVE", null))
+        assertThatThrownBy(() -> modCouponService.reviewCoupon(3L, 10L, "APPROVE", "SUP-42"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("primary location");
 

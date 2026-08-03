@@ -298,6 +298,8 @@ public class CouponOfferService {
      * Результат: статус → WAITING_FOR_MERCHANT.
      *
      * @param id идентификатор купона
+     * @param currentUserId ID сотрудника, выполняющего переход
+     * @param currentUserRole роль сотрудника для ownership-проверки
      * @return обновлённый купон
      */
     @Caching(evict = {
@@ -305,7 +307,7 @@ public class CouponOfferService {
             @CacheEvict(value = "couponDetail", key = "#id")
     })
     @Transactional
-    public CouponOfferResponse sendToApproval(Long id) {
+    public CouponOfferResponse sendToApproval(Long id, Long currentUserId, String currentUserRole) {
         CouponOffer offer = couponOfferRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
@@ -314,6 +316,8 @@ public class CouponOfferService {
                     "Нельзя отправить на согласование из статуса " + offer.getStatus()
                     + ". Допустимые: DRAFT, REVISION_REQUESTED");
         }
+
+        assertModeratorOwnership(offer, currentUserId, currentUserRole);
 
         // Ensure cover image is set before approval — apply category fallback if missing
         if (offer.getCoverImageUrl() == null || offer.getCoverImageUrl().isBlank()) {
@@ -508,12 +512,7 @@ public class CouponOfferService {
         }
 
         // Ownership check: MODERATOR может редактировать только свои
-        if ("MODERATOR".equals(currentUserRole)
-                && offer.getAssignedModeratorId() != null
-                && !offer.getAssignedModeratorId().equals(currentUserId)) {
-            throw new IllegalStateException(
-                    "Купон закреплён за другим модератором (" + offer.getAssignedModeratorName() + ")");
-        }
+        assertModeratorOwnership(offer, currentUserId, currentUserRole);
 
         // Обновляем мерчанта
         // merchant_id обязательно (NOT NULL) — обновляем если передан, иначе оставляем текущего
@@ -602,9 +601,29 @@ public class CouponOfferService {
         return mapToResponse(couponOfferRepository.findById(offer.getId()).orElseThrow());
     }
 
+    private void assertModeratorOwnership(
+            CouponOffer offer,
+            Long currentUserId,
+            String currentUserRole
+    ) {
+        if (!"MODERATOR".equals(currentUserRole)) {
+            return;
+        }
+
+        if (offer.getAssignedModeratorId() == null) {
+            throw new IllegalStateException("Купон не закреплён за текущим модератором");
+        }
+        if (!offer.getAssignedModeratorId().equals(currentUserId)) {
+            throw new IllegalStateException(
+                    "Купон закреплён за другим модератором ("
+                    + offer.getAssignedModeratorName() + ")");
+        }
+    }
+
     /**
-     * Обновляет статус купона (Admin) — только разрешённые переходы State Machine.
-     * Допустимые: LEAD→DRAFT, DRAFT/REVISION→WAITING, WAITING→ACTIVE/REVISION.
+     * Управляет публикацией купона (Admin) через узкий generic endpoint.
+     * Допустимы только ACTIVE→PAUSED и PAUSED→ACTIVE; workflow-переходы принадлежат
+     * специализированным take/send/partner/bot/support операциям.
      *
      * @param id идентификатор купона
      * @param newStatus новый статус
@@ -622,24 +641,14 @@ public class CouponOfferService {
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
         CouponStatus current = offer.getStatus();
-        boolean allowed = switch (newStatus) {
-            case DRAFT -> current == CouponStatus.LEAD;
-            case WAITING_FOR_MERCHANT -> current == CouponStatus.DRAFT
-                    || current == CouponStatus.REVISION_REQUESTED;
-            case ACTIVE -> current == CouponStatus.WAITING_FOR_MERCHANT
-                    || current == CouponStatus.PAUSED;
-            case PAUSED -> current == CouponStatus.ACTIVE;
-            case REVISION_REQUESTED -> current == CouponStatus.WAITING_FOR_MERCHANT;
-            case LEAD -> false;
-            case SOLD_OUT -> false; // Устанавливается автоматически через registerSale
-            case ARCHIVED -> false; // Используйте dedicated archive endpoint with reason.
-        };
+        boolean allowed = (current == CouponStatus.ACTIVE && newStatus == CouponStatus.PAUSED)
+                || (current == CouponStatus.PAUSED && newStatus == CouponStatus.ACTIVE);
 
         if (!allowed) {
             throw new IllegalStateException(
                     "Переход " + current + " → " + newStatus + " запрещён. "
-                    + "Допустимые: LEAD→DRAFT, DRAFT/REVISION→WAITING, WAITING→ACTIVE/REVISION. "
-                    + "Для ACTIVE/SOLD_OUT используйте archive endpoint");
+                    + "Generic status endpoint допускает только ACTIVE→PAUSED и PAUSED→ACTIVE. "
+                    + "Для остальных переходов используйте специализированный endpoint");
         }
 
         if (newStatus == CouponStatus.ACTIVE) {
@@ -668,7 +677,7 @@ public class CouponOfferService {
     }
 
     /**
-     * Архивирует опубликованный или распроданный купон.
+     * Архивирует опубликованный, приостановленный или распроданный купон.
      * Останавливает будущие продажи, но не меняет уже купленные купоны.
      */
     @Caching(evict = {
@@ -686,10 +695,12 @@ public class CouponOfferService {
             throw new IllegalArgumentException("Причина архивирования обязательна");
         }
 
-        if (offer.getStatus() != CouponStatus.ACTIVE && offer.getStatus() != CouponStatus.SOLD_OUT) {
+        if (offer.getStatus() != CouponStatus.ACTIVE
+                && offer.getStatus() != CouponStatus.PAUSED
+                && offer.getStatus() != CouponStatus.SOLD_OUT) {
             throw new IllegalStateException(
                     "Архивирование запрещено из статуса " + offer.getStatus()
-                    + ". Допустимые: ACTIVE, SOLD_OUT");
+                    + ". Допустимые: ACTIVE, PAUSED, SOLD_OUT");
         }
 
         offer.setStatus(CouponStatus.ARCHIVED);
