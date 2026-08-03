@@ -145,16 +145,32 @@ describe('CouponWorkspacePage', () => {
     );
   });
 
-  it('does not run the table request while the Kanban view is selected', async () => {
+  it('runs only the four bounded column requests while Kanban is selected', async () => {
     renderWorkspace('/coupons?tab=new&view=kanban&page=0&size=20');
 
     await waitFor(() => {
-      expect(mockedGet).toHaveBeenCalledWith('/api/v1/admin/merchants');
-      expect(mockedGet).toHaveBeenCalledWith('/api/v1/admin/coupons/assignees');
+      const couponCalls = mockedGet.mock.calls
+        .filter(([url]) => url === '/api/v1/admin/coupons');
+      expect(couponCalls).toHaveLength(4);
+      expect(couponCalls.every(([, config]) => config?.params?.size === 20)).toBe(true);
     });
-    expect(mockedGet.mock.calls.map(([url]) => url))
-      .not.toContain('/api/v1/admin/coupons');
   });
+
+  it.each(['published', 'archived'])(
+    'forces the non-operational %s tab back to the table view',
+    async (tab) => {
+      renderWorkspace(`/coupons?tab=${tab}&view=kanban&page=2&size=50`);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('location').textContent).toBe(
+          `/coupons?tab=${tab}&view=table&page=2&size=50`,
+        );
+      });
+      expect(screen.getByRole('region', { name: 'Таблица купонов' })).toBeTruthy();
+      expect((screen.getByRole('button', { name: 'Kanban' }) as HTMLButtonElement).disabled)
+        .toBe(true);
+    },
+  );
 
   it('writes search to the URL only after exactly 300 ms', async () => {
     vi.useFakeTimers();

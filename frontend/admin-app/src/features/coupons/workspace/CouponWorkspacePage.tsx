@@ -1,10 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Typography } from 'antd';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../../api/client';
 import type { ApiResponse, PageResponse } from '../../../types';
 import { CouponStatusTabs } from './CouponStatusTabs';
+import { CouponKanbanView } from './CouponKanbanView';
 import { CouponTableView } from './CouponTableView';
 import {
   CouponWorkspaceToolbar,
@@ -17,7 +18,7 @@ import {
   fetchAdminCoupons,
 } from './api';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 async function fetchFilterOptions(endpoint: string): Promise<CouponFilterOption[]> {
   const response = await api.get<ApiResponse<CouponFilterOption[]>>(endpoint);
@@ -32,6 +33,10 @@ export function CouponWorkspacePage() {
     data: PageResponse<AdminCouponRow>;
     updatedAt: number;
   } | null>(null);
+  const kanbanAllowed = state.tab !== 'published' && state.tab !== 'archived';
+  const effectiveView = state.view === 'kanban' && !kanbanAllowed
+    ? 'table'
+    : state.view;
 
   const merchantsQuery = useQuery({
     queryKey: ['admin-coupons', 'merchant-options'],
@@ -44,14 +49,22 @@ export function CouponWorkspacePage() {
     staleTime: 5 * 60_000,
   });
   const couponsQuery = useQuery({
-    queryKey: [...ADMIN_COUPONS_WORKSPACE_QUERY_KEY, state],
+    queryKey: [
+      ...ADMIN_COUPONS_WORKSPACE_QUERY_KEY,
+      state.tab,
+      state.search,
+      state.merchantId,
+      state.assignedModeratorId,
+      state.page,
+      state.pageSize,
+    ],
     queryFn: async () => {
       const data = await fetchAdminCoupons(state);
       setLastSuccessfulResult({ data, updatedAt: Date.now() });
       return data;
     },
     placeholderData: keepPreviousData,
-    enabled: state.view === 'table',
+    enabled: effectiveView === 'table',
   });
 
   const visibleCouponData = couponsQuery.data
@@ -64,6 +77,14 @@ export function CouponWorkspacePage() {
     updateState({ search });
   }, [updateState]);
 
+  useEffect(() => {
+    if (state.view === 'kanban' && !kanbanAllowed) {
+      setSearchParams(nextWorkspaceSearch(searchParams, { view: 'table' }), {
+        replace: true,
+      });
+    }
+  }, [kanbanAllowed, searchParams, setSearchParams, state.view]);
+
   return (
     <div>
       <Title level={2} style={{ marginTop: 0 }}>Купоны</Title>
@@ -72,7 +93,8 @@ export function CouponWorkspacePage() {
         search={state.search}
         merchantId={state.merchantId}
         assignedModeratorId={state.assignedModeratorId}
-        view={state.view}
+        view={effectiveView}
+        kanbanEnabled={kanbanAllowed}
         merchantOptions={merchantsQuery.data ?? []}
         assigneeOptions={assigneesQuery.data ?? []}
         onSearchChange={handleSearchChange}
@@ -87,8 +109,8 @@ export function CouponWorkspacePage() {
         onChange={(tab) => updateState({ tab })}
       />
 
-      <section aria-label={state.view === 'table' ? 'Таблица купонов' : 'Kanban купонов'}>
-        {state.view === 'table' ? (
+      <section aria-label={effectiveView === 'table' ? 'Таблица купонов' : 'Kanban купонов'}>
+        {effectiveView === 'table' ? (
           <CouponTableView
             activeTab={state.tab}
             pageSize={state.pageSize}
@@ -101,7 +123,7 @@ export function CouponWorkspacePage() {
             onPageChange={(page, pageSize) => updateState({ page, pageSize })}
           />
         ) : (
-          <Text type="secondary">Kanban-представление купонов</Text>
+          <CouponKanbanView state={state} />
         )}
       </section>
     </div>

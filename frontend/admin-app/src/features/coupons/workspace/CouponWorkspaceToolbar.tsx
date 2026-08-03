@@ -13,6 +13,7 @@ interface CouponWorkspaceToolbarProps {
   merchantId: number | null;
   assignedModeratorId: number | null;
   view: CouponView;
+  kanbanEnabled: boolean;
   merchantOptions: CouponFilterOption[];
   assigneeOptions: CouponFilterOption[];
   onSearchChange: (search: string) => void;
@@ -35,6 +36,7 @@ export function CouponWorkspaceToolbar({
   merchantId,
   assignedModeratorId,
   view,
+  kanbanEnabled,
   merchantOptions,
   assigneeOptions,
   onSearchChange,
@@ -114,6 +116,8 @@ export function CouponWorkspaceToolbar({
         <Button
           type={view === 'kanban' ? 'primary' : 'default'}
           aria-pressed={view === 'kanban'}
+          disabled={!kanbanEnabled}
+          title={kanbanEnabled ? undefined : 'Kanban доступен только для рабочих очередей'}
           onClick={() => onViewChange('kanban')}
         >
           Kanban
