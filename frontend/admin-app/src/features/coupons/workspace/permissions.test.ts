@@ -21,6 +21,13 @@ function coupon(
     status,
     assignedModeratorId,
     assignedModeratorName: null,
+    merchant: null,
+    oldPrice: null,
+    fromPrice: 0,
+    discountPercent: 0,
+    buyUntil: null,
+    useUntil: null,
+    createdAt: '2026-08-03T00:00:00',
   };
 }
 

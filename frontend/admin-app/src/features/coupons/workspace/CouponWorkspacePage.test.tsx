@@ -48,7 +48,7 @@ function renderWorkspace(initialEntry = '/coupons') {
 
 describe('CouponWorkspacePage', () => {
   beforeEach(() => {
-    mockedGet.mockImplementation(async (url) => {
+    mockedGet.mockImplementation(async (url, config) => {
       if (url === '/api/v1/admin/merchants') {
         return {
           data: {
@@ -66,6 +66,23 @@ describe('CouponWorkspacePage', () => {
             data: [
               { id: 7, name: 'Алишер Модератор' },
             ],
+          },
+        };
+      }
+
+      if (url === '/api/v1/admin/coupons') {
+        const page = Number(config?.params?.page ?? 0);
+        const size = Number(config?.params?.size ?? 20);
+        return {
+          data: {
+            data: {
+              content: [],
+              pageable: { pageNumber: page, pageSize: size },
+              totalElements: 0,
+              totalPages: 0,
+              first: true,
+              last: true,
+            },
           },
         };
       }
@@ -128,6 +145,17 @@ describe('CouponWorkspacePage', () => {
     );
   });
 
+  it('does not run the table request while the Kanban view is selected', async () => {
+    renderWorkspace('/coupons?tab=new&view=kanban&page=0&size=20');
+
+    await waitFor(() => {
+      expect(mockedGet).toHaveBeenCalledWith('/api/v1/admin/merchants');
+      expect(mockedGet).toHaveBeenCalledWith('/api/v1/admin/coupons/assignees');
+    });
+    expect(mockedGet.mock.calls.map(([url]) => url))
+      .not.toContain('/api/v1/admin/coupons');
+  });
+
   it('writes search to the URL only after exactly 300 ms', async () => {
     vi.useFakeTimers();
     renderWorkspace('/coupons?tab=new&view=table&page=3&size=20');
@@ -150,10 +178,66 @@ describe('CouponWorkspacePage', () => {
     renderWorkspace('/coupons?tab=new&view=table&page=2&size=21');
 
     expect((screen.getByRole('combobox', {
-      name: 'Размер страницы',
+      name: 'Размер страницы таблицы',
     }) as HTMLSelectElement).value).toBe('20');
 
     await user.click(screen.getByRole('button', { name: 'Создать купон' }));
     expect(screen.getByTestId('location').textContent).toBe('/coupons/new');
+  });
+
+  it('retains the last successful rows and marks them stale when the next tab times out', async () => {
+    const user = userEvent.setup();
+    let couponRequestCount = 0;
+    mockedGet.mockImplementation(async (url, config) => {
+      if (url === '/api/v1/admin/merchants' || url === '/api/v1/admin/coupons/assignees') {
+        return { data: { data: [] } };
+      }
+      if (url === '/api/v1/admin/coupons') {
+        couponRequestCount += 1;
+        if (couponRequestCount > 1) {
+          throw { code: 'ECONNABORTED', message: 'timeout' };
+        }
+
+        return {
+          data: {
+            data: {
+              content: [{
+                id: 42,
+                title: 'Сохранённый купон',
+                status: 'LEAD',
+                assignedModeratorId: null,
+                assignedModeratorName: null,
+                merchant: { id: 11, name: 'PizzaLab' },
+                oldPrice: 120000,
+                fromPrice: 90000,
+                discountPercent: 25,
+                buyUntil: null,
+                useUntil: null,
+                createdAt: '2026-08-03T12:00:00',
+              }],
+              pageable: {
+                pageNumber: Number(config?.params?.page ?? 0),
+                pageSize: Number(config?.params?.size ?? 20),
+              },
+              totalElements: 1,
+              totalPages: 1,
+              first: true,
+              last: true,
+            },
+          },
+        };
+      }
+
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    renderWorkspace('/coupons?tab=new&view=table&page=0&size=20');
+    await screen.findByText('Сохранённый купон');
+
+    await user.click(screen.getByRole('tab', { name: 'Требуют изменений' }));
+
+    expect(await screen.findByText('Показаны последние сохранённые данные')).toBeTruthy();
+    expect(screen.getByText('Сохранённый купон')).toBeTruthy();
+    expect(screen.queryByText('Купонов, требующих изменений, нет')).toBeNull();
   });
 });

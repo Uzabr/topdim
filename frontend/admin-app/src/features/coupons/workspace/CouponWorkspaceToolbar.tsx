@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, Space } from 'antd';
-import type { CouponPageSize, CouponView } from './types';
+import type { CouponView } from './types';
 
 export interface CouponFilterOption {
   id: number;
@@ -12,14 +12,12 @@ interface CouponWorkspaceToolbarProps {
   search: string;
   merchantId: number | null;
   assignedModeratorId: number | null;
-  pageSize: CouponPageSize;
   view: CouponView;
   merchantOptions: CouponFilterOption[];
   assigneeOptions: CouponFilterOption[];
   onSearchChange: (search: string) => void;
   onMerchantChange: (merchantId: number | null) => void;
   onAssigneeChange: (assignedModeratorId: number | null) => void;
-  onPageSizeChange: (pageSize: CouponPageSize) => void;
   onViewChange: (view: CouponView) => void;
   onCreate: () => void;
 }
@@ -36,14 +34,12 @@ export function CouponWorkspaceToolbar({
   search,
   merchantId,
   assignedModeratorId,
-  pageSize,
   view,
   merchantOptions,
   assigneeOptions,
   onSearchChange,
   onMerchantChange,
   onAssigneeChange,
-  onPageSizeChange,
   onViewChange,
   onCreate,
 }: CouponWorkspaceToolbarProps) {
@@ -105,17 +101,6 @@ export function CouponWorkspaceToolbar({
         {assigneeOptions.map((assignee) => (
           <option key={assignee.id} value={assignee.id}>{assignee.name}</option>
         ))}
-      </select>
-
-      <select
-        aria-label="Размер страницы"
-        value={pageSize}
-        onChange={(event) => onPageSizeChange(Number(event.target.value) as CouponPageSize)}
-        style={selectStyle}
-      >
-        <option value={20}>20 на странице</option>
-        <option value={50}>50 на странице</option>
-        <option value={100}>100 на странице</option>
       </select>
 
       <Space.Compact>

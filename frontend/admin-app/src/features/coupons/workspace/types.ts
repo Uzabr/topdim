@@ -42,6 +42,16 @@ export interface AdminCouponRow {
   status: CouponStatus;
   assignedModeratorId: number | null;
   assignedModeratorName: string | null;
+  merchant: {
+    id: number;
+    name: string;
+  } | null;
+  oldPrice: number | null;
+  fromPrice: number;
+  discountPercent: number;
+  buyUntil: string | null;
+  useUntil: string | null;
+  createdAt: string;
 }
 
 export interface CouponWorkspaceState {
