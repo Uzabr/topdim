@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Ticket } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ordersApi } from '../api/orders';
@@ -12,6 +12,7 @@ import ProfileHelpSection from '../components/profile/ProfileHelpSection';
 import ProfileSettingsSection from '../components/profile/ProfileSettingsSection';
 import RefundRequestModal from '../components/profile/RefundRequestModal';
 import ReviewModal from '../components/profile/ReviewModal';
+import GuestAuthPrompt from '../components/auth/GuestAuthPrompt';
 import UserAvatar from '../components/ui/UserAvatar';
 import { SUPPORT_TELEGRAM_URL } from '../config/features';
 import { useLocalePath } from '../hooks/useLocalePath';
@@ -162,14 +163,13 @@ export default function ProfileMobile() {
   if (!isAuthenticated) {
     return (
       <div className="pmob">
-        <div className="pmob__guest">
-          <Ticket size={44} strokeWidth={1.5} className="pmob__guest-icon" />
-          <h1 className="pmob__guest-title">{t('profile.greeting')}</h1>
-          <p className="pmob__guest-text">{t('profile.guestDesc')}</p>
-          <Link to={lp('/login')} className="pmob__guest-btn">
-            {t('profile.login')}
-          </Link>
-        </div>
+        <GuestAuthPrompt
+          icon={<Ticket size={44} strokeWidth={1.5} />}
+          title={t('profile.greeting')}
+          description={t('profile.guestDesc')}
+          loginLabel={t('profile.login')}
+          variant="mobile"
+        />
       </div>
     );
   }

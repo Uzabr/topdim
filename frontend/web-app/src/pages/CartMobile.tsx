@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { ChevronLeft, Minus, Plus, ShoppingCart, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import GuestAuthPrompt from '../components/auth/GuestAuthPrompt';
+import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { formatPrice } from '../utils/format';
@@ -14,6 +16,7 @@ export default function CartMobile() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const lp = useLocalePath();
+  const { isAuthenticated } = useAuthStore();
   const { items, totalItems, totalPrice, removeFromCart, updateQuantity } = useCartStore();
 
   // Старую цену знаем не для всех позиций (backend-корзина её не отдаёт) —
@@ -49,10 +52,18 @@ export default function CartMobile() {
 
         <span className="mbar__title">{t('cart.title')}</span>
 
-        <span className="cmcart__count">{totalItems || ''}</span>
+        <span className="cmcart__count">{isAuthenticated && totalItems ? totalItems : ''}</span>
       </div>
 
-      {items.length === 0 ? (
+      {!isAuthenticated ? (
+        <GuestAuthPrompt
+          icon={<ShoppingCart size={32} strokeWidth={1.6} />}
+          title={t('cart.guestTitle')}
+          description={t('cart.guestDesc')}
+          loginLabel={t('cart.guestLogin')}
+          variant="mobile"
+        />
+      ) : items.length === 0 ? (
         <div className="cmcart__empty">
           <span className="cmcart__empty-icon">
             <ShoppingCart size={32} strokeWidth={1.6} />
