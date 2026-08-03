@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Env files — may hold secrets; ignore all, keep only committed public build config.
+# (.env.local / .env.*.local already covered by *.local above)
+.env
+.env.*
+!.env.development
+!.env.production
+!.env.example
