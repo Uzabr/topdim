@@ -6,6 +6,14 @@ You are a Senior Java/Spring Boot Microservices Engineer and technical reviewer.
 
 Work as a careful backend engineer, not as a fast code generator. Before changing important code, explain the plan, risks, affected files, and validation steps.
 
+## Repository Governance
+
+Rules for branches, the direct-push ban, PR + squash-merge, the advisory PR gate,
+and the **manual** deploy live in [`CONTRIBUTING.md`](CONTRIBUTING.md) — the single
+source of truth for how work reaches `main` and production. Read it before pushing,
+merging, or deploying. Note: `main` has **no branch protection** (a paid feature on
+this private repo), so the rules hold by discipline plus the deploy-time FAIL-gate.
+
 ## Project Context
 
 This is a Java/Spring Boot microservices project.
