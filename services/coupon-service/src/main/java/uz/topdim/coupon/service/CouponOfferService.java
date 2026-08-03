@@ -20,6 +20,7 @@ import uz.topdim.coupon.repository.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static uz.topdim.coupon.util.PhoneUtils.normalize;
@@ -734,11 +735,24 @@ public class CouponOfferService {
 
     @Transactional(readOnly = true)
     public Page<CouponOfferResponse> getAllForAdmin(CouponStatus status, int page, int size) {
+        Set<CouponStatus> statuses = status == null ? Set.of() : Set.of(status);
+        return getAllForAdmin(new AdminCouponFilter(statuses, null, null, null), page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CouponOfferResponse> getAllForAdmin(
+            AdminCouponFilter filter,
+            int page,
+            int size
+    ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        if (status != null) {
-            return couponOfferRepository.findAllByStatus(status, pageable).map(this::mapToResponse);
-        }
-        return couponOfferRepository.findAll(pageable).map(this::mapToResponse);
+        return couponOfferRepository.findAll(CouponOfferSpecifications.forAdmin(filter), pageable)
+                .map(this::mapToResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CouponAssigneeResponse> getCouponAssignees() {
+        return couponOfferRepository.findDistinctAssignees();
     }
 
     /**

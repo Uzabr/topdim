@@ -208,7 +208,7 @@ the regression guard against the existing fixed 50/100/500 frontend limits.
 
 - [ ] **Step 2: Run RED for repository support**
 
-Run: `./gradlew :services:coupon-service:test --tests '*CouponOfferAdminFilterTest'`
+Run: `./gradlew :services:coupon-service:test --tests '*CouponOfferAdminFilterTest' -x jacocoTestCoverageVerification`
 
 Expected: compilation fails because `AdminCouponFilter`, specifications, and
 `JpaSpecificationExecutor` support do not exist.
@@ -237,7 +237,7 @@ Extend `CouponOfferRepository` with `JpaSpecificationExecutor<CouponOffer>`.
 
 - [ ] **Step 4: Run repository GREEN**
 
-Run: `./gradlew :services:coupon-service:test --tests '*CouponOfferAdminFilterTest'`
+Run: `./gradlew :services:coupon-service:test --tests '*CouponOfferAdminFilterTest' -x jacocoTestCoverageVerification`
 
 Expected: all filter cases pass.
 
@@ -270,7 +270,7 @@ response contains no account fields beyond `id` and `name`.
 
 - [ ] **Step 6: Run controller RED**
 
-Run: `./gradlew :services:coupon-service:test --tests '*AdminCouponFilterControllerTest'`
+Run: `./gradlew :services:coupon-service:test --tests '*AdminCouponFilterControllerTest' -x jacocoTestCoverageVerification`
 
 Expected: new query parameters and bounded validation are absent.
 
@@ -299,7 +299,7 @@ SUPER_ADMIN-only identity staff endpoint from this workflow.
 Run:
 
 ```bash
-./gradlew :services:coupon-service:test --tests '*AdminCouponFilterControllerTest' --tests '*CouponOfferAdminFilterTest'
+./gradlew :services:coupon-service:test --tests '*AdminCouponFilterControllerTest' --tests '*CouponOfferAdminFilterTest' -x jacocoTestCoverageVerification
 ./gradlew :services:coupon-service:test
 ```
 
@@ -680,7 +680,7 @@ assert:
 Run:
 
 ```bash
-./gradlew :services:coupon-service:test --tests '*AdminCouponActionSecurityTest' --tests '*ModCouponReviewSecurityTest'
+./gradlew :services:coupon-service:test --tests '*AdminCouponActionSecurityTest' --tests '*ModCouponReviewSecurityTest' -x jacocoTestCoverageVerification
 ```
 
 Expected: MODERATOR can currently reach privileged coupon mutations and support
@@ -712,9 +712,9 @@ transition succeeds.
 - [ ] **Step 5: Run focused and full backend GREEN**
 
 ```bash
-./gradlew :services:coupon-service:test --tests '*AdminCouponActionSecurityTest' --tests '*ModCouponReviewSecurityTest'
-./gradlew :services:coupon-service:test --tests '*CouponOfferServiceBusinessLogicTest' --tests '*CouponOfferServiceTest' --tests '*ModCouponServiceTest'
-./gradlew :services:coupon-service:test --tests '*PartnerCouponServiceTest' --tests '*BotWebhookApiKeyTest'
+./gradlew :services:coupon-service:test --tests '*AdminCouponActionSecurityTest' --tests '*ModCouponReviewSecurityTest' -x jacocoTestCoverageVerification
+./gradlew :services:coupon-service:test --tests '*CouponOfferServiceBusinessLogicTest' --tests '*CouponOfferServiceTest' --tests '*ModCouponServiceTest' -x jacocoTestCoverageVerification
+./gradlew :services:coupon-service:test --tests '*PartnerCouponServiceTest' --tests '*BotWebhookApiKeyTest' -x jacocoTestCoverageVerification
 ./gradlew :services:coupon-service:test
 ```
 

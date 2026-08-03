@@ -3,11 +3,13 @@ package uz.topdim.coupon.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import uz.topdim.coupon.entity.CouponOffer;
 import uz.topdim.coupon.entity.CouponStatus;
+import uz.topdim.coupon.dto.CouponAssigneeResponse;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +18,8 @@ import java.util.Optional;
  * Репозиторий купонных предложений.
  * Поиск с фильтрами по категории, статусу, поиску.
  */
-public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> {
+public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long>,
+        JpaSpecificationExecutor<CouponOffer> {
 
     Page<CouponOffer> findByStatus(CouponStatus status, Pageable pageable);
 
@@ -117,6 +120,18 @@ public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> 
     long countByMerchantId(Long merchantId);
 
     long countByMerchantIdAndStatus(Long merchantId, CouponStatus status);
+
+    @Query("""
+            SELECT new uz.topdim.coupon.dto.CouponAssigneeResponse(
+                c.assignedModeratorId,
+                MAX(c.assignedModeratorName)
+            )
+            FROM CouponOffer c
+            WHERE c.assignedModeratorId IS NOT NULL
+            GROUP BY c.assignedModeratorId
+            ORDER BY MAX(c.assignedModeratorName), c.assignedModeratorId
+            """)
+    List<CouponAssigneeResponse> findDistinctAssignees();
 
     /**
      * Atomic increment totalSold и totalTurnover.
