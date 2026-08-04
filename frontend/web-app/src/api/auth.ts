@@ -154,6 +154,24 @@ export const authApi = {
       authRequestConfig(context),
     ),
 
+  /** Всегда 202 — бэкенд не раскрывает, существует ли номер (anti-enumeration). */
+  requestPhoneOtp: (phone: string) =>
+    apiClient.post<ApiResponse<void>>(
+      '/api/v1/auth/phone/request',
+      { phone },
+      authRequestConfig(),
+    ),
+
+  confirmPhoneOtp: (
+    data: { phone: string; code: string },
+    context?: AuthenticationRequestContext,
+  ) =>
+    apiClient.post<ApiResponse<AuthResponse>>(
+      '/api/v1/auth/phone/confirm',
+      data,
+      authRequestConfig(context),
+    ),
+
   /** Всегда 202 — бэкенд не раскрывает, зарегистрирован ли email. */
   requestPasswordReset: (email: string) =>
     apiClient.post<ApiResponse<void>>('/api/v1/auth/password-reset/request', { email }),

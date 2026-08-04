@@ -138,7 +138,16 @@
     "resetToken": "Xatdagi kod",
     "newPassword": "Yangi parol",
     "resetSave": "Parolni saqlash",
-    "resetDone": "Parol o'zgartirildi — yangisi bilan kiring."
+    "resetDone": "Parol o'zgartirildi — yangisi bilan kiring.",
+    "phoneEnterTitle": "Telefon raqami bilan kirish",
+    "phoneNumberLabel": "Telefon (+998 XX XXX-XX-XX)",
+    "phoneSend": "Kod yuborish",
+    "phoneCodeTitle": "SMS'dan kodni kiriting",
+    "phoneCodeLabel": "SMS kodi",
+    "phoneCodeSent": "Agar bunday raqam ro'yxatdan o'tgan bo'lsa, SMS orqali kod yubordik.",
+    "phoneResend": "Kodni qayta yuborish",
+    "phoneInvalid": "Format: +998XXXXXXXXX",
+    "codeInvalid": "Kod noto'g'ri yoki muddati o'tgan. Qayta urinib ko'ring."
   },
   "favorites": {
     "title": "Sevimlilar",

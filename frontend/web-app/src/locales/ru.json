@@ -138,7 +138,16 @@
     "resetToken": "Код из письма",
     "newPassword": "Новый пароль",
     "resetSave": "Сохранить пароль",
-    "resetDone": "Пароль изменён — войдите с новым."
+    "resetDone": "Пароль изменён — войдите с новым.",
+    "phoneEnterTitle": "Вход по номеру телефона",
+    "phoneNumberLabel": "Телефон (+998 XX XXX-XX-XX)",
+    "phoneSend": "Отправить код",
+    "phoneCodeTitle": "Введите код из SMS",
+    "phoneCodeLabel": "Код из SMS",
+    "phoneCodeSent": "Если такой номер зарегистрирован, мы отправили код в SMS.",
+    "phoneResend": "Отправить код повторно",
+    "phoneInvalid": "Формат: +998XXXXXXXXX",
+    "codeInvalid": "Неверный или просроченный код. Попробуйте ещё раз."
   },
   "favorites": {
     "title": "Избранное",
