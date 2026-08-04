@@ -264,3 +264,20 @@ manual demo-data walkthrough is intentionally deferred to the final task.
   five-second timeout; both that test and the full frontend suite passed when
   rerun sequentially, so no timeout was increased. The known chunk warning
   remains.
+
+### 2026-08-04 — Task 5f: partner-application operations
+
+- Frontend RED proved that statuses were exposed as backend enum names, the
+  backend's status filter was unreachable, empty and failed loads were
+  indistinguishable, and mutation conflicts hid their actionable reason.
+- The page now localizes statuses, sends a typed status filter, distinguishes
+  empty from error, offers an explicit retry, and surfaces backend rejection or
+  approval errors. Success wording no longer claims that an existing partner
+  account was necessarily created.
+- Backend RED proved that missing applications returned generic runtime errors
+  and therefore HTTP 500 from detail, approve, and reject operations. All three
+  now use the existing resource-not-found contract; controller coverage proves
+  ADMIN access and rejects MODERATOR/anonymous access.
+- Full identity-service tests including PostgreSQL and JaCoCo passed. Admin-app
+  passes 22 test files / 177 tests, ESLint, and production build; the known
+  large-chunk warning remains.

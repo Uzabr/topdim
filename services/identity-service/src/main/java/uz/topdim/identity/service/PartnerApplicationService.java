@@ -18,6 +18,7 @@ import uz.topdim.identity.entity.ApplicationStatus;
 import uz.topdim.identity.entity.PartnerApplication;
 import uz.topdim.identity.entity.Role;
 import uz.topdim.identity.entity.User;
+import uz.topdim.identity.exception.ResourceNotFoundException;
 import uz.topdim.identity.repository.PartnerApplicationRepository;
 import uz.topdim.identity.repository.UserRepository;
 
@@ -71,16 +72,14 @@ public class PartnerApplicationService {
     }
 
     public PartnerApplicationResponse getById(Long id) {
-        return toResponse(repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Application not found: " + id)));
+        return toResponse(findApplication(id));
     }
 
     // ==================== Approve ====================
 
     @Transactional
     public PartnerApplicationResponse approve(Long id, Long adminId, ApprovePartnerApplicationRequest request) {
-        PartnerApplication app = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Application not found: " + id));
+        PartnerApplication app = findApplication(id);
 
         if (app.getStatus() != ApplicationStatus.PENDING) {
             throw new IllegalStateException("Only PENDING application can be approved");
@@ -174,8 +173,7 @@ public class PartnerApplicationService {
 
     @Transactional
     public PartnerApplicationResponse reject(Long id, Long adminId, RejectPartnerApplicationRequest request) {
-        PartnerApplication app = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Application not found: " + id));
+        PartnerApplication app = findApplication(id);
 
         if (app.getStatus() != ApplicationStatus.PENDING) {
             throw new IllegalStateException("Only PENDING application can be rejected");
@@ -218,6 +216,11 @@ public class PartnerApplicationService {
     }
 
     // ==================== Utils ====================
+
+    private PartnerApplication findApplication(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found: " + id));
+    }
 
     String blankToNull(String value) {
         if (value == null || value.isBlank()) {

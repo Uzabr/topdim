@@ -19,6 +19,7 @@ import uz.topdim.identity.entity.ApplicationStatus;
 import uz.topdim.identity.entity.PartnerApplication;
 import uz.topdim.identity.entity.Role;
 import uz.topdim.identity.entity.User;
+import uz.topdim.identity.exception.ResourceNotFoundException;
 import uz.topdim.identity.repository.PartnerApplicationRepository;
 import uz.topdim.identity.repository.UserRepository;
 
@@ -66,6 +67,16 @@ class PartnerApplicationServiceTest {
     }
 
     // ==================== Approve ====================
+
+    @Test
+    @DisplayName("getById: missing application returns not found")
+    void getById_missingApplication_throwsNotFound() {
+        when(repository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getById(404L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("404");
+    }
 
     @Test
     @DisplayName("approve: pending application creates partner user and merchant")
@@ -138,6 +149,16 @@ class PartnerApplicationServiceTest {
         assertThatThrownBy(() -> service.approve(5L, 99L, request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Only PENDING");
+    }
+
+    @Test
+    @DisplayName("approve: missing application returns not found")
+    void approve_missingApplication_throwsNotFound() {
+        when(repository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.approve(404L, 99L, new ApprovePartnerApplicationRequest()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("404");
     }
 
     @Test
@@ -230,5 +251,15 @@ class PartnerApplicationServiceTest {
         assertThatThrownBy(() -> service.reject(5L, 99L, request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Only PENDING");
+    }
+
+    @Test
+    @DisplayName("reject: missing application returns not found")
+    void reject_missingApplication_throwsNotFound() {
+        when(repository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.reject(404L, 99L, new RejectPartnerApplicationRequest()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("404");
     }
 }

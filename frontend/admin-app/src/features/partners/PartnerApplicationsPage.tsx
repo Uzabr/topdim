@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Tag, Button, Space, Typography, App, Modal, Form, Input, Descriptions } from 'antd';
+import {
+  Table, Tag, Button, Space, Typography, App, Modal, Form, Input, Descriptions,
+  Select, Result,
+} from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/client';
@@ -10,11 +13,18 @@ import dayjs from 'dayjs';
 
 const { Title } = Typography;
 
-const statusColors: Record<string, string> = {
-  PENDING: 'orange',
-  APPROVED: 'green',
-  REJECTED: 'red',
+type ApplicationStatus = PartnerApplication['status'];
+
+const STATUS_INFO: Record<ApplicationStatus, { label: string; color: string }> = {
+  PENDING: { label: 'Ожидает решения', color: 'orange' },
+  APPROVED: { label: 'Одобрена', color: 'green' },
+  REJECTED: { label: 'Отклонена', color: 'red' },
 };
+
+function errorMessage(error: unknown, fallback: string) {
+  const apiError = error as { response?: { data?: { message?: string } } };
+  return apiError.response?.data?.message || fallback;
+}
 
 interface ApprovePayload {
   loginEmail: string;
@@ -34,6 +44,7 @@ interface RejectPayload {
 
 export const PartnerApplicationsPage = () => {
   const [page, setPage] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | undefined>();
   const [approveTarget, setApproveTarget] = useState<PartnerApplication | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PartnerApplication | null>(null);
   const [detailTarget, setDetailTarget] = useState<PartnerApplication | null>(null);
@@ -43,12 +54,12 @@ export const PartnerApplicationsPage = () => {
   const { message } = App.useApp();
   const navigate = useNavigate();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['partner-applications', page],
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
+    queryKey: ['partner-applications', page, statusFilter],
     queryFn: async () => {
       const res = await api.get<ApiResponse<PageResponse<PartnerApplication>>>(
         '/api/v1/admin/partner-applications',
-        { params: { page, size: 20 } },
+        { params: { page, size: 20, ...(statusFilter ? { status: statusFilter } : {}) } },
       );
       return res.data.data;
     },
@@ -58,12 +69,14 @@ export const PartnerApplicationsPage = () => {
     mutationFn: (args: { id: number; payload: ApprovePayload }) =>
       api.patch(`/api/v1/admin/partner-applications/${args.id}/approve`, args.payload),
     onSuccess: () => {
-      message.success('Заявка одобрена — партнёр и мерчант созданы');
+      message.success('Заявка одобрена — партнёр и мерчант привязаны');
       queryClient.invalidateQueries({ queryKey: ['partner-applications'] });
       setApproveTarget(null);
       approveForm.resetFields();
     },
-    onError: () => message.error('Ошибка при одобрении заявки'),
+    onError: (mutationError) => message.error(
+      errorMessage(mutationError, 'Ошибка при одобрении заявки'),
+    ),
   });
 
   const rejectMutation = useMutation({
@@ -75,7 +88,9 @@ export const PartnerApplicationsPage = () => {
       setRejectTarget(null);
       rejectForm.resetFields();
     },
-    onError: () => message.error('Ошибка при отклонении заявки'),
+    onError: (mutationError) => message.error(
+      errorMessage(mutationError, 'Ошибка при отклонении заявки'),
+    ),
   });
 
   const openApproveModal = (record: PartnerApplication) => {
@@ -93,6 +108,20 @@ export const PartnerApplicationsPage = () => {
     });
   };
 
+  if (error) {
+    return (
+      <Result
+        status="error"
+        title="Ошибка загрузки заявок"
+        extra={(
+          <Button type="primary" loading={isFetching} onClick={() => refetch()}>
+            Повторить
+          </Button>
+        )}
+      />
+    );
+  }
+
   const columns: ColumnsType<PartnerApplication> = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     {
@@ -105,7 +134,10 @@ export const PartnerApplicationsPage = () => {
     {
       title: 'Статус',
       dataIndex: 'status',
-      render: (status: string) => <Tag color={statusColors[status]}>{status}</Tag>,
+      render: (status: ApplicationStatus) => {
+        const info = STATUS_INFO[status];
+        return <Tag color={info.color}>{info.label}</Tag>;
+      },
     },
     {
       title: 'Дата',
@@ -160,11 +192,25 @@ export const PartnerApplicationsPage = () => {
   return (
     <div>
       <Title level={4}>Заявки на партнёрство</Title>
+      <Select<ApplicationStatus>
+        aria-label="Фильтр по статусу"
+        placeholder="Все статусы"
+        value={statusFilter}
+        allowClear
+        style={{ width: 220, marginBottom: 16 }}
+        onChange={(status) => { setStatusFilter(status); setPage(0); }}
+        options={[
+          { value: 'PENDING', label: 'Ожидают решения' },
+          { value: 'APPROVED', label: 'Одобренные' },
+          { value: 'REJECTED', label: 'Отклонённые' },
+        ]}
+      />
       <Table
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
         rowKey="id"
+        locale={{ emptyText: 'Нет заявок' }}
         pagination={{
           current: page + 1,
           pageSize: 20,
@@ -198,7 +244,9 @@ export const PartnerApplicationsPage = () => {
             <Descriptions.Item label="Комментарий" span={2}>{detailTarget.comment || '—'}</Descriptions.Item>
             <Descriptions.Item label="Источник">{detailTarget.source}</Descriptions.Item>
             <Descriptions.Item label="Статус">
-              <Tag color={statusColors[detailTarget.status]}>{detailTarget.status}</Tag>
+              <Tag color={STATUS_INFO[detailTarget.status].color}>
+                {STATUS_INFO[detailTarget.status].label}
+              </Tag>
             </Descriptions.Item>
             {detailTarget.rejectionReason && (
               <Descriptions.Item label="Причина отказа" span={2}>
