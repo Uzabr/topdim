@@ -55,4 +55,21 @@ class EmailNotificationSenderTest {
 
         assertThat(registry.counter("notification.email.failed", "type", "reset").count()).isEqualTo(0.0);
     }
+
+    @Test
+    void sendEmailChangeToken_smtpFails_doesNotThrow_andIncrementsFailedCounter() {
+        doThrow(new MailSendException("smtp down")).when(mailSender).send(any(SimpleMailMessage.class));
+
+        assertThatCode(() -> sender.sendEmailChangeToken("new@example.com", "789012"))
+                .doesNotThrowAnyException();
+
+        assertThat(registry.counter("notification.email.failed", "type", "change").count()).isEqualTo(1.0);
+    }
+
+    @Test
+    void sendEmailChangeToken_happyPath_doesNotIncrementFailedCounter() {
+        sender.sendEmailChangeToken("new@example.com", "789012");
+
+        assertThat(registry.counter("notification.email.failed", "type", "change").count()).isEqualTo(0.0);
+    }
 }

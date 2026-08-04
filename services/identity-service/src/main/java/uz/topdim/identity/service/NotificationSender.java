@@ -26,4 +26,12 @@ public interface NotificationSender {
      * @param code plain text код
      */
     void sendPhoneConfirmationCode(String phone, String code);
+
+    /**
+     * Отправить токен подтверждения при смене email.
+     * Письмо уходит на НОВЫЙ адрес (proof-of-ownership), не на старый.
+     * @param newEmail новый email адрес, которым пользователь ещё не владеет доказанно
+     * @param token plain text токен
+     */
+    void sendEmailChangeToken(String newEmail, String token);
 }
