@@ -281,3 +281,25 @@ manual demo-data walkthrough is intentionally deferred to the final task.
 - Full identity-service tests including PostgreSQL and JaCoCo passed. Admin-app
   passes 22 test files / 177 tests, ESLint, and production build; the known
   large-chunk warning remains.
+
+### 2026-08-04 — Task 5g: retry-safe partner approval
+
+- RED proved that approval performed a remote merchant call inside the local
+  identity transaction, the UI could not represent a recoverable partial
+  failure, and coupon-service allowed two merchants with the same owner userId.
+- Approval is now split into short `REQUIRES_NEW` preparation and completion
+  transactions around the remote call. Preparation locks the application,
+  commits one stable linked user and `PROCESSING` state, while retries reuse the
+  same user. A completed retry is idempotent and does not call coupon-service.
+- `PENDING` and `PROCESSING` applications share a unique phone boundary;
+  coupon-service enforces one merchant per non-null userId. A failed remote call
+  remains visible and retryable instead of silently rolling back into a state
+  that could create duplicate users or merchants.
+- The admin page localizes and filters `PROCESSING`, exposes only a retry action,
+  and does not demand or transmit a temporary password during retry. Login and
+  phone cannot change after preparation; merchant profile fields can be
+  corrected before retry.
+- Full identity-service and coupon-service suites including JaCoCo passed.
+  Admin-app passes 22 test files / 178 tests, ESLint, and production build; the
+  known large-chunk warning remains. Active PRD/backend documentation now records
+  the intermediate state and migrations V15/V26.

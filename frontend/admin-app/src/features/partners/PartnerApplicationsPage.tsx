@@ -17,6 +17,7 @@ type ApplicationStatus = PartnerApplication['status'];
 
 const STATUS_INFO: Record<ApplicationStatus, { label: string; color: string }> = {
   PENDING: { label: 'Ожидает решения', color: 'orange' },
+  PROCESSING: { label: 'Требует повтора', color: 'gold' },
   APPROVED: { label: 'Одобрена', color: 'green' },
   REJECTED: { label: 'Отклонена', color: 'red' },
 };
@@ -28,7 +29,7 @@ function errorMessage(error: unknown, fallback: string) {
 
 interface ApprovePayload {
   loginEmail: string;
-  temporaryPassword: string;
+  temporaryPassword?: string;
   merchantName: string;
   contactPerson: string;
   address: string;
@@ -108,6 +109,15 @@ export const PartnerApplicationsPage = () => {
     });
   };
 
+  const submitApproval = (values: ApprovePayload) => {
+    if (!approveTarget) return;
+    const payload = { ...values };
+    if (!payload.temporaryPassword?.trim()) {
+      delete payload.temporaryPassword;
+    }
+    approveMutation.mutate({ id: approveTarget.id, payload });
+  };
+
   if (error) {
     return (
       <Result
@@ -184,6 +194,16 @@ export const PartnerApplicationsPage = () => {
               </Button>
             </>
           )}
+          {record.status === 'PROCESSING' && (
+            <Button
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              size="small"
+              onClick={() => openApproveModal(record)}
+            >
+              Повторить одобрение
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -201,6 +221,7 @@ export const PartnerApplicationsPage = () => {
         onChange={(status) => { setStatusFilter(status); setPage(0); }}
         options={[
           { value: 'PENDING', label: 'Ожидают решения' },
+          { value: 'PROCESSING', label: 'Требуют повтора' },
           { value: 'APPROVED', label: 'Одобренные' },
           { value: 'REJECTED', label: 'Отклонённые' },
         ]}
@@ -266,23 +287,34 @@ export const PartnerApplicationsPage = () => {
       {/* Approve Modal */}
       <Modal
         open={!!approveTarget}
-        title={`Одобрить заявку #${approveTarget?.id}`}
+        title={approveTarget?.status === 'PROCESSING'
+          ? `Повторить одобрение заявки #${approveTarget.id}`
+          : `Одобрить заявку #${approveTarget?.id}`}
         onCancel={() => { setApproveTarget(null); approveForm.resetFields(); }}
         onOk={() => approveForm.submit()}
         confirmLoading={approveMutation.isPending}
-        okText="Одобрить и создать партнёра"
+        okText={approveTarget?.status === 'PROCESSING'
+          ? 'Повторить одобрение'
+          : 'Одобрить и создать партнёра'}
         cancelText="Отмена"
         width={560}
       >
         <Form
           form={approveForm}
           layout="vertical"
-          onFinish={(values) => approveTarget && approveMutation.mutate({ id: approveTarget.id, payload: values })}
+          onFinish={submitApproval}
         >
           <Form.Item name="loginEmail" label="Email для входа" rules={[{ required: true, type: 'email' }]}>
             <Input placeholder="partner@example.uz" />
           </Form.Item>
-          <Form.Item name="temporaryPassword" label="Временный пароль" rules={[{ required: true, min: 8 }]}>
+          <Form.Item
+            name="temporaryPassword"
+            label="Временный пароль для нового аккаунта"
+            extra={approveTarget?.status === 'PROCESSING'
+              ? 'При повторе существующий пароль не меняется.'
+              : 'Если аккаунт уже существует, его пароль не изменится.'}
+            rules={approveTarget?.status === 'PROCESSING' ? [] : [{ required: true, min: 8 }]}
+          >
             <Input.Password placeholder="Минимум 8 символов" />
           </Form.Item>
           <Form.Item name="merchantName" label="Название мерчанта" rules={[{ required: true }]}>

@@ -3,7 +3,6 @@ package uz.topdim.identity.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.common.dto.ApiResponse;
@@ -16,31 +15,28 @@ import uz.topdim.identity.dto.PartnerApplicationResponse;
 import uz.topdim.identity.dto.RejectPartnerApplicationRequest;
 import uz.topdim.identity.entity.ApplicationStatus;
 import uz.topdim.identity.entity.PartnerApplication;
-import uz.topdim.identity.entity.Role;
-import uz.topdim.identity.entity.User;
 import uz.topdim.identity.exception.ResourceNotFoundException;
 import uz.topdim.identity.repository.PartnerApplicationRepository;
-import uz.topdim.identity.repository.UserRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class PartnerApplicationService {
 
     private final PartnerApplicationRepository repository;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final CouponMerchantClient couponMerchantClient;
-    private final SecurityVersionService securityVersionService;
+    private final PartnerApplicationApprovalService approvalService;
 
     // ==================== Submit ====================
 
     @Transactional
     public PartnerApplicationResponse submit(PartnerApplicationRequest request) {
         String phone = normalizePhone(request.getPhone());
-        if (repository.existsByPhoneAndStatus(phone, ApplicationStatus.PENDING)) {
-            throw new IllegalStateException("pending partner application already exists for phone");
+        if (repository.existsByPhoneAndStatusIn(
+                phone, List.of(ApplicationStatus.PENDING, ApplicationStatus.PROCESSING))) {
+            throw new IllegalStateException("active partner application already exists for phone");
         }
 
         PartnerApplication app = PartnerApplication.builder()
@@ -77,18 +73,14 @@ public class PartnerApplicationService {
 
     // ==================== Approve ====================
 
-    @Transactional
     public PartnerApplicationResponse approve(Long id, Long adminId, ApprovePartnerApplicationRequest request) {
-        PartnerApplication app = findApplication(id);
-
-        if (app.getStatus() != ApplicationStatus.PENDING) {
-            throw new IllegalStateException("Only PENDING application can be approved");
+        PartnerApplicationApprovalService.Preparation preparation = approvalService.prepare(id, request);
+        if (preparation.alreadyCompleted()) {
+            return toResponse(preparation.completedApplication());
         }
 
-        User partner = createOrPromotePartnerUser(app, request);
-
         CreateMerchantOnboardingRequest merchantRequest = CreateMerchantOnboardingRequest.builder()
-                .userId(partner.getId())
+                .userId(preparation.userId())
                 .name(request.getMerchantName())
                 .email(request.getLoginEmail())
                 .website(request.getWebsite())
@@ -107,73 +99,15 @@ public class PartnerApplicationService {
             throw new IllegalStateException("Merchant onboarding failed");
         }
 
-        app.setStatus(ApplicationStatus.APPROVED);
-        app.setReviewedBy(adminId);
-        app.setReviewedAt(LocalDateTime.now());
-        app.setLinkedUserId(partner.getId());
-        app.setLinkedMerchantId(merchant.getId());
-        app.setRejectionReason(null);
-
-        // Сохраняем данные, введённые/дополненные модератором, обратно в заявку
-        app.setCompanyName(request.getMerchantName());
-        app.setAddress(request.getAddress());
-        app.setCity(request.getCity());
-        app.setWorkingHours(request.getWorkingHours());
-        app.setWebsite(request.getWebsite());
-        app.setEmail(request.getLoginEmail());
-
-        return toResponse(repository.save(app));
-    }
-
-    private User createOrPromotePartnerUser(PartnerApplication app, ApprovePartnerApplicationRequest request) {
-        String email = request.getLoginEmail().trim().toLowerCase();
-        String phone = normalizePhone(request.getPhone());
-
-        User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
-        User userByPhone = phone != null ? userRepository.findByPhone(phone).orElse(null) : null;
-
-        if (user != null && userByPhone != null && !user.getId().equals(userByPhone.getId())) {
-            throw new IllegalStateException("Phone is already linked to another user");
-        }
-
-        if (user == null) {
-            user = userByPhone;
-        }
-
-        if (user == null) {
-            user = User.builder()
-                    .email(email)
-                    .phone(phone)
-                    .password(passwordEncoder.encode(request.getTemporaryPassword()))
-                    .firstName(app.getFirstName())
-                    .lastName(app.getLastName())
-                    .role(Role.PARTNER)
-                    .enabled(true)
-                    .emailVerified(false)
-                    .phoneVerified(false)
-                    .build();
-            return userRepository.save(user);
-        }
-
-        if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN || user.getRole() == Role.MODERATOR) {
-            throw new IllegalStateException("Admin or moderator account cannot be linked as partner");
-        }
-
-        if (user.getRole() != Role.PARTNER) {
-            user.setRole(Role.PARTNER);
-            user.setSecurityVersion(user.getSecurityVersion() + 1);
-            user = userRepository.save(user);
-            securityVersionService.publishSecurityVersion(user.getId(), user.getSecurityVersion());
-        }
-
-        return user;
+        return toResponse(approvalService.complete(id, adminId, merchant.getId()));
     }
 
     // ==================== Reject ====================
 
     @Transactional
     public PartnerApplicationResponse reject(Long id, Long adminId, RejectPartnerApplicationRequest request) {
-        PartnerApplication app = findApplication(id);
+        PartnerApplication app = repository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found: " + id));
 
         if (app.getStatus() != ApplicationStatus.PENDING) {
             throw new IllegalStateException("Only PENDING application can be rejected");

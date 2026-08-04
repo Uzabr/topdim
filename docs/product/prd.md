@@ -1790,6 +1790,11 @@ Above the fold:
 - filters/pagination;
 - actions approve/reject.
 
+Одобрение выполняется повторяемо: `PENDING → PROCESSING → APPROVED`. Если
+создание мерчанта во внешнем сервисе не завершилось, заявка остаётся в
+`PROCESSING`, а администратор повторяет одобрение с уже закреплённым аккаунтом.
+Отклонять заявку после начала обработки нельзя.
+
 ---
 
 ## 17. Business Rules
@@ -1930,7 +1935,9 @@ Partner application создается в `PENDING`.
 
 ### Подтверждено кодом
 
-Partner application может стать только `APPROVED` или `REJECTED`.
+Partner application проходит `PENDING → PROCESSING → APPROVED` либо
+`PENDING → REJECTED`. `PROCESSING` означает безопасное для повтора
+незавершённое создание/привязку мерчанта.
 
 ### BR-D-001
 

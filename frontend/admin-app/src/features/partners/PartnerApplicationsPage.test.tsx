@@ -133,4 +133,27 @@ describe('PartnerApplicationsPage', () => {
 
     expect(await screen.findByText('Заявка уже обработана другим администратором')).toBeTruthy();
   });
+
+  it('offers a safe approval retry for an application left in processing', async () => {
+    vi.mocked(api.get).mockResolvedValue(response([{
+      ...application,
+      status: 'PROCESSING',
+      linkedUserId: 42,
+    }]));
+
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByText('Требует повтора')).toBeTruthy();
+    await user.click(screen.getByText('Повторить одобрение'));
+    expect(await screen.findByText('При повторе существующий пароль не меняется.')).toBeTruthy();
+    const retryButtons = screen.getAllByRole('button', { name: 'Повторить одобрение' });
+    await user.click(retryButtons[retryButtons.length - 1]);
+
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith(
+      '/api/v1/admin/partner-applications/17/approve',
+      expect.not.objectContaining({ temporaryPassword: expect.any(String) }),
+    ));
+    expect(screen.queryByText('Отклонить')).toBeNull();
+  });
 });

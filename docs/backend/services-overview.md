@@ -98,8 +98,8 @@ notification-service ──publish──▶ notification.exchange / notification
 | Method | URL | Auth | Описание |
 |---|---|---|---|
 | POST | `/api/v1/partners/applications` | ❌ | Подать заявку на партнёрство |
-| GET  | `/api/v1/admin/partner-applications` | ✅ ADMIN | Список заявок (пагинация) |
-| PATCH | `/api/v1/admin/partner-applications/{id}/approve` | ✅ ADMIN | Одобрить заявку и создать/связать партнёра |
+| GET  | `/api/v1/admin/partner-applications` | ✅ ADMIN | Список заявок (пагинация, фильтр статуса) |
+| PATCH | `/api/v1/admin/partner-applications/{id}/approve` | ✅ ADMIN | Повторяемо создать/связать партнёра (`PENDING/PROCESSING → APPROVED`) |
 | PATCH | `/api/v1/admin/partner-applications/{id}/reject` | ✅ ADMIN | Отклонить заявку |
 
 #### Partner Staff (`/api/v1/partner/staff`)

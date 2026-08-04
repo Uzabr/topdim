@@ -51,7 +51,7 @@ public class Merchant {
     @Column(nullable = false)
     private boolean active;
 
-    @Column(name = "user_id")
+    @Column(name = "user_id", unique = true)
     private Long userId;
 
     @Column(name = "telegram_chat_id")
