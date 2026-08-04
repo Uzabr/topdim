@@ -35,7 +35,11 @@ vi.mock('../../store/authStore', () => ({
 }));
 
 vi.mock('../../api/auth', () => ({
-  authApi: { changePassword: vi.fn(), requestEmailConfirm: vi.fn() },
+  authApi: {
+    changePassword: vi.fn(),
+    requestEmailConfirm: vi.fn(),
+    requestEmailChange: vi.fn(),
+  },
 }));
 
 vi.mock('../../api/media', () => ({
@@ -77,11 +81,17 @@ describe('ProfileSettingsSection profile actions', () => {
   beforeEach(() => {
     vi.mocked(authApi.changePassword).mockReset();
     vi.mocked(authApi.requestEmailConfirm).mockReset();
+    vi.mocked(authApi.requestEmailChange).mockReset();
     vi.mocked(mediaApi.uploadFile).mockReset();
     updateProfile.mockReset();
     logout.mockReset();
     navigate.mockReset();
   });
+
+  function openEmailChangeForm() {
+    render(<ProfileSettingsSection />);
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.email.changeAction' }));
+  }
 
   it('requests email confirmation and shows sent notice', async () => {
     vi.mocked(authApi.requestEmailConfirm).mockResolvedValue(
@@ -95,6 +105,65 @@ describe('ProfileSettingsSection profile actions', () => {
     expect((await screen.findByRole('status')).textContent).toBe(
       'profile.settings.email.sent',
     );
+  });
+
+  it('requests an email change for a valid new address and shows the confirmation notice', async () => {
+    vi.mocked(authApi.requestEmailChange).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof authApi.requestEmailChange>>,
+    );
+    openEmailChangeForm();
+
+    fireEvent.change(screen.getByLabelText('profile.settings.email.changeLabel'), {
+      target: { value: 'new@example.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.email.changeSubmit' }));
+
+    await waitFor(() =>
+      expect(authApi.requestEmailChange).toHaveBeenCalledWith('new@example.com'),
+    );
+    expect((await screen.findByRole('status')).textContent).toBe(
+      'profile.settings.email.changeSent',
+    );
+    // Форма закрывается после успешной отправки.
+    expect(screen.queryByLabelText('profile.settings.email.changeLabel')).toBeNull();
+  });
+
+  it('rejects an invalid new email before calling the backend', () => {
+    openEmailChangeForm();
+
+    fireEvent.change(screen.getByLabelText('profile.settings.email.changeLabel'), {
+      target: { value: 'not-an-email' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.email.changeSubmit' }));
+
+    expect(screen.getByText('profile.settings.email.changeInvalid')).toBeTruthy();
+    expect(authApi.requestEmailChange).not.toHaveBeenCalled();
+  });
+
+  it('shows a clear message when the new email is already taken (409)', async () => {
+    vi.mocked(authApi.requestEmailChange).mockRejectedValue({
+      response: { status: 409 },
+    });
+    openEmailChangeForm();
+
+    fireEvent.change(screen.getByLabelText('profile.settings.email.changeLabel'), {
+      target: { value: 'taken@example.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.email.changeSubmit' }));
+
+    expect(await screen.findByText('profile.settings.email.changeTaken')).toBeTruthy();
+  });
+
+  it('cancels the email change form without calling the backend', () => {
+    openEmailChangeForm();
+
+    fireEvent.change(screen.getByLabelText('profile.settings.email.changeLabel'), {
+      target: { value: 'new@example.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
+
+    expect(screen.queryByLabelText('profile.settings.email.changeLabel')).toBeNull();
+    expect(authApi.requestEmailChange).not.toHaveBeenCalled();
   });
 
   it('rejects non-image avatar before upload', () => {
