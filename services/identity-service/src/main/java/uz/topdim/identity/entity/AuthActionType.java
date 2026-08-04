@@ -7,5 +7,6 @@ package uz.topdim.identity.entity;
 public enum AuthActionType {
     PASSWORD_RESET,
     EMAIL_CONFIRM,
-    PHONE_CONFIRM
+    PHONE_CONFIRM,
+    EMAIL_CHANGE
 }

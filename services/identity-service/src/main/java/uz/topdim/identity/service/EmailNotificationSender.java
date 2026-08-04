@@ -25,6 +25,7 @@ public class EmailNotificationSender implements NotificationSender {
     private static final String TAG_TYPE = "type";
     private static final String TYPE_RESET = "reset";
     private static final String TYPE_CONFIRM = "confirm";
+    private static final String TYPE_CHANGE = "change";
 
     private final JavaMailSender mailSender;
     private final String fromAddress;
@@ -88,6 +89,25 @@ public class EmailNotificationSender implements NotificationSender {
     public void sendPhoneConfirmationCode(String phone, String code) {
         // SMS пока не интегрирован — логируем
         log.info("NOTIFICATION [SMS STUB]: Phone confirmation code sent to {}: {}", maskTarget(phone), code);
+    }
+
+    @Override
+    public void sendEmailChangeToken(String newEmail, String token) {
+        String subject = "TopDim — Подтверждение смены email";
+        String body = String.format("""
+                Здравствуйте!
+
+                Вы запросили смену email на TopDim. Для подтверждения нового адреса используйте код:
+
+                %s
+
+                Код действителен в течение 60 минут.
+                Если вы не запрашивали смену email — проигнорируйте это письмо.
+
+                Команда TopDim
+                """, token);
+
+        sendEmail(newEmail, subject, body, TYPE_CHANGE);
     }
 
     private void sendEmail(String to, String subject, String body, String type) {

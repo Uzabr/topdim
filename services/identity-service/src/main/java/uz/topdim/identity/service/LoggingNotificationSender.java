@@ -32,6 +32,11 @@ public class LoggingNotificationSender implements NotificationSender {
         log.info("NOTIFICATION [STUB]: Phone confirmation code sent to {}: {}", maskTarget(phone), code);
     }
 
+    @Override
+    public void sendEmailChangeToken(String newEmail, String token) {
+        log.info("NOTIFICATION [STUB]: Email change token sent to {}: {}", maskTarget(newEmail), token);
+    }
+
     private String maskTarget(String target) {
         if (target == null || target.length() < 4) return "***";
         return target.substring(0, 2) + "***" + target.substring(target.length() - 2);

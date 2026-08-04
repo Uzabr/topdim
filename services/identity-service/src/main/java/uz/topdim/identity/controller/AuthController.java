@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import uz.topdim.identity.dto.*;
 import uz.topdim.identity.exception.AuthException;
 import uz.topdim.identity.service.AuthService;
+import uz.topdim.identity.service.EmailChangeService;
 import uz.topdim.identity.service.EmailConfirmationService;
 import uz.topdim.identity.service.OtpService;
 import uz.topdim.identity.service.PasswordResetService;
@@ -27,7 +28,8 @@ import java.util.Arrays;
  *
  * <p>Endpoints: register, login, refresh, logout, change-password,
  * phone/request + phone/confirm (T5 — телефон-OTP вход/регистрация/восстановление),
- * password-reset/request, password-reset/confirm.
+ * password-reset/request, password-reset/confirm,
+ * email-change/request + email-change/confirm (T7a — смена email с подтверждением нового адреса).
  * {@code /guest} депрекирован (410 Gone) — небезопасный вход без проверки владения.
  */
 @RestController
@@ -38,6 +40,7 @@ public class AuthController {
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
     private final EmailConfirmationService emailConfirmationService;
+    private final EmailChangeService emailChangeService;
     private final OtpService otpService;
 
     private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
@@ -218,6 +221,32 @@ public class AuthController {
             @Valid @RequestBody EmailConfirmRequest request) {
         emailConfirmationService.confirmEmail(request.getToken());
         return ResponseEntity.ok(ApiResponse.success("Email успешно подтверждён", null));
+    }
+
+    // ==================== Email Change (T7a) ====================
+
+    /**
+     * Запрос смены email. Требует аутентификации (X-User-Id от gateway).
+     * Письмо с токеном подтверждения уходит на НОВЫЙ адрес (proof-of-ownership).
+     * «Email занят» — явный отказ (409), пользователь уже авторизован, anti-enumeration не нужен.
+     */
+    @PostMapping("/email-change/request")
+    public ResponseEntity<ApiResponse<Void>> requestEmailChange(
+            @RequestHeader("X-User-Id") Long userId,
+            @Valid @RequestBody EmailChangeRequest request) {
+        emailChangeService.requestEmailChange(userId, request.getNewEmail());
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(ApiResponse.success("Письмо с подтверждением отправлено на новый адрес", null));
+    }
+
+    /**
+     * Подтверждение смены email. Публичный endpoint — токен сам аутентифицирует владение адресом.
+     */
+    @PostMapping("/email-change/confirm")
+    public ResponseEntity<ApiResponse<Void>> confirmEmailChange(
+            @Valid @RequestBody EmailChangeConfirmRequest request) {
+        emailChangeService.confirmEmailChange(request.getToken());
+        return ResponseEntity.ok(ApiResponse.success("Email успешно изменён", null));
     }
 
     // ==================== Cookie helpers (M4) ====================
