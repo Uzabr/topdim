@@ -206,11 +206,7 @@ export const authApi = {
 
   /** Authenticated: письмо со ссылкой подтверждения уходит на newEmail (доказательство владения). */
   requestEmailChange: (newEmail: string) =>
-    apiClient.post<ApiResponse<void>>(
-      '/api/v1/auth/email-change/request',
-      { newEmail },
-      authRequestConfig(),
-    ),
+    apiClient.post<ApiResponse<void>>('/api/v1/auth/email-change/request', { newEmail }),
 
   /** Публичный — переход по ссылке из письма на новый адрес. Занят → 409, битый/просроченный токен → 401. */
   confirmEmailChange: (token: string) =>
