@@ -24,6 +24,7 @@ import uz.topdim.order.dto.RedeemCouponResponse;
 import uz.topdim.order.dto.RefundRequestResponse;
 import uz.topdim.order.dto.ReviewEligibilityResponse;
 import uz.topdim.order.entity.*;
+import uz.topdim.order.exception.ResourceNotFoundException;
 import uz.topdim.order.repository.*;
 
 import java.math.BigDecimal;
@@ -703,15 +704,14 @@ public class OrderService {
      */
     @Transactional
     public RefundRequestResponse approveRefundRequest(Long requestId, String adminComment) {
-        RefundRequest request = refundRequestRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("Запрос не найден"));
+        RefundRequest request = findRefundForUpdate(requestId);
 
         if (request.getStatus() != RefundRequest.RefundStatus.PENDING) {
             throw new IllegalStateException("Одобрение возможно только из статуса PENDING");
         }
 
         request.setStatus(RefundRequest.RefundStatus.APPROVED_PROCESSING);
-        request.setAdminComment(adminComment);
+        request.setAdminComment(normalizeOptionalComment(adminComment));
         request.setResolvedAt(LocalDateTime.now());
         request.setExpectedRefundAt(addWorkingDays(LocalDateTime.now(), 5));
         refundRequestRepository.save(request);
@@ -729,15 +729,19 @@ public class OrderService {
      */
     @Transactional
     public RefundRequestResponse rejectRefundRequest(Long requestId, String adminComment) {
-        RefundRequest request = refundRequestRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("Запрос не найден"));
+        if (adminComment == null || adminComment.isBlank()) {
+            throw new IllegalArgumentException("Укажите причину отклонения возврата");
+        }
+
+        RefundRequest request = findRefundForUpdate(requestId);
 
         if (request.getStatus() != RefundRequest.RefundStatus.PENDING) {
             throw new IllegalStateException("Отклонение возможно только из статуса PENDING");
         }
 
         request.setStatus(RefundRequest.RefundStatus.REJECTED);
-        request.setAdminComment(adminComment);
+        String normalizedComment = adminComment.trim();
+        request.setAdminComment(normalizedComment);
         request.setResolvedAt(LocalDateTime.now());
         refundRequestRepository.save(request);
 
@@ -754,7 +758,7 @@ public class OrderService {
 
         sendNotification(request.getUserId(), "Возврат отклонён",
                 "Ваш возврат за купон «" + getCouponTitle(request) + "» был отклонён."
-                        + (adminComment != null ? " Комментарий: " + adminComment : ""),
+                        + " Комментарий: " + normalizedComment,
                 "INFO");
 
         return mapToRefundResponse(request);
@@ -766,8 +770,7 @@ public class OrderService {
      */
     @Transactional
     public RefundRequestResponse completeRefundRequest(Long requestId, String adminComment) {
-        RefundRequest request = refundRequestRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("Запрос не найден"));
+        RefundRequest request = findRefundForUpdate(requestId);
 
         if (request.getStatus() != RefundRequest.RefundStatus.APPROVED_PROCESSING) {
             throw new IllegalStateException("Завершение возможно только из статуса APPROVED_PROCESSING");
@@ -779,7 +782,7 @@ public class OrderService {
             request.setResolvedAt(LocalDateTime.now());
         }
         if (adminComment != null && !adminComment.isBlank()) {
-            request.setAdminComment(adminComment);
+            request.setAdminComment(adminComment.trim());
         }
         refundRequestRepository.save(request);
 
@@ -825,22 +828,17 @@ public class OrderService {
         return refundRequestRepository.findByUserId(userId);
     }
 
-    /**
-     * Одобряет или отклоняет запрос на возврат (legacy Admin).
-     */
-    @Transactional
-    public RefundRequest resolveRefundRequest(Long requestId, boolean approved, String adminComment) {
-        RefundRequest request = refundRequestRepository.findById(requestId)
-                .orElseThrow(() -> new IllegalArgumentException("Запрос не найден"));
+    // ==================== Refund Helpers ====================
 
-        // Legacy only supports APPROVED/REJECTED (old status names mapped)
-        request.setStatus(approved ? RefundRequest.RefundStatus.APPROVED_PROCESSING : RefundRequest.RefundStatus.REJECTED);
-        request.setAdminComment(adminComment);
-        request.setResolvedAt(LocalDateTime.now());
-        return refundRequestRepository.save(request);
+    private RefundRequest findRefundForUpdate(Long requestId) {
+        return refundRequestRepository.findByIdForUpdate(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Запрос на возврат не найден: " + requestId));
     }
 
-    // ==================== Refund Helpers ====================
+    private String normalizeOptionalComment(String comment) {
+        return comment == null || comment.isBlank() ? null : comment.trim();
+    }
 
     private LocalDateTime addWorkingDays(LocalDateTime start, int workingDays) {
         LocalDateTime result = start;

@@ -303,3 +303,27 @@ manual demo-data walkthrough is intentionally deferred to the final task.
   Admin-app passes 22 test files / 178 tests, ESLint, and production build; the
   known large-chunk warning remains. Active PRD/backend documentation now records
   the intermediate state and migrations V15/V26.
+
+### 2026-08-04 — Task 5h: safe refund operations
+
+- Frontend RED proved that an unavailable refund API looked like an empty list,
+  `APPROVED_PROCESSING` was presented as an already completed approval, mutation
+  conflicts lost their backend reason, rejection accepted an empty explanation,
+  and manual completion gave no warning that money must already be returned.
+- The refund queue now has explicit error/retry and empty states, shows the
+  expected payout deadline, preserves zero amounts, calls processing refunds
+  `Ожидает выплаты`, requires a rejection reason, and warns that completion is a
+  manual confirmation after the actual payout. No unsupported payment-provider
+  integration was invented.
+- Backend RED exposed an unvalidated decision payload, generic missing-request
+  errors, unlocked concurrent decisions, and a legacy PATCH endpoint that could
+  bypass the canonical state machine and coupon synchronization. Canonical
+  approve/reject/complete operations now lock the refund row, return 404 for a
+  missing request, enforce comment length and rejection reason, and the unsafe
+  legacy endpoint is removed. Unknown resources are mapped to 404 instead of the
+  global fallback's former 500.
+- Focused UI coverage passes 5/5 and focused backend service/security coverage
+  passes 27/27. Full admin-app verification passes 23 files / 183 tests, ESLint,
+  and production build; the known large-chunk warning remains. Full order-service
+  verification passes 120 tests (1 skipped), PostgreSQL Testcontainers, JaCoCo,
+  and coverage verification with an explicit Docker API 1.40 environment.

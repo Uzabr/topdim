@@ -193,7 +193,7 @@ assertThatThrownBy(() -> service.doSomething())
 | `OrderService` | `createOrder()` | ✅ checkout, ❌ пустая корзина, ✅ event published |
 | `OrderService` | `redeemCoupon()` | ✅ активный купон → USED, ❌ уже использован |
 | `OrderService` | `createRefundRequest()` | ✅ создать, ❌ чужой заказ |
-| `OrderService` | `resolveRefundRequest()` | ✅ approve, ✅ reject |
+| `OrderService` | `approveRefundRequest()` / `rejectRefundRequest()` / `completeRefundRequest()` | ✅ статусные переходы, ❌ повторное решение, ❌ пустая причина отказа, ❌ not found, ✅ блокировка конкурентных решений |
 
 ### payment-service
 

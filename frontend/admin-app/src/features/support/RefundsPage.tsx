@@ -1,29 +1,35 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Table, Tag, Button, Modal, Input, Space, Select, Typography, App } from 'antd';
+import { Alert, App, Button, Input, Modal, Result, Select, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { getAdminRefunds, approveRefund, rejectRefund, completeRefund } from './api';
 import type { AdminRefund } from './api';
 
 const { TextArea } = Input;
 const { Text } = Typography;
+type RefundStatus = AdminRefund['status'];
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+const STATUS_LABELS: Record<RefundStatus, { label: string; color: string }> = {
   PENDING: { label: 'На рассмотрении', color: 'orange' },
-  APPROVED_PROCESSING: { label: 'Одобрен', color: 'blue' },
+  APPROVED_PROCESSING: { label: 'Ожидает выплаты', color: 'blue' },
   REFUNDED: { label: 'Завершён', color: 'green' },
   REJECTED: { label: 'Отклонён', color: 'red' },
 };
 
+function getErrorMessage(error: unknown, fallback: string) {
+  const apiError = error as { response?: { data?: { message?: string } } };
+  return apiError.response?.data?.message || fallback;
+}
+
 export function RefundsPage() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<RefundStatus | undefined>(undefined);
   const [page, setPage] = useState(0);
   const [actionModal, setActionModal] = useState<{ type: 'approve' | 'reject' | 'complete'; refund: AdminRefund } | null>(null);
   const [comment, setComment] = useState('');
 
-  const { data, isLoading } = useQuery({
+  const { data, error, isFetching, isLoading, refetch } = useQuery({
     queryKey: ['admin-refunds', statusFilter, page],
     queryFn: () => getAdminRefunds(statusFilter, page, 20),
   });
@@ -31,24 +37,28 @@ export function RefundsPage() {
   const approveMutation = useMutation({
     mutationFn: ({ id, comment }: { id: number; comment?: string }) => approveRefund(id, comment),
     onSuccess: () => { message.success('Возврат одобрен'); queryClient.invalidateQueries({ queryKey: ['admin-refunds'] }); setActionModal(null); },
-    onError: () => message.error('Ошибка одобрения'),
+    onError: (error) => message.error(getErrorMessage(error, 'Ошибка одобрения')),
   });
 
   const rejectMutation = useMutation({
     mutationFn: ({ id, comment }: { id: number; comment?: string }) => rejectRefund(id, comment),
     onSuccess: () => { message.success('Возврат отклонён'); queryClient.invalidateQueries({ queryKey: ['admin-refunds'] }); setActionModal(null); },
-    onError: () => message.error('Ошибка отклонения'),
+    onError: (error) => message.error(getErrorMessage(error, 'Ошибка отклонения')),
   });
 
   const completeMutation = useMutation({
     mutationFn: ({ id, comment }: { id: number; comment?: string }) => completeRefund(id, comment),
     onSuccess: () => { message.success('Возврат завершён'); queryClient.invalidateQueries({ queryKey: ['admin-refunds'] }); setActionModal(null); },
-    onError: () => message.error('Ошибка завершения'),
+    onError: (error) => message.error(getErrorMessage(error, 'Ошибка завершения')),
   });
 
   const handleAction = () => {
     if (!actionModal) return;
-    const payload = { id: actionModal.refund.id, comment: comment || undefined };
+    if (actionModal.type === 'reject' && !comment.trim()) {
+      message.warning('Укажите причину отклонения');
+      return;
+    }
+    const payload = { id: actionModal.refund.id, comment: comment.trim() || undefined };
     if (actionModal.type === 'approve') approveMutation.mutate(payload);
     if (actionModal.type === 'reject') rejectMutation.mutate(payload);
     if (actionModal.type === 'complete') completeMutation.mutate(payload);
@@ -63,9 +73,13 @@ export function RefundsPage() {
     { title: 'Сумма', dataIndex: 'refundAmount', width: 100, render: (v) => v != null ? `${v.toLocaleString()} сум` : '—' },
     { title: 'Причина', dataIndex: 'reason', ellipsis: true },
     {
+      title: 'Срок выплаты', dataIndex: 'expectedRefundAt', width: 120,
+      render: (date?: string) => date ? new Date(date).toLocaleDateString('ru-RU') : '—',
+    },
+    {
       title: 'Статус', dataIndex: 'status', width: 140,
-      render: (s: string) => {
-        const info = STATUS_LABELS[s] || { label: s, color: 'default' };
+      render: (status: RefundStatus) => {
+        const info = STATUS_LABELS[status];
         return <Tag color={info.color}>{info.label}</Tag>;
       },
     },
@@ -90,6 +104,16 @@ export function RefundsPage() {
 
   const modalTitle = actionModal?.type === 'approve' ? 'Одобрить возврат' : actionModal?.type === 'reject' ? 'Отклонить возврат' : 'Завершить возврат';
 
+  if (error) {
+    return (
+      <Result
+        status="error"
+        title="Ошибка загрузки возвратов"
+        extra={<Button loading={isFetching} onClick={() => refetch()}>Повторить</Button>}
+      />
+    );
+  }
+
   return (
     <div>
       <Typography.Title level={3}>Возвраты</Typography.Title>
@@ -104,7 +128,7 @@ export function RefundsPage() {
           onChange={(v) => { setStatusFilter(v); setPage(0); }}
           options={[
             { value: 'PENDING', label: 'На рассмотрении' },
-            { value: 'APPROVED_PROCESSING', label: 'Одобрены' },
+            { value: 'APPROVED_PROCESSING', label: 'Ожидают выплаты' },
             { value: 'REFUNDED', label: 'Завершены' },
             { value: 'REJECTED', label: 'Отклонены' },
           ]}
@@ -116,6 +140,7 @@ export function RefundsPage() {
         columns={columns}
         dataSource={data?.content || []}
         loading={isLoading}
+        locale={{ emptyText: 'Нет возвратов' }}
         pagination={{
           total: data?.totalElements || 0,
           pageSize: 20,
@@ -140,11 +165,21 @@ export function RefundsPage() {
             <p><strong>Купон:</strong> {actionModal.refund.couponTitle} ({actionModal.refund.couponCode})</p>
             <p><strong>Причина:</strong> {actionModal.refund.reason}</p>
             {actionModal.refund.refundAmount != null && <p><strong>Сумма:</strong> {actionModal.refund.refundAmount.toLocaleString()} сум</p>}
+            {actionModal.type === 'complete' && (
+              <Alert
+                type="warning"
+                showIcon
+                title="Подтверждайте завершение только после фактического возврата денег пользователю."
+                style={{ marginBottom: 16 }}
+              />
+            )}
             <TextArea
               rows={3}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Комментарий администратора (необязательно)"
+              placeholder={actionModal.type === 'reject'
+                ? 'Причина отклонения'
+                : 'Комментарий администратора (необязательно)'}
             />
           </div>
         )}
