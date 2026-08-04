@@ -64,6 +64,12 @@ telegram:
   # Макс. возраст auth_date из Login Widget (сек) — анти-replay.
   auth-max-age-seconds: 300
 
+google:
+  # OAuth 2.0 Web Client ID из Google Cloud Console. Пусто → вход через Google отключён (verify() → 401).
+  client-id: ${GOOGLE_CLIENT_ID:}
+  # JWKS-эндпоинт Google для проверки подписи ID-token (ротируемые RSA-ключи).
+  jwks-uri: ${GOOGLE_JWKS_URI:https://www.googleapis.com/oauth2/v3/certs}
+
 eskiz:
   # Реальная отправка OTP через Eskiz.uz SMS. false → фолбэк LoggingSmsSender (лог-заглушка).
   enabled: ${ESKIZ_ENABLED:false}
