@@ -150,3 +150,16 @@ manual demo-data walkthrough is intentionally deferred to the final task.
   files / 140 tests, ESLint, and the production build. The previously observed
   large-chunk build warning remains; it is handled separately from category
   behavior.
+
+### 2026-08-04 — Task 3
+
+- RED: the ownership regression enumerated three orphan redemption modules in
+  `admin-app`, while the canonical partner `RedeemPage` already existed.
+- GREEN: removed the unused admin page, API wrapper, and stylesheet. The admin
+  `/redeem` URL resolves to its normal dashboard fallback and no redemption
+  source remains in the admin feature tree.
+- Active product and QA documentation already states that redemption belongs to
+  `frontend/partner`, so no product wording change was needed.
+- Admin-app passed 15 test files / 142 tests, ESLint, and production build;
+  partner-app passed ESLint and production build. Both builds retain the known
+  large-chunk warning.
