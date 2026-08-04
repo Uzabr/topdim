@@ -27,4 +27,11 @@ describe('admin coupon navigation', () => {
       ]);
     },
   );
+
+  it('names the current identity-only audit scope honestly', () => {
+    const auditEntry = flatten(filterMenuByRole(allMenuItems, 'SUPER_ADMIN'))
+      .find((item) => item.key === '/system/audit');
+
+    expect(auditEntry?.label).toBe('Аудит сотрудников');
+  });
 });

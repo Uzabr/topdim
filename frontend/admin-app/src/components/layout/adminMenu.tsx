@@ -85,7 +85,7 @@ export const allMenuItems: MenuItem[] = [
     roles: ['SUPER_ADMIN'],
     children: [
       { key: '/system/staff', icon: <TeamOutlined />, label: 'Сотрудники', roles: ['SUPER_ADMIN'] },
-      { key: '/system/audit', icon: <AuditOutlined />, label: 'Журнал действий', roles: ['SUPER_ADMIN'] },
+      { key: '/system/audit', icon: <AuditOutlined />, label: 'Аудит сотрудников', roles: ['SUPER_ADMIN'] },
     ],
   },
 ];

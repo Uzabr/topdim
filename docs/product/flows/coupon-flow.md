@@ -295,7 +295,7 @@ GET /api/v1/partner/dashboard
 | Scheduled auto-EXPIRED | Есть lazy-expire при чтении/операциях, но нет отдельного scheduler job |
 | Реальная payment integration | Есть demo/provider mode и callbacks, но Payme/Click/Uzum provider ещё не доведён до production |
 | Email/SMS delivery | notification-service работает и хранит in-app notifications, но email/SMS по умолчанию в stub mode |
-| Admin menu gaps | В admin-app часть пунктов меню ещё без маршрутов (`bazaars`, `shops`, `promocodes`, `users/list`) |
+| Admin roadmap modules | `/users/list` подключён. UI базаров/магазинов и промокодов не входит в текущий admin MVP и остаётся отдельным roadmap-модулем |
 
 ## Обработка бизнес-ошибок (coupon flow)
 

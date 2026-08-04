@@ -56,14 +56,14 @@ PRD v2 от `2026-04-28` уже не является точной картой 
 | Canonical cart | Backend cart используется для order creation, local cart используется для guest | Модель стала понятнее, но PRD все еще формулирует это как открытый риск. Нужно закрепить фактическое правило. |
 | Payment providers | Есть `payment.mode=demo|provider`, callback и provider UX | Реальные Payme/Click/Uzum не production-ready; demo-complete остается ключевым локальным сценарием. |
 | Email/SMS | Есть сервисы и конфиги | По умолчанию stub/disabled; нельзя считать production delivery готовым. |
-| Admin support | Reviews/refunds/complaints routes есть | PRD местами все еще относит full support UI в Post-MVP. |
-| Admin catalog/order/users | Backend endpoints есть, меню содержит пункты | В `admin-app` нет routes для `/catalog/bazaars`, `/catalog/shops`, `/orders/promocodes`, `/users/list`. |
-| Promocodes | Backend `admin/promocodes` есть | Admin UI route в меню есть, но страница не подключена. |
-| Users management | Backend admin users есть | Admin UI route `/users/list` не подключен. |
+| Admin support | Reviews/refunds/complaints routes и защищённые UI есть | Входит в текущий admin MVP. |
+| Admin catalog/order/users | Merchant/category/order/users UI подключён | Bazaar/shop и promocode UI остаётся отдельным roadmap scope. |
+| Promocodes | Backend `admin/promocodes` есть | В текущем admin MVP пункта меню нет; отдельный roadmap-модуль. |
+| Users management | Backend admin users и `/users/list` подключены | Поиск, фильтр и safe block покрыты regression-тестами. |
 | Bazaar/shop admin | Backend public/admin endpoints есть, public UI есть | Admin UI для bazaar/shop не подключен; есть также дублирование `coupon-service` и `bazaar-service` directory domains. |
 | Search | Coupon/search and directory search есть | Нет production-ready global search across coupons/shops/bazaars. |
 | City/location rules | City exists in UI/product language | Нет единого backend rule, который канонически влияет на catalog/directory/map выдачу. |
-| Frontend QA | Builds/scripts есть | В актуальных frontend apps не найдено проектных `.test`/`.spec` файлов; нужен хотя бы smoke/e2e по основным flow. |
+| Frontend QA | Admin/web Vitest suites и builds есть | Partner требует ручной E2E; полный browser E2E остаётся отдельным этапом. |
 | Stock/sold-out safety | `registerSale` и `SOLD_OUT` есть | Остается риск oversell: checkout проверяет snapshot, а фактическое списание лимита происходит после оплаты. |
 
 ## Не реализовано или не подтверждено кодом

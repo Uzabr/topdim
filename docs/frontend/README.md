@@ -75,10 +75,12 @@ npm run lint
 
 ## Известные frontend gaps
 
-- В `admin-app` меню содержит пункты `/catalog/bazaars`, `/catalog/shops`, `/orders/promocodes`, `/users/list`, но маршруты для них ещё не подключены.
+- В `admin-app` `/users/list` подключён. UI базаров/магазинов и промокодов не
+  показывается и остаётся отдельным roadmap-модулем вне текущего admin MVP.
 - В `web-app` checkout/profile/payment flow реализован, но перед релизом нужен e2e smoke: каталог → корзина → checkout → demo payment → profile coupons → partner redemption.
 - В `web-app` избранное синхронизируется localStorage ↔ backend; при правках auth/favorites обязательно проверять merge guest favorites после login.
-- Во всех трёх приложениях пока нет полноценного frontend test suite, поэтому минимум перед сдачей — `npm run build` в изменённом app и ручной smoke основного маршрута.
+- `admin-app` и `web-app` имеют Vitest regression suites; `partner` пока
+  проверяется lint/build и ручным E2E основного маршрута.
 
 ### Админ / модератор
 

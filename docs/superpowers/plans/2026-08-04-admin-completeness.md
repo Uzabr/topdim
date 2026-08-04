@@ -395,3 +395,31 @@ manual demo-data walkthrough is intentionally deferred to the final task.
   parallel run hit the known category-modal five-second resource timeout; the
   focused test and full sequential frontend suite both passed without changing
   the timeout.
+
+### 2026-08-04 — Task 6: final verification and manual launch plan
+
+- Whole-branch review confirmed the current product boundary: MODERATOR handles
+  coupons/reviews/complaints, ADMIN owns the operational catalog/order/support/
+  user contour, SUPER_ADMIN adds staff administration, and PARTNER remains in
+  partner-app. Bazaar/shop, promocode, finance, and settings UI are explicit
+  roadmap modules rather than hidden or dead admin menu entries.
+- Product and frontend documents no longer claim that `/users/list` is missing,
+  that PARTNER uses admin-app, or that the removed legacy refund mutation still
+  exists. The identity-only journal is now named `Аудит сотрудников`, so the UI
+  does not imply a centralized audit contract that backend does not provide.
+- The local seed now includes deterministic MODERATOR, ADMIN, and SUPER_ADMIN
+  accounts and a static regression check. The existing seed remains local-only,
+  idempotent, and removable by its `--reset` marker flow.
+- Added `docs/qa/admin-launch-manual-test-plan.md` with role, dashboard,
+  coupon-lifecycle, merchant/location, category, order/lookup, user/staff,
+  support, retry/concurrency, and launch-blocking scenarios. The plan is prepared
+  but intentionally NOT RUN in this task.
+- Added `docs/qa/admin-launch-readiness-report.md`: implementation and local
+  automated checks pass, while production launch remains HOLD until the manual
+  demo-data pass and remote CI succeed.
+- Final local verification: whole Gradle monorepo passed; admin-app passed 27
+  files / 198 tests, ESLint, and production build; web-app passed 22 files / 149
+  tests, ESLint with one existing warning, and production build; partner-app
+  passed ESLint and production build. Demo infrastructure, seed contract, and
+  Bash syntax checks passed. All three Vite builds retain the known large-chunk
+  warning.

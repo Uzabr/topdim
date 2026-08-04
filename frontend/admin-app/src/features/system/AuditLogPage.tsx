@@ -77,7 +77,7 @@ export const AuditLogPage = () => {
     return (
       <Result
         status="error"
-        title="Ошибка загрузки журнала аудита"
+        title="Ошибка загрузки аудита сотрудников"
         extra={<Button loading={isFetching} onClick={() => refetch()}>Повторить</Button>}
       />
     );
@@ -86,7 +86,7 @@ export const AuditLogPage = () => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>Журнал аудита</Title>
+        <Title level={4} style={{ margin: 0 }}>Аудит сотрудников</Title>
         <Button 
           icon={<ReloadOutlined />} 
           onClick={() => refetch()} 
@@ -101,7 +101,7 @@ export const AuditLogPage = () => {
         dataSource={data?.content}
         loading={isLoading}
         rowKey="id"
-        locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Журнал аудита пуст" /> }}
+        locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Нет действий с сотрудниками" /> }}
         pagination={{
           current: page + 1,
           pageSize: 20,

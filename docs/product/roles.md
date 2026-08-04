@@ -233,7 +233,7 @@ ADMIN и SUPER_ADMIN имеют одинаковые права в рабоче�
 | Принять возврат в обработку | `PATCH /api/v1/admin/refunds/{id}/approve` | ✅ |
 | Отклонить возврат | `PATCH /api/v1/admin/refunds/{id}/reject` | ✅ |
 | Завершить возврат | `PATCH /api/v1/admin/refunds/{id}/complete` | ✅ |
-| Legacy решение по возврату | `PATCH /api/v1/admin/refunds/{id}` | ✅ |
+| Legacy решение по возврату | `PATCH /api/v1/admin/refunds/{id}` | Удалено: обходило canonical state machine |
 
 ### Категории
 | Функция | Endpoint | Статус |
@@ -290,7 +290,7 @@ ADMIN и SUPER_ADMIN имеют одинаковые права в рабоче�
 | **USER** | Покупка, профиль, избранное, заказы, purchased coupons, reviews, refunds, complaints, notifications реализованы |
 | **PARTNER** | Partner app, предложения, approval/revision, staff, stats, PIN/QR redemption реализованы |
 | **MODERATOR** | Рабочее место купонов, модерация отзывов и жалоб реализованы; решение за партнёра недоступно |
-| **ADMIN** | Merchant/catalog/order/support контуры реализованы; часть пунктов меню admin-app ещё не подключена к маршрутам |
+| **ADMIN** | Merchant/catalog/order/support/user контуры реализованы; UI базаров/магазинов и промокодов остаётся отдельным roadmap-модулем |
 | **SUPER_ADMIN** | Staff, roles, blocking и audit реализованы; системные настройки/финансы ещё вне MVP |
 
 ---

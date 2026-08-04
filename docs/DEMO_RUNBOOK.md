@@ -32,9 +32,19 @@ cd frontend/web-app && npm run dev      # → http://localhost:5173
 
 - **Покупатели (роль USER):** `buyer001@demo.topdim.uz` … `buyer005@demo.topdim.uz`
 - **Владельцы/кассиры (роль PARTNER):** `owner001@demo.topdim.uz` …, `cashier001a@demo.topdim.uz` …
-  (для partner-панели — она в этом демо **не поднята**, показываем клиентское приложение web-app).
+  (partner-app запускается отдельной командой при проверке партнёрского флоу).
+- **Админка:** `moderator@demo.topdim.uz`, `admin@demo.topdim.uz`,
+  `superadmin@demo.topdim.uz` для ролей `MODERATOR`, `ADMIN`, `SUPER_ADMIN`.
 
 Покупатели также могут регистрироваться сами на сайте.
+
+Для полного QA запустите SPA в отдельных терминалах:
+
+```bash
+cd frontend/web-app && npm run dev      # http://localhost:5173
+cd frontend/admin-app && VITE_API_URL=http://localhost:8080 npm run dev   # http://localhost:3001
+cd frontend/partner && VITE_API_URL=http://localhost:8080 npm run dev      # http://localhost:3002
+```
 
 ## Что показывать (сценарий)
 

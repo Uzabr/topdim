@@ -47,6 +47,7 @@ describe('AuditLogPage', () => {
   it('renders the real backend contract without invented email or IP fields', async () => {
     renderPage();
 
+    expect(await screen.findByText('Аудит сотрудников')).toBeTruthy();
     expect(await screen.findByText('ID: 7')).toBeTruthy();
     expect(screen.getByText('Пользователь #42')).toBeTruthy();
     expect(screen.getByText('Смена роли')).toBeTruthy();
@@ -57,7 +58,7 @@ describe('AuditLogPage', () => {
     vi.mocked(api.get).mockResolvedValue(response([]));
     renderPage();
 
-    expect(await screen.findByText('Журнал аудита пуст')).toBeTruthy();
+    expect(await screen.findByText('Нет действий с сотрудниками')).toBeTruthy();
   });
 
   it('shows a load error and retries explicitly', async () => {
@@ -67,7 +68,7 @@ describe('AuditLogPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    expect(await screen.findByText('Ошибка загрузки журнала аудита')).toBeTruthy();
+    expect(await screen.findByText('Ошибка загрузки аудита сотрудников')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Повторить' }));
     expect(await screen.findByText('Роль изменена с MODERATOR на ADMIN')).toBeTruthy();
   });

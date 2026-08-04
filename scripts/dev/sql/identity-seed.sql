@@ -20,7 +20,16 @@ INSERT INTO users (email, phone, password, first_name, last_name, role, email_ve
 ON CONFLICT (email) DO NOTHING;
 
 -- =============================================
--- 2. Owner users (50) — role PARTNER
+-- 2. Admin panel users — one account per staff role
+-- =============================================
+INSERT INTO users (email, phone, password, first_name, last_name, role, email_verified, enabled) VALUES
+    ('moderator@demo.topdim.uz', '+998905000001', '$2a$10$jWnlIbikLAhYLBgz5j0q7.zfFaDjs0WdRaT8O35xwW7mmU8zclXkS', 'Demo', 'Moderator', 'MODERATOR', TRUE, TRUE),
+    ('admin@demo.topdim.uz', '+998905000002', '$2a$10$jWnlIbikLAhYLBgz5j0q7.zfFaDjs0WdRaT8O35xwW7mmU8zclXkS', 'Demo', 'Admin', 'ADMIN', TRUE, TRUE),
+    ('superadmin@demo.topdim.uz', '+998905000003', '$2a$10$jWnlIbikLAhYLBgz5j0q7.zfFaDjs0WdRaT8O35xwW7mmU8zclXkS', 'Demo', 'Super Admin', 'SUPER_ADMIN', TRUE, TRUE)
+ON CONFLICT (email) DO NOTHING;
+
+-- =============================================
+-- 3. Owner users (50) — role PARTNER
 -- =============================================
 INSERT INTO users (email, phone, password, first_name, last_name, role, email_verified, enabled) VALUES
     -- Рестораны (1-6)
@@ -85,7 +94,7 @@ INSERT INTO users (email, phone, password, first_name, last_name, role, email_ve
 ON CONFLICT (email) DO NOTHING;
 
 -- =============================================
--- 3. Cashier users (100) — role PARTNER
+-- 4. Cashier users (100) — role PARTNER
 --    Two per merchant: cashierNNNa, cashierNNNb
 -- =============================================
 INSERT INTO users (email, phone, password, first_name, last_name, role, email_verified, enabled)
