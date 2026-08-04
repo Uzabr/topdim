@@ -55,20 +55,6 @@ spring:
                 key-resolver: "#{@ipKeyResolver}"
                 deny-empty-key: false
 
-        # Auth Service — guest account (строго: 1 req/sec, burst 2)
-        - id: auth-guest
-          uri: lb://identity-service
-          predicates:
-            - Path=/api/v1/auth/guest
-          filters:
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 1
-                redis-rate-limiter.burstCapacity: 2
-                redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@ipKeyResolver}"
-                deny-empty-key: false
-
         # Auth Service — password reset request (строго: 1 req/sec, burst 2)
         - id: auth-password-reset-request
           uri: lb://identity-service
