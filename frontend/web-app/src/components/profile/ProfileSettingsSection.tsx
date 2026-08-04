@@ -15,7 +15,10 @@ import NotificationsSection from './NotificationsSection';
 import './ProfileSettingsSection.css';
 
 type EditableProfileField = 'name' | 'phone';
-type EditingField = EditableProfileField | 'password' | null;
+type EditingField = EditableProfileField | 'password' | 'email' | null;
+
+/** Простая RFC-достаточная проверка формата — строгая валидация всё равно на бэкенде. */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface PasswordErrors {
   currentPassword?: string;
@@ -46,6 +49,10 @@ export default function ProfileSettingsSection() {
   const [emailConfirming, setEmailConfirming] = useState(false);
   const [emailNotice, setEmailNotice] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [emailChangeSubmitting, setEmailChangeSubmitting] = useState(false);
+  const [emailChangeNotice, setEmailChangeNotice] = useState('');
+  const [emailChangeError, setEmailChangeError] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -99,6 +106,51 @@ export default function ProfileSettingsSection() {
     } finally {
       if (isSessionGenerationCurrent(sessionGeneration)) {
         setEmailConfirming(false);
+      }
+    }
+  };
+
+  const openEmailChange = () => {
+    setEmailChangeNotice('');
+    setEmailChangeError('');
+    setNewEmail('');
+    setEditing('email');
+  };
+
+  const cancelEmailChange = () => {
+    setNewEmail('');
+    setEmailChangeError('');
+    setEditing(null);
+  };
+
+  const submitEmailChange = async () => {
+    setEmailChangeError('');
+    const trimmed = newEmail.trim();
+    if (!EMAIL_PATTERN.test(trimmed)) {
+      setEmailChangeError(t('profile.settings.email.changeInvalid'));
+      return;
+    }
+
+    const sessionGeneration = captureSessionGeneration();
+    setEmailChangeSubmitting(true);
+    setEmailChangeNotice('');
+    try {
+      await authApi.requestEmailChange(trimmed);
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      setEmailChangeNotice(t('profile.settings.email.changeSent'));
+      setNewEmail('');
+      setEditing(null);
+    } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      const e = err as { response?: { status?: number; data?: { message?: string } } };
+      const fallback =
+        e.response?.status === 409
+          ? t('profile.settings.email.changeTaken')
+          : t('profile.settings.email.changeError');
+      setEmailChangeError(e.response?.data?.message || fallback);
+    } finally {
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setEmailChangeSubmitting(false);
       }
     }
   };
@@ -237,7 +289,7 @@ export default function ProfileSettingsSection() {
       {avatarNotice && <p className="settings__success" role="status">{avatarNotice}</p>}
 
       {/* Email */}
-      <div className="settings__row">
+      <div className="settings__row settings__row--stack">
         <div className="settings__field">
           <p className="settings__label">{t('profile.settings.email.title')}</p>
           <div className="settings__email-value">
@@ -250,31 +302,78 @@ export default function ProfileSettingsSection() {
                 : t('profile.settings.email.unverified')}
             </span>
           </div>
+
+          {editing === 'email' && (
+            <div className="settings__password-form">
+              <label className="settings__password-field">
+                <span>{t('profile.settings.email.changeLabel')}</span>
+                <input
+                  className="settings__input"
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder={t('profile.settings.email.changePlaceholder')}
+                  autoFocus
+                />
+              </label>
+              {emailChangeError && (
+                <small className="settings__field-error" role="alert">
+                  {emailChangeError}
+                </small>
+              )}
+              <div className="settings__edit-actions">
+                <button
+                  type="button"
+                  className="settings__save"
+                  disabled={emailChangeSubmitting}
+                  onClick={submitEmailChange}
+                >
+                  {emailChangeSubmitting
+                    ? t('profile.settings.email.changeSending')
+                    : t('profile.settings.email.changeSubmit')}
+                </button>
+                <button type="button" className="settings__link" onClick={cancelEmailChange}>
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-        {!user?.emailVerified && (
+
+        {editing !== 'email' && (
           <div className="settings__edit-actions">
-            <button
-              type="button"
-              className="settings__btn"
-              disabled={emailConfirming}
-              onClick={requestEmailConfirmation}
-            >
-              {emailConfirming
-                ? t('profile.settings.email.sending')
-                : t('profile.settings.email.confirm')}
-            </button>
-            <button
-              type="button"
-              className="settings__link"
-              onClick={() => navigate(`/${lang}/confirm-email`)}
-            >
-              {t('profile.settings.email.enterCode')}
+            {!user?.emailVerified && (
+              <>
+                <button
+                  type="button"
+                  className="settings__btn"
+                  disabled={emailConfirming}
+                  onClick={requestEmailConfirmation}
+                >
+                  {emailConfirming
+                    ? t('profile.settings.email.sending')
+                    : t('profile.settings.email.confirm')}
+                </button>
+                <button
+                  type="button"
+                  className="settings__link"
+                  onClick={() => navigate(`/${lang}/confirm-email`)}
+                >
+                  {t('profile.settings.email.enterCode')}
+                </button>
+              </>
+            )}
+            <button type="button" className="settings__link" onClick={openEmailChange}>
+              {t('profile.settings.email.changeAction')}
             </button>
           </div>
         )}
       </div>
       {emailError && <p className="settings__error" role="alert">{emailError}</p>}
       {emailNotice && <p className="settings__success" role="status">{emailNotice}</p>}
+      {emailChangeNotice && (
+        <p className="settings__success" role="status">{emailChangeNotice}</p>
+      )}
 
       {/* Имя */}
       <div className="settings__row">

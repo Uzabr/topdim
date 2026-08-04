@@ -368,7 +368,16 @@
         "sending": "Yuborilmoqda...",
         "sent": "Tasdiqlash kodi emailingizga yuborildi",
         "enterCode": "Kodni kiritish",
-        "error": "Tasdiqlash kodini yuborib bo'lmadi"
+        "error": "Tasdiqlash kodini yuborib bo'lmadi",
+        "changeAction": "Emailni o'zgartirish",
+        "changeLabel": "Yangi email",
+        "changePlaceholder": "you@example.com",
+        "changeInvalid": "Email manzilini to'g'ri kiriting",
+        "changeSubmit": "Havolani yuborish",
+        "changeSending": "Yuborilmoqda...",
+        "changeSent": "Yangi manzilga tasdiqlash havolasini yubordik — o'zgarishni yakunlash uchun unga o'ting",
+        "changeTaken": "Bu email boshqa hisobda allaqachon ishlatilmoqda",
+        "changeError": "Tasdiqlash havolasini yuborib bo'lmadi"
       },
       "password": {
         "title": "Parol",
@@ -397,6 +406,19 @@
       "confirming": "Tasdiqlanmoqda...",
       "success": "Email muvaffaqiyatli tasdiqlandi",
       "error": "Emailni tasdiqlab bo'lmadi",
+      "missingToken": "Tasdiqlash kodini kiriting",
+      "toProfile": "Profilga o'tish",
+      "toLogin": "Hisobga kirish"
+    },
+    "emailChangeConfirmation": {
+      "title": "Email almashtirishni tasdiqlash",
+      "hint": "Yangi manzilga yuborilgan xatdagi kodni kiriting. Agar havolani ochgan bo'lsangiz, kod avtomatik qo'yiladi.",
+      "code": "Tasdiqlash kodi",
+      "submit": "Email almashtirishni tasdiqlash",
+      "confirming": "Tasdiqlanmoqda...",
+      "success": "Email muvaffaqiyatli o'zgartirildi",
+      "error": "Email almashtirishni tasdiqlab bo'lmadi",
+      "taken": "Bu email boshqa hisobda allaqachon ishlatilmoqda",
       "missingToken": "Tasdiqlash kodini kiriting",
       "toProfile": "Profilga o'tish",
       "toLogin": "Hisobga kirish"
