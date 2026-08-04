@@ -23,6 +23,8 @@ import BazaarMapPage from './pages/BazaarMapPage';
 import BazaarDetailPage from './pages/BazaarDetailPage';
 import ShopDetailPage from './pages/ShopDetailPage';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProfilePage from './pages/ProfilePage';
 import SearchPage from './pages/SearchPage';
 import FavoritesPage from './pages/FavoritesPage';
@@ -88,6 +90,8 @@ function AppShell() {
           <Route path="bazaar/:id" element={<BazaarDetailPage />} />
           <Route path="shops/:id" element={<ShopDetailPage />} />
           <Route path="login" element={<LoginPage />} />
+          <Route path="register" element={<RegisterPage />} />
+          <Route path="reset-password" element={<ResetPasswordPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="confirm-email" element={<EmailConfirmationPage />} />
           <Route path="confirm-email-change" element={<EmailChangeConfirmationPage />} />
