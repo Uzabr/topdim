@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -216,5 +217,37 @@ class UserServiceTest {
         verify(userRepository).searchForAdmin(eq(Role.PARTNER), eq("99890"), any(Pageable.class));
         verify(userRepository, never()).searchByEmailOrName(any(), any());
         verify(userRepository, never()).findByRole(any(), any());
+    }
+
+    @Test
+    @DisplayName("blockUser: повторная блокировка идемпотентна")
+    void blockUser_alreadyBlocked_noSideEffects() {
+        User user = createUser();
+        user.setEnabled(false);
+        user.setSecurityVersion(4L);
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+
+        AdminUserResponse response = userService.blockUser(1L, true);
+
+        assertThat(response.isEnabled()).isFalse();
+        assertThat(user.getSecurityVersion()).isEqualTo(4L);
+        verify(userRepository, never()).save(any(User.class));
+        verifyNoInteractions(securityVersionService, refreshTokenRepository);
+    }
+
+    @Test
+    @DisplayName("blockUser: блокировка под write lock инвалидирует обе сессии")
+    void blockUser_activeUser_blocksAndInvalidatesSessions() {
+        User user = createUser();
+        user.setSecurityVersion(4L);
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+
+        AdminUserResponse response = userService.blockUser(1L, true);
+
+        assertThat(response.isEnabled()).isFalse();
+        assertThat(user.getSecurityVersion()).isEqualTo(5L);
+        verify(securityVersionService).publishSecurityVersion(1L, 5L);
+        verify(refreshTokenRepository).revokeAllByUser(user);
     }
 }

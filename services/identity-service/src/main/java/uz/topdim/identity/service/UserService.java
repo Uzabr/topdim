@@ -122,12 +122,16 @@ public class UserService {
 
     @Transactional
     public AdminUserResponse blockUser(Long userId, boolean blocked) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
 
         // Защита: нельзя блокировать админов
         if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN) {
             throw new IllegalStateException("Невозможно заблокировать администратора");
+        }
+
+        if (user.isEnabled() == !blocked) {
+            return mapToAdminUser(user);
         }
 
         user.setEnabled(!blocked);

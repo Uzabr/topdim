@@ -10,13 +10,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.identity.dto.AdminStaffResponse;
 import uz.topdim.identity.dto.AuditLogResponse;
+import uz.topdim.identity.dto.BlockUserRequest;
 import uz.topdim.identity.dto.ChangeRoleRequest;
 import uz.topdim.identity.dto.CreateAdminRequest;
 import uz.topdim.identity.entity.Role;
 import uz.topdim.identity.service.SuperAdminService;
 import uz.topdim.common.dto.ApiResponse;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/super")
@@ -32,7 +31,8 @@ public class SuperAdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        Role staffRole = Role.valueOf(role.toUpperCase());
+        validatePage(page, size);
+        Role staffRole = parseStaffRole(role);
         Page<AdminStaffResponse> staff = superAdminService.getStaffByRole(
                 staffRole, PageRequest.of(page, size, Sort.by("createdAt").descending()));
         return ResponseEntity.ok(ApiResponse.success(staff));
@@ -70,9 +70,9 @@ public class SuperAdminController {
     public ResponseEntity<ApiResponse<Void>> blockUser(
             @RequestHeader("X-User-Id") Long currentAdminId,
             @PathVariable Long id,
-            @RequestBody Map<String, Boolean> request
+            @Valid @RequestBody BlockUserRequest request
     ) {
-        boolean blocked = Boolean.TRUE.equals(request.get("blocked"));
+        boolean blocked = request.getBlocked();
         superAdminService.blockUser(currentAdminId, id, blocked);
         String message = blocked ? "Сотрудник заблокирован" : "Сотрудник разблокирован";
         return ResponseEntity.ok(ApiResponse.success(message, null));
@@ -83,7 +83,32 @@ public class SuperAdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
+        validatePage(page, size);
         Page<AuditLogResponse> logs = superAdminService.getAuditLogs(PageRequest.of(page, size));
         return ResponseEntity.ok(ApiResponse.success(logs));
+    }
+
+    private Role parseStaffRole(String role) {
+        if (role == null) {
+            throw new IllegalArgumentException("Допустимы только роли ADMIN или MODERATOR");
+        }
+        try {
+            Role parsed = Role.valueOf(role.trim().toUpperCase());
+            if (parsed == Role.ADMIN || parsed == Role.MODERATOR) {
+                return parsed;
+            }
+        } catch (IllegalArgumentException ignored) {
+            // Единый понятный ответ для неизвестных и нештатных ролей.
+        }
+        throw new IllegalArgumentException("Допустимы только роли ADMIN или MODERATOR");
+    }
+
+    private void validatePage(int page, int size) {
+        if (page < 0) {
+            throw new IllegalArgumentException("Номер страницы не может быть отрицательным");
+        }
+        if (size < 1 || size > 100) {
+            throw new IllegalArgumentException("Размер страницы должен быть от 1 до 100");
+        }
     }
 }

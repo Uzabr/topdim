@@ -354,3 +354,44 @@ manual demo-data walkthrough is intentionally deferred to the final task.
   Test workers now set docker-java's `api.version` JVM property as well as its
   environment variable, eliminating the intermittent Testcontainers API 1.32
   fallback against Docker Desktop's minimum 1.40.
+
+### 2026-08-04 — Task 5j: staff administration and identity audit
+
+- Frontend RED proved that staff and audit service failures looked like empty
+  tables, roles/actions were exposed as raw enums, and the staff form advertised
+  a six-character password despite the identity contract requiring a strong
+  8–128 character password. Both pages now have explicit error/retry and empty
+  states, localized labels, and per-row mutation loading.
+- The audit table now renders the actual backend contract (`userId`, entity name
+  and entity ID). Unsupported `adminEmail` and `ipAddress` columns were removed
+  instead of displaying fabricated blank data. Resolving actor email requires
+  an extended audit contract; client IP additionally requires trusted gateway
+  propagation. Both remain explicit product gaps.
+- Backend RED proved that a super administrator could change or block their own
+  account, mutate another `SUPER_ADMIN`, assign non-staff roles, and accidentally
+  unblock a user by omitting the `blocked` field. Staff mutations now accept only
+  ADMIN/MODERATOR, protect self and `SUPER_ADMIN`, require an explicit typed
+  block flag, return 400/403/404/409 by outcome, and make same-state retries
+  idempotent.
+- The ordinary admin user-block endpoint reused the same unsafe map payload and
+  non-idempotent update. It now shares the validated block request, write lock,
+  and same-state retry behavior, so `{}` cannot silently unblock an account and
+  retries do not bump the security version twice.
+- Role and block mutations acquire a pessimistic user lock before changing the
+  security version, preventing concurrent requests from losing session
+  invalidations or producing contradictory audit entries. Successful changes
+  still publish the version and revoke refresh tokens where required.
+- Staff and audit pagination now rejects negative pages and sizes outside
+  1–100, preventing malformed requests and unbounded super-admin list queries.
+- A regression exposed that the password blocklist was documented as
+  case-insensitive but mixed-case entries such as `Admin123!` were not rejected.
+  Comparison is now genuinely case-insensitive and the UI surfaces the precise
+  backend password error.
+- Focused coverage passes 8 frontend tests plus the SuperAdmin and admin-user
+  service/controller suites. Full admin-app verification passes 27 files / 197
+  tests, ESLint, and
+  production build; the known large-chunk warning remains. Full identity-service
+  verification passes with PostgreSQL, JaCoCo, and coverage verification. One
+  parallel run hit the known category-modal five-second resource timeout; the
+  focused test and full sequential frontend suite both passed without changing
+  the timeout.

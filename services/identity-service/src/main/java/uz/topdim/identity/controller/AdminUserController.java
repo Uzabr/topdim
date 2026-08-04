@@ -1,5 +1,6 @@
 package uz.topdim.identity.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -7,9 +8,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.identity.dto.AdminUserResponse;
+import uz.topdim.identity.dto.BlockUserRequest;
 import uz.topdim.identity.service.UserService;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/admin/users")
@@ -36,8 +36,8 @@ public class AdminUserController {
     @PatchMapping("/{id}/block")
     public ResponseEntity<ApiResponse<AdminUserResponse>> blockUser(
             @PathVariable Long id,
-            @RequestBody Map<String, Boolean> request) {
-        boolean blocked = Boolean.TRUE.equals(request.get("blocked"));
+            @Valid @RequestBody BlockUserRequest request) {
+        boolean blocked = request.getBlocked();
         AdminUserResponse user = userService.blockUser(id, blocked);
         String message = blocked ? "Пользователь заблокирован" : "Пользователь разблокирован";
         return ResponseEntity.ok(ApiResponse.success(message, user));
