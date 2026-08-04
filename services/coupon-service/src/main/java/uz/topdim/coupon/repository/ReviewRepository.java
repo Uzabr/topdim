@@ -1,8 +1,10 @@
 package uz.topdim.coupon.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import uz.topdim.coupon.entity.Review;
@@ -14,6 +16,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT review FROM Review review WHERE review.id = :id")
+    Optional<Review> findByIdForUpdate(@Param("id") Long id);
+
     Page<Review> findByStatusOrderByCreatedAtDesc(ReviewStatus status, Pageable pageable);
     Page<Review> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
     Page<Review> findByCouponOfferIdAndStatusOrderByCreatedAtDesc(Long couponOfferId, ReviewStatus status, Pageable pageable);

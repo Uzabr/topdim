@@ -37,7 +37,11 @@ subprojects {
         // Testcontainers 1.20 falls back to obsolete Docker API 1.32 when the
         // Gradle test worker does not inherit a client version. Docker Desktop
         // used by the project requires at least 1.40.
-        environment 'DOCKER_API_VERSION', System.getenv('DOCKER_API_VERSION') ?: '1.40'
+        def dockerApiVersion = System.getProperty('api.version')
+                ?: System.getenv('DOCKER_API_VERSION')
+                ?: '1.40'
+        environment 'DOCKER_API_VERSION', dockerApiVersion
+        systemProperty 'api.version', dockerApiVersion
         finalizedBy jacocoTestReport
     }
 

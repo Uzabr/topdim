@@ -62,7 +62,12 @@ public class ModCouponController {
             @PathVariable Long id,
             @Valid @RequestBody StatusUpdateRequest request
     ) {
-        modCouponService.reviewUserReview(modId, id, request.getStatus(), request.getReason());
+        String decision = request.getStatus().trim().toUpperCase(java.util.Locale.ROOT);
+        String reason = request.getReason() == null ? null : request.getReason().trim();
+        if ("REJECT".equals(decision) && (reason == null || reason.isBlank())) {
+            throw new IllegalArgumentException("Укажите причину отклонения отзыва");
+        }
+        modCouponService.reviewUserReview(modId, id, decision, reason);
         return ResponseEntity.ok(ApiResponse.success("Решение по отзыву сохранено", null));
     }
 }

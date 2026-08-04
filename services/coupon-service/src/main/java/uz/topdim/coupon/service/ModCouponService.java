@@ -16,6 +16,7 @@ import uz.topdim.coupon.entity.CouponOffer;
 import uz.topdim.coupon.entity.CouponStatus;
 import uz.topdim.coupon.entity.Review;
 import uz.topdim.coupon.entity.ReviewStatus;
+import uz.topdim.coupon.exception.ResourceNotFoundException;
 import uz.topdim.coupon.repository.CouponOfferRepository;
 import uz.topdim.coupon.repository.ReviewRepository;
 
@@ -80,22 +81,40 @@ public class ModCouponService {
 
     @Transactional
     public void reviewUserReview(Long modId, Long reviewId, String decision, String reason) {
-        Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new RuntimeException("Отзыв не найден"));
-
-        if ("APPROVE".equalsIgnoreCase(decision)) {
-            review.setStatus(ReviewStatus.APPROVED);
-        } else if ("REJECT".equalsIgnoreCase(decision)) {
-            review.setStatus(ReviewStatus.REJECTED);
-            review.setRejectReason(reason);
-            // Optional: send notification to user that their review was rejected
-            sendNotification(review.getUserId(), "Отзыв отклонен", 
-                    "Мы не смогли опубликовать ваш отзыв. Причина: " + reason, "INFO");
-        } else {
-            throw new IllegalArgumentException("Unknown decision: " + decision);
+        String normalizedDecision = decision == null
+                ? ""
+                : decision.trim().toUpperCase(java.util.Locale.ROOT);
+        if (!"APPROVE".equals(normalizedDecision) && !"REJECT".equals(normalizedDecision)) {
+            throw new IllegalArgumentException("Неизвестное решение: " + decision);
         }
 
+        String normalizedReason = reason == null ? "" : reason.trim();
+        if ("REJECT".equals(normalizedDecision) && normalizedReason.isBlank()) {
+            throw new IllegalArgumentException("Укажите причину отклонения отзыва");
+        }
+        if (normalizedReason.length() > 255) {
+            throw new IllegalArgumentException("Причина отклонения не должна превышать 255 символов");
+        }
+
+        Review review = reviewRepository.findByIdForUpdate(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("Отзыв не найден: " + reviewId));
+        if (review.getStatus() != ReviewStatus.PENDING) {
+            throw new IllegalStateException("Отзыв уже обработан");
+        }
+
+        if ("APPROVE".equals(normalizedDecision)) {
+            review.setStatus(ReviewStatus.APPROVED);
+            review.setRejectReason(null);
+        } else {
+            review.setStatus(ReviewStatus.REJECTED);
+            review.setRejectReason(normalizedReason);
+        }
         reviewRepository.save(review);
+
+        if ("REJECT".equals(normalizedDecision)) {
+            sendNotification(review.getUserId(), "Отзыв отклонен",
+                    "Мы не смогли опубликовать ваш отзыв. Причина: " + normalizedReason, "INFO");
+        }
     }
 
     private void sendNotification(Long userId, String title, String message, String type) {
@@ -112,6 +131,7 @@ public class ModCouponService {
         return ReviewResponse.builder()
                 .id(review.getId())
                 .userId(review.getUserId())
+                .userName(review.getUserName())
                 .couponOfferId(review.getCouponOffer().getId())
                 .rating(review.getRating())
                 .comment(review.getComment())

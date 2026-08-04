@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import uz.topdim.coupon.config.SecurityConfig;
@@ -16,8 +17,10 @@ import uz.topdim.coupon.service.ModCouponService;
 
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -68,6 +71,45 @@ class ModCouponReviewSecurityTest {
                 .andExpect(status().isOk());
 
         verify(modCouponService).reviewUserReview(42L, 50L, "APPROVE", null);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"MODERATOR", "ADMIN", "SUPER_ADMIN"})
+    void staffRoles_canListPendingUserReviews(String role) throws Exception {
+        when(modCouponService.getPendingReviews(any())).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/mod/reviews")
+                        .header("X-User-Id", "42")
+                        .header("X-User-Role", role))
+                .andExpect(status().isOk());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PARTNER", "USER"})
+    void nonStaffRoles_cannotListOrReviewUserContent(String role) throws Exception {
+        mockMvc.perform(get("/api/v1/mod/reviews")
+                        .header("X-User-Id", "42")
+                        .header("X-User-Role", role))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(patch("/api/v1/mod/reviews/50/review")
+                        .header("X-User-Id", "42")
+                        .header("X-User-Role", role)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVE\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void rejectUserReview_blankReason_returnsBadRequest() throws Exception {
+        mockMvc.perform(patch("/api/v1/mod/reviews/50/review")
+                        .header("X-User-Id", "42")
+                        .header("X-User-Role", "MODERATOR")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REJECT\",\"reason\":\"   \"}"))
+                .andExpect(status().isBadRequest());
+
+        verify(modCouponService, never()).reviewUserReview(anyLong(), anyLong(), any(), any());
     }
 
     private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder couponReview(

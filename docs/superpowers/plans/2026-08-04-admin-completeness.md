@@ -327,3 +327,30 @@ manual demo-data walkthrough is intentionally deferred to the final task.
   and production build; the known large-chunk warning remains. Full order-service
   verification passes 120 tests (1 skipped), PostgreSQL Testcontainers, JaCoCo,
   and coverage verification with an explicit Docker API 1.40 environment.
+
+### 2026-08-04 — Task 5i: complaint and review moderation safety
+
+- Frontend RED proved that complaint load failures looked like empty queues,
+  review load failures had no retry, mutation conflicts lost the backend's
+  actionable message, and a review could be published with one unconfirmed
+  click. Both queues now expose retryable errors and explicit empty states;
+  review approval requires confirmation, mutation loading is scoped, and reject
+  reasons are bounded to the database's 255-character column.
+- Backend RED proved that complaints and reviews could be decided repeatedly or
+  concurrently, missing records became 500 responses, blank review rejection
+  reasons reached persistence, and the pending-review DTO omitted `userName`.
+  Both state transitions now lock the row, accept only pending records, normalize
+  inputs, return 404/409/400 by business outcome, and persist before publishing
+  rejection/resolution notifications. The review queue now returns the author.
+- Role regression uncovered that order-service method-level access denials were
+  swallowed by the generic exception handler as HTTP 500. They now map to 403;
+  MODERATOR/ADMIN/SUPER_ADMIN can operate support queues while PARTNER/USER cannot.
+- `IN_REVIEW` remains an unused complaint enum value because the product has no
+  agreed take-to-work/assignment operation. This workflow decision is kept for
+  the final product-gap report instead of inventing hidden semantics in this task.
+- Full admin-app verification passes 25 files / 189 tests, ESLint, and production
+  build; the known large-chunk warning remains. Coupon-service passes 309 tests
+  and order-service passes 132 tests, both with JaCoCo and coverage verification.
+  Test workers now set docker-java's `api.version` JVM property as well as its
+  environment variable, eliminating the intermittent Testcontainers API 1.32
+  fallback against Docker Desktop's minimum 1.40.
