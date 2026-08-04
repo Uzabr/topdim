@@ -428,4 +428,58 @@ class AuthControllerSecurityTest {
 
         verify(emailChangeService).confirmEmailChange("email-change-token");
     }
+
+    // ==================== T8a: Phone Link ====================
+
+    @Test
+    @DisplayName("phone/link: без gateway headers endpoint недоступен")
+    void linkPhone_withoutAuthentication_isRejected() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/phone/link")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "phone": "+998901234567",
+                                  "code": "111111"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+
+        verify(authService, never()).linkPhone(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("phone/link: с gateway headers запрос проходит")
+    void linkPhone_withGatewayHeaders_callsService() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/phone/link")
+                        .header("X-User-Id", "7")
+                        .header("X-User-Role", "USER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "phone": "+998901234567",
+                                  "code": "111111"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        verify(authService).linkPhone(7L, "+998901234567", "111111");
+    }
+
+    @Test
+    @DisplayName("phone/link: некорректный формат телефона отклоняется до сервиса")
+    void linkPhone_invalidPhone_returnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/phone/link")
+                        .header("X-User-Id", "7")
+                        .header("X-User-Role", "USER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "phone": "not-a-phone",
+                                  "code": "111111"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(authService, never()).linkPhone(any(), any(), any());
+    }
 }

@@ -60,6 +60,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/auth/change-password").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/confirm/request").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/email-change/request").authenticated()
+                        // T8a: привязка телефона к текущему аккаунту — НЕ public (в отличие от phone/request и phone/confirm)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/phone/link").authenticated()
 
                         // Публичный endpoint: заявки на партнёрство с лендинга
                         .requestMatchers(HttpMethod.POST, "/api/v1/partners/applications").permitAll()

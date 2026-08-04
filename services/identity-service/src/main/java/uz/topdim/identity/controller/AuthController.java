@@ -28,6 +28,7 @@ import java.util.Arrays;
  *
  * <p>Endpoints: register, login, refresh, logout, change-password,
  * phone/request + phone/confirm (T5 — телефон-OTP вход/регистрация/восстановление),
+ * phone/link (T8a — привязка телефона к текущему аккаунту по OTP; требует аутентификации),
  * password-reset/request, password-reset/confirm,
  * email-change/request + email-change/confirm (T7a — смена email с подтверждением нового адреса).
  * {@code /guest} депрекирован (410 Gone) — небезопасный вход без проверки владения.
@@ -140,6 +141,20 @@ public class AuthController {
         addRefreshTokenCookie(response, authResponse.getRefreshToken());
         authResponse.setRefreshToken(null);
         return ResponseEntity.ok(ApiResponse.success("Вход выполнен", authResponse));
+    }
+
+    /**
+     * Привязка номера телефона к текущему (залогиненному) аккаунту (T8a).
+     * OTP на привязываемый номер запрашивается через уже существующий {@code /auth/phone/request}.
+     * Требует аутентификации (X-User-Id от gateway) — НЕ public, в отличие от phone/request и
+     * phone/confirm. Заменяет легаси-смену телефона через {@code PUT /users/me} (была в обход OTP).
+     */
+    @PostMapping("/phone/link")
+    public ResponseEntity<ApiResponse<Void>> linkPhone(
+            @RequestHeader("X-User-Id") Long userId,
+            @Valid @RequestBody PhoneOtpConfirmRequest req) {
+        authService.linkPhone(userId, req.getPhone(), req.getCode());
+        return ResponseEntity.ok(ApiResponse.success("Телефон привязан", null));
     }
 
     /**
