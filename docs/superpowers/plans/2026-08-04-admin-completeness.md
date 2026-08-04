@@ -246,3 +246,21 @@ manual demo-data walkthrough is intentionally deferred to the final task.
   fallback to unsupported API 1.32. Full order-service tests with PostgreSQL and
   JaCoCo pass without command-line workarounds. Admin-app passes 20 test files /
   169 tests, ESLint, and production build; the known chunk warning remains.
+
+### 2026-08-04 — Task 5e: user management filters and safe blocking
+
+- Backend RED proved that the advertised phone search did not inspect phone
+  numbers and that providing search and role together silently discarded the
+  role filter. The repository now searches phone values and applies both filters
+  in one query; the service normalizes both inputs before selecting the query.
+- Frontend RED proved that a failed list request looked like an empty table,
+  administrator rows exposed a block action rejected by the backend, and an
+  ordinary user could be blocked without confirmation. The page now separates
+  load errors, marks ADMIN/SUPER_ADMIN accounts as protected, confirms block and
+  unblock actions, surfaces API errors, and scopes loading to the affected row.
+- Full identity-service tests including PostgreSQL and JaCoCo passed. Admin-app
+  passes 21 test files / 173 tests, ESLint, and production build. One concurrent
+  frontend/Gradle run caused the existing category modal test to reach its
+  five-second timeout; both that test and the full frontend suite passed when
+  rerun sequentially, so no timeout was increased. The known chunk warning
+  remains.

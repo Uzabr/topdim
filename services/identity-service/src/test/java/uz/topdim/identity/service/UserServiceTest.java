@@ -7,6 +7,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import uz.topdim.identity.dto.AdminUserResponse;
 import uz.topdim.identity.dto.UpdateProfileRequest;
 import uz.topdim.identity.dto.UserProfileResponse;
 import uz.topdim.identity.entity.Role;
@@ -14,13 +17,16 @@ import uz.topdim.identity.entity.TrustLevel;
 import uz.topdim.identity.entity.User;
 import uz.topdim.identity.exception.UserNotFoundException;
 import uz.topdim.identity.repository.FavoriteRepository;
+import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.UserRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -31,6 +37,8 @@ class UserServiceTest {
 
     @Mock private UserRepository userRepository;
     @Mock private FavoriteRepository favoriteRepository;
+    @Mock private SecurityVersionService securityVersionService;
+    @Mock private RefreshTokenRepository refreshTokenRepository;
     @Mock private TrustService trustService;
 
     @InjectMocks
@@ -190,5 +198,23 @@ class UserServiceTest {
         userService.markPaid(3L); // идемпотентно — не перезатирает
 
         assertThat(u.getPaidAt()).isEqualTo(first);
+    }
+
+    @Test
+    @DisplayName("getAllUsers: одновременно применяет роль и поиск")
+    void getAllUsers_roleAndSearch_combinesFilters() {
+        User partner = createUser();
+        partner.setRole(Role.PARTNER);
+        when(userRepository.searchForAdmin(eq(Role.PARTNER), eq("99890"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(partner)));
+
+        var result = userService.getAllUsers("partner", " 99890 ", 0, 20);
+
+        assertThat(result.getContent())
+                .extracting(AdminUserResponse::getRole)
+                .containsExactly("PARTNER");
+        verify(userRepository).searchForAdmin(eq(Role.PARTNER), eq("99890"), any(Pageable.class));
+        verify(userRepository, never()).searchByEmailOrName(any(), any());
+        verify(userRepository, never()).findByRole(any(), any());
     }
 }
