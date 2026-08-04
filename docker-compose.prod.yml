@@ -139,6 +139,7 @@ services:
       ESKIZ_EMAIL: ${ESKIZ_EMAIL}
       ESKIZ_PASSWORD: ${ESKIZ_PASSWORD}
       ESKIZ_FROM: ${ESKIZ_FROM}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     depends_on: &backend_depends_on
       postgres:
         condition: service_healthy
