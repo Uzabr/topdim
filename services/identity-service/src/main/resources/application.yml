@@ -64,6 +64,21 @@ telegram:
   # Макс. возраст auth_date из Login Widget (сек) — анти-replay.
   auth-max-age-seconds: 300
 
+eskiz:
+  # Реальная отправка OTP через Eskiz.uz SMS. false → фолбэк LoggingSmsSender (лог-заглушка).
+  enabled: ${ESKIZ_ENABLED:false}
+  base-url: ${ESKIZ_BASE_URL:https://notify.eskiz.uz/api}
+  email: ${ESKIZ_EMAIL:}
+  password: ${ESKIZ_PASSWORD:}
+  from: ${ESKIZ_FROM:4546}
+  # Двойные кавычки обязательны: без них ":" перед "{code}" ломает YAML-парсинг (плоский скаляр
+  # с ": " внутри воспринимается как вложенный mapping).
+  template: "${ESKIZ_TEMPLATE:SizBiz tasdiqlash kodi: {code}}"
+  # Явные HTTP-таймауты на вызовы к Eskiz — без них синхронный вызов может зависнуть на неопределённое
+  # время и вместе с synchronized login() исчерпать пул потоков identity-service.
+  connect-timeout-ms: ${ESKIZ_CONNECT_TIMEOUT_MS:5000}
+  read-timeout-ms: ${ESKIZ_READ_TIMEOUT_MS:10000}
+
 eureka:
   client:
     service-url:
