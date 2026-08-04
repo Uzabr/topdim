@@ -227,3 +227,22 @@ manual demo-data walkthrough is intentionally deferred to the final task.
   the no-daemon flag is required so an old Gradle daemon does not retain Docker
   API 1.32. Admin-app passes 19 test files / 165 tests, ESLint, and production
   build; the known chunk warning remains.
+
+### 2026-08-04 — Task 5d: purchased-coupon support lookup
+
+- Frontend RED proved that changing a searched code left stale coupon data on
+  screen and that service/permission failures were mislabeled as "not found".
+  Input changes now clear stale state, 404 has a dedicated warning, other
+  failures use an error state, empty input makes no request, and duplicate
+  submissions are blocked while loading.
+- Backend regression tests cover trim/uppercase normalization, not-found,
+  minimal response fields without `qrToken`, and ADMIN/SUPER_ADMIN versus
+  MODERATOR/PARTNER/USER method security for both order list and coupon lookup.
+- Runtime coverage exposed the installed Ant 6 `Alert.message` deprecation.
+  All remaining admin alerts now use `title`, and the source guard prevents the
+  prop from returning.
+- Gradle now passes Docker API 1.40 explicitly to every test worker (while
+  honoring an environment override), removing the intermittent Testcontainers
+  fallback to unsupported API 1.32. Full order-service tests with PostgreSQL and
+  JaCoCo pass without command-line workarounds. Admin-app passes 20 test files /
+  169 tests, ESLint, and production build; the known chunk warning remains.

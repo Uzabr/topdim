@@ -9,6 +9,7 @@ const sourceModules = import.meta.glob('../**/*.{ts,tsx}', {
 const deprecatedPatterns = [
   { name: 'Space.direction', pattern: /<Space\b[^>]*\bdirection\s*=/g },
   { name: 'Statistic.valueStyle', pattern: /<Statistic\b[^>]*\bvalueStyle\s*=/g },
+  { name: 'Alert.message', pattern: /<Alert\b[^>]*\bmessage\s*=/g },
   {
     name: 'bordered on components that use variant',
     pattern: /<(?:Card|Input|InputNumber|Select|Cascader|TreeSelect|Tag)\b[^>]*\bbordered(?:\s|=|>)/g,

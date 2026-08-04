@@ -15,6 +15,7 @@ import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.order.client.CouponClient;
 import uz.topdim.order.client.CouponPurchaseSnapshot;
 import uz.topdim.order.dto.AdminOrderResponse;
+import uz.topdim.order.dto.AdminPurchasedCouponLookupResponse;
 import uz.topdim.order.dto.PurchasedCouponResponse;
 import uz.topdim.order.entity.*;
 import uz.topdim.order.repository.*;
@@ -860,6 +861,55 @@ class OrderServiceTest {
         assertThatThrownBy(() -> orderService.getOrderByIdAdmin(999L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("не найден");
+    }
+
+    @Test
+    @DisplayName("Admin lookup: нормализует код и возвращает только support-поля без qrToken")
+    void adminLookupByCouponCode_normalizesAndExcludesQrToken() {
+        Order order = Order.builder().id(100L).build();
+        PurchasedCoupon purchasedCoupon = PurchasedCoupon.builder()
+                .id(501L)
+                .order(order)
+                .userId(10L)
+                .couponOfferId(20L)
+                .couponOptionId(30L)
+                .couponTitle("SPA")
+                .optionTitle("90 минут")
+                .couponCode("CP-ABCD1234")
+                .qrToken("secret-redemption-token")
+                .status(PurchasedCouponStatus.ACTIVE)
+                .merchantId(77L)
+                .merchantName("SPA Oasis")
+                .merchantAddress("Ташкент")
+                .purchasedAt(LocalDateTime.of(2026, 8, 4, 10, 30))
+                .build();
+        when(purchasedCouponRepository.findByCouponCode("CP-ABCD1234"))
+                .thenReturn(Optional.of(purchasedCoupon));
+
+        AdminPurchasedCouponLookupResponse result =
+                orderService.adminLookupByCouponCode("  cp-abcd1234  ");
+
+        assertThat(result.getPurchasedCouponId()).isEqualTo(501L);
+        assertThat(result.getOrderId()).isEqualTo(100L);
+        assertThat(result.getCouponCode()).isEqualTo("CP-ABCD1234");
+        assertThat(result.getMerchantId()).isEqualTo(77L);
+        assertThat(AdminPurchasedCouponLookupResponse.class.getDeclaredFields())
+                .extracting(java.lang.reflect.Field::getName)
+                .doesNotContain("qrToken");
+        verify(purchasedCouponRepository).findByCouponCode("CP-ABCD1234");
+    }
+
+    @Test
+    @DisplayName("Admin lookup: неизвестный нормализованный код отклоняется")
+    void adminLookupByCouponCode_notFound_throws() {
+        when(purchasedCouponRepository.findByCouponCode("CP-NOTFOUND"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.adminLookupByCouponCode(" cp-notfound "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("не найден");
+
+        verify(purchasedCouponRepository).findByCouponCode("CP-NOTFOUND");
     }
 
     // ==================== Task 1: Checkout Revalidation Regression ====================

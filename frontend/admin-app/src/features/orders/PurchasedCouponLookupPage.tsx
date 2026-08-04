@@ -20,23 +20,37 @@ const statusLabels: Record<string, string> = {
   REFUNDED: 'Возвращён',
 };
 
+interface LookupFailure {
+  kind: 'not-found' | 'request';
+  message: string;
+}
+
 export function PurchasedCouponLookupPage() {
   const [searchCode, setSearchCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AdminPurchasedCouponLookup | null>(null);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [failure, setFailure] = useState<LookupFailure | null>(null);
 
   const handleSearch = async () => {
-    if (!searchCode.trim()) return;
+    if (!searchCode.trim() || loading) return;
     setLoading(true);
     setResult(null);
-    setErrorMsg('');
+    setFailure(null);
     try {
       const data = await lookupPurchasedCoupon(searchCode);
       setResult(data);
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setErrorMsg(error.response?.data?.message || 'Купон не найден');
+      const error = err as {
+        response?: { status?: number; data?: { message?: string } };
+        message?: string;
+      };
+      const notFound = error.response?.status === 404;
+      setFailure({
+        kind: notFound ? 'not-found' : 'request',
+        message: error.response?.data?.message
+          || error.message
+          || (notFound ? 'Купон не найден' : 'Не удалось выполнить поиск'),
+      });
     } finally {
       setLoading(false);
     }
@@ -51,7 +65,11 @@ export function PurchasedCouponLookupPage() {
           <Input
             placeholder="Введите код купона (CP-XXXX1234)"
             value={searchCode}
-            onChange={(e) => setSearchCode(e.target.value.toUpperCase())}
+            onChange={(e) => {
+              setSearchCode(e.target.value.toUpperCase());
+              setResult(null);
+              setFailure(null);
+            }}
             onPressEnter={handleSearch}
             size="large"
             style={{ letterSpacing: 1.5, fontFamily: 'monospace' }}
@@ -71,11 +89,11 @@ export function PurchasedCouponLookupPage() {
 
       {loading && <Spin size="large" style={{ display: 'block', margin: '40px auto' }} />}
 
-      {errorMsg && (
+      {failure && (
         <Alert
-          type="warning" showIcon
-          message="Купон не найден"
-          description={errorMsg}
+          type={failure.kind === 'not-found' ? 'warning' : 'error'} showIcon
+          title={failure.kind === 'not-found' ? 'Купон не найден' : 'Ошибка поиска купона'}
+          description={failure.message}
           style={{ maxWidth: 600 }}
         />
       )}
@@ -115,14 +133,14 @@ export function PurchasedCouponLookupPage() {
 
           <Alert
             type="info" showIcon
-            message="Только для чтения"
+            title="Только для чтения"
             description="Данная страница предназначена для поддержки. Погашение купонов выполняется партнёром через Partner App."
             style={{ marginTop: 16 }}
           />
         </Card>
       )}
 
-      {!loading && !result && !errorMsg && (
+      {!loading && !result && !failure && (
         <Empty description="Введите код купона для поиска" style={{ marginTop: 40 }} />
       )}
     </div>

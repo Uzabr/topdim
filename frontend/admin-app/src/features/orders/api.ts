@@ -13,17 +13,17 @@ export interface AdminOrder {
 
 export interface AdminPurchasedCouponLookup {
   purchasedCouponId: number;
-  orderId: number;
+  orderId: number | null;
   userId: number;
   couponOfferId: number;
   couponOptionId: number;
   couponTitle: string;
-  optionTitle: string;
+  optionTitle: string | null;
   couponCode: string;
-  status: string;
-  merchantId: number;
-  merchantName: string;
-  merchantAddress: string;
+  status: 'ACTIVE' | 'USED' | 'EXPIRED' | 'REFUNDED';
+  merchantId: number | null;
+  merchantName: string | null;
+  merchantAddress: string | null;
   purchasedAt: string;
   expiresAt: string | null;
   usedAt: string | null;

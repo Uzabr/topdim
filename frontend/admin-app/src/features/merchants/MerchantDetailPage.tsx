@@ -133,7 +133,7 @@ export const MerchantDetailPage = () => {
   ];
 
   if (isLoading) return <Spin size="large" style={{ display: 'block', margin: '80px auto' }} />;
-  if (!merchant) return <Alert type="error" message="Мерчант не найден" />;
+  if (!merchant) return <Alert type="error" title="Мерчант не найден" />;
 
   return (
     <div>
@@ -169,7 +169,7 @@ export const MerchantDetailPage = () => {
         <Alert
           type="warning"
           showIcon
-          message="Не готов к публикации"
+          title="Не готов к публикации"
           description={merchant.publicationBlockReason}
           style={{ marginBottom: 16 }}
         />

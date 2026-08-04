@@ -223,7 +223,7 @@ function AdminDashboard() {
           style={{ marginTop: 16 }}
           type="warning"
           showIcon
-          message="Данные заказов временно недоступны"
+          title="Данные заказов временно недоступны"
           description="Купоны и пользователи загружаются независимо. Повторите запрос к order-service."
           action={(
             <Button
@@ -360,7 +360,7 @@ function ModeratorDashboard({ userId }: { userId: number }) {
           style={{ marginTop: 16 }}
           type="warning"
           showIcon
-          message="Часть очередей временно недоступна"
+          title="Часть очередей временно недоступна"
           action={(
             <Button size="small" icon={<ReloadOutlined />} onClick={retryAll}>
               Повторить
@@ -405,7 +405,7 @@ export const DashboardPage = () => {
   const user = useAuthStore((state) => state.user);
 
   if (!user) {
-    return <Alert type="error" showIcon message="Не удалось определить пользователя" />;
+    return <Alert type="error" showIcon title="Не удалось определить пользователя" />;
   }
 
   return (
