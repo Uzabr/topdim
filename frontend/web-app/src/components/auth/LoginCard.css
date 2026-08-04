@@ -132,6 +132,16 @@
   border-color: var(--ink);
 }
 
+/* Обёртка под официальную кнопку Google (GIS renderButton рисует свой iframe/кнопку). */
+.lcard__google-widget {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  overflow: hidden;
+}
+
 .lcard__g-mark {
   display: flex;
   align-items: center;

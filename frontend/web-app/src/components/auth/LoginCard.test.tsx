@@ -6,12 +6,14 @@ import LoginCard from './LoginCard';
 const {
   login,
   telegramLogin,
+  googleLogin,
   phoneLogin,
   registerUser,
   requestPhoneOtp,
 } = vi.hoisted(() => ({
   login: vi.fn(),
   telegramLogin: vi.fn(),
+  googleLogin: vi.fn(),
   phoneLogin: vi.fn(),
   registerUser: vi.fn(),
   requestPhoneOtp: vi.fn(),
@@ -27,6 +29,7 @@ vi.mock('../../store/authStore', () => ({
   useAuthStore: () => ({
     login,
     telegramLogin,
+    googleLogin,
     phoneLogin,
     register: registerUser,
     isLoading: false,
@@ -45,6 +48,13 @@ vi.mock('../../api/auth', async () => {
 });
 
 vi.mock('./TelegramLoginButton', () => ({
+  default: () => null,
+}));
+
+// VITE_GOOGLE_CLIENT_ID не задан в этом наборе тестов (см. LoginCard.google.test.tsx
+// для сконфигурированной ветки), поэтому реального GoogleLoginButton здесь не будет —
+// мок оставлен как страховка на случай, если окружение сборки его выставит.
+vi.mock('./GoogleLoginButton', () => ({
   default: () => null,
 }));
 
@@ -71,6 +81,7 @@ describe('LoginCard authentication transitions', () => {
   beforeEach(() => {
     login.mockResolvedValue(false);
     telegramLogin.mockResolvedValue(false);
+    googleLogin.mockResolvedValue(false);
     phoneLogin.mockResolvedValue(false);
     registerUser.mockResolvedValue(false);
     requestPhoneOtp.mockReset();
@@ -102,6 +113,7 @@ describe('LoginCard phone-OTP flow', () => {
   beforeEach(() => {
     login.mockResolvedValue(false);
     telegramLogin.mockResolvedValue(false);
+    googleLogin.mockResolvedValue(false);
     phoneLogin.mockResolvedValue(false);
     registerUser.mockResolvedValue(false);
     requestPhoneOtp.mockReset();
