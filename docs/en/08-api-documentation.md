@@ -112,6 +112,7 @@ Partner endpoints allow `PARTNER`, `ADMIN`, or `SUPER_ADMIN`, except the legacy 
 | Categories | POST `/api/v1/admin/categories`; POST `/upload` |
 | Situations | GET/POST base; GET/PUT/DELETE id; PUT/DELETE id/coupons |
 | Promo codes | GET/POST `/api/v1/admin/promocodes` |
+| Dashboard | GET `/api/v1/admin/dashboard` — today's orders/revenue, pending complaints, seven-day sales, recent orders |
 | Orders | GET `/api/v1/admin/orders`, id, purchased-coupons lookup |
 | Refunds | GET base; PATCH approve/reject/complete; legacy PATCH id |
 | Complaints | GET `/api/v1/mod/complaints`; PATCH resolve |

@@ -260,7 +260,7 @@ ADMIN и SUPER_ADMIN имеют одинаковые права в рабоче�
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
 | Промокоды | `POST /api/v1/admin/promocodes` | ✅ |
-| Dashboard (аналитика) | `GET /api/v1/admin/dashboard` | ❌ |
+| Dashboard (заказы, выручка, жалобы, 7 дней) | `GET /api/v1/admin/dashboard` | ✅ |
 
 ---
 

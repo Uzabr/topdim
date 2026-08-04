@@ -113,3 +113,21 @@ manual demo-data walkthrough is intentionally deferred to the final task.
   dashboard metrics, category lifecycle, support queues, and negative cases.
 - Run that manual plan only after implementation is finished, record defects,
   fix them in small commits, then update PR delivery state.
+
+## Execution notes
+
+### 2026-08-04 — Task 1
+
+- Backend RED: focused Gradle compilation failed because the dashboard DTO,
+  service, controller, repository queries, and security contract did not exist.
+- Backend GREEN: focused service/security tests passed. Full
+  `order-service:test` passed with `DOCKER_API_VERSION=1.40`; without the
+  override, the existing Testcontainers client requested obsolete Docker API
+  1.32 while the local Docker daemon requires at least 1.40.
+- Frontend RED: all three dashboard tests failed against the former hard-coded
+  zeroes and placeholder panels.
+- Frontend GREEN: 12 test files / 135 tests passed; lint and production build
+  passed. The existing large-chunk build warning remains.
+- Implemented role-aware data access: ADMIN/SUPER_ADMIN receive operational
+  order, revenue, coupon, user, complaint, seven-day, and recent-order data;
+  MODERATOR receives only coupon queue and complaint metrics.

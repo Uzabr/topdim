@@ -112,6 +112,7 @@ Swagger UI доступен напрямую на портах сервисов:
 | Categories | POST `/api/v1/admin/categories`; POST `/upload` (Excel) |
 | Situations | GET/POST `/api/v1/admin/situations`; GET/PUT/DELETE `/{id}`; PUT/DELETE `/{id}/coupons` |
 | Promo codes | GET/POST `/api/v1/admin/promocodes` |
+| Dashboard | GET `/api/v1/admin/dashboard` — заказы/выручка сегодня, ожидающие жалобы, продажи за 7 дней, последние заказы |
 | Orders | GET `/api/v1/admin/orders`, `/{id}`, `/purchased-coupons/lookup` |
 | Refunds | GET `/api/v1/admin/refunds`; PATCH `/{id}/approve`, `reject`, `complete`; legacy PATCH `/{id}` |
 | Complaints | GET `/api/v1/mod/complaints`; PATCH `/{id}/resolve` |

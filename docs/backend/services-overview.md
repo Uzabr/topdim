@@ -326,6 +326,7 @@ ACTIVE → PAUSED/ARCHIVED
 #### Admin
 | Method | URL | Auth | Описание |
 |---|---|---|---|
+| GET | `/api/v1/admin/dashboard` | ✅ ADMIN | Заказы и оплаченная выручка за сегодня, ожидающие жалобы, продажи за 7 дней и последние заказы |
 | GET | `/api/v1/admin/orders` | ✅ ADMIN | Все заказы (фильтр по статусу, пагинация) |
 | GET | `/api/v1/admin/orders/{id}` | ✅ ADMIN | Детали заказа |
 
