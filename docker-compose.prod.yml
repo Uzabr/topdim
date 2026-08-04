@@ -135,6 +135,10 @@ services:
     environment:
       <<: *backend_env
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      ESKIZ_ENABLED: ${ESKIZ_ENABLED}
+      ESKIZ_EMAIL: ${ESKIZ_EMAIL}
+      ESKIZ_PASSWORD: ${ESKIZ_PASSWORD}
+      ESKIZ_FROM: ${ESKIZ_FROM}
     depends_on: &backend_depends_on
       postgres:
         condition: service_healthy
