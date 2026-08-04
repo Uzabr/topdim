@@ -24,6 +24,11 @@ import { ReviewsPage } from './features/support/ReviewsPage';
 import { RefundsPage } from './features/support/RefundsPage';
 import { ComplaintsPage } from './features/support/ComplaintsPage';
 import { UsersListPage } from './features/users/UsersListPage';
+import type { UserRole } from './types';
+
+const STAFF_ROLES: UserRole[] = ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'];
+const ADMIN_ROLES: UserRole[] = ['ADMIN', 'SUPER_ADMIN'];
+const SUPER_ADMIN_ROLES: UserRole[] = ['SUPER_ADMIN'];
 
 function HomeRedirect() {
   return <Navigate to="/dashboard" replace />;
@@ -60,7 +65,7 @@ function App() {
               <Route path="/403" element={<ForbiddenPage />} />
 
               {/* Защищённые роуты: Все сотрудники */}
-              <Route element={<ProtectedRoute allowedRoles={['MODERATOR', 'ADMIN', 'SUPER_ADMIN']} />}>
+              <Route element={<ProtectedRoute allowedRoles={STAFF_ROLES} />}>
                 <Route element={<AdminLayout />}>
                   <Route path="/dashboard" element={<DashboardPage />} />
 
@@ -76,29 +81,30 @@ function App() {
                   <Route path="/moderation/coupons/create" element={<LegacyCouponRedirect target="create" />} />
                   <Route path="/moderation/coupons/edit/:id" element={<LegacyCouponRedirect target="edit" />} />
                   <Route path="/moderation/coupons/review" element={<LegacyCouponRedirect target="waiting-partner" />} />
-                  
+
                   {/* Поддержка */}
                   <Route path="/support/reviews" element={<ReviewsPage />} />
-                  <Route path="/support/refunds" element={<RefundsPage />} />
                   <Route path="/support/complaints" element={<ComplaintsPage />} />
 
-                  {/* Справочники (только ADMIN, SUPER_ADMIN) */}
-                  <Route path="/catalog/categories" element={<CategoriesPage />} />
-                  <Route path="/catalog/merchants" element={<MerchantsPage />} />
-                  <Route path="/catalog/merchants/:id" element={<MerchantDetailPage />} />
+                  {/* Административные роуты: только ADMIN, SUPER_ADMIN */}
+                  <Route element={<ProtectedRoute allowedRoles={ADMIN_ROLES} />}>
+                    <Route path="/support/refunds" element={<RefundsPage />} />
 
-                  {/* Заказы (только ADMIN, SUPER_ADMIN) */}
-                  <Route path="/orders/list" element={<OrdersPage />} />
-                  <Route path="/orders/coupon-lookup" element={<PurchasedCouponLookupPage />} />
+                    <Route path="/catalog/categories" element={<CategoriesPage />} />
+                    <Route path="/catalog/merchants" element={<MerchantsPage />} />
+                    <Route path="/catalog/merchants/:id" element={<MerchantDetailPage />} />
 
-                  {/* Пользователи (ADMIN, SUPER_ADMIN) */}
-                  <Route path="/users/partner-applications" element={<PartnerApplicationsPage />} />
-                  <Route path="/users/list" element={<UsersListPage />} />
+                    <Route path="/orders/list" element={<OrdersPage />} />
+                    <Route path="/orders/coupon-lookup" element={<PurchasedCouponLookupPage />} />
+
+                    <Route path="/users/partner-applications" element={<PartnerApplicationsPage />} />
+                    <Route path="/users/list" element={<UsersListPage />} />
+                  </Route>
                 </Route>
               </Route>
 
               {/* Системные роуты: только SUPER_ADMIN */}
-              <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']} />}>
+              <Route element={<ProtectedRoute allowedRoles={SUPER_ADMIN_ROLES} />}>
                 <Route element={<AdminLayout />}>
                   <Route path="/system/staff" element={<StaffPage />} />
                   <Route path="/system/audit" element={<AuditLogPage />} />

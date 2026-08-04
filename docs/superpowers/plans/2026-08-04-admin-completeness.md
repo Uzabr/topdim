@@ -182,3 +182,15 @@ manual demo-data walkthrough is intentionally deferred to the final task.
   so no timeout was hidden or increased. The known large-chunk warning remains.
 - Real containers/services were intentionally not started; the seeded local
   walkthrough remains deferred to Task 6 as agreed.
+
+### 2026-08-04 — Task 5a: authentication and navigation guards
+
+- RED: eight direct administrative URLs opened for `MODERATOR` despite the menu
+  and backend restricting those operations to `ADMIN`/`SUPER_ADMIN`.
+- GREEN: shared staff routes remain available to `MODERATOR`, while refunds,
+  catalog, orders, purchased-coupon lookup, users, and partner applications now
+  have a nested `ADMIN`/`SUPER_ADMIN` guard. System routes remain exclusive to
+  `SUPER_ADMIN` and unauthenticated users still redirect to login.
+- The focused role matrix has 16 passing scenarios. The complete admin-app suite
+  passes with 17 test files / 159 tests, ESLint, and production build; only the
+  already-known large-chunk warning remains.
