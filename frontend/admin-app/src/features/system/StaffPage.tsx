@@ -110,7 +110,7 @@ export const StaffPage = () => {
     {
       title: 'Сотрудник',
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <strong>{record.firstName} {record.lastName}</strong>
           <span style={{ fontSize: '12px', color: '#666' }}>{record.email}</span>
         </Space>

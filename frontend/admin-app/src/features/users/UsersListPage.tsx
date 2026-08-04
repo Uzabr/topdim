@@ -96,7 +96,7 @@ export const UsersListPage = () => {
       title: 'Верификация',
       width: 140,
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Tag color={record.emailVerified ? 'green' : 'default'} style={{ fontSize: 11 }}>
             Email: {record.emailVerified ? '✓' : '✗'}
           </Tag>

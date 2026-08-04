@@ -178,7 +178,7 @@ export const MerchantDetailPage = () => {
             key: 'info',
             label: 'Информация',
             children: (
-              <Space direction="vertical" size={16} style={{ width: '100%' }}>
+              <Space orientation="vertical" size={16} style={{ width: '100%' }}>
                 <Card size="small" title="Профиль">
                   <Descriptions column={2} size="small" bordered>
                     <Descriptions.Item label="ID">{merchant.id}</Descriptions.Item>

@@ -163,3 +163,22 @@ manual demo-data walkthrough is intentionally deferred to the final task.
 - Admin-app passed 15 test files / 142 tests, ESLint, and production build;
   partner-app passed ESLint and production build. Both builds retain the known
   large-chunk warning.
+
+### 2026-08-04 — Task 4
+
+- Launcher RED: the test could not load an infrastructure helper because the
+  launcher had only one unconditional `docker compose up` path and no reusable
+  environment configuration.
+- Launcher GREEN: named TopDim containers are reused or started, only missing
+  services are created under stable Compose project `topdim`, and local service
+  processes receive `MANAGEMENT_HEALTH_MAIL_ENABLED=false`.
+- Ant Design RED listed four remaining deprecated `Space.direction` uses.
+  They now use `orientation`; installed-version checks confirmed that remaining
+  `Descriptions bordered` props are valid and therefore were preserved.
+- The fake-Docker launcher test and Bash syntax checks passed. Admin-app passed
+  16 test files / 143 tests, ESLint, and production build. Running Vitest and
+  ESLint concurrently once caused a resource-contention timeout in an otherwise
+  green Ant modal test; the focused test and full sequential suite both passed,
+  so no timeout was hidden or increased. The known large-chunk warning remains.
+- Real containers/services were intentionally not started; the seeded local
+  walkthrough remains deferred to Task 6 as agreed.

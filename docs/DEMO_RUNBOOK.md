@@ -56,7 +56,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:8080/api/v1/au
 
 ## Почему отдельный `start-demo.sh`, а не `start-all.sh` (важно для рестарта)
 
-`start-all.sh` при холодном старте ненадёжен; `start-demo.sh` чинит две вещи, найденные при
+`start-all.sh` при холодном старте ненадёжен; `start-demo.sh` чинит четыре вещи, найденные при
 подготовке (2026-07-15):
 
 1. **`--no-daemon`.** Gradle-daemon матчится по версии JVM, а не по окружению, поэтому bootRun
@@ -67,8 +67,15 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:8080/api/v1/au
    (не Base64), а `JwtService`/`JwtAuthenticationFilter` делают `Decoders.BASE64.decode(secret)`
    → логин отдаёт **HTTP 500**. Скрипт подставляет одноразовый локальный Base64-секрет
    (`logs/.demo-jwt-secret`, вне git), одинаковый для всех сервисов. `.env` не меняется.
+3. **Повторное использование Docker-инфраструктуры между worktree.** Скрипт переиспользует
+   уже существующие `topdim-postgres`, `topdim-redis`, `topdim-rabbitmq` и `topdim-minio`,
+   запускает остановленные контейнеры и создаёт через стабильный Compose project `topdim`
+   только отсутствующие сервисы. Это исключает конфликт `container name is already in use`.
+4. **SMTP не ломает local health.** Для demo-процессов экспортируется
+   `MANAGEMENT_HEALTH_MAIL_ENABLED=false`, поэтому отсутствие локального SMTP не переводит
+   рабочие identity/notification API в состояние `DOWN`.
 
-> Эти два пункта — про **локальный запуск**, а не про код. На проде секрет валидный и логин
+> Эти пункты — про **локальный запуск**, а не про production-конфигурацию. На проде секрет валидный и логин
 > работает. Правки в `.env`/сервисы не вносились.
 
 ## Заметки / ограничения демо

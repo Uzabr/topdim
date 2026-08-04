@@ -38,7 +38,7 @@ export const AuditLogPage = () => {
     { 
       title: 'Администратор', 
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <span>{record.adminEmail}</span>
           <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
             ID: {record.adminId}
