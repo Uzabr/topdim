@@ -3,9 +3,12 @@ package uz.topdim.identity.security;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -13,6 +16,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
+
+import java.time.Duration;
 
 /**
  * Реальная отправка OTP через Eskiz.uz SMS API.
@@ -42,17 +47,40 @@ public class EskizSmsSender implements SmsSender {
             @Value("${eskiz.email:}") String email,
             @Value("${eskiz.password:}") String password,
             @Value("${eskiz.from:4546}") String from,
-            @Value("${eskiz.template:SizBiz tasdiqlash kodi: {code}}") String template
+            @Value("${eskiz.template:SizBiz tasdiqlash kodi: {code}}") String template,
+            @Value("${eskiz.connect-timeout-ms:5000}") long connectTimeoutMs,
+            @Value("${eskiz.read-timeout-ms:10000}") long readTimeoutMs
     ) {
-        this.restClient = restClientBuilder.baseUrl(baseUrl).build();
+        this(buildRestClient(restClientBuilder, baseUrl, connectTimeoutMs, readTimeoutMs), email, password, from, template);
+        log.info("EskizSmsSender activated — реальные SMS будут отправляться через {} (connect={}ms, read={}ms)",
+                baseUrl, connectTimeoutMs, readTimeoutMs);
+    }
+
+    /**
+     * Package-private: для юнит-тестов с уже собранным {@link RestClient} (например, через
+     * {@code MockRestServiceServer.bindTo(RestClient.Builder)}). В отличие от публичного конструктора,
+     * НЕ трогает {@code requestFactory} — иначе таймаут-обвязка продакшен-конструктора затёрла бы
+     * мок, подставленный в {@code RestClient.Builder} до вызова этого конструктора.
+     */
+    EskizSmsSender(RestClient restClient, String email, String password, String from, String template) {
+        this.restClient = restClient;
         this.email = email;
         this.password = password;
         this.from = from;
         this.template = template;
-        log.info("EskizSmsSender activated — реальные SMS будут отправляться через {}", baseUrl);
         if (!StringUtils.hasText(email) || !StringUtils.hasText(password)) {
             log.warn("eskiz.enabled=true, но ESKIZ_EMAIL/ESKIZ_PASSWORD не заданы — SMS не будут доставляться");
         }
+    }
+
+    /** Явные connect/read timeout — без них синхронный вызов к Eskiz может зависнуть без ограничения по времени. */
+    private static RestClient buildRestClient(RestClient.Builder builder, String baseUrl,
+                                               long connectTimeoutMs, long readTimeoutMs) {
+        ClientHttpRequestFactory requestFactory = ClientHttpRequestFactoryBuilder.detect()
+                .build(ClientHttpRequestFactorySettings.defaults()
+                        .withConnectTimeout(Duration.ofMillis(connectTimeoutMs))
+                        .withReadTimeout(Duration.ofMillis(readTimeoutMs)));
+        return builder.baseUrl(baseUrl).requestFactory(requestFactory).build();
     }
 
     @Override
@@ -68,22 +96,32 @@ public class EskizSmsSender implements SmsSender {
             }
         }
 
-        SendOutcome outcome = trySend(normalizedPhone, message, currentToken);
+        SendResult result = trySend(normalizedPhone, message, currentToken);
 
-        if (outcome == SendOutcome.UNAUTHORIZED) {
+        if (result.outcome() == SendOutcome.UNAUTHORIZED) {
+            // Токен из кэша протух (401) — он не годится, форсируем реальный перелогин:
+            // без этого double-check в login() тут же вернул бы этот же протухший токен.
+            token = null;
             String freshToken = login();
             if (freshToken == null) {
                 return; // login() уже залогировал причину
             }
-            outcome = trySend(normalizedPhone, message, freshToken);
+            result = trySend(normalizedPhone, message, freshToken);
         }
 
-        if (outcome != SendOutcome.SUCCESS) {
-            log.error("Eskiz: не удалось отправить OTP-SMS на {}", maskPhone(phone));
+        if (result.outcome() != SendOutcome.SUCCESS) {
+            log.error("Eskiz: не удалось отправить OTP-SMS на {} — {}", maskPhone(phone), result.detail(), result.cause());
         }
     }
 
     private synchronized String login() {
+        if (token != null) {
+            // Double-check: пока этот поток ждал лок, другой поток уже успешно залогинился —
+            // нет смысла бить Eskiz повторным логином (актуально для холодного старта:
+            // несколько первых sendOtp() параллельно приходят с token == null).
+            return token;
+        }
+
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("email", email);
         form.add("password", password);
@@ -104,12 +142,12 @@ public class EskizSmsSender implements SmsSender {
             this.token = newToken;
             return newToken;
         } catch (RestClientException e) {
-            log.error("Eskiz: не удалось авторизоваться — {}", e.getMessage());
+            log.error("Eskiz: не удалось авторизоваться — {}", e.getMessage(), e);
             return null;
         }
     }
 
-    private SendOutcome trySend(String phone, String message, String bearerToken) {
+    private SendResult trySend(String phone, String message, String bearerToken) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("mobile_phone", phone);
         form.add("message", message);
@@ -123,14 +161,13 @@ public class EskizSmsSender implements SmsSender {
                     .body(form)
                     .retrieve()
                     .toBodilessEntity();
-            return SendOutcome.SUCCESS;
+            return SendResult.success();
         } catch (RestClientResponseException e) {
-            if (e.getStatusCode().value() == 401) {
-                return SendOutcome.UNAUTHORIZED;
-            }
-            return SendOutcome.ERROR;
+            String detail = "HTTP %d %s: %s".formatted(e.getStatusCode().value(), e.getStatusText(), e.getResponseBodyAsString());
+            SendOutcome outcome = (e.getStatusCode().value() == 401) ? SendOutcome.UNAUTHORIZED : SendOutcome.ERROR;
+            return new SendResult(outcome, detail, e);
         } catch (RestClientException e) {
-            return SendOutcome.ERROR;
+            return new SendResult(SendOutcome.ERROR, e.getMessage(), e);
         }
     }
 
@@ -146,6 +183,13 @@ public class EskizSmsSender implements SmsSender {
 
     private enum SendOutcome {
         SUCCESS, UNAUTHORIZED, ERROR
+    }
+
+    /** {@code detail}/{@code cause} заполнены только когда {@code outcome != SUCCESS} — нужны для error-лога. */
+    private record SendResult(SendOutcome outcome, String detail, Throwable cause) {
+        static SendResult success() {
+            return new SendResult(SendOutcome.SUCCESS, null, null);
+        }
     }
 
     private record EskizLoginResponse(EskizLoginData data) {

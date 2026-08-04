@@ -43,7 +43,11 @@ class EskizSmsSenderTest {
     void init() {
         builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
-        sender = new EskizSmsSender(builder, BASE_URL, "test@eskiz.uz", "secret-pass", "4546", TEMPLATE);
+        // Package-private конструктор с уже собранным RestClient: публичный (DI) конструктор сам
+        // выставляет requestFactory с таймаутами и затёр бы мок, который MockRestServiceServer.bindTo()
+        // только что подставил в builder.
+        RestClient mockedRestClient = builder.baseUrl(BASE_URL).build();
+        sender = new EskizSmsSender(mockedRestClient, "test@eskiz.uz", "secret-pass", "4546", TEMPLATE);
 
         senderLogger = (Logger) LoggerFactory.getLogger(EskizSmsSender.class);
         logAppender = new ListAppender<>();
@@ -129,7 +133,7 @@ class EskizSmsSenderTest {
     }
 
     @Test
-    void sendOtp_loginFails_doesNotThrow_butLogsError() {
+    void sendOtp_loginFails_doesNotThrow_butLogsErrorWithStackTrace() {
         server.expect(requestTo(LOGIN_URL))
                 .andRespond(withStatus(INTERNAL_SERVER_ERROR).body("boom"));
 
@@ -137,6 +141,30 @@ class EskizSmsSenderTest {
 
         server.verify();
         assertThat(logAppender.list)
-                .anyMatch(event -> event.getLevel() == Level.ERROR);
+                .anyMatch(event -> event.getLevel() == Level.ERROR
+                        // причина сбоя не глотается: реальный Throwable (для трейса), не только текст
+                        && event.getThrowableProxy() != null);
+    }
+
+    @Test
+    void sendOtp_sendFailsWithNonAuthError_doesNotThrow_logsHttpStatusAndBody() {
+        server.expect(requestTo(LOGIN_URL))
+                .andRespond(withSuccess(loginResponseJson("tok-1"), MediaType.APPLICATION_JSON));
+        server.expect(requestTo(SEND_URL))
+                .andExpect(header("Authorization", "Bearer tok-1"))
+                .andRespond(withStatus(INTERNAL_SERVER_ERROR)
+                        .body("{\"message\":\"limit exceeded\"}")
+                        .contentType(MediaType.APPLICATION_JSON));
+
+        assertThatCode(() -> sender.sendOtp("+998901234567", "123456")).doesNotThrowAnyException();
+
+        server.verify();
+        assertThat(logAppender.list)
+                .anyMatch(event -> event.getLevel() == Level.ERROR
+                        && event.getThrowableProxy() != null
+                        // причина сбоя (HTTP-статус + тело ответа) реально попадает в текст лога,
+                        // а не теряется за голым enum-исходом
+                        && event.getFormattedMessage().contains("500")
+                        && event.getFormattedMessage().contains("limit exceeded"));
     }
 }
