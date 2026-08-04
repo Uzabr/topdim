@@ -17,7 +17,6 @@ import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.UserRepository;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -45,6 +44,11 @@ public class UserService {
         return mapToProfile(user);
     }
 
+    /**
+     * Обновление профиля. Телефон здесь НЕ меняется (T8a) — легаси-путь смены номера в обход
+     * OTP удалён; единственный путь теперь {@code POST /api/v1/auth/phone/link}
+     * (см. {@link AuthService#linkPhone(Long, String, String)}).
+     */
     @Transactional
     public UserProfileResponse updateProfile(Long userId, UpdateProfileRequest request) {
         User user = userRepository.findById(userId)
@@ -54,17 +58,6 @@ public class UserService {
         if (request.getLastName() != null) {
             String normalizedLastName = request.getLastName().trim();
             user.setLastName(normalizedLastName.isEmpty() ? null : normalizedLastName);
-        }
-        if (request.getPhone() != null) {
-            String normalizedPhone = normalizePhone(request.getPhone());
-            boolean phoneChanged = !Objects.equals(normalizedPhone, user.getPhone());
-            if (phoneChanged && normalizedPhone != null && userRepository.existsByPhone(normalizedPhone)) {
-                throw new IllegalStateException("Телефон уже зарегистрирован");
-            }
-            user.setPhone(normalizedPhone);
-            if (phoneChanged) {
-                user.setPhoneVerified(false);
-            }
         }
         if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
 
@@ -210,10 +203,5 @@ public class UserService {
                 .couponOfferId(favorite.getCouponOfferId())
                 .createdAt(favorite.getCreatedAt())
                 .build();
-    }
-
-    private String normalizePhone(String phone) {
-        String normalized = phone.trim();
-        return normalized.isEmpty() ? null : normalized;
     }
 }

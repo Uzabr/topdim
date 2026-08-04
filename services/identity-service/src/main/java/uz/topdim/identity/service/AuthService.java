@@ -322,6 +322,27 @@ public class AuthService {
         return buildAuthResponse(user);
     }
 
+    /**
+     * Привязка номера телефона к текущему (залогиненному) аккаунту (T8a).
+     * OTP доказывает владение номером ({@link OtpService#verifyOtp}), сама привязка —
+     * {@link AccountResolutionService#linkPhone(User, String)} («занят другим» →
+     * {@link IllegalStateException} → 409 через {@code GlobalExceptionHandler}, без слияния).
+     * Заменяет легаси-смену телефона через {@code UserService#updateProfile} (была в обход OTP).
+     */
+    @Transactional
+    public void linkPhone(Long userId, String phone, String code) {
+        if (!otpService.verifyOtp(phone, code)) {
+            throw new AuthException("Неверный или просроченный код");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthException("Пользователь не найден"));
+
+        accountResolutionService.linkPhone(user, phone);
+
+        log.info("SECURITY: Phone linked for userId: {}", userId);
+    }
+
     private static String nonBlankOr(String value, String fallback) {
         return value != null && !value.isBlank() ? value : fallback;
     }

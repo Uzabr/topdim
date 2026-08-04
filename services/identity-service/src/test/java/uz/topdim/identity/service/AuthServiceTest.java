@@ -616,4 +616,57 @@ class AuthServiceTest {
         verify(jwtService, never()).generateAccessToken(any());
         verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
     }
+
+    // ==================== linkPhone (T8a) ====================
+
+    @Test
+    @DisplayName("linkPhone: верный OTP + номер свободен → привязывает через AccountResolutionService")
+    void linkPhone_validOtpAndFreeNumber_linksPhone() {
+        User user = createUser(Role.USER, true);
+        when(otpService.verifyOtp("+998901112233", "111111")).thenReturn(true);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(accountResolutionService.linkPhone(user, "+998901112233")).thenReturn(user);
+
+        authService.linkPhone(1L, "+998901112233", "111111");
+
+        verify(accountResolutionService).linkPhone(user, "+998901112233");
+    }
+
+    @Test
+    @DisplayName("linkPhone: неверный/просроченный OTP → AuthException, привязка не выполняется")
+    void linkPhone_badOtp_throwsWithoutLinking() {
+        when(otpService.verifyOtp("+998901112233", "000000")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.linkPhone(1L, "+998901112233", "000000"))
+                .isInstanceOf(AuthException.class);
+
+        verify(userRepository, never()).findById(anyLong());
+        verify(accountResolutionService, never()).linkPhone(any(User.class), anyString());
+    }
+
+    @Test
+    @DisplayName("linkPhone: номер занят другим аккаунтом → IllegalStateException (409 через GlobalExceptionHandler)")
+    void linkPhone_numberTakenByOther_throwsIllegalState() {
+        User user = createUser(Role.USER, true);
+        when(otpService.verifyOtp("+998901112233", "111111")).thenReturn(true);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(accountResolutionService.linkPhone(user, "+998901112233"))
+                .thenThrow(new IllegalStateException("Номер уже занят"));
+
+        assertThatThrownBy(() -> authService.linkPhone(1L, "+998901112233", "111111"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Номер уже занят");
+    }
+
+    @Test
+    @DisplayName("linkPhone: несуществующий userId → AuthException, привязка не выполняется")
+    void linkPhone_userNotFound_throwsWithoutLinking() {
+        when(otpService.verifyOtp("+998901112233", "111111")).thenReturn(true);
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.linkPhone(999L, "+998901112233", "111111"))
+                .isInstanceOf(AuthException.class);
+
+        verify(accountResolutionService, never()).linkPhone(any(User.class), anyString());
+    }
 }

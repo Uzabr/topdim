@@ -139,6 +139,20 @@ spring:
                 key-resolver: "#{@ipKeyResolver}"
                 deny-empty-key: false
 
+        # Auth Service — phone link (T8a — привязка телефона к аккаунту по OTP, строго: 2 req/sec, burst 3, по образцу auth-phone-confirm)
+        - id: auth-phone-link
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/phone/link
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 2
+                redis-rate-limiter.burstCapacity: 3
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
         # Auth Service — google login (2 req/sec, burst 3)
         - id: auth-google
           uri: lb://identity-service

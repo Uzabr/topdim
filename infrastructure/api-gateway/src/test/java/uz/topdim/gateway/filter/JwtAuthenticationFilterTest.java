@@ -355,6 +355,22 @@ class JwtAuthenticationFilterTest {
         verify(gatewayFilterChain, never()).filter(any());
     }
 
+    // ==================== T8a: phone/link — привязка телефона, требует JWT ====================
+
+    @Test
+    @DisplayName("T8a: /api/v1/auth/phone/link без токена — требует JWT (НЕ open endpoint)")
+    void phoneLink_requiresAuth() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/auth/phone/link").build()
+        );
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(gatewayFilterChain, never()).filter(any());
+    }
+
     private String createToken(String subject, String role, String email, String jti, long securityVersion) {
         SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET));
         return Jwts.builder()
