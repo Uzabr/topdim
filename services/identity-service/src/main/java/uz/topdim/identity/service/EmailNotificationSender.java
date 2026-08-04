@@ -1,5 +1,6 @@
 package uz.topdim.identity.service;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -7,6 +8,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
  * Реальная реализация NotificationSender через SMTP (Gmail).
@@ -19,16 +21,30 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "notification.email.enabled", havingValue = "true")
 public class EmailNotificationSender implements NotificationSender {
 
+    private static final String METRIC_EMAIL_FAILED = "notification.email.failed";
+    private static final String TAG_TYPE = "type";
+    private static final String TYPE_RESET = "reset";
+    private static final String TYPE_CONFIRM = "confirm";
+
     private final JavaMailSender mailSender;
     private final String fromAddress;
+    private final MeterRegistry meterRegistry;
 
     public EmailNotificationSender(
             JavaMailSender mailSender,
-            @Value("${notification.email.from:noreply@topdim.uz}") String fromAddress
+            @Value("${notification.email.from:noreply@topdim.uz}") String fromAddress,
+            MeterRegistry meterRegistry,
+            @Value("${spring.mail.username:}") String mailUsername,
+            @Value("${spring.mail.password:}") String mailPassword
     ) {
         this.mailSender = mailSender;
         this.fromAddress = fromAddress;
+        this.meterRegistry = meterRegistry;
         log.info("EmailNotificationSender activated — real emails will be sent from {}", fromAddress);
+        if (!StringUtils.hasText(mailUsername) || !StringUtils.hasText(mailPassword)) {
+            log.warn("notification.email.enabled=true, но SMTP-креды (MAIL_USERNAME/MAIL_PASSWORD) не заданы " +
+                    "— письма не будут доставляться");
+        }
     }
 
     @Override
@@ -47,7 +63,7 @@ public class EmailNotificationSender implements NotificationSender {
                 Команда TopDim
                 """, token);
 
-        sendEmail(target, subject, body);
+        sendEmail(target, subject, body, TYPE_RESET);
     }
 
     @Override
@@ -65,7 +81,7 @@ public class EmailNotificationSender implements NotificationSender {
                 Команда TopDim
                 """, token);
 
-        sendEmail(email, subject, body);
+        sendEmail(email, subject, body, TYPE_CONFIRM);
     }
 
     @Override
@@ -74,7 +90,7 @@ public class EmailNotificationSender implements NotificationSender {
         log.info("NOTIFICATION [SMS STUB]: Phone confirmation code sent to {}: {}", maskTarget(phone), code);
     }
 
-    private void sendEmail(String to, String subject, String body) {
+    private void sendEmail(String to, String subject, String body, String type) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromAddress);
@@ -84,6 +100,7 @@ public class EmailNotificationSender implements NotificationSender {
             mailSender.send(message);
             log.info("Email sent to {} — {}", maskTarget(to), subject);
         } catch (Exception e) {
+            meterRegistry.counter(METRIC_EMAIL_FAILED, TAG_TYPE, type).increment();
             log.error("Failed to send email to {}: {}", maskTarget(to), e.getMessage(), e);
         }
     }
