@@ -35,4 +35,24 @@ describe('auth API session metadata', () => {
       },
     );
   });
+
+  // Контракт с бэкендом: GoogleAuthRequest (identity-service) требует поле
+  // именно `idToken` (@NotBlank) — см. dto/GoogleAuthRequest.java.
+  it('sends the Google ID-token to /api/v1/auth/google as { idToken }', async () => {
+    const post = vi.spyOn(apiClient, 'post').mockResolvedValue({
+      data: {
+        success: true,
+        data: null,
+        timestamp: '2026-08-04T10:00:00Z',
+      },
+    });
+
+    await authApi.googleAuth('fake-id-token');
+
+    expect(post).toHaveBeenCalledWith(
+      '/api/v1/auth/google',
+      { idToken: 'fake-id-token' },
+      expect.objectContaining({ _skipAuthRefresh: true }),
+    );
+  });
 });
