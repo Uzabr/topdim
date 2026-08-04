@@ -154,6 +154,17 @@ export const authApi = {
       authRequestConfig(context),
     ),
 
+  /** idToken — ID-token, полученный от Google Identity Services (GIS) на клиенте. */
+  googleAuth: (
+    idToken: string,
+    context?: AuthenticationRequestContext,
+  ) =>
+    apiClient.post<ApiResponse<AuthResponse>>(
+      '/api/v1/auth/google',
+      { idToken },
+      authRequestConfig(context),
+    ),
+
   /** Всегда 202 — бэкенд не раскрывает, существует ли номер (anti-enumeration). */
   requestPhoneOtp: (phone: string) =>
     apiClient.post<ApiResponse<void>>(

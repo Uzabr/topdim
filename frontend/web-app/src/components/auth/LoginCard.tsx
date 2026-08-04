@@ -9,10 +9,20 @@ import type { TelegramAuthPayload } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 import { STRONG_PASSWORD_PATTERN } from '../../utils/password';
 import TelegramLoginButton from './TelegramLoginButton';
+import GoogleLoginButton from './GoogleLoginButton';
 import './LoginCard.css';
 
 /** Username бота покупателей (@BotFather). Публичное значение. */
 const TELEGRAM_BOT_USERNAME = 'sizbiz_uz_bot';
+
+/**
+ * OAuth client_id для Google Identity Services — публичное значение,
+ * пробрасывается на билде через build-arg VITE_GOOGLE_CLIENT_ID
+ * (см. docker/frontend/Dockerfile, docker-compose.prod.yml). Пусто на
+ * dev-сборках без конфигурации — кнопка Google в этом случае деградирует
+ * до заглушки «скоро» (см. ниже), а не падает.
+ */
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 type Mode = 'login' | 'register' | 'resetRequest' | 'resetConfirm' | 'phoneRequest' | 'phoneConfirm';
 
@@ -34,14 +44,22 @@ function serverMessage(err: unknown, fallback: string): string {
 /**
  * «Вход за один тап» — референс: design_handoff_sizbiz/«Главная - образец.dc.html».
  *
- * Telegram и «по номеру телефона» (SMS-OTP) — реальные, рабочие пути входа.
- * Google в бэкенде отсутствует, поэтому помечен как «скоро» и не отправляет запросов.
+ * Telegram, Google (GIS) и «по номеру телефона» (SMS-OTP) — реальные, рабочие
+ * пути входа. Google деградирует до заглушки «скоро», если на билде не задан
+ * VITE_GOOGLE_CLIENT_ID (см. GOOGLE_CLIENT_ID выше).
  * Заметка про /auth/guest остаётся в силе: он выдаёт токен по одному номеру без
  * SMS-кода, поэтому для входа не используется — только request/confirm с кодом.
  */
 export default function LoginCard({ onSuccess }: LoginCardProps) {
   const { t } = useTranslation();
-  const { login, telegramLogin, phoneLogin, register: registerUser, isLoading } = useAuthStore();
+  const {
+    login,
+    telegramLogin,
+    googleLogin,
+    phoneLogin,
+    register: registerUser,
+    isLoading,
+  } = useAuthStore();
 
   const [mode, setMode] = useState<Mode>('login');
   const [emailOpen, setEmailOpen] = useState(false);
@@ -150,6 +168,17 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
     setSoon('');
     try {
       const authenticated = await telegramLogin(user);
+      if (authenticated) onSuccess();
+    } catch (err) {
+      setServerError(serverMessage(err, t('login.serverError')));
+    }
+  };
+
+  const handleGoogleAuth = async (idToken: string) => {
+    setServerError('');
+    setSoon('');
+    try {
+      const authenticated = await googleLogin(idToken);
       if (authenticated) onSuccess();
     } catch (err) {
       setServerError(serverMessage(err, t('login.serverError')));
@@ -381,16 +410,22 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
       </div>
 
       <div className="lcard__providers">
-        <button
-          type="button"
-          className="lcard__provider"
-          onClick={() => showSoon('Google')}
-          aria-disabled="true"
-        >
-          <span className="lcard__g-mark">G</span>
-          Google
-          <span className="lcard__soon-tag">{t('common.soon')}</span>
-        </button>
+        {GOOGLE_CLIENT_ID ? (
+          <div className="lcard__google-widget">
+            <GoogleLoginButton clientId={GOOGLE_CLIENT_ID} onAuth={handleGoogleAuth} />
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="lcard__provider"
+            onClick={() => showSoon('Google')}
+            aria-disabled="true"
+          >
+            <span className="lcard__g-mark">G</span>
+            Google
+            <span className="lcard__soon-tag">{t('common.soon')}</span>
+          </button>
+        )}
 
         <button
           type="button"
@@ -406,6 +441,9 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
       </div>
 
       {soon && <p className="lcard__notice">{soon}</p>}
+      {/* Ошибка Telegram/Google-входа: emailOpen может быть закрыт (вход в один тап),
+          поэтому показываем её здесь, а не только внутри email-формы ниже. */}
+      {!emailOpen && serverError && <p className="lcard__error">{serverError}</p>}
 
       {emailOpen && (
         <form className="lcard__form" onSubmit={handleSubmit(submit)}>
