@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -82,6 +83,52 @@ class CouponOfferServiceTest {
         assertThat(pageable.getValue().getSort()).containsExactly(
                 Sort.Order.desc("createdAt"),
                 Sort.Order.desc("id"));
+    }
+
+    @Test
+    @DisplayName("Admin list: legacy coupon without merchant maps as merchant null")
+    void getAllForAdmin_nullMerchant_preservesPageAndResponseContract() {
+        CouponOffer legacyOffer = CouponOffer.builder()
+                .id(99L)
+                .title("Legacy incomplete coupon")
+                .offerDescription("Requires merchant cleanup")
+                .status(CouponStatus.LEAD)
+                .options(new ArrayList<>())
+                .images(new ArrayList<>())
+                .build();
+        Page<CouponOffer> page = new PageImpl<>(
+                List.of(legacyOffer),
+                PageRequest.of(2, 1),
+                5);
+        when(couponOfferRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(page);
+        when(merchantLocationRepository.findByMerchantIdInAndPrimaryTrue(List.of()))
+                .thenReturn(List.of());
+        when(couponOptionRepository.findByCouponOfferIdInOrderById(List.of(99L)))
+                .thenReturn(List.of());
+        when(couponImageRepository.findByCouponOfferIdInOrderBySortOrderAscIdAsc(List.of(99L)))
+                .thenReturn(List.of());
+        when(reviewRepository.summarizeApprovedByCouponIds(List.of(99L)))
+                .thenReturn(List.of());
+
+        Page<CouponOfferResponse> result = couponOfferService.getAllForAdmin(
+                new AdminCouponFilter(Set.of(CouponStatus.LEAD), null, null, null),
+                2,
+                1);
+
+        assertThat(result.getNumber()).isEqualTo(2);
+        assertThat(result.getTotalElements()).isEqualTo(5);
+        assertThat(result.getTotalPages()).isEqualTo(5);
+        assertThat(result.getContent()).singleElement().satisfies(response -> {
+            assertThat(response.getId()).isEqualTo(99L);
+            assertThat(response.getTitle()).isEqualTo("Legacy incomplete coupon");
+            assertThat(response.getStatus()).isEqualTo("LEAD");
+            assertThat(response.getMerchant()).isNull();
+            assertThat(response.getOptions()).isEmpty();
+            assertThat(response.getImages()).isEmpty();
+            assertThat(response.getAverageRating()).isZero();
+            assertThat(response.getReviewCount()).isZero();
+        });
     }
 
     // ==================== Catalog ====================

@@ -792,7 +792,9 @@ public class CouponOfferService {
             CouponReviewSummary review = reviews.get(offer.getId());
             return mapToResponse(
                     offer,
-                    primaryLocations.get(offer.getMerchant().getId()),
+                    offer.getMerchant() != null
+                            ? primaryLocations.get(offer.getMerchant().getId())
+                            : null,
                     review != null ? review.averageRating() : 0.0,
                     review != null ? review.reviewCount().intValue() : 0,
                     options.getOrDefault(offer.getId(), List.of()),
