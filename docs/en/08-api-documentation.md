@@ -109,7 +109,7 @@ Partner endpoints allow `PARTNER`, `ADMIN`, or `SUPER_ADMIN`, except the legacy 
 | Moderation | GET `/api/v1/mod/coupons`, PATCH review; GET `/api/v1/mod/reviews`, PATCH review |
 | Q&A | GET `/api/v1/mod/questions`; PATCH answer/reject |
 | Merchants | GET base/page/id/id-coupons; POST base; PUT id; PATCH active |
-| Categories | POST `/api/v1/admin/categories`; POST `/upload` |
+| Categories | GET/POST `/api/v1/admin/categories`; GET/PUT/DELETE `/{id}`; POST `/upload`. DELETE returns 409 when coupons reference the category |
 | Situations | GET/POST base; GET/PUT/DELETE id; PUT/DELETE id/coupons |
 | Promo codes | GET/POST `/api/v1/admin/promocodes` |
 | Dashboard | GET `/api/v1/admin/dashboard` — today's orders/revenue, pending complaints, seven-day sales, recent orders |
@@ -153,7 +153,7 @@ The following expands exact paths compressed in the preceding tables. Request/re
 | Bazaar public | GET `/api/v1/bazaars/{id}`; GET `/api/v1/bazaars/{id}/map`; GET `/api/v1/bazaars/{id}/shops`; GET `/api/v1/shops/{id}`; GET `/api/v1/shops/search`; GET `/api/v1/shops/categories` |
 | Bazaar admin | POST `/api/v1/admin/bazaars`; PUT `/api/v1/admin/bazaars/{id}`; POST `/api/v1/admin/shops`; PUT `/api/v1/admin/shops/{id}`; POST `/api/v1/admin/bazaars/{id}/maps` |
 | Bazaar partner | GET `/api/v1/partner/shops/{id}`; PUT `/api/v1/partner/shops/{id}` |
-| Category import | POST `/api/v1/admin/categories/upload` |
+| Category admin | GET `/api/v1/admin/categories`; GET `/api/v1/admin/categories/{id}`; POST `/api/v1/admin/categories`; PUT `/api/v1/admin/categories/{id}`; DELETE `/api/v1/admin/categories/{id}`; POST `/api/v1/admin/categories/upload` |
 | Admin coupons | GET `/api/v1/admin/coupons/{id}`; PUT `/api/v1/admin/coupons/{id}`; PATCH `/api/v1/admin/coupons/{id}/status`; DELETE `/api/v1/admin/coupons/{id}`; POST `/api/v1/admin/coupons/{id}/archive`; POST `/api/v1/admin/coupons/{id}/send-to-approval`; POST `/api/v1/admin/coupons/{id}/reject-request`; PATCH `/api/v1/admin/coupons/{id}/take-to-work` |
 | Admin merchants | GET `/api/v1/admin/merchants`; GET `/api/v1/admin/merchants/page`; GET `/api/v1/admin/merchants/{id}`; POST `/api/v1/admin/merchants`; PUT `/api/v1/admin/merchants/{id}`; PATCH `/api/v1/admin/merchants/{id}/active`; GET `/api/v1/admin/merchants/{id}/coupons` |
 | Coupon directory admin | POST `/api/v1/admin/bazaars`; PUT `/api/v1/admin/bazaars/{id}`; POST `/api/v1/admin/shops`; PUT `/api/v1/admin/shops/{id}` |

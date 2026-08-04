@@ -109,7 +109,7 @@ Swagger UI доступен напрямую на портах сервисов:
 | Moderation | GET `/api/v1/mod/coupons`, PATCH `/{id}/review`; GET `/api/v1/mod/reviews`, PATCH `/{id}/review` |
 | Q&A | GET `/api/v1/mod/questions`; PATCH `/{id}/answer`, `/{id}/reject` |
 | Merchants | GET `/api/v1/admin/merchants`, `/page`, `/{id}`, `/{id}/coupons`; POST base; PUT `/{id}`; PATCH `/{id}/active` |
-| Categories | POST `/api/v1/admin/categories`; POST `/upload` (Excel) |
+| Categories | GET/POST `/api/v1/admin/categories`; GET/PUT/DELETE `/{id}`; POST `/upload` (Excel). DELETE возвращает 409 для категории, используемой купонами |
 | Situations | GET/POST `/api/v1/admin/situations`; GET/PUT/DELETE `/{id}`; PUT/DELETE `/{id}/coupons` |
 | Promo codes | GET/POST `/api/v1/admin/promocodes` |
 | Dashboard | GET `/api/v1/admin/dashboard` — заказы/выручка сегодня, ожидающие жалобы, продажи за 7 дней, последние заказы |
@@ -154,7 +154,7 @@ coupon-service имеет `/api/v1/directory/bazaars`, `/{id}`, `/{id}/shops`, `
 | Bazaar public | GET `/api/v1/bazaars/{id}`; GET `/api/v1/bazaars/{id}/map`; GET `/api/v1/bazaars/{id}/shops`; GET `/api/v1/shops/{id}`; GET `/api/v1/shops/search`; GET `/api/v1/shops/categories` |
 | Bazaar admin | POST `/api/v1/admin/bazaars`; PUT `/api/v1/admin/bazaars/{id}`; POST `/api/v1/admin/shops`; PUT `/api/v1/admin/shops/{id}`; POST `/api/v1/admin/bazaars/{id}/maps` |
 | Bazaar partner | GET `/api/v1/partner/shops/{id}`; PUT `/api/v1/partner/shops/{id}` |
-| Category import | POST `/api/v1/admin/categories/upload` |
+| Category admin | GET `/api/v1/admin/categories`; GET `/api/v1/admin/categories/{id}`; POST `/api/v1/admin/categories`; PUT `/api/v1/admin/categories/{id}`; DELETE `/api/v1/admin/categories/{id}`; POST `/api/v1/admin/categories/upload` |
 | Admin coupons | GET `/api/v1/admin/coupons/{id}`; PUT `/api/v1/admin/coupons/{id}`; PATCH `/api/v1/admin/coupons/{id}/status`; DELETE `/api/v1/admin/coupons/{id}`; POST `/api/v1/admin/coupons/{id}/archive`; POST `/api/v1/admin/coupons/{id}/send-to-approval`; POST `/api/v1/admin/coupons/{id}/reject-request`; PATCH `/api/v1/admin/coupons/{id}/take-to-work` |
 | Admin merchants | GET `/api/v1/admin/merchants`; GET `/api/v1/admin/merchants/page`; GET `/api/v1/admin/merchants/{id}`; POST `/api/v1/admin/merchants`; PUT `/api/v1/admin/merchants/{id}`; PATCH `/api/v1/admin/merchants/{id}/active`; GET `/api/v1/admin/merchants/{id}/coupons` |
 | Coupon directory admin | POST `/api/v1/admin/bazaars`; PUT `/api/v1/admin/bazaars/{id}`; POST `/api/v1/admin/shops`; PUT `/api/v1/admin/shops/{id}` |

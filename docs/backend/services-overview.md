@@ -200,10 +200,12 @@ notification-service ──publish──▶ notification.exchange / notification
 #### Admin — категории (`/api/v1/admin/categories`)
 | Method | URL | Auth | Описание |
 |---|---|---|---|
+| GET | `/api/v1/admin/categories` | ✅ ADMIN | Все категории, включая выключенные |
 | GET | `/api/v1/admin/categories/{id}` | ✅ ADMIN | Категория по ID |
 | POST | `/api/v1/admin/categories` | ✅ ADMIN | Создать категорию |
 | PUT | `/api/v1/admin/categories/{id}` | ✅ ADMIN | Обновить категорию |
-| DELETE | `/api/v1/admin/categories/{id}` | ✅ ADMIN | Удалить категорию |
+| DELETE | `/api/v1/admin/categories/{id}` | ✅ ADMIN | Удалить неиспользуемую категорию; для используемой — 409 |
+| POST | `/api/v1/admin/categories/upload` | ✅ ADMIN | Импортировать категории из Excel |
 
 #### Admin — справочник базаров и магазинов
 | Method | URL | Auth | Описание |

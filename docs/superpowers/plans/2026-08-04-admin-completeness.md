@@ -131,3 +131,22 @@ manual demo-data walkthrough is intentionally deferred to the final task.
 - Implemented role-aware data access: ADMIN/SUPER_ADMIN receive operational
   order, revenue, coupon, user, complaint, seven-day, and recent-order data;
   MODERATOR receives only coupon queue and complaint metrics.
+
+### 2026-08-04 — Task 2
+
+- Backend RED: the requested admin category response, CRUD service/controller
+  contracts, case-insensitive repository checks, validation, and reference
+  conflict behavior were absent.
+- Backend GREEN: focused service, controller/security, and H2 repository tests
+  cover active/inactive reads, normalization, duplicate races, validation,
+  not-found, deactivate/reactivate payloads, deterministic ordering, and safe
+  deletion. Flyway V25 adds case-insensitive unique indexes for name and slug.
+- Frontend RED: the page still called the public active-only list and exposed an
+  icon-edit placeholder without update/delete behavior.
+- Frontend GREEN: the page now uses a typed admin CRUD client, exposes complete
+  create/edit fields and media upload, shows active state, confirms deletion,
+  preserves rows on 409, and invalidates both admin and public category caches.
+- Full `coupon-service:test` including JaCoCo passed. Admin-app passed 14 test
+  files / 140 tests, ESLint, and the production build. The previously observed
+  large-chunk build warning remains; it is handled separately from category
+  behavior.

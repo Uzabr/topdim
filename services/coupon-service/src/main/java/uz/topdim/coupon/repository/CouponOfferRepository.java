@@ -136,6 +136,8 @@ public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long>,
 
     boolean existsByMerchantIdAndStatusIn(Long merchantId, List<CouponStatus> statuses);
 
+    boolean existsByCategoryId(Long categoryId);
+
     long countByMerchantId(Long merchantId);
 
     long countByMerchantIdAndStatus(Long merchantId, CouponStatus status);

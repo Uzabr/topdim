@@ -238,10 +238,12 @@ ADMIN и SUPER_ADMIN имеют одинаковые права в рабоче�
 ### Категории
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
+| Все категории, включая выключенные | `GET /api/v1/admin/categories` | ✅ |
 | Категория по ID | `GET /api/v1/admin/categories/{id}` | ✅ |
 | Создать категорию | `POST /api/v1/admin/categories` | ✅ |
 | Обновить категорию | `PUT /api/v1/admin/categories/{id}` | ✅ |
-| Удалить категорию | `DELETE /api/v1/admin/categories/{id}` | ✅ |
+| Удалить неиспользуемую категорию | `DELETE /api/v1/admin/categories/{id}` | ✅; 409, если есть купоны |
+| Импортировать категории | `POST /api/v1/admin/categories/upload` | ✅ |
 
 ### Заказы
 | Функция | Endpoint | Статус |
