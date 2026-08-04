@@ -222,7 +222,7 @@ public class OrderController {
     /** Все заказы с пагинацией и фильтром (Admin). */
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/api/v1/admin/orders")
-    public ResponseEntity<ApiResponse<Page<Order>>> getAllOrders(
+    public ResponseEntity<ApiResponse<Page<AdminOrderResponse>>> getAllOrders(
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
@@ -233,7 +233,7 @@ public class OrderController {
     /** Детали заказа без проверки владельца (Admin). */
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/api/v1/admin/orders/{id}")
-    public ResponseEntity<ApiResponse<Order>> getOrderAdmin(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<AdminOrderResponse>> getOrderAdmin(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(orderService.getOrderByIdAdmin(id)));
     }
 

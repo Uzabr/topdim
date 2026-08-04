@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.order.client.CouponClient;
 import uz.topdim.order.client.CouponPurchaseSnapshot;
+import uz.topdim.order.dto.AdminOrderResponse;
 import uz.topdim.order.dto.PurchasedCouponResponse;
 import uz.topdim.order.entity.*;
 import uz.topdim.order.repository.*;
@@ -818,7 +819,7 @@ class OrderServiceTest {
 
         when(orderRepository.findAll(any(Pageable.class))).thenReturn(page);
 
-        Page<Order> result = orderService.getAllOrders(null, 0, 20);
+        Page<AdminOrderResponse> result = orderService.getAllOrders(null, 0, 20);
 
         assertThat(result.getContent()).hasSize(2);
         verify(orderRepository).findAll(any(Pageable.class));
@@ -833,7 +834,7 @@ class OrderServiceTest {
 
         when(orderRepository.findByStatus(eq(OrderStatus.PAID), any(Pageable.class))).thenReturn(page);
 
-        Page<Order> result = orderService.getAllOrders(OrderStatus.PAID, 0, 20);
+        Page<AdminOrderResponse> result = orderService.getAllOrders(OrderStatus.PAID, 0, 20);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getStatus()).isEqualTo(OrderStatus.PAID);
@@ -845,7 +846,7 @@ class OrderServiceTest {
         Order order = Order.builder().id(100L).userId(99L).status(OrderStatus.PAID).build();
         when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
 
-        Order result = orderService.getOrderByIdAdmin(100L);
+        AdminOrderResponse result = orderService.getOrderByIdAdmin(100L);
 
         assertThat(result.getId()).isEqualTo(100L);
         assertThat(result.getUserId()).isEqualTo(99L); // не проверяем владельца

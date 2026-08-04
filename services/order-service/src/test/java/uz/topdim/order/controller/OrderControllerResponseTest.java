@@ -11,8 +11,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import uz.topdim.order.dto.OrderResponse;
+import uz.topdim.order.dto.AdminOrderResponse;
+import uz.topdim.order.entity.OrderStatus;
 import uz.topdim.order.service.OrderService;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
@@ -72,5 +76,31 @@ class OrderControllerResponseTest {
                 .andExpect(jsonPath("$.data.title").value("Spa package"))
                 .andExpect(jsonPath("$.data.itemCount").value(2))
                 .andExpect(jsonPath("$.data.items").doesNotExist());
+    }
+
+    @Test
+    void getAdminOrders_returnsMinimalResponseWithoutRedemptionSecrets() throws Exception {
+        AdminOrderResponse order = AdminOrderResponse.builder()
+                .id(11L)
+                .orderNumber("ORD-2026-0011")
+                .userId(7L)
+                .userEmail("user@example.com")
+                .userPhone("+998901234567")
+                .status(OrderStatus.PAID)
+                .totalAmount(new BigDecimal("150000"))
+                .createdAt(LocalDateTime.of(2026, 8, 4, 10, 30))
+                .build();
+        when(orderService.getAllOrders(null, 0, 20))
+                .thenReturn(new PageImpl<>(List.of(order), PageRequest.of(0, 20), 1));
+
+        mockMvc.perform(get("/api/v1/admin/orders")
+                        .param("page", "0")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content[0].id").value(11))
+                .andExpect(jsonPath("$.data.content[0].orderNumber").value("ORD-2026-0011"))
+                .andExpect(jsonPath("$.data.content[0].purchasedCoupons").doesNotExist())
+                .andExpect(jsonPath("$.data.content[0].items").doesNotExist())
+                .andExpect(jsonPath("$..qrToken").doesNotExist());
     }
 }

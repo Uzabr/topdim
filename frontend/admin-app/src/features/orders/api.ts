@@ -2,10 +2,11 @@ import api from '../../api/client';
 
 export interface AdminOrder {
   id: number;
+  orderNumber: string;
   userId: number;
-  userEmail: string;
-  userPhone: string;
-  status: string;
+  userEmail: string | null;
+  userPhone: string | null;
+  status: 'PENDING' | 'PAID' | 'COMPLETED' | 'CANCELLED' | 'REFUND_REQUESTED' | 'REFUNDED';
   totalAmount: number;
   createdAt: string;
 }

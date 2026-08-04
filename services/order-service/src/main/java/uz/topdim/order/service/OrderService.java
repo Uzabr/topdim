@@ -16,6 +16,7 @@ import uz.topdim.order.client.CouponClient;
 import uz.topdim.order.client.CouponPurchaseSnapshot;
 import uz.topdim.order.client.RegisterSaleRequest;
 import uz.topdim.order.dto.AdminPurchasedCouponLookupResponse;
+import uz.topdim.order.dto.AdminOrderResponse;
 import uz.topdim.order.dto.CartResponse;
 import uz.topdim.order.dto.OrderResponse;
 import uz.topdim.order.dto.PurchasedCouponResponse;
@@ -405,21 +406,35 @@ public class OrderService {
      * @return страница заказов
      */
     @Transactional(readOnly = true)
-    public Page<Order> getAllOrders(OrderStatus status, int page, int size) {
+    public Page<AdminOrderResponse> getAllOrders(OrderStatus status, int page, int size) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         if (status != null) {
-            return orderRepository.findByStatus(status, pageable);
+            return orderRepository.findByStatus(status, pageable).map(this::mapToAdminOrderResponse);
         }
-        return orderRepository.findAll(pageable);
+        return orderRepository.findAll(pageable).map(this::mapToAdminOrderResponse);
     }
 
     /**
      * Получает заказ по ID без проверки владельца (Admin).
      */
     @Transactional(readOnly = true)
-    public Order getOrderByIdAdmin(Long orderId) {
+    public AdminOrderResponse getOrderByIdAdmin(Long orderId) {
         return orderRepository.findById(orderId)
+                .map(this::mapToAdminOrderResponse)
                 .orElseThrow(() -> new IllegalArgumentException("Заказ не найден"));
+    }
+
+    private AdminOrderResponse mapToAdminOrderResponse(Order order) {
+        return AdminOrderResponse.builder()
+                .id(order.getId())
+                .orderNumber(order.getOrderNumber())
+                .userId(order.getUserId())
+                .userEmail(order.getUserEmail())
+                .userPhone(order.getUserPhone())
+                .totalAmount(order.getTotalAmount())
+                .status(order.getStatus())
+                .createdAt(order.getCreatedAt())
+                .build();
     }
 
     /**

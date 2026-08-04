@@ -210,3 +210,20 @@ manual demo-data walkthrough is intentionally deferred to the final task.
 - Full coupon-service tests including JaCoCo passed. Admin-app passes 18 test
   files / 160 tests, ESLint, and production build; the known chunk warning
   remains.
+
+### 2026-08-04 — Task 5c: safe admin order contract
+
+- Backend RED proved that admin order endpoints serialized the `Order` JPA
+  entity, including relations capable of exposing purchased-coupon redemption
+  secrets. Both list and detail now return a minimal `AdminOrderResponse` with
+  no items, purchased coupons, or `qrToken`.
+- Frontend RED showed only an internal database ID and an untranslated
+  `COMPLETED` status. The table now displays the business order number, covers
+  every backend `OrderStatus`, renders zero totals correctly, and includes the
+  missing `COMPLETED` and `REFUND_REQUESTED` filters.
+- UI regression coverage includes success, empty, error, boundary-zero, and
+  status-filter scenarios. Full order-service tests including PostgreSQL
+  Testcontainers and JaCoCo passed with `DOCKER_API_VERSION=1.40 --no-daemon`;
+  the no-daemon flag is required so an old Gradle daemon does not retain Docker
+  API 1.32. Admin-app passes 19 test files / 165 tests, ESLint, and production
+  build; the known chunk warning remains.
