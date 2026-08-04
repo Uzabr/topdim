@@ -194,3 +194,19 @@ manual demo-data walkthrough is intentionally deferred to the final task.
 - The focused role matrix has 16 passing scenarios. The complete admin-app suite
   passes with 17 test files / 159 tests, ESLint, and production build; only the
   already-known large-chunk warning remains.
+
+### 2026-08-04 — Task 5b: merchant location integrity
+
+- Backend RED proved that an ordinary merchant edit recreated normalized
+  locations, accepted a location ID from another merchant, and physically
+  deleted omitted rows. That invalidated stable location IDs used by cashier
+  bindings in identity-service.
+- Backend GREEN updates owned locations in place, rejects foreign/duplicate IDs,
+  creates only genuinely new locations, and soft-deactivates omitted locations
+  while retaining the existing active-coupon safety rule.
+- Frontend RED proved that the edit form discarded location ID and coordinates.
+  It now sends a typed update payload with stable IDs and exposes latitude and
+  longitude controls so coordinates are preserved and editable.
+- Full coupon-service tests including JaCoCo passed. Admin-app passes 18 test
+  files / 160 tests, ESLint, and production build; the known chunk warning
+  remains.

@@ -19,7 +19,11 @@ import uz.topdim.coupon.repository.MerchantLocationRepository;
 import uz.topdim.coupon.repository.MerchantRepository;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static uz.topdim.coupon.util.PhoneUtils.normalize;
@@ -258,21 +262,66 @@ public class MerchantService {
     /**
      * Safe location update for UPDATE path:
      * - null locations = preserve existing (no-op)
-     * - empty locations = check for dependent coupons before clearing
+     * - existing IDs are updated in place so external staff bindings stay valid
+     * - omitted locations are deactivated rather than physically deleted
+     * - empty locations = check for dependent coupons before deactivation
      */
     private void saveLocationsForUpdate(Merchant merchant, CreateMerchantRequest request) {
         if (request.getLocations() == null) {
             return;
         }
 
-        List<MerchantLocation> normalizedLocations = buildLocations(merchant, request);
-        if (normalizedLocations.isEmpty() && hasPublicationDependentCoupons(merchant.getId())) {
+        List<CreateMerchantRequest.LocationRequest> requestedLocations = request.getLocations().stream()
+                .filter(this::hasLocationData)
+                .toList();
+        validatePrimaryLocationCount(requestedLocations);
+
+        if (requestedLocations.isEmpty() && hasPublicationDependentCoupons(merchant.getId())) {
             throw new IllegalStateException(
                     "Нельзя удалить все locations у мерчанта с WAITING_FOR_MERCHANT или ACTIVE купонами");
         }
 
-        merchantLocationRepository.deleteAllByMerchantId(merchant.getId());
-        merchant.getLocations().clear();
+        List<MerchantLocation> existingLocations = merchantLocationRepository.findByMerchantId(merchant.getId());
+        Map<Long, MerchantLocation> existingById = existingLocations.stream()
+                .filter(location -> location.getId() != null)
+                .collect(Collectors.toMap(MerchantLocation::getId, Function.identity()));
+
+        Set<Long> requestedIds = new HashSet<>();
+        for (CreateMerchantRequest.LocationRequest locationRequest : requestedLocations) {
+            if (locationRequest.getId() == null) {
+                continue;
+            }
+            if (!requestedIds.add(locationRequest.getId())) {
+                throw new IllegalArgumentException("Локация указана более одного раза: " + locationRequest.getId());
+            }
+            if (!existingById.containsKey(locationRequest.getId())) {
+                throw new IllegalArgumentException(
+                        "Локация " + locationRequest.getId() + " не принадлежит мерчанту " + merchant.getId());
+            }
+        }
+
+        List<MerchantLocation> normalizedLocations = new ArrayList<>();
+        for (CreateMerchantRequest.LocationRequest locationRequest : requestedLocations) {
+            MerchantLocation location = locationRequest.getId() == null
+                    ? MerchantLocation.builder().merchant(merchant).active(true).build()
+                    : existingById.get(locationRequest.getId());
+            applyLocationRequest(location, locationRequest);
+            location.setActive(true);
+            normalizedLocations.add(location);
+        }
+
+        if (!normalizedLocations.isEmpty()
+                && normalizedLocations.stream().noneMatch(MerchantLocation::isPrimary)) {
+            normalizedLocations.get(0).setPrimary(true);
+        }
+
+        existingLocations.stream()
+                .filter(location -> location.getId() != null && !requestedIds.contains(location.getId()))
+                .forEach(location -> {
+                    location.setActive(false);
+                    location.setPrimary(false);
+                    merchantLocationRepository.save(location);
+                });
         normalizedLocations.forEach(merchantLocationRepository::save);
     }
 
@@ -290,12 +339,10 @@ public class MerchantService {
                     .toList();
 
             if (!nonEmptyLocations.isEmpty()) {
+                validatePrimaryLocationCount(nonEmptyLocations);
                 long primaryCount = nonEmptyLocations.stream()
                         .filter(CreateMerchantRequest.LocationRequest::isPrimary)
                         .count();
-                if (primaryCount > 1) {
-                    throw new IllegalArgumentException("У мерчанта может быть только одна primary location");
-                }
 
                 List<MerchantLocation> normalizedLocations = new ArrayList<>();
                 for (CreateMerchantRequest.LocationRequest locReq : nonEmptyLocations) {
@@ -324,12 +371,35 @@ public class MerchantService {
     }
 
     private boolean hasLocationData(CreateMerchantRequest.LocationRequest request) {
-        return (request.getTitle() != null && !request.getTitle().isBlank())
+        return request.getId() != null
+                || (request.getTitle() != null && !request.getTitle().isBlank())
                 || (request.getAddress() != null && !request.getAddress().isBlank())
                 || (request.getPhone() != null && !request.getPhone().isBlank())
                 || (request.getWorkingHours() != null && !request.getWorkingHours().isBlank())
                 || request.getLatitude() != null
                 || request.getLongitude() != null;
+    }
+
+    private void validatePrimaryLocationCount(List<CreateMerchantRequest.LocationRequest> locations) {
+        long primaryCount = locations.stream()
+                .filter(CreateMerchantRequest.LocationRequest::isPrimary)
+                .count();
+        if (primaryCount > 1) {
+            throw new IllegalArgumentException("У мерчанта может быть только одна primary location");
+        }
+    }
+
+    private void applyLocationRequest(
+            MerchantLocation location,
+            CreateMerchantRequest.LocationRequest request
+    ) {
+        location.setTitle(request.getTitle());
+        location.setAddress(request.getAddress());
+        location.setPhone(normalize(request.getPhone()));
+        location.setWorkingHours(request.getWorkingHours());
+        location.setLatitude(request.getLatitude());
+        location.setLongitude(request.getLongitude());
+        location.setPrimary(request.isPrimary());
     }
 
     // ==================== Categories ====================

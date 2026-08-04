@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Descriptions, Tag, Button, Typography, Space, Card, Table, Tabs, App,
-  Modal, Form, Input, Switch, Divider, Spin, Alert,
+  Modal, Form, Input, InputNumber, Switch, Divider, Spin, Alert,
 } from 'antd';
 import {
   ArrowLeftOutlined, EditOutlined, PlusOutlined,
@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchMerchantDetail, updateMerchant, setMerchantActive, fetchMerchantCoupons } from './api';
+import type { UpdateMerchantRequest } from './types';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Title, Text } = Typography;
@@ -52,7 +53,7 @@ export const MerchantDetailPage = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (values: Record<string, unknown>) => updateMerchant(merchantId, values),
+    mutationFn: (values: UpdateMerchantRequest) => updateMerchant(merchantId, values),
     onSuccess: () => {
       message.success('Мерчант обновлён');
       setEditOpen(false);
@@ -90,10 +91,13 @@ export const MerchantDetailPage = () => {
       website: merchant.website,
       contactPerson: merchant.contactPerson,
       locations: merchant.locations.map((l) => ({
+        id: l.id,
         title: l.title,
         address: l.address,
         phone: l.phone,
         workingHours: l.workingHours,
+        latitude: l.latitude,
+        longitude: l.longitude,
         primary: l.primary,
       })),
     });
@@ -290,6 +294,9 @@ export const MerchantDetailPage = () => {
                     extra={<Button danger size="small" onClick={() => remove(name)}>Удалить</Button>}
                     title={`Локация ${name + 1}`}
                   >
+                    <Form.Item {...restField} name={[name, 'id']} hidden>
+                      <Input />
+                    </Form.Item>
                     <Form.Item {...restField} name={[name, 'title']} label="Название">
                       <Input />
                     </Form.Item>
@@ -302,6 +309,14 @@ export const MerchantDetailPage = () => {
                     <Form.Item {...restField} name={[name, 'workingHours']} label="Часы работы">
                       <Input />
                     </Form.Item>
+                    <Space style={{ width: '100%' }} align="start">
+                      <Form.Item {...restField} name={[name, 'latitude']} label="Широта">
+                        <InputNumber min={-90} max={90} precision={7} style={{ width: 180 }} />
+                      </Form.Item>
+                      <Form.Item {...restField} name={[name, 'longitude']} label="Долгота">
+                        <InputNumber min={-180} max={180} precision={7} style={{ width: 180 }} />
+                      </Form.Item>
+                    </Space>
                     <Form.Item {...restField} name={[name, 'primary']} label="Primary" valuePropName="checked">
                       <Switch />
                     </Form.Item>
