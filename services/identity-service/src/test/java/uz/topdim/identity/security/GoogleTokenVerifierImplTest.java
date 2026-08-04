@@ -1,6 +1,7 @@
 package uz.topdim.identity.security;
 
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -135,6 +136,50 @@ class GoogleTokenVerifierImplTest {
         assertThatThrownBy(() -> unconfigured.verify(token))
                 .isInstanceOf(AuthException.class)
                 .hasMessage("Google-вход не настроен");
+    }
+
+    // ---- algorithm-confusion (постоянные регресс-тесты) ----
+
+    @Test
+    @DisplayName("alg:none — unsecured JWT (без подписи), но валидные iss/aud/exp → AuthException")
+    void unsecuredNoneAlg_throws() {
+        // Токен без подписи: заголовок alg=none. Верификатор зовёт parseSignedClaims(...),
+        // который требует именно подписанный JWS → unsecured отвергается.
+        String token = Jwts.builder()
+                .header().keyId(KID).and()
+                .issuer(GOOGLE_ISS)
+                .audience().add(CLIENT_ID).and()
+                .subject("google-sub-123")
+                .claim("email", "user@example.com")
+                .claim("email_verified", true)
+                .issuedAt(Date.from(Instant.now().minusSeconds(5)))
+                .expiration(Date.from(Instant.now().plusSeconds(300)))
+                .compact(); // без signWith → unsecured (alg=none)
+
+        assertThatThrownBy(() -> verifier.verify(token))
+                .isInstanceOf(AuthException.class);
+    }
+
+    @Test
+    @DisplayName("HS256-confusion — подписан HMAC на байтах ПУБЛИЧНОГО RSA-ключа Google → AuthException")
+    void hs256KeyConfusion_throws() {
+        // Классическая атака: злоумышленник подписывает токен HS256, взяв за HMAC-секрет
+        // байты публичного RSA-ключа Google (он общедоступен). Провайдер по kid отдаёт тот же
+        // публичный ключ. Верификатор обязан выдавать ключ ТОЛЬКО для RS256 → HS256 отвергается.
+        String token = Jwts.builder()
+                .header().keyId(KID).and()
+                .issuer(GOOGLE_ISS)
+                .audience().add(CLIENT_ID).and()
+                .subject("google-sub-123")
+                .claim("email", "user@example.com")
+                .claim("email_verified", true)
+                .issuedAt(Date.from(Instant.now().minusSeconds(5)))
+                .expiration(Date.from(Instant.now().plusSeconds(300)))
+                .signWith(Keys.hmacShaKeyFor(googleKeyPair.getPublic().getEncoded()), Jwts.SIG.HS256)
+                .compact();
+
+        assertThatThrownBy(() -> verifier.verify(token))
+                .isInstanceOf(AuthException.class);
     }
 
     // ---- helper ----
