@@ -109,6 +109,32 @@ describe('LoginCard authentication transitions', () => {
   });
 });
 
+describe('LoginCard initialMode', () => {
+  beforeEach(() => {
+    login.mockResolvedValue(false);
+    telegramLogin.mockResolvedValue(false);
+    googleLogin.mockResolvedValue(false);
+    phoneLogin.mockResolvedValue(false);
+    registerUser.mockResolvedValue(false);
+  });
+
+  afterEach(cleanup);
+
+  it('opens directly on the registration form when initialMode is register (T9 /register deep link)', () => {
+    render(<LoginCard onSuccess={vi.fn()} initialMode="register" />);
+
+    expect(screen.getByPlaceholderText('login.firstName')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'login.submitRegister' })).toBeTruthy();
+  });
+
+  it('still defaults to the one-tap screen when initialMode is omitted', () => {
+    render(<LoginCard onSuccess={vi.fn()} />);
+
+    expect(screen.queryByPlaceholderText('login.firstName')).toBeNull();
+    expect(screen.getByRole('button', { name: 'login.viaEmail' })).toBeTruthy();
+  });
+});
+
 describe('LoginCard phone-OTP flow', () => {
   beforeEach(() => {
     login.mockResolvedValue(false);

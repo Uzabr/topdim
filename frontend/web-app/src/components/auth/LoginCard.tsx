@@ -32,6 +32,12 @@ const PHONE_PATTERN = /^\+998\d{9}$/;
 interface LoginCardProps {
   /** Вызывается после успешного входа/регистрации. */
   onSuccess: () => void;
+  /**
+   * Начальный режим карточки. Используется deep-link'ом /register (T9), чтобы
+   * сразу открыть форму регистрации, а не «вход в один тап». По умолчанию —
+   * обычный вход.
+   */
+  initialMode?: Mode;
 }
 
 /** Сообщение об ошибке от бэкенда: поля лежат в data, общий текст — в message. */
@@ -50,7 +56,7 @@ function serverMessage(err: unknown, fallback: string): string {
  * Заметка про /auth/guest остаётся в силе: он выдаёт токен по одному номеру без
  * SMS-кода, поэтому для входа не используется — только request/confirm с кодом.
  */
-export default function LoginCard({ onSuccess }: LoginCardProps) {
+export default function LoginCard({ onSuccess, initialMode = 'login' }: LoginCardProps) {
   const { t } = useTranslation();
   const {
     login,
@@ -61,8 +67,10 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
     isLoading,
   } = useAuthStore();
 
-  const [mode, setMode] = useState<Mode>('login');
-  const [emailOpen, setEmailOpen] = useState(false);
+  const [mode, setMode] = useState<Mode>(initialMode);
+  // Регистрация/вход показываются внутри email-формы — если карточка открыта
+  // сразу в режиме регистрации (/register), форма должна быть видна сразу.
+  const [emailOpen, setEmailOpen] = useState(initialMode === 'register');
   const [serverError, setServerError] = useState('');
   const [notice, setNotice] = useState('');
   const [soon, setSoon] = useState('');

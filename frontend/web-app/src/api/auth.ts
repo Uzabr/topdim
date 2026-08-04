@@ -108,14 +108,6 @@ export const authApi = {
     ),
 
   // M4: POST без body — refreshToken приходит из httpOnly cookie
-  refresh: () =>
-    apiClient.post<ApiResponse<AuthResponse>>(
-      '/api/v1/auth/refresh',
-      undefined,
-      authRequestConfig(),
-    ),
-
-  // M4: POST без body — refreshToken приходит из httpOnly cookie
   logout: (context?: LogoutRequestContext) => {
     const config: SessionAxiosRequestConfig = {
       ...authRequestConfig(context),
@@ -135,13 +127,6 @@ export const authApi = {
       config,
     );
   },
-
-  guestAuth: (data: { phone: string; name: string }) =>
-    apiClient.post<ApiResponse<AuthResponse>>(
-      '/api/v1/auth/guest',
-      data,
-      authRequestConfig(),
-    ),
 
   telegramAuth: (
     data: TelegramAuthPayload,

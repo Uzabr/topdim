@@ -149,6 +149,21 @@
     "phoneInvalid": "Format: +998XXXXXXXXX",
     "codeInvalid": "Kod noto'g'ri yoki muddati o'tgan. Qayta urinib ko'ring."
   },
+  "resetPasswordPage": {
+    "title": "Yangi parol",
+    "hint": "Hisobga kirish uchun yangi parol o'ylab toping.",
+    "newPassword": "Yangi parol",
+    "confirmPassword": "Yangi parolni takrorlang",
+    "passwordHint": "8–128 belgi: katta va kichik harf, raqam, maxsus belgi (@$!%*?&#^()-_=+)",
+    "submit": "Parolni saqlash",
+    "submitting": "Saqlanmoqda...",
+    "success": "Parol muvaffaqiyatli o'zgartirildi.",
+    "toLogin": "Hisobga kirish",
+    "missingToken": "Havola buzilgan — token topilmadi. Parolni tiklashni qaytadan so'rang.",
+    "invalidToken": "Token yaroqsiz yoki muddati o'tgan. Parolni tiklashni qaytadan so'rang.",
+    "weak": "Parol xavfsizlik talablariga javob bermaydi",
+    "mismatch": "Parollar mos kelmadi"
+  },
   "favorites": {
     "title": "Sevimlilar",
     "emptyTitle": "Hozircha bo'sh",
