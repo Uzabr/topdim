@@ -350,6 +350,21 @@
       "name": "Ism",
       "phoneLabel": "Telefon",
       "phoneMissing": "Ko'rsatilmagan — merchantga bog'lanish uchun kerak",
+      "phoneOtp": {
+        "label": "Yangi telefon raqami",
+        "placeholder": "+998 90 123 45 67",
+        "codeLabel": "SMS kodi",
+        "sendCode": "Kodni yuborish",
+        "confirm": "Raqamni bog'lash",
+        "resend": "Kodni qayta yuborish",
+        "codeSent": "Agar raqam to'g'ri bo'lsa, SMS orqali kod yubordik.",
+        "success": "Telefon bog'landi",
+        "invalid": "Format: +998XXXXXXXXX",
+        "invalidCode": "Kod noto'g'ri yoki muddati o'tgan. Qayta urinib ko'ring.",
+        "taken": "Bu raqam boshqa hisobda allaqachon ishlatilmoqda",
+        "requestError": "Kodni yuborib bo'lmadi",
+        "error": "Telefonni bog'lab bo'lmadi"
+      },
       "avatar": {
         "title": "Profil rasmi",
         "hint": "20 MB gacha bo'lgan rasm",

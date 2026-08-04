@@ -72,7 +72,6 @@ export interface AuthResponse {
 export interface UpdateProfileRequest {
   firstName?: string;
   lastName?: string;
-  phone?: string;
   avatarUrl?: string;
 }
 
@@ -182,6 +181,18 @@ export const authApi = {
       data,
       authRequestConfig(context),
     ),
+
+  /**
+   * Привязка телефона к текущему (авторизованному) аккаунту (T8b, backend T8a).
+   * Заменяет легаси-смену телефона через PUT /users/me (была в обход OTP-подтверждения).
+   * Authenticated — БЕЗ authRequestConfig, как changePassword/requestEmailChange, чтобы
+   * при истёкшем access-токене сработал silent-refresh интерцептора apiClient.
+   * Неверный код → 401, номер занят другим аккаунтом → 409.
+   * Отвечает 200 без тела — после успеха обязательно перечитать профиль (refreshProfile()),
+   * иначе UI покажет устаревшие phone/phoneVerified.
+   */
+  linkPhone: (data: { phone: string; code: string }) =>
+    apiClient.post<ApiResponse<void>>('/api/v1/auth/phone/link', data),
 
   /** Всегда 202 — бэкенд не раскрывает, зарегистрирован ли email. */
   requestPasswordReset: (email: string) =>
