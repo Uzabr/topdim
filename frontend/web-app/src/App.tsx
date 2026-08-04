@@ -32,6 +32,7 @@ import FAQPage from './pages/legal/FAQPage';
 import TermsPage from './pages/legal/TermsPage';
 import PrivacyPage from './pages/legal/PrivacyPage';
 import EmailConfirmationPage from './pages/EmailConfirmationPage';
+import EmailChangeConfirmationPage from './pages/EmailChangeConfirmationPage';
 import { queryClient } from './queryClient';
 
 /** Redirect bare "/" to "/:lang/" */
@@ -89,6 +90,7 @@ function AppShell() {
           <Route path="login" element={<LoginPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="confirm-email" element={<EmailConfirmationPage />} />
+          <Route path="confirm-email-change" element={<EmailChangeConfirmationPage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="favorites" element={<FavoritesPage />} />
           <Route path="partners" element={<PartnersPage />} />
