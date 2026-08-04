@@ -29,6 +29,7 @@ interface AuthState {
   isLoading: boolean;
   login: (data: LoginRequest) => Promise<boolean>;
   telegramLogin: (data: TelegramAuthPayload) => Promise<boolean>;
+  phoneLogin: (phone: string, code: string) => Promise<boolean>;
   register: (data: RegisterRequest) => Promise<boolean>;
   logout: () => void;
   loadFromStorage: () => void;
@@ -182,6 +183,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         attempt,
         sessionGeneration,
         (signal) => authApi.telegramAuth(data, { signal }),
+      );
+      if (response === null || !isAuthenticationAttemptCurrent(
+        attempt,
+        sessionGeneration,
+      )) return false;
+      const { accessToken, user } = response.data.data;
+      sessionGeneration = applyAuthenticatedSession(accessToken, user);
+      return true;
+    } catch (error) {
+      if (!isAuthenticationAttemptCurrent(
+        attempt,
+        sessionGeneration,
+      )) {
+        return false;
+      }
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  phoneLogin: async (phone, code) => {
+    const attempt = beginAuthenticationAttempt();
+    let sessionGeneration = captureSessionGeneration();
+    set({ isLoading: true });
+    try {
+      const response = await runCurrentAuthenticationRequest(
+        attempt,
+        sessionGeneration,
+        (signal) => authApi.confirmPhoneOtp({ phone, code }, { signal }),
       );
       if (response === null || !isAuthenticationAttemptCurrent(
         attempt,

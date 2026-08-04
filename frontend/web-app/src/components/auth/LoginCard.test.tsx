@@ -6,11 +6,15 @@ import LoginCard from './LoginCard';
 const {
   login,
   telegramLogin,
+  phoneLogin,
   registerUser,
+  requestPhoneOtp,
 } = vi.hoisted(() => ({
   login: vi.fn(),
   telegramLogin: vi.fn(),
+  phoneLogin: vi.fn(),
   registerUser: vi.fn(),
+  requestPhoneOtp: vi.fn(),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -23,20 +27,54 @@ vi.mock('../../store/authStore', () => ({
   useAuthStore: () => ({
     login,
     telegramLogin,
+    phoneLogin,
     register: registerUser,
     isLoading: false,
   }),
 }));
 
+vi.mock('../../api/auth', async () => {
+  const actual = await vi.importActual<typeof import('../../api/auth')>('../../api/auth');
+  return {
+    ...actual,
+    authApi: {
+      ...actual.authApi,
+      requestPhoneOtp,
+    },
+  };
+});
+
 vi.mock('./TelegramLoginButton', () => ({
   default: () => null,
+}));
+
+// react-imask processes real DOM 'input' events internally to apply the mask;
+// jsdom + fireEvent.change doesn't drive that. Stub it with a plain input so
+// onAccept fires with the value the test types, same contract as the real one.
+vi.mock('react-imask', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  IMaskInput: (props: any) => {
+    const { mask, onAccept, inputRef, value, ...rest } = props;
+    void mask; // masking is not applied by this stub — only the onAccept contract
+    return (
+      <input
+        ref={inputRef}
+        value={value ?? ''}
+        onChange={(e) => onAccept?.(e.target.value)}
+        {...rest}
+      />
+    );
+  },
 }));
 
 describe('LoginCard authentication transitions', () => {
   beforeEach(() => {
     login.mockResolvedValue(false);
     telegramLogin.mockResolvedValue(false);
+    phoneLogin.mockResolvedValue(false);
     registerUser.mockResolvedValue(false);
+    requestPhoneOtp.mockReset();
+    requestPhoneOtp.mockResolvedValue(undefined);
   });
 
   afterEach(cleanup);
@@ -57,5 +95,77 @@ describe('LoginCard authentication transitions', () => {
     await waitFor(() => expect(login).toHaveBeenCalledOnce());
     expect(onSuccess).not.toHaveBeenCalled();
     expect(screen.queryByText('login.serverError')).toBeNull();
+  });
+});
+
+describe('LoginCard phone-OTP flow', () => {
+  beforeEach(() => {
+    login.mockResolvedValue(false);
+    telegramLogin.mockResolvedValue(false);
+    phoneLogin.mockResolvedValue(false);
+    registerUser.mockResolvedValue(false);
+    requestPhoneOtp.mockReset();
+    requestPhoneOtp.mockResolvedValue(undefined);
+  });
+
+  afterEach(cleanup);
+
+  it('requests an OTP for the entered phone and moves to the code screen', async () => {
+    const onSuccess = vi.fn();
+    render(<LoginCard onSuccess={onSuccess} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'login.viaPhone' }));
+
+    const phoneInput = screen.getByPlaceholderText('login.phoneNumberLabel');
+    fireEvent.change(phoneInput, { target: { value: '+998901234567' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'login.phoneSend' }));
+
+    await waitFor(() => expect(requestPhoneOtp).toHaveBeenCalledWith('+998901234567'));
+    expect(await screen.findByPlaceholderText('login.phoneCodeLabel')).toBeTruthy();
+    expect(screen.getByText('login.phoneCodeSent')).toBeTruthy();
+  });
+
+  it('confirms the code, logs in and calls onSuccess', async () => {
+    phoneLogin.mockResolvedValue(true);
+    const onSuccess = vi.fn();
+    render(<LoginCard onSuccess={onSuccess} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'login.viaPhone' }));
+    fireEvent.change(screen.getByPlaceholderText('login.phoneNumberLabel'), {
+      target: { value: '+998901234567' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'login.phoneSend' }));
+    await waitFor(() => expect(requestPhoneOtp).toHaveBeenCalledOnce());
+
+    fireEvent.change(await screen.findByPlaceholderText('login.phoneCodeLabel'), {
+      target: { value: '123456' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'login.submitLogin' }));
+
+    await waitFor(() => expect(phoneLogin).toHaveBeenCalledWith('+998901234567', '123456'));
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
+  });
+
+  it('shows an error message when confirming an invalid/expired code', async () => {
+    phoneLogin.mockRejectedValue(new Error('invalid code'));
+    const onSuccess = vi.fn();
+    render(<LoginCard onSuccess={onSuccess} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'login.viaPhone' }));
+    fireEvent.change(screen.getByPlaceholderText('login.phoneNumberLabel'), {
+      target: { value: '+998901234567' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'login.phoneSend' }));
+    await waitFor(() => expect(requestPhoneOtp).toHaveBeenCalledOnce());
+
+    fireEvent.change(await screen.findByPlaceholderText('login.phoneCodeLabel'), {
+      target: { value: '000000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'login.submitLogin' }));
+
+    await waitFor(() => expect(phoneLogin).toHaveBeenCalledOnce());
+    expect(await screen.findByText('login.codeInvalid')).toBeTruthy();
+    expect(onSuccess).not.toHaveBeenCalled();
   });
 });
