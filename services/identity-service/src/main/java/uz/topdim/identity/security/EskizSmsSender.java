@@ -1,6 +1,7 @@
 package uz.topdim.identity.security;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
@@ -41,6 +42,9 @@ public class EskizSmsSender implements SmsSender {
 
     private volatile String token;
 
+    // @Autowired обязателен: у класса ДВА конструктора (второй — package-private для тестов),
+    // и без явной пометки Spring не может выбрать конструктор → падение контекста при старте.
+    @Autowired
     public EskizSmsSender(
             RestClient.Builder restClientBuilder,
             @Value("${eskiz.base-url:https://notify.eskiz.uz/api}") String baseUrl,

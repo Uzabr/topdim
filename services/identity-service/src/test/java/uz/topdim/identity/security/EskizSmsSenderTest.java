@@ -13,7 +13,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.client.RestClient;
+
+import java.lang.reflect.Constructor;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -38,6 +42,23 @@ class EskizSmsSenderTest {
     private EskizSmsSender sender;
     private ListAppender<ILoggingEvent> logAppender;
     private Logger senderLogger;
+
+    @Test
+    void springWiring_multipleConstructors_haveExactlyOneAutowired() {
+        // Регресс на прод-инцидент (2026-08-05): у EskizSmsSender два конструктора (прод с @Value +
+        // package-private для тестов). Без @Autowired Spring не мог выбрать конструктор → падение
+        // контекста identity при eskiz.enabled=true. Обычные юнит-тесты этого не ловят: бин
+        // @ConditionalOnProperty и в тестах не создаётся — поэтому проверяем аннотацию рефлексией.
+        Constructor<?>[] ctors = EskizSmsSender.class.getDeclaredConstructors();
+        if (ctors.length > 1) {
+            long autowired = Arrays.stream(ctors)
+                    .filter(c -> c.isAnnotationPresent(Autowired.class))
+                    .count();
+            assertThat(autowired)
+                    .as("класс с несколькими конструкторами обязан иметь ровно один @Autowired-конструктор")
+                    .isEqualTo(1);
+        }
+    }
 
     @BeforeEach
     void init() {
