@@ -66,8 +66,7 @@ public class MerchantService {
      */
     @Transactional(readOnly = true)
     public List<MerchantLocationResponse> getLocationsByOwnerUserId(Long userId) {
-        Merchant merchant = merchantRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Мерчант для пользователя не найден"));
+        Merchant merchant = getActiveMerchantByOwnerUserId(userId);
 
         return merchantLocationRepository.findByMerchantIdAndActiveTrue(merchant.getId())
                 .stream().map(loc -> MerchantLocationResponse.builder()
@@ -87,9 +86,17 @@ public class MerchantService {
      */
     @Transactional(readOnly = true)
     public MerchantResponse getMyMerchant(Long userId) {
+        Merchant merchant = getActiveMerchantByOwnerUserId(userId);
+        return mapMerchant(merchant);
+    }
+
+    private Merchant getActiveMerchantByOwnerUserId(Long userId) {
         Merchant merchant = merchantRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Мерчант для пользователя не найден"));
-        return mapMerchant(merchant);
+        if (!merchant.isActive()) {
+            throw new IllegalStateException("Мерчант не активен");
+        }
+        return merchant;
     }
 
     /**

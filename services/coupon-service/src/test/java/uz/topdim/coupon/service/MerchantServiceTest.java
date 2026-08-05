@@ -89,6 +89,34 @@ class MerchantServiceTest {
         }
 
         @Test
+        @DisplayName("Partner profile: inactive merchant is rejected")
+        void getMyMerchant_inactiveMerchant_throws() {
+            Merchant merchant = createTestMerchant();
+            merchant.setUserId(10L);
+            merchant.setActive(false);
+            when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+
+            assertThatThrownBy(() -> merchantService.getMyMerchant(10L))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("Мерчант не активен");
+        }
+
+        @Test
+        @DisplayName("Partner locations: inactive merchant is rejected before returning branches")
+        void getLocationsByOwnerUserId_inactiveMerchant_throws() {
+            Merchant merchant = createTestMerchant();
+            merchant.setUserId(10L);
+            merchant.setActive(false);
+            when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+
+            assertThatThrownBy(() -> merchantService.getLocationsByOwnerUserId(10L))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("Мерчант не активен");
+
+            verifyNoInteractions(merchantLocationRepository);
+        }
+
+        @Test
         @DisplayName("Создание: успешное — active=true")
         void createMerchant_success() {
             CreateMerchantRequest.LocationRequest primary = new CreateMerchantRequest.LocationRequest();

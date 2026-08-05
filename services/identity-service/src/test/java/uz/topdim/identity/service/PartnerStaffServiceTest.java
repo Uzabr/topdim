@@ -80,10 +80,24 @@ class PartnerStaffServiceTest {
         }
 
         @Test
+        @DisplayName("Inactive owner merchant — access context is rejected")
+        void ownerContext_inactiveMerchant_rejected() {
+            when(staffRepository.findByLoginUserId(OWNER_USER_ID)).thenReturn(Optional.empty());
+            when(couponMerchantClient.getMerchantByUserId(OWNER_USER_ID))
+                    .thenReturn(ApiResponse.success(
+                            new MerchantOnboardingResponse(MERCHANT_ID, "Disabled Shop", OWNER_USER_ID, false)));
+
+            assertThatThrownBy(() -> partnerStaffService.resolveAccessContext(OWNER_USER_ID))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("не активен");
+        }
+
+        @Test
         @DisplayName("Cashier — staff login user, returns CASHIER context with location")
         void cashierContext_success() {
             Staff cashier = createCashierStaff();
             when(staffRepository.findByLoginUserId(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.of(cashier));
+            mockOwnerMerchantResolution();
 
             PartnerAccessContextResponse ctx = partnerStaffService.resolveAccessContext(CASHIER_LOGIN_USER_ID);
 
@@ -94,6 +108,20 @@ class PartnerStaffServiceTest {
             assertThat(ctx.getStaffName()).isEqualTo("Кассир Али");
             assertThat(ctx.isCanViewDashboard()).isFalse();
             assertThat(ctx.isCanRedeem()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Cashier of inactive merchant — access context is rejected")
+        void cashierContext_inactiveMerchant_rejected() {
+            Staff cashier = createCashierStaff();
+            when(staffRepository.findByLoginUserId(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.of(cashier));
+            when(couponMerchantClient.getMerchantByUserId(OWNER_USER_ID))
+                    .thenReturn(ApiResponse.success(
+                            new MerchantOnboardingResponse(MERCHANT_ID, "Disabled Shop", OWNER_USER_ID, false)));
+
+            assertThatThrownBy(() -> partnerStaffService.resolveAccessContext(CASHIER_LOGIN_USER_ID))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("не активен");
         }
 
         @Test
@@ -127,6 +155,7 @@ class PartnerStaffServiceTest {
             manager.setRole("MANAGER");
             manager.setMerchantLocationId(null);
             when(staffRepository.findByLoginUserId(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.of(manager));
+            mockOwnerMerchantResolution();
 
             PartnerAccessContextResponse ctx = partnerStaffService.resolveAccessContext(CASHIER_LOGIN_USER_ID);
 
@@ -311,6 +340,7 @@ class PartnerStaffServiceTest {
         @DisplayName("Remove staff — soft delete (sets active=false)")
         void removeStaff_softDelete() {
             Staff staff = createCashierStaff();
+            mockOwnerMerchantResolution();
             when(staffRepository.findByUserIdAndId(OWNER_USER_ID, 1L)).thenReturn(Optional.of(staff));
             when(staffRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -323,6 +353,7 @@ class PartnerStaffServiceTest {
         @Test
         @DisplayName("Remove non-existent staff — ResourceNotFoundException")
         void removeStaff_notFound() {
+            mockOwnerMerchantResolution();
             when(staffRepository.findByUserIdAndId(OWNER_USER_ID, 999L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> partnerStaffService.removeStaff(OWNER_USER_ID, 999L))

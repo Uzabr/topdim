@@ -53,7 +53,7 @@ class CouponOfferServiceTest {
     private CouponOfferService couponOfferService;
 
     private CouponOffer createTestOffer() {
-        Merchant merchant = Merchant.builder().id(1L).name("SPA Oasis").logoUrl("/logo.jpg").build();
+        Merchant merchant = Merchant.builder().id(1L).name("SPA Oasis").logoUrl("/logo.jpg").active(true).build();
         Category category = Category.builder().id(1L).name("Красота").slug("beauty").iconUrl("/icon.svg").build();
         return CouponOffer.builder()
                 .id(1L).title("SPA массаж 50%")
@@ -429,6 +429,22 @@ class CouponOfferServiceTest {
         CouponOfferResponse result = couponOfferService.approveByMerchant(1L);
 
         assertThat(result.getStatus()).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    @DisplayName("State Machine: approveByMerchant не публикует купон неактивного мерчанта")
+    void approve_fromWaiting_withInactiveMerchant_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
+        offer.getMerchant().setActive(false);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.approveByMerchant(1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Мерчант не активен");
+
+        verify(merchantLocationRepository, never()).findByMerchantIdAndPrimaryTrue(anyLong());
+        verify(couponOfferRepository, never()).save(any());
     }
 
     @Test

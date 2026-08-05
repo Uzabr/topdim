@@ -664,6 +664,9 @@ public class CouponOfferService {
         if (merchant == null) {
             throw new IllegalStateException("Нельзя публиковать купон без мерчанта");
         }
+        if (!merchant.isActive()) {
+            throw new IllegalStateException("Мерчант не активен");
+        }
 
         MerchantLocation primaryLocation = merchantLocationRepository.findByMerchantIdAndPrimaryTrue(merchant.getId())
                 .filter(MerchantLocation::isActive)

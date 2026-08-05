@@ -32,6 +32,7 @@ public class PartnerStaffService {
 
     @Transactional(readOnly = true)
     public List<PartnerStaffResponse> getMyStaff(Long userId) {
+        resolveMerchantId(userId);
         return staffRepository.findByUserId(userId).stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
@@ -79,6 +80,7 @@ public class PartnerStaffService {
 
     @Transactional
     public void removeStaff(Long userId, Long staffId) {
+        resolveMerchantId(userId);
         Staff staff = staffRepository.findByUserIdAndId(userId, staffId)
                 .orElseThrow(() -> new ResourceNotFoundException("Сотрудник не найден или не принадлежит вам"));
         staff.setActive(false);
@@ -103,10 +105,14 @@ public class PartnerStaffService {
             if ("CASHIER".equals(staff.getRole()) && staff.getMerchantLocationId() == null) {
                 throw new IllegalStateException("Кассир не привязан к филиалу. Обратитесь к владельцу бизнеса.");
             }
+            Long activeMerchantId = resolveMerchantId(staff.getUserId());
+            if (staff.getMerchantId() == null || !staff.getMerchantId().equals(activeMerchantId)) {
+                throw new IllegalStateException("Контекст сотрудника не соответствует активному мерчанту");
+            }
             boolean canViewDashboard = "MANAGER".equals(staff.getRole());
             return PartnerAccessContextResponse.builder()
                     .role(staff.getRole())
-                    .merchantId(staff.getMerchantId())
+                    .merchantId(activeMerchantId)
                     .merchantLocationId(staff.getMerchantLocationId())
                     .staffId(staff.getId())
                     .staffName(staff.getName())
@@ -148,15 +154,21 @@ public class PartnerStaffService {
     }
 
     private Long resolveMerchantId(Long userId) {
+        MerchantOnboardingResponse merchant;
         try {
             ApiResponse<MerchantOnboardingResponse> response = couponMerchantClient.getMerchantByUserId(userId);
-            if (response != null && response.getData() != null && response.getData().getId() != null) {
-                return response.getData().getId();
-            }
+            merchant = response != null ? response.getData() : null;
         } catch (Exception e) {
             log.warn("Не удалось получить мерчанта для userId={}: {}", userId, e.getMessage());
+            throw new ResourceNotFoundException("Мерчант для пользователя не найден");
         }
-        throw new ResourceNotFoundException("Мерчант для пользователя не найден");
+        if (merchant == null || merchant.getId() == null) {
+            throw new ResourceNotFoundException("Мерчант для пользователя не найден");
+        }
+        if (!merchant.isActive()) {
+            throw new IllegalStateException("Мерчант не активен");
+        }
+        return merchant.getId();
     }
 
     private PartnerStaffResponse mapToResponse(Staff staff) {

@@ -45,9 +45,13 @@ public class PartnerCouponService {
      * Кассиры не имеют привязки Merchant.userId — им вернётся 404.
      */
     private Merchant getMerchantForOwner(Long userId) {
-        return merchantRepository.findByUserId(userId)
+        Merchant merchant = merchantRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "У вас нет привязанного мерчанта. Создание заявок доступно только владельцам и менеджерам."));
+        if (!merchant.isActive()) {
+            throw new IllegalStateException("Мерчант не активен");
+        }
+        return merchant;
     }
 
     /**
