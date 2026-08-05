@@ -54,6 +54,19 @@ public interface PurchasedCouponRepository extends JpaRepository<PurchasedCoupon
     @Query("SELECT COUNT(DISTINCT pc.couponOfferId) FROM PurchasedCoupon pc WHERE pc.merchantId = :merchantId")
     long countDistinctCouponOfferIdsByMerchantId(@Param("merchantId") Long merchantId);
 
-    @Query("SELECT COALESCE(SUM(oi.unitPrice * oi.quantity), 0) FROM OrderItem oi WHERE oi.merchantId = :merchantId")
+    /**
+     * Выручка мерчанта по фактически выпущенным после оплаты купонам.
+     * REFUND_PENDING остаётся в сумме до завершения возврата; завершённые возвраты
+     * и отменённые купоны исключаются.
+     */
+    @Query("""
+            SELECT COALESCE(SUM(pc.pricePaid), 0)
+              FROM PurchasedCoupon pc
+             WHERE pc.merchantId = :merchantId
+               AND pc.status NOT IN (
+                   uz.topdim.order.entity.PurchasedCouponStatus.REFUNDED,
+                   uz.topdim.order.entity.PurchasedCouponStatus.CANCELLED
+               )
+            """)
     java.math.BigDecimal sumRevenueByMerchantId(@Param("merchantId") Long merchantId);
 }
