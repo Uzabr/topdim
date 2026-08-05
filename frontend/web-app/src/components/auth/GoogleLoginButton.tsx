@@ -94,17 +94,31 @@ export default function GoogleLoginButton({ clientId, onAuth }: GoogleLoginButto
 
     loadGsiScript()
       .then(() => {
-        if (cancelled || !containerRef.current || !window.google) return;
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: (response) => onAuthRef.current(response.credential),
-        });
-        window.google.accounts.id.renderButton(containerRef.current, {
+        const container = containerRef.current;
+        if (cancelled || !container || !window.google) return;
+        const idApi = window.google.accounts.id as GoogleAccountsId & {
+          __initializedClientId?: string;
+        };
+        // initialize() — глобальный на страницу; зовём один раз на client_id,
+        // иначе GSI пишет в консоль "initialize() called multiple times" при
+        // повторных маунтах карточки (флаг храним на самом объекте GIS).
+        if (idApi.__initializedClientId !== clientId) {
+          idApi.initialize({
+            client_id: clientId,
+            callback: (response) => onAuthRef.current(response.credential),
+          });
+          idApi.__initializedClientId = clientId;
+        }
+        // Ширина официальной кнопки — под контейнер (GSI ограничивает 400px).
+        // Жёсткие 280px обрезались в узкой ячейке → «текст не помещается».
+        const width = Math.min(400, Math.max(200, Math.round(container.offsetWidth) || 300));
+        container.innerHTML = '';
+        idApi.renderButton(container, {
           type: 'standard',
           theme: 'outline',
           size: 'large',
           shape: 'pill',
-          width: 280,
+          width,
         });
       })
       .catch(() => {
