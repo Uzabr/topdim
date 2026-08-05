@@ -519,7 +519,7 @@ public class OrderService {
     public PurchasedCoupon redeemCoupon(String couponCode, Long merchantId, String staffName,
                                          Long merchantLocationId, Long staffId, String redeemMethod) {
         expireOverduePurchasedCoupons();
-        PurchasedCoupon coupon = purchasedCouponRepository.findByCouponCode(couponCode)
+        PurchasedCoupon coupon = purchasedCouponRepository.findByCouponCodeForUpdate(couponCode)
                 .orElseThrow(() -> new IllegalArgumentException("Купон не найден"));
 
         return processRedemption(coupon, merchantId, staffName, merchantLocationId, staffId, redeemMethod);
@@ -540,7 +540,7 @@ public class OrderService {
     public PurchasedCoupon redeemByQrToken(String qrToken, Long merchantId, String staffName,
                                              Long merchantLocationId, Long staffId) {
         expireOverduePurchasedCoupons();
-        PurchasedCoupon coupon = purchasedCouponRepository.findByQrToken(qrToken)
+        PurchasedCoupon coupon = purchasedCouponRepository.findByQrTokenForUpdate(qrToken)
                 .orElseThrow(() -> new IllegalArgumentException("Купон по QR-токену не найден"));
 
         return processRedemption(coupon, merchantId, staffName, merchantLocationId, staffId, "QR");
