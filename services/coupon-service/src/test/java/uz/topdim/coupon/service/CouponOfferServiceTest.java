@@ -422,7 +422,7 @@ class CouponOfferServiceTest {
                 .primary(true)
                 .active(true)
                 .build();
-        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(offer));
         when(merchantLocationRepository.findByMerchantIdAndPrimaryTrue(1L)).thenReturn(Optional.of(location));
         when(couponOfferRepository.save(any())).thenReturn(offer);
 
@@ -437,7 +437,7 @@ class CouponOfferServiceTest {
         CouponOffer offer = createTestOffer();
         offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
         offer.getMerchant().setActive(false);
-        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(offer));
 
         assertThatThrownBy(() -> couponOfferService.approveByMerchant(1L))
                 .isInstanceOf(IllegalStateException.class)
@@ -452,7 +452,7 @@ class CouponOfferServiceTest {
     void approve_fromWaiting_withoutPrimaryLocation_throws() {
         CouponOffer offer = createTestOffer();
         offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
-        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(offer));
         when(merchantLocationRepository.findByMerchantIdAndPrimaryTrue(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> couponOfferService.approveByMerchant(1L))
@@ -472,7 +472,7 @@ class CouponOfferServiceTest {
                 .primary(true)
                 .active(true)
                 .build();
-        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(offer));
         when(merchantLocationRepository.findByMerchantIdAndPrimaryTrue(1L)).thenReturn(Optional.of(location));
 
         assertThatThrownBy(() -> couponOfferService.approveByMerchant(1L))
@@ -485,7 +485,7 @@ class CouponOfferServiceTest {
     void approve_fromDraft_throws() {
         CouponOffer offer = createTestOffer();
         offer.setStatus(CouponStatus.DRAFT);
-        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(offer));
 
         assertThatThrownBy(() -> couponOfferService.approveByMerchant(1L))
                 .isInstanceOf(IllegalStateException.class);
@@ -496,7 +496,7 @@ class CouponOfferServiceTest {
     void reject_fromWaiting_setsRevision() {
         CouponOffer offer = createTestOffer();
         offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
-        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(offer));
         when(couponOfferRepository.save(any())).thenReturn(offer);
 
         CouponOfferResponse result = couponOfferService.requestRevisionByMerchant(1L, "Цена неверна");

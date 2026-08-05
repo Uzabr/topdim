@@ -416,7 +416,7 @@ public class CouponOfferService {
     })
     @Transactional
     public CouponOfferResponse approveByMerchant(Long id) {
-        CouponOffer offer = couponOfferRepository.findById(id)
+        CouponOffer offer = couponOfferRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
         if (offer.getStatus() != CouponStatus.WAITING_FOR_MERCHANT) {
@@ -460,7 +460,7 @@ public class CouponOfferService {
     })
     @Transactional
     public CouponOfferResponse requestRevisionByMerchant(Long id, String comment) {
-        CouponOffer offer = couponOfferRepository.findById(id)
+        CouponOffer offer = couponOfferRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
         if (offer.getStatus() != CouponStatus.WAITING_FOR_MERCHANT) {
