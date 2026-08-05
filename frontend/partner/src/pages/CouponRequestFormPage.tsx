@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Card, Form, Input, InputNumber, DatePicker, Select, Switch, Button,
-  Upload, Typography, Divider, Space, Alert, App as AntApp, Row, Col
+  Upload, Typography, Divider, Space, Alert, App as AntApp, Row, Col, Result, Spin
 } from 'antd';
-import { PlusOutlined, UploadOutlined, SendOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, UploadOutlined, SendOutlined, DeleteOutlined, SaveOutlined } from '@ant-design/icons';
 import type { RcFile } from 'antd/es/upload';
 import api from '../api';
 import dayjs from 'dayjs';
@@ -40,14 +40,97 @@ interface CouponFormValues {
   giftAvailable?: boolean;
 }
 
+interface CouponDetail {
+  id: number;
+  title: string;
+  category?: { id: number } | null;
+  offerDescription?: string;
+  oldPrice?: number;
+  fromPrice?: number;
+  discountPercent?: number;
+  buyUntil?: string;
+  useUntil?: string;
+  giftAvailable?: boolean;
+  coverImageUrl?: string;
+  status: string;
+  revisionComment?: string;
+  images?: string[];
+  options?: Array<{
+    id?: number;
+    title: string;
+    regularPrice: number;
+    couponPrice: number;
+    quantityLimit?: number | null;
+  }>;
+}
+
+const EDITABLE_STATUSES = new Set(['LEAD', 'DRAFT', 'REVISION_REQUESTED']);
+
 const fetchCategories = async (): Promise<CategoryItem[]> => {
   const res = await api.get('/api/v1/categories');
   return res.data.data || res.data;
 };
 
-let optionKeyCounter = 1;
+// Persisted option IDs are positive. Keep temporary client keys in a distant
+// negative range so newly added rows cannot collide with server-provided IDs.
+let optionKeyCounter = -1_000_000;
 
 export default function CouponRequestFormPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isEditMode = id !== undefined;
+  const couponId = Number(id);
+  const hasValidCouponId = Number.isInteger(couponId) && couponId > 0;
+
+  const {
+    data: coupon,
+    isLoading: couponLoading,
+    error: couponError,
+  } = useQuery({
+    queryKey: ['partner-coupon', couponId],
+    enabled: isEditMode && hasValidCouponId,
+    queryFn: async (): Promise<CouponDetail> => {
+      const res = await api.get(`/api/v1/partner/coupons/${couponId}`);
+      return res.data.data;
+    },
+  });
+
+  if (isEditMode && !hasValidCouponId) {
+    return <Result status="404" title="Предложение не найдено" />;
+  }
+  if (isEditMode && couponLoading) {
+    return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
+  }
+  if (isEditMode && (couponError || !coupon)) {
+    return <Result status="error" title="Не удалось загрузить предложение" />;
+  }
+  if (coupon && !EDITABLE_STATUSES.has(coupon.status)) {
+    return (
+      <Result
+        status="403"
+        title="Редактирование недоступно"
+        subTitle={`Предложение в статусе ${coupon.status} нельзя изменять`}
+        extra={<Button onClick={() => navigate('/coupons')}>Вернуться к предложениям</Button>}
+      />
+    );
+  }
+
+  return (
+    <CouponRequestForm
+      coupon={coupon}
+      couponId={couponId}
+      isEditMode={isEditMode}
+    />
+  );
+}
+
+interface CouponRequestFormProps {
+  coupon?: CouponDetail;
+  couponId: number;
+  isEditMode: boolean;
+}
+
+function CouponRequestForm({ coupon, couponId, isEditMode }: CouponRequestFormProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { message: antMessage } = AntApp.useApp();
@@ -58,31 +141,57 @@ export default function CouponRequestFormPage() {
     queryFn: fetchCategories,
   });
 
-  const [options, setOptions] = useState<OptionField[]>([
-    { key: 0, title: '', regularPrice: null, couponPrice: null, quantityLimit: null }
-  ]);
-
-  const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
+  const [options, setOptions] = useState<OptionField[]>(() => coupon?.options?.length
+    ? coupon.options.map((option, index) => ({
+        key: option.id ?? -(index + 1),
+        title: option.title,
+        regularPrice: option.regularPrice,
+        couponPrice: option.couponPrice,
+        quantityLimit: option.quantityLimit ?? null,
+      }))
+    : [{ key: 0, title: '', regularPrice: null, couponPrice: null, quantityLimit: null }]);
+  const [uploadedUrls, setUploadedUrls] = useState<string[]>(() => coupon?.images?.length
+    ? coupon.images
+    : coupon?.coverImageUrl ? [coupon.coverImageUrl] : []);
   const [uploading, setUploading] = useState(false);
 
-  const createMutation = useMutation({
-    mutationFn: (data: Record<string, unknown>) =>
-      api.post('/api/v1/partner/coupons', data),
+  const initialValues = coupon ? {
+    title: coupon.title,
+    categoryId: coupon.category?.id,
+    offerDescription: coupon.offerDescription,
+    oldPrice: coupon.oldPrice,
+    fromPrice: coupon.fromPrice,
+    discountPercent: coupon.discountPercent,
+    buyUntil: coupon.buyUntil ? dayjs(coupon.buyUntil) : undefined,
+    useUntil: coupon.useUntil ? dayjs(coupon.useUntil) : undefined,
+    giftAvailable: coupon.giftAvailable ?? false,
+  } : undefined;
+
+  const saveMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => isEditMode
+      ? api.put(`/api/v1/partner/coupons/${couponId}`, data)
+      : api.post('/api/v1/partner/coupons', data),
     onSuccess: () => {
-      antMessage.success('Купонное предложение отправлено! sizbiz свяжется с вами для оформления.');
+      antMessage.success(isEditMode
+        ? 'Изменения сохранены'
+        : 'Купонное предложение отправлено! sizbiz свяжется с вами для оформления.');
       queryClient.invalidateQueries({ queryKey: ['partner-coupons'] });
+      if (isEditMode) {
+        queryClient.invalidateQueries({ queryKey: ['partner-coupon', couponId] });
+      }
       navigate('/coupons');
     },
     onError: (err: unknown) => {
       const e = err as { response?: { data?: { message?: string } } };
-      const msg = e.response?.data?.message || 'Ошибка при создании заявки';
+      const msg = e.response?.data?.message
+        || (isEditMode ? 'Ошибка при сохранении изменений' : 'Ошибка при создании заявки');
       antMessage.error(msg);
     },
   });
 
   const addOption = () => {
     setOptions([...options, {
-      key: optionKeyCounter++,
+      key: optionKeyCounter--,
       title: '', regularPrice: null, couponPrice: null, quantityLimit: null
     }]);
   };
@@ -166,18 +275,38 @@ export default function CouponRequestFormPage() {
       return;
     }
 
-    createMutation.mutate(payload);
+    saveMutation.mutate(payload);
   };
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <Title level={3}>🎯 Подать купонное предложение</Title>
+      <Title level={3}>
+        {isEditMode ? '✏️ Изменить предложение' : '🎯 Подать купонное предложение'}
+      </Title>
       <Paragraph type="secondary">
-        Заполните основную информацию о предложении. sizbiz поможет с оформлением и публикацией.
+        {isEditMode
+          ? 'Проверьте данные и сохраните изменения. sizbiz повторно рассмотрит обновлённое предложение.'
+          : 'Заполните основную информацию о предложении. sizbiz поможет с оформлением и публикацией.'}
       </Paragraph>
 
+      {isEditMode && coupon?.status === 'REVISION_REQUESTED' && coupon.revisionComment && (
+        <Alert
+          type="warning"
+          showIcon
+          title="Что нужно уточнить"
+          description={coupon.revisionComment}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
       <Card style={{ borderRadius: 12 }}>
-        <Form form={form} layout="vertical" onFinish={onFinish} requiredMark="optional">
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={initialValues}
+          onFinish={onFinish}
+          requiredMark="optional"
+        >
 
           <Form.Item name="title" label="Название предложения" rules={[{ required: true, message: 'Укажите название' }]}>
             <Input placeholder="Например: Скидка 50% на маникюр" maxLength={200} showCount />
@@ -363,11 +492,11 @@ export default function CouponRequestFormPage() {
               <Button
                 type="primary"
                 htmlType="submit"
-                icon={<SendOutlined />}
-                loading={createMutation.isPending}
+                icon={isEditMode ? <SaveOutlined /> : <SendOutlined />}
+                loading={saveMutation.isPending}
                 size="large"
               >
-                Отправить заявку
+                {isEditMode ? 'Сохранить изменения' : 'Отправить заявку'}
               </Button>
               <Button onClick={() => navigate('/coupons')}>Отмена</Button>
             </Space>

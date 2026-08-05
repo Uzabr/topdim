@@ -72,6 +72,7 @@ export default function App() {
                 <Route index element={<SmartHome />} />
                 <Route path="coupons" element={<OwnerOnly><CouponsPage /></OwnerOnly>} />
                 <Route path="coupons/new" element={<OwnerOnly><CouponRequestFormPage /></OwnerOnly>} />
+                <Route path="coupons/:id/edit" element={<OwnerOnly><CouponRequestFormPage /></OwnerOnly>} />
                 <Route path="coupons/:id/review" element={<OwnerOnly><CouponApprovalPage /></OwnerOnly>} />
                 <Route path="redeem" element={<RedeemPage />} />
                 <Route path="staff" element={<OwnerOnly><StaffPage /></OwnerOnly>} />

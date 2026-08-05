@@ -158,7 +158,12 @@ export default function CouponsPage() {
 
         if (EDITABLE_STATUSES.has(record.status)) {
           return (
-            <Button type="link" icon={<EditOutlined />} size="small">
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              size="small"
+              onClick={() => navigate(`/coupons/${record.id}/edit`)}
+            >
               Изменить
             </Button>
           );
