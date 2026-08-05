@@ -14,6 +14,10 @@ x-backend-env: &backend_env
   JWT_SECRET: ${JWT_SECRET}
   MAIL_USERNAME: ${MAIL_USERNAME}
   MAIL_PASSWORD: ${MAIL_PASSWORD}
+  MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+  MAIL_PORT: ${MAIL_PORT:-587}
+  MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
+  MAIL_FROM: ${MAIL_FROM:-noreply@sizbiz.uz}
 
 services:
   postgres:
