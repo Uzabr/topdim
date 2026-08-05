@@ -20,6 +20,7 @@ import uz.topdim.identity.entity.Role;
 import uz.topdim.identity.entity.Staff;
 import uz.topdim.identity.entity.User;
 import uz.topdim.identity.exception.ResourceNotFoundException;
+import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.StaffRepository;
 import uz.topdim.identity.repository.UserRepository;
 
@@ -35,6 +36,8 @@ class PartnerStaffServiceTest {
 
     @Mock private StaffRepository staffRepository;
     @Mock private UserRepository userRepository;
+    @Mock private RefreshTokenRepository refreshTokenRepository;
+    @Mock private SecurityVersionService securityVersionService;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private CouponMerchantClient couponMerchantClient;
 
@@ -385,9 +388,67 @@ class PartnerStaffServiceTest {
     class RemoveStaffTests {
 
         @Test
-        @DisplayName("Remove staff — soft delete (sets active=false)")
-        void removeStaff_softDelete() {
+        @DisplayName("Remove cashier — disables staff login and revokes all sessions")
+        void removeStaff_disablesLoginAndRevokesSessions() {
             Staff staff = createCashierStaff();
+            User loginUser = User.builder()
+                    .id(CASHIER_LOGIN_USER_ID)
+                    .email("cashier@test.com")
+                    .password("encoded")
+                    .firstName("Кассир Али")
+                    .role(Role.PARTNER)
+                    .enabled(true)
+                    .securityVersion(3L)
+                    .build();
+            mockOwnerMerchantResolution();
+            when(staffRepository.findByUserIdAndId(OWNER_USER_ID, 1L)).thenReturn(Optional.of(staff));
+            when(userRepository.findByIdForUpdate(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.of(loginUser));
+            when(staffRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            partnerStaffService.removeStaff(OWNER_USER_ID, 1L);
+
+            assertThat(staff.isActive()).isFalse();
+            assertThat(loginUser.isEnabled()).isFalse();
+            assertThat(loginUser.getSecurityVersion()).isEqualTo(4L);
+            verify(staffRepository).save(staff);
+            verify(userRepository).save(loginUser);
+            verify(securityVersionService).publishSecurityVersion(CASHIER_LOGIN_USER_ID, 4L);
+            verify(refreshTokenRepository).revokeAllByUser(loginUser);
+        }
+
+        @Test
+        @DisplayName("Remove cashier retry — keeps disabled state and still revokes stray refresh tokens")
+        void removeStaff_alreadyDisabled_isIdempotent() {
+            Staff staff = createCashierStaff();
+            staff.setActive(false);
+            User loginUser = User.builder()
+                    .id(CASHIER_LOGIN_USER_ID)
+                    .email("cashier@test.com")
+                    .password("encoded")
+                    .firstName("Кассир Али")
+                    .role(Role.PARTNER)
+                    .enabled(false)
+                    .securityVersion(4L)
+                    .build();
+            mockOwnerMerchantResolution();
+            when(staffRepository.findByUserIdAndId(OWNER_USER_ID, 1L)).thenReturn(Optional.of(staff));
+            when(userRepository.findByIdForUpdate(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.of(loginUser));
+
+            partnerStaffService.removeStaff(OWNER_USER_ID, 1L);
+
+            assertThat(loginUser.getSecurityVersion()).isEqualTo(4L);
+            verify(staffRepository, never()).save(any());
+            verify(userRepository, never()).save(any());
+            verifyNoInteractions(securityVersionService);
+            verify(refreshTokenRepository).revokeAllByUser(loginUser);
+        }
+
+        @Test
+        @DisplayName("Remove legacy staff without login — only deactivates staff record")
+        void removeStaff_withoutLoginUser_onlyDeactivatesStaff() {
+            Staff staff = createCashierStaff();
+            staff.setLoginUserId(null);
             mockOwnerMerchantResolution();
             when(staffRepository.findByUserIdAndId(OWNER_USER_ID, 1L)).thenReturn(Optional.of(staff));
             when(staffRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -396,6 +457,25 @@ class PartnerStaffServiceTest {
 
             assertThat(staff.isActive()).isFalse();
             verify(staffRepository).save(staff);
+            verifyNoInteractions(userRepository, securityVersionService, refreshTokenRepository);
+        }
+
+        @Test
+        @DisplayName("Remove cashier with missing login user — rejects inconsistent partial update")
+        void removeStaff_missingLoginUser_rejectsWithoutDeactivatingStaff() {
+            Staff staff = createCashierStaff();
+            mockOwnerMerchantResolution();
+            when(staffRepository.findByUserIdAndId(OWNER_USER_ID, 1L)).thenReturn(Optional.of(staff));
+            when(userRepository.findByIdForUpdate(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> partnerStaffService.removeStaff(OWNER_USER_ID, 1L))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Учётная запись сотрудника не найдена");
+
+            assertThat(staff.isActive()).isTrue();
+            verify(staffRepository, never()).save(any());
+            verify(userRepository, never()).save(any());
+            verifyNoInteractions(securityVersionService, refreshTokenRepository);
         }
 
         @Test

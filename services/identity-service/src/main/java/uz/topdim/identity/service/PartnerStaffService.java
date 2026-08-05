@@ -16,6 +16,7 @@ import uz.topdim.identity.entity.Role;
 import uz.topdim.identity.entity.Staff;
 import uz.topdim.identity.entity.User;
 import uz.topdim.identity.exception.ResourceNotFoundException;
+import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.StaffRepository;
 import uz.topdim.identity.repository.UserRepository;
 
@@ -28,6 +29,8 @@ import java.util.stream.Collectors;
 public class PartnerStaffService {
     private final StaffRepository staffRepository;
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final SecurityVersionService securityVersionService;
     private final PasswordEncoder passwordEncoder;
     private final CouponMerchantClient couponMerchantClient;
 
@@ -88,9 +91,29 @@ public class PartnerStaffService {
         resolveMerchantId(userId);
         Staff staff = staffRepository.findByUserIdAndId(userId, staffId)
                 .orElseThrow(() -> new ResourceNotFoundException("Сотрудник не найден или не принадлежит вам"));
-        staff.setActive(false);
-        staffRepository.save(staff);
-        log.info("PARTNER: userId={} деактивировал сотрудника {}", userId, staffId);
+
+        User loginUser = null;
+        if (staff.getLoginUserId() != null) {
+            loginUser = userRepository.findByIdForUpdate(staff.getLoginUserId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Учётная запись сотрудника не найдена"));
+        }
+
+        if (staff.isActive()) {
+            staff.setActive(false);
+            staffRepository.save(staff);
+        }
+
+        if (loginUser != null) {
+            if (loginUser.isEnabled()) {
+                loginUser.setEnabled(false);
+                loginUser.setSecurityVersion(loginUser.getSecurityVersion() + 1);
+                loginUser = userRepository.save(loginUser);
+                securityVersionService.publishSecurityVersion(loginUser.getId(), loginUser.getSecurityVersion());
+            }
+            refreshTokenRepository.revokeAllByUser(loginUser);
+        }
+
+        log.info("PARTNER: userId={} деактивировал сотрудника {} и отозвал его сессии", userId, staffId);
     }
 
     /**
