@@ -105,6 +105,7 @@
 
 .lcard__providers {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   margin-top: 14px;
 }
@@ -132,23 +133,14 @@
   border-color: var(--ink);
 }
 
-/* Google-кнопка: визуально — как остальные провайдеры (класс .lcard__provider),
-   а официальную кнопку Google (GIS) кладём поверх невидимым слоем, чтобы она
-   ловила клик. overflow:hidden прячет «вылет» GIS-кнопки за пределы пилюли. */
-.lcard__google {
-  position: relative;
-  cursor: pointer;
-  overflow: hidden;
-}
-
-.lcard__google-gsi {
-  position: absolute;
-  inset: 0;
+/* Официальная кнопка Google (GIS) — её стилизовать нельзя, поэтому показываем как
+   есть на всю ширину, а остальные кнопки-провайдеры стоят в колонку (тоже во всю
+   ширину) → единый размер. min-height под высоту GIS-кнопки (size:large). */
+.lcard__google-widget {
+  width: 100%;
   display: flex;
-  align-items: center;
   justify-content: center;
-  opacity: 0;
-  overflow: hidden;
+  min-height: 44px;
 }
 
 .lcard__g-mark {
