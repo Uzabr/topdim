@@ -105,7 +105,6 @@
 
 .lcard__providers {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
   margin-top: 14px;
 }
@@ -133,15 +132,23 @@
   border-color: var(--ink);
 }
 
-/* Обёртка под официальную кнопку Google (GIS renderButton рисует свой iframe/кнопку).
-   Занимает весь ряд (flex-basis 100%), чтобы кнопка «Войти через Google» с логотипом
-   помещалась целиком, а не в половину карточки рядом с email. */
-.lcard__google-widget {
-  flex: 1 0 100%;
+/* Google-кнопка: визуально — как остальные провайдеры (класс .lcard__provider),
+   а официальную кнопку Google (GIS) кладём поверх невидимым слоем, чтобы она
+   ловила клик. overflow:hidden прячет «вылет» GIS-кнопки за пределы пилюли. */
+.lcard__google {
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.lcard__google-gsi {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
+  opacity: 0;
+  overflow: hidden;
 }
 
 .lcard__g-mark {
