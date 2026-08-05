@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Typography, message, Space } from 'antd';
 import { ShopOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import api from '../api';
+import { clearPartnerSession, parsePartnerContext } from '../authSession';
 
 const { Title, Text } = Typography;
 
@@ -12,30 +13,34 @@ export default function LoginPage() {
 
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);
+    clearPartnerSession();
     try {
       const res = await api.post('/api/v1/auth/login', values);
       const { accessToken, user } = res.data.data;
-      localStorage.setItem('token', accessToken);
-      localStorage.setItem('user', JSON.stringify(user));
 
-      // Fetch partner access context to determine role (OWNER/CASHIER/MANAGER)
+      let partnerContext;
       try {
         const ctxRes = await api.get('/api/v1/partner/staff/me', {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-        if (ctxRes.data?.data) {
-          localStorage.setItem('partnerContext', JSON.stringify(ctxRes.data.data));
-        }
+        partnerContext = parsePartnerContext(ctxRes.data?.data);
       } catch {
-        // If access context fails, user is OWNER by default
-        localStorage.setItem('partnerContext', JSON.stringify({ role: 'OWNER', canViewDashboard: true, canRedeem: true }));
+        throw new Error('Не удалось определить права доступа. Повторите вход.');
+      }
+      if (!partnerContext) {
+        throw new Error('Сервис вернул некорректные права доступа. Повторите вход.');
       }
 
+      // Token is written last: route guards never observe a partial session.
+      localStorage.setItem('partnerContext', JSON.stringify(partnerContext));
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', accessToken);
       message.success('Добро пожаловать!');
       navigate('/');
     } catch (err: unknown) {
+      clearPartnerSession();
       const e = err as { response?: { data?: { message?: string } } };
-      message.error(e.response?.data?.message || 'Ошибка входа');
+      message.error(e.response?.data?.message || (err instanceof Error ? err.message : 'Ошибка входа'));
     } finally {
       setLoading(false);
     }
