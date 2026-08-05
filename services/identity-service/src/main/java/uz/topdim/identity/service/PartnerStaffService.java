@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.identity.client.CouponMerchantClient;
+import uz.topdim.identity.client.MerchantLocationResponse;
 import uz.topdim.identity.client.MerchantOnboardingResponse;
 import uz.topdim.identity.dto.CreateStaffRequest;
 import uz.topdim.identity.dto.PartnerAccessContextResponse;
@@ -43,6 +44,10 @@ public class PartnerStaffService {
 
         // Beta safety: validate cashier requirements
         validateStaffRequest(request);
+        if (isCashierRole(request.getRole())
+                && !isActiveMerchantLocation(userId, request.getMerchantLocationId())) {
+            throw new IllegalArgumentException("Филиал не принадлежит мерчанту или не активен");
+        }
 
         Staff staff = Staff.builder()
                 .userId(userId)
@@ -109,6 +114,10 @@ public class PartnerStaffService {
             if (staff.getMerchantId() == null || !staff.getMerchantId().equals(activeMerchantId)) {
                 throw new IllegalStateException("Контекст сотрудника не соответствует активному мерчанту");
             }
+            if ("CASHIER".equals(staff.getRole())
+                    && !isActiveMerchantLocation(staff.getUserId(), staff.getMerchantLocationId())) {
+                throw new IllegalStateException("Филиал кассира не принадлежит мерчанту или не активен");
+            }
             boolean canViewDashboard = "MANAGER".equals(staff.getRole());
             return PartnerAccessContextResponse.builder()
                     .role(staff.getRole())
@@ -150,6 +159,25 @@ public class PartnerStaffService {
             if (request.getTemporaryPassword() == null || request.getTemporaryPassword().length() < 6) {
                 throw new IllegalArgumentException("Временный пароль кассира должен быть не короче 6 символов");
             }
+        }
+    }
+
+    private boolean isCashierRole(String role) {
+        return role == null || "CASHIER".equals(role.trim().toUpperCase());
+    }
+
+    private boolean isActiveMerchantLocation(Long ownerUserId, Long locationId) {
+        try {
+            ApiResponse<List<MerchantLocationResponse>> response =
+                    couponMerchantClient.getMerchantLocationsByUserId(ownerUserId);
+            List<MerchantLocationResponse> locations =
+                    response != null && response.getData() != null ? response.getData() : List.of();
+            return locations.stream()
+                    .anyMatch(location -> location.isActive() && locationId.equals(location.getId()));
+        } catch (Exception e) {
+            log.warn("Не удалось проверить филиал {} для ownerUserId={}: {}",
+                    locationId, ownerUserId, e.getMessage());
+            throw new IllegalStateException("Не удалось проверить филиал сотрудника");
         }
     }
 

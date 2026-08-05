@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.identity.client.CouponMerchantClient;
+import uz.topdim.identity.client.MerchantLocationResponse;
 import uz.topdim.identity.client.MerchantOnboardingResponse;
 import uz.topdim.identity.dto.CreateStaffRequest;
 import uz.topdim.identity.dto.PartnerAccessContextResponse;
@@ -58,6 +59,13 @@ class PartnerStaffServiceTest {
                 .thenReturn(ApiResponse.success(merchantResponse));
     }
 
+    private void mockOwnerLocationResolution(Long locationId) {
+        var location = new MerchantLocationResponse(
+                locationId, "Главный филиал", "Ташкент", "+998901234567", "09:00-22:00", true, true);
+        when(couponMerchantClient.getMerchantLocationsByUserId(OWNER_USER_ID))
+                .thenReturn(ApiResponse.success(List.of(location)));
+    }
+
     // ==================== Access Context ====================
 
     @Nested
@@ -98,6 +106,7 @@ class PartnerStaffServiceTest {
             Staff cashier = createCashierStaff();
             when(staffRepository.findByLoginUserId(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.of(cashier));
             mockOwnerMerchantResolution();
+            mockOwnerLocationResolution(LOCATION_ID);
 
             PartnerAccessContextResponse ctx = partnerStaffService.resolveAccessContext(CASHIER_LOGIN_USER_ID);
 
@@ -122,6 +131,20 @@ class PartnerStaffServiceTest {
             assertThatThrownBy(() -> partnerStaffService.resolveAccessContext(CASHIER_LOGIN_USER_ID))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("не активен");
+        }
+
+        @Test
+        @DisplayName("Cashier bound to foreign or inactive location — access context is rejected")
+        void cashierContext_unknownLocation_rejected() {
+            Staff cashier = createCashierStaff();
+            when(staffRepository.findByLoginUserId(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.of(cashier));
+            mockOwnerMerchantResolution();
+            when(couponMerchantClient.getMerchantLocationsByUserId(OWNER_USER_ID))
+                    .thenReturn(ApiResponse.success(List.of()));
+
+            assertThatThrownBy(() -> partnerStaffService.resolveAccessContext(CASHIER_LOGIN_USER_ID))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("не принадлежит мерчанту или не активен");
         }
 
         @Test
@@ -185,6 +208,7 @@ class PartnerStaffServiceTest {
         @DisplayName("Add cashier with login credentials — creates user and staff")
         void addCashierWithLogin() {
             mockOwnerMerchantResolution();
+            mockOwnerLocationResolution(LOCATION_ID);
 
             CreateStaffRequest request = new CreateStaffRequest();
             request.setName("Новый Кассир");
@@ -220,6 +244,7 @@ class PartnerStaffServiceTest {
         @DisplayName("Add cashier with duplicate email — rejected")
         void addCashierDuplicateEmail() {
             mockOwnerMerchantResolution();
+            mockOwnerLocationResolution(LOCATION_ID);
 
             CreateStaffRequest request = new CreateStaffRequest();
             request.setName("Кассир");
@@ -233,6 +258,29 @@ class PartnerStaffServiceTest {
             assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("уже существует");
+        }
+
+        @Test
+        @DisplayName("Add cashier with foreign or inactive location — rejected before creating login user")
+        void addCashier_unknownLocation_rejected() {
+            mockOwnerMerchantResolution();
+            when(couponMerchantClient.getMerchantLocationsByUserId(OWNER_USER_ID))
+                    .thenReturn(ApiResponse.success(List.of()));
+
+            CreateStaffRequest request = new CreateStaffRequest();
+            request.setName("Кассир Чужого Филиала");
+            request.setPhone("+998900000010");
+            request.setRole("CASHIER");
+            request.setLoginEmail("foreign-location@test.com");
+            request.setTemporaryPassword("password123");
+            request.setMerchantLocationId(999L);
+
+            assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("не принадлежит мерчанту или не активен");
+
+            verify(userRepository, never()).save(any());
+            verify(staffRepository, never()).save(any());
         }
 
         @Test
