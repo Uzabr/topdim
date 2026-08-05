@@ -133,5 +133,15 @@ export default function GoogleLoginButton({ clientId, onAuth }: GoogleLoginButto
   // Client-id не сконфигурирован (напр. dev-сборка без VITE_GOOGLE_CLIENT_ID) — не рендерим.
   if (!clientId) return null;
 
-  return <div ref={containerRef} className="google-login-widget" />;
+  // Своя кнопка в стиле остальных провайдеров (одинаковый размер/вид), а
+  // официальную кнопку Google (её вид задаёт сам GIS и не поддаётся CSS) кладём
+  // поверх невидимым слоем — она ловит клик и запускает вход. Так сохраняем
+  // единый дизайн карточки и ID-token-флоу.
+  return (
+    <div className="lcard__provider lcard__google">
+      <span className="lcard__g-mark">G</span>
+      Google
+      <span ref={containerRef} className="lcard__google-gsi" aria-hidden="true" />
+    </div>
+  );
 }

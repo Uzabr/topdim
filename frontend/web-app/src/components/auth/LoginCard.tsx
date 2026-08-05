@@ -419,9 +419,7 @@ export default function LoginCard({ onSuccess, initialMode = 'login' }: LoginCar
 
       <div className="lcard__providers">
         {GOOGLE_CLIENT_ID ? (
-          <div className="lcard__google-widget">
-            <GoogleLoginButton clientId={GOOGLE_CLIENT_ID} onAuth={handleGoogleAuth} />
-          </div>
+          <GoogleLoginButton clientId={GOOGLE_CLIENT_ID} onAuth={handleGoogleAuth} />
         ) : (
           <button
             type="button"
