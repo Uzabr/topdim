@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-06
 
-**Status:** Design approved; written spec pending review
+**Status:** Approved
 **Scope:** Partner and cashier portal, plus the existing partner redemption-history API
 
 ## Goal
