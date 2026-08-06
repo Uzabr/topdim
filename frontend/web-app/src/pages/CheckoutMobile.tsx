@@ -162,8 +162,8 @@ export default function CheckoutMobile() {
     }
   };
 
-  // Заказ создаётся по телефону из профиля — телефон должен быть привязан (T6).
-  if (!phone) {
+  // Заказ создаётся по телефону из профиля — телефон должен быть привязан И подтверждён (T6).
+  if (!user?.phoneVerified) {
     return (
       <div className="cmpay">
         {bar}

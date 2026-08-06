@@ -368,6 +368,7 @@ public class AuthService {
                         .email(user.getEmail())
                         .emailPlaceholder(EmailPlaceholders.isPlaceholder(user.getEmail(), user.isEmailVerified()))
                         .phone(user.getPhone())
+                        .phoneVerified(user.isPhoneVerified())
                         .firstName(user.getFirstName())
                         .lastName(user.getLastName())
                         .role(user.getRole().name())

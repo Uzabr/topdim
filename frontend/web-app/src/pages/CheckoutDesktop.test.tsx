@@ -122,6 +122,7 @@ describe('CheckoutDesktop contact gate (T6: phone required, email optional)', ()
       email: 'phone_998901234567@topdim.uz',
       emailPlaceholder: true,
       phone: '+998901234567',
+      phoneVerified: true,
       firstName: 'Ada',
       role: 'USER',
     };
@@ -266,6 +267,7 @@ describe('CheckoutDesktop contact gate (T6: phone required, email optional)', ()
       id: 6,
       email: '',
       phone: '+998901234567',
+      phoneVerified: true,
       firstName: 'Ada',
       role: 'USER',
     };
@@ -273,5 +275,21 @@ describe('CheckoutDesktop contact gate (T6: phone required, email optional)', ()
 
     expect(screen.getByRole('button', { name: 'checkout.pay' })).toBeTruthy();
     expect(screen.queryByText('checkout.addPhoneDesc')).toBeNull();
+  });
+
+  it('shows the inline phone step (cannot pay directly) when the phone is set but not yet verified', () => {
+    authState.user = {
+      id: 7,
+      email: 'user@example.com',
+      phone: '+998901234567',
+      phoneVerified: false,
+      firstName: 'Ada',
+      role: 'USER',
+    };
+    render(<CheckoutDesktop />);
+
+    expect(screen.getByText('checkout.addPhoneDesc')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'checkout.pay' })).toBeNull();
+    expect(ordersApi.createOrder).not.toHaveBeenCalled();
   });
 });

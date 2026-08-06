@@ -85,7 +85,7 @@ export default function CheckoutDesktop() {
   // телефон обязателен и должен быть привязан (verified через OTP).
   const userEmail = user?.email || '';
   const userPhone = user?.phone || '';
-  const needsPhone = !userPhone;
+  const needsPhone = !user?.phoneVerified;
 
   const requestPhoneLinkOtp = async () => {
     setPhoneOtpError('');
