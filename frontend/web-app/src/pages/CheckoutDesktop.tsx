@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { IMaskInput } from 'react-imask';
 import { ShieldCheck, ChevronLeft, CreditCard, Smartphone, AlertCircle, Loader2, LogIn } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { formatPrice } from '../utils/format';
 import { useAuthStore } from '../store/authStore';
+import { authApi } from '../api/auth';
 import { ordersApi } from '../api/orders';
 import { useLocalePath } from '../hooks/useLocalePath';
 import {
@@ -13,16 +15,20 @@ import {
 } from '../sessionCleanup';
 import './CheckoutPage.css';
 
+/** Тот же формат, что и в LoginCard/ProfileSettingsSection: маска "+{998} 00 000-00-00" → +998XXXXXXXXX. */
+const PHONE_PATTERN = /^\+998\d{9}$/;
+
 /**
  * CheckoutPage — auth-only checkout.
  * Guest purchase path отключен.
- * Checkout требует авторизацию, email+phone берутся из user profile.
+ * Checkout требует авторизацию; телефон (верифицированный через OTP) обязателен,
+ * email — нет (T2/T6: бэкенд принимает пустой email, реальный email — опционален).
  * Order создаётся из backend cart.
  */
 export default function CheckoutDesktop() {
   const { t } = useTranslation();
   const { items, totalPrice, clearCart } = useCartStore();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, refreshProfile } = useAuthStore();
   const navigate = useNavigate();
   const lp = useLocalePath();
 
@@ -38,6 +44,14 @@ export default function CheckoutDesktop() {
     ? sessionError.message
     : '';
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'CLICK' | 'PAYME'>('CARD');
+
+  // Inline подтверждение телефона (T6), по образцу ProfileSettingsSection.
+  const [phoneInput, setPhoneInput] = useState('');
+  const [phoneCode, setPhoneCode] = useState('');
+  const [phoneOtpStep, setPhoneOtpStep] = useState<'phone' | 'code'>('phone');
+  const [phoneBusy, setPhoneBusy] = useState(false);
+  const [phoneOtpError, setPhoneOtpError] = useState('');
+  const [phoneNotice, setPhoneNotice] = useState('');
 
   // Auth guard: если не авторизован — показываем CTA для логина
   if (!isAuthenticated) {
@@ -67,13 +81,74 @@ export default function CheckoutDesktop() {
     );
   }
 
-  // Email и phone из профиля пользователя
+  // Email и phone из профиля пользователя. Email больше не обязателен (T6);
+  // телефон обязателен и должен быть привязан (verified через OTP).
   const userEmail = user?.email || '';
   const userPhone = user?.phone || '';
-  const missingContact = !userEmail || !userPhone;
+  const needsPhone = !userPhone;
 
-  // Blocking state: missing contact data
-  if (missingContact) {
+  const requestPhoneLinkOtp = async () => {
+    setPhoneOtpError('');
+    const trimmed = phoneInput.trim();
+    if (!PHONE_PATTERN.test(trimmed)) {
+      setPhoneOtpError(t('checkout.addPhoneInvalid'));
+      return;
+    }
+
+    const sessionGeneration = captureSessionGeneration();
+    setPhoneBusy(true);
+    setPhoneNotice('');
+    try {
+      await authApi.requestPhoneOtp(trimmed);
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      setPhoneNotice(t('checkout.addPhoneCodeSent'));
+      setPhoneOtpStep('code');
+    } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      const e = err as { response?: { data?: { message?: string } } };
+      setPhoneOtpError(e.response?.data?.message || t('checkout.addPhoneRequestError'));
+    } finally {
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setPhoneBusy(false);
+      }
+    }
+  };
+
+  /**
+   * /auth/phone/link отвечает 200 без тела — обязательно перечитываем профиль
+   * (refreshProfile), иначе checkout продолжит считать телефон непривязанным.
+   */
+  const submitPhoneLink = async () => {
+    setPhoneOtpError('');
+    const sessionGeneration = captureSessionGeneration();
+    setPhoneBusy(true);
+    try {
+      await authApi.linkPhone({ phone: phoneInput.trim(), code: phoneCode.trim() });
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      await refreshProfile();
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      setPhoneCode('');
+      setPhoneOtpStep('phone');
+      setPhoneNotice(t('checkout.addPhoneSuccess'));
+    } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      const e = err as { response?: { status?: number; data?: { message?: string } } };
+      const fallback =
+        e.response?.status === 409
+          ? t('checkout.addPhoneTaken')
+          : e.response?.status === 401
+            ? t('checkout.addPhoneInvalidCode')
+            : t('checkout.addPhoneError');
+      setPhoneOtpError(e.response?.data?.message || fallback);
+    } finally {
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setPhoneBusy(false);
+      }
+    }
+  };
+
+  // Blocking state: телефон не привязан — инлайновый шаг OTP-подтверждения.
+  if (needsPhone) {
     return (
       <div className="checkout-page container">
         <div className="checkout-header">
@@ -85,23 +160,70 @@ export default function CheckoutDesktop() {
 
         <div className="checkout-missing-contact surface-card">
           <AlertCircle size={40} className="checkout-missing-contact__icon" />
-          {!userEmail && (
-            <p className="checkout-missing-contact__text">
-              {t('checkout.missingEmail')}
-            </p>
-          )}
-          {!userPhone && (
-            <p className="checkout-missing-contact__text">
-              {t('checkout.missingPhone')}
-            </p>
-          )}
-          <button
-            className="primary-button"
-            onClick={() => navigate(lp('/profile') + '?tab=profile')}
-            id="checkout-fill-profile-btn"
-          >
-            {t('checkout.fillProfile')}
-          </button>
+          <p className="checkout-missing-contact__text">{t('checkout.addPhoneDesc')}</p>
+
+          <div className="checkout-form">
+            {phoneOtpStep === 'phone' ? (
+              <div className="form-group">
+                <label htmlFor="checkout-phone-input">{t('checkout.addPhoneLabel')}</label>
+                <IMaskInput
+                  id="checkout-phone-input"
+                  className="form-input"
+                  mask="+{998} 00 000-00-00"
+                  placeholder={t('checkout.addPhonePlaceholder')}
+                  value={phoneInput}
+                  onAccept={(val) => setPhoneInput(val.replace(/\s|-/g, ''))}
+                  autoFocus
+                />
+              </div>
+            ) : (
+              <div className="form-group">
+                <label htmlFor="checkout-phone-code">{t('checkout.addPhoneCodeLabel')}</label>
+                <input
+                  id="checkout-phone-code"
+                  className="form-input form-input--center"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={phoneCode}
+                  onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  autoFocus
+                />
+              </div>
+            )}
+
+            {phoneNotice && <p className="form-hint">{phoneNotice}</p>}
+            {phoneOtpError && (
+              <div className="checkout-error"><AlertCircle size={16} /> {phoneOtpError}</div>
+            )}
+
+            <button
+              className="primary-button checkout-next-btn"
+              disabled={
+                phoneBusy
+                || (phoneOtpStep === 'phone'
+                  ? !PHONE_PATTERN.test(phoneInput.trim())
+                  : phoneCode.trim().length !== 6)
+              }
+              onClick={phoneOtpStep === 'phone' ? requestPhoneLinkOtp : submitPhoneLink}
+            >
+              {phoneBusy
+                ? t('checkout.processing')
+                : phoneOtpStep === 'phone'
+                  ? t('checkout.addPhoneSendCode')
+                  : t('checkout.addPhoneConfirm')}
+            </button>
+
+            {phoneOtpStep === 'code' && (
+              <button
+                type="button"
+                className="checkout-edit-btn"
+                disabled={phoneBusy}
+                onClick={requestPhoneLinkOtp}
+              >
+                {t('checkout.addPhoneResend')}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -112,8 +234,9 @@ export default function CheckoutDesktop() {
     setLoadingSessionGeneration(sessionGeneration);
     setSessionError(null);
     try {
-      // Создаём order из backend cart с валидным email + phone
-      const response = await ordersApi.createOrder(userEmail, userPhone);
+      // email опционален (T2/T6): синтетический placeholder-email на бэкенд не отправляем.
+      const emailForOrder = user?.emailPlaceholder ? '' : (user?.email ?? '');
+      const response = await ordersApi.createOrder(emailForOrder, userPhone);
       if (!isSessionGenerationCurrent(sessionGeneration)) return;
       const order = response.data.data;
       clearCart();
@@ -151,7 +274,9 @@ export default function CheckoutDesktop() {
             <div className="checkout-contact-info">
               <div className="checkout-contact-row">
                 <span className="checkout-contact-label">Email:</span>
-                <span className="checkout-contact-value">{userEmail || '—'}</span>
+                <span className="checkout-contact-value">
+                  {user?.emailPlaceholder ? '—' : (userEmail || '—')}
+                </span>
               </div>
               <div className="checkout-contact-row">
                 <span className="checkout-contact-label">{t('checkout.phoneLabel')}</span>
