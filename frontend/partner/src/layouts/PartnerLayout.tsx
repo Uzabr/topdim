@@ -1,30 +1,13 @@
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Button, Tag } from 'antd';
 import {
   DashboardOutlined, ScanOutlined, TeamOutlined,
-  LogoutOutlined, ShopOutlined, GiftOutlined
+  LogoutOutlined, ShopOutlined, GiftOutlined, HistoryOutlined
 } from '@ant-design/icons';
 import { useMemo } from 'react';
+import { clearPartnerSession, readPartnerContext } from '../authSession';
 
 const { Header, Sider, Content } = Layout;
-
-interface PartnerContext {
-  role?: string;
-  canViewDashboard?: boolean;
-  canRedeem?: boolean;
-  staffName?: string;
-  merchantId?: number;
-  merchantLocationId?: number;
-}
-
-function getPartnerContext(): PartnerContext {
-  try {
-    const raw = localStorage.getItem('partnerContext');
-    return raw ? JSON.parse(raw) : { role: 'OWNER', canViewDashboard: true, canRedeem: true };
-  } catch {
-    return { role: 'OWNER', canViewDashboard: true, canRedeem: true };
-  }
-}
 
 function getUserName(): string {
   try {
@@ -40,28 +23,37 @@ function getUserName(): string {
 export default function PartnerLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const ctx = useMemo(() => getPartnerContext(), []);
+  const ctx = useMemo(() => readPartnerContext(), []);
   const userName = useMemo(() => getUserName(), []);
 
-  const isCashier = ctx.role === 'CASHIER';
-  const isOwner = ctx.role === 'OWNER' || (!ctx.role);
+  const isCashier = ctx?.role === 'CASHIER';
+  const isOwner = ctx?.role === 'OWNER';
 
   const menuItems = useMemo(() => {
     const items = [];
 
     // Dashboard — only for Owner and Manager
-    if (ctx.canViewDashboard || isOwner) {
+    if (ctx?.canViewDashboard || isOwner) {
       items.push({ key: '/', icon: <DashboardOutlined />, label: 'Дашборд' });
     }
 
     // My Coupons — only for Owner and Manager
-    if (isOwner || ctx.canViewDashboard) {
-      items.push({ key: '/coupons', icon: <GiftOutlined />, label: 'Мои купоны' });
+    if (isOwner || ctx?.canViewDashboard) {
+      items.push({ key: '/coupons', icon: <GiftOutlined />, label: 'Мои предложения' });
     }
 
     // Redeem — for all (cashier, manager, owner)
-    if (ctx.canRedeem !== false) {
+    if (ctx?.canRedeem) {
       items.push({ key: '/redeem', icon: <ScanOutlined />, label: 'Погашение' });
+    }
+
+    // Redemption history — read-only and available for every valid partner role
+    if (ctx) {
+      items.push({
+        key: '/redemptions',
+        icon: <HistoryOutlined />,
+        label: 'История погашений',
+      });
     }
 
     // Staff management — only for Owner
@@ -73,11 +65,11 @@ export default function PartnerLayout() {
   }, [ctx, isOwner]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('partnerContext');
+    clearPartnerSession();
     navigate('/login');
   };
+
+  if (!ctx) return <Navigate to="/login" replace />;
 
   // Determine the role label
   const roleLabel = isCashier ? 'Кассир' : isOwner ? 'Владелец' : ctx.role || 'Партнёр';
@@ -95,7 +87,7 @@ export default function PartnerLayout() {
       >
         <div style={{ padding: '20px 16px', textAlign: 'center' }}>
           <ShopOutlined style={{ fontSize: 28, color: '#1677ff' }} />
-          <div style={{ color: '#fff', fontSize: 14, marginTop: 8, fontWeight: 600 }}>TopDim Partner</div>
+          <div style={{ color: '#fff', fontSize: 14, marginTop: 8, fontWeight: 600 }}>sizbiz Partner</div>
         </div>
 
         <Menu

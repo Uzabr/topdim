@@ -1,129 +1,281 @@
 import { useState } from 'react';
-import { Table, Button, Space, Typography, Tag, Upload, message, Modal, Form, Input } from 'antd';
-import { UploadOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  Alert,
+  App,
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Popconfirm,
+  Space,
+  Switch,
+  Table,
+  Tag,
+  Typography,
+  Upload,
+} from 'antd';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  UploadOutlined,
+} from '@ant-design/icons';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { UploadProps } from 'antd';
-import api from '../../api/client';
-import { useAuthStore } from '../../store/authStore';
 import type { ColumnsType } from 'antd/es/table';
+import { useAuthStore } from '../../store/authStore';
+import {
+  createCategory,
+  deleteCategory,
+  getAdminCategories,
+  updateCategory,
+  type AdminCategory,
+  type CategoryPayload,
+} from './categoriesApi';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 const { Title, Text } = Typography;
+const ADMIN_CATEGORIES_QUERY = ['admin-categories'] as const;
 
-interface Category {
-  id: number;
-  name: string;
-  nameUz: string;
-  slug: string;
-  iconUrl: string;
-  sortOrder: number;
+function errorMessage(error: unknown, fallback: string) {
+  const apiError = error as { response?: { data?: { message?: string } } };
+  return apiError.response?.data?.message || fallback;
 }
 
 export const CategoriesPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [form] = Form.useForm();
+  const [editingCategory, setEditingCategory] = useState<AdminCategory | null>(null);
+  const [form] = Form.useForm<CategoryPayload>();
   const queryClient = useQueryClient();
+  const { message, modal } = App.useApp();
+  const token = useAuthStore.getState().accessToken;
 
-  // Получение категорий
-  const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      const res = await api.get('/api/v1/categories');
-      return res.data.data;
-    },
+  const categoriesQuery = useQuery({
+    queryKey: ADMIN_CATEGORIES_QUERY,
+    queryFn: getAdminCategories,
   });
 
-  // Создание одной категории вручную
-  const createMutation = useMutation({
-    mutationFn: (values: Record<string, unknown>) => api.post('/api/v1/admin/categories', values),
-    onSuccess: () => {
-      message.success('Категория успешно создана');
-      setIsModalOpen(false);
-      form.resetFields();
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-    },
-    onError: (err: unknown) => {
-      const error = err as { response?: { data?: { message?: string } } };
-      message.error(error.response?.data?.message || 'Ошибка создания категории');
-    },
-  });
-
-  const handleCreate = () => {
-    form.validateFields().then((values) => {
-      createMutation.mutate(values);
-    });
+  const refreshCategories = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ADMIN_CATEGORIES_QUERY }),
+      queryClient.invalidateQueries({ queryKey: ['categories'] }),
+    ]);
   };
 
-  // Настройки загрузки файлов
-  const token = useAuthStore.getState().accessToken;
-  const uploadProps: UploadProps = {
-    name: 'file',
-    action: '/api/v1/admin/categories/upload',
-    headers: {
-      Authorization: `Bearer ${token}`,
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingCategory(null);
+    form.resetFields();
+  };
+
+  const createMutation = useMutation({
+    mutationFn: createCategory,
+    onSuccess: async () => {
+      message.success('Категория успешно создана');
+      closeModal();
+      await refreshCategories();
     },
+    onError: (error) => {
+      message.error(errorMessage(error, 'Ошибка создания категории'));
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: CategoryPayload }) =>
+      updateCategory(id, payload),
+    onSuccess: async () => {
+      message.success('Категория успешно обновлена');
+      closeModal();
+      await refreshCategories();
+    },
+    onError: (error) => {
+      message.error(errorMessage(error, 'Ошибка обновления категории'));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteCategory,
+    onSuccess: async () => {
+      message.success('Категория удалена');
+      await refreshCategories();
+    },
+    onError: (error) => {
+      message.error(errorMessage(error, 'Ошибка удаления категории'));
+    },
+  });
+
+  const openCreate = () => {
+    setEditingCategory(null);
+    form.setFieldsValue({
+      name: '',
+      nameUz: '',
+      slug: '',
+      iconUrl: '',
+      sortOrder: 0,
+      active: true,
+    });
+    setIsModalOpen(true);
+  };
+
+  const openEdit = (category: AdminCategory) => {
+    setEditingCategory(category);
+    form.setFieldsValue({
+      name: category.name,
+      nameUz: category.nameUz || '',
+      slug: category.slug,
+      iconUrl: category.iconUrl || '',
+      sortOrder: category.sortOrder,
+      active: category.active,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    const values = await form.validateFields();
+    const payload: CategoryPayload = {
+      ...values,
+      nameUz: values.nameUz || '',
+      slug: values.slug || '',
+      iconUrl: values.iconUrl || '',
+      sortOrder: values.sortOrder ?? 0,
+      active: values.active ?? true,
+    };
+
+    if (editingCategory) {
+      updateMutation.mutate({ id: editingCategory.id, payload });
+    } else {
+      createMutation.mutate(payload);
+    }
+  };
+
+  const authHeaders: Record<string, string> = {};
+  if (token) {
+    authHeaders.Authorization = `Bearer ${token}`;
+  }
+  const excelUploadProps: UploadProps = {
+    name: 'file',
+    action: `${API_BASE_URL}/api/v1/admin/categories/upload`,
+    headers: authHeaders,
+    accept: '.xlsx',
     showUploadList: false,
     onChange(info) {
-      if (info.file.status === 'uploading') {
-        // можно добавить лоадер если нужно
-      }
       if (info.file.status === 'done') {
-        const responseData = info.file.response?.data;
-        const skipped = responseData?.skipped || 0;
-        const skippedNames = responseData?.skippedCategories?.join(', ');
-
+        const result = info.file.response?.data;
+        const skipped = result?.skipped || 0;
         if (skipped > 0) {
-          Modal.warning({
-            title: 'Импорт завершен с пропусками',
+          modal.warning({
+            title: 'Импорт завершён с пропусками',
             content: (
               <>
-                <p><strong>Добавлено:</strong> {responseData?.added}</p>
-                <p><strong>Пропущено (уже существуют):</strong> {skipped}</p>
-                <div style={{ maxHeight: '150px', overflowY: 'auto', background: '#f5f5f5', padding: '10px', marginTop: '10px' }}>
-                  <Text type="secondary">{skippedNames}</Text>
-                </div>
+                <p><strong>Добавлено:</strong> {result?.added || 0}</p>
+                <p><strong>Пропущено:</strong> {skipped}</p>
+                <Text type="secondary">
+                  {result?.skippedCategories?.join(', ') || 'Названия не переданы'}
+                </Text>
               </>
             ),
           });
         } else {
-          message.success(`Загружено ${responseData?.added || 0} категорий`);
+          message.success(`Загружено ${result?.added || 0} категорий`);
         }
-        
-        queryClient.invalidateQueries({ queryKey: ['categories'] });
+        void refreshCategories();
       } else if (info.file.status === 'error') {
-        message.error(`Ошибка загрузки: ${info.file.response?.message || info.file.error?.message}`);
+        message.error(info.file.response?.message || 'Ошибка импорта категорий');
       }
     },
   };
 
-  const columns: ColumnsType<Category> = [
+  const iconUploadProps: UploadProps = {
+    name: 'file',
+    action: `${API_BASE_URL}/api/v1/media/upload`,
+    headers: authHeaders,
+    accept: 'image/*',
+    maxCount: 1,
+    showUploadList: false,
+    onChange(info) {
+      if (info.file.status === 'done') {
+        const iconUrl = info.file.response?.data?.url;
+        if (iconUrl) {
+          form.setFieldValue('iconUrl', iconUrl);
+          message.success('Иконка загружена');
+        } else {
+          message.error('Сервис не вернул URL иконки');
+        }
+      } else if (info.file.status === 'error') {
+        message.error('Ошибка загрузки иконки');
+      }
+    },
+  };
+
+  const columns: ColumnsType<AdminCategory> = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     {
       title: 'Название (RU)',
       dataIndex: 'name',
-      render: (text) => <strong>{text}</strong>,
+      render: (text: string) => <strong>{text}</strong>,
     },
-    { title: 'Название (UZ)', dataIndex: 'nameUz' },
+    {
+      title: 'Название (UZ)',
+      dataIndex: 'nameUz',
+      render: (text: string | null) => text || <Text type="secondary">Не задано</Text>,
+    },
     {
       title: 'Slug',
       dataIndex: 'slug',
-      render: (text) => <Tag>{text}</Tag>,
+      render: (text: string) => <Tag>{text}</Tag>,
     },
     {
       title: 'Иконка',
       dataIndex: 'iconUrl',
-      render: (url) => url ? (
-        <img src={url} alt="icon" style={{ width: 24, height: 24, objectFit: 'contain' }} />
+      render: (url: string | null) => url ? (
+        <img src={url} alt="Иконка категории" style={{ width: 24, height: 24, objectFit: 'contain' }} />
       ) : (
         <Text type="secondary">Нет картинки</Text>
       ),
     },
     { title: 'Сортировка', dataIndex: 'sortOrder', width: 100 },
     {
+      title: 'Статус',
+      dataIndex: 'active',
+      width: 110,
+      render: (active: boolean) => (
+        <Tag color={active ? 'green' : 'default'}>{active ? 'Активна' : 'Выключена'}</Tag>
+      ),
+    },
+    {
       title: 'Действия',
-      render: () => (
+      width: 220,
+      render: (_, category) => (
         <Space>
-           {/* Кнопки редактирования пока заглушки */}
-          <Button type="link" size="small">Изменить иконку</Button>
+          <Button
+            type="link"
+            size="small"
+            icon={<EditOutlined />}
+            aria-label="Редактировать"
+            onClick={() => openEdit(category)}
+          >
+            Редактировать
+          </Button>
+          <Popconfirm
+            title="Удалить категорию?"
+            description="Удаление возможно, только если категория не используется купонами."
+            okText="Да, удалить"
+            cancelText="Отмена"
+            okButtonProps={{ danger: true, loading: deleteMutation.isPending }}
+            onConfirm={() => deleteMutation.mutate(category.id)}
+          >
+            <Button
+              type="link"
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              aria-label="Удалить"
+            >
+              Удалить
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -132,47 +284,86 @@ export const CategoriesPage = () => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>Управление Категориями</Title>
-        <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isFetching}>Обновить</Button>
-          
-          <Upload {...uploadProps}>
+        <Title level={4} style={{ margin: 0 }}>Управление категориями</Title>
+        <Space wrap>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => categoriesQuery.refetch()}
+            loading={categoriesQuery.isFetching}
+          >
+            Обновить
+          </Button>
+          <Upload {...excelUploadProps}>
             <Button icon={<UploadOutlined />}>Импорт из Excel</Button>
           </Upload>
-
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             Добавить вручную
           </Button>
         </Space>
       </div>
 
+      {categoriesQuery.isError && (
+        <Alert
+          type="error"
+          showIcon
+          title="Не удалось загрузить категории"
+          action={<Button onClick={() => categoriesQuery.refetch()}>Повторить</Button>}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
       <Table
         columns={columns}
-        dataSource={data}
-        loading={isLoading}
+        dataSource={categoriesQuery.data || []}
+        loading={categoriesQuery.isLoading}
         rowKey="id"
+        locale={{ emptyText: 'Категорий пока нет' }}
         pagination={{ pageSize: 20 }}
       />
 
       <Modal
-        title="Новая категория"
+        title={editingCategory ? 'Редактирование категории' : 'Новая категория'}
         open={isModalOpen}
-        onOk={handleCreate}
-        onCancel={() => { setIsModalOpen(false); form.resetFields(); }}
-        confirmLoading={createMutation.isPending}
-        okText="Создать"
+        onOk={() => void handleSave()}
+        onCancel={closeModal}
+        confirmLoading={createMutation.isPending || updateMutation.isPending}
+        okText={editingCategory ? 'Сохранить' : 'Создать'}
         cancelText="Отмена"
+        destroyOnHidden
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="name" label="Название (RU)" rules={[{ required: true }]}>
-            <Input placeholder="Например: Салоны красоты" />
+          <Form.Item
+            name="name"
+            label="Название (RU)"
+            rules={[{ required: true, whitespace: true, message: 'Введите название' }]}
+          >
+            <Input maxLength={100} placeholder="Например: Салоны красоты" />
           </Form.Item>
           <Form.Item name="nameUz" label="Название (UZ)">
-            <Input placeholder="Например: Go'zallik salonlari" />
+            <Input maxLength={100} placeholder="Например: Go'zallik salonlari" />
           </Form.Item>
-          {/* slug генерируется автоматически на бэкенде если не передан, так что не делаем его обязательным тут */}
-          <Form.Item name="sortOrder" label="Порядок сортировки" initialValue={0}>
-            <Input type="number" />
+          <Form.Item
+            name="slug"
+            label="Slug"
+            extra="Если оставить пустым, slug будет создан из русского названия."
+          >
+            <Input maxLength={100} placeholder="beauty-salons" />
+          </Form.Item>
+          <Form.Item name="iconUrl" label="URL иконки">
+            <Input maxLength={500} placeholder="/api/v1/media/..." />
+          </Form.Item>
+          <Form.Item label="Загрузка иконки">
+            <Upload {...iconUploadProps}>
+              <Button icon={<UploadOutlined />} aria-label="Загрузить иконку">
+                Загрузить иконку
+              </Button>
+            </Upload>
+          </Form.Item>
+          <Form.Item name="sortOrder" label="Порядок сортировки">
+            <InputNumber min={0} precision={0} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="active" label="Активна" valuePropName="checked">
+            <Switch />
           </Form.Item>
         </Form>
       </Modal>

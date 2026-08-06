@@ -44,7 +44,7 @@ export interface PartnerApplication {
   telegramUsername: string | null;
   comment: string | null;
   source: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'PENDING' | 'PROCESSING' | 'APPROVED' | 'REJECTED';
   rejectionReason: string | null;
   reviewedBy: number | null;
   reviewedAt: string | null;

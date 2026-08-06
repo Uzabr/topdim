@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Table, Tag, Input, Select, Typography, Space, Button, App,
+  Table, Tag, Input, Select, Typography, Space, Button, App, Result,
 } from 'antd';
 import {
   SearchOutlined, CheckCircleOutlined, CloseCircleOutlined,
@@ -8,11 +8,19 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUsersPage, blockUser } from './api';
-import type { AdminUser } from './api';
+import type { AdminUser, UserRole } from './api';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 
 const { Title } = Typography;
+
+function errorMessage(error: unknown) {
+  const apiError = error as {
+    message?: string;
+    response?: { data?: { message?: string } };
+  };
+  return apiError.response?.data?.message || apiError.message || 'Не удалось выполнить операцию';
+}
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
   USER: { label: 'Пользователь', color: 'blue' },
@@ -25,11 +33,11 @@ const ROLE_LABELS: Record<string, { label: string; color: string }> = {
 export const UsersListPage = () => {
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string | undefined>(undefined);
+  const [roleFilter, setRoleFilter] = useState<UserRole | undefined>(undefined);
   const queryClient = useQueryClient();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['admin-users', page, search, roleFilter],
     queryFn: () =>
       fetchUsersPage({
@@ -47,10 +55,14 @@ export const UsersListPage = () => {
       message.success(blocked ? 'Пользователь заблокирован' : 'Пользователь разблокирован');
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
     },
-    onError: () => {
-      message.error('Не удалось выполнить операцию');
+    onError: (mutationError) => {
+      message.error(errorMessage(mutationError));
     },
   });
+
+  if (error) {
+    return <Result status="error" title="Ошибка загрузки пользователей" />;
+  }
 
   const columns: ColumnsType<AdminUser> = [
     { title: 'ID', dataIndex: 'id', width: 60 },
@@ -96,7 +108,7 @@ export const UsersListPage = () => {
       title: 'Верификация',
       width: 140,
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Tag color={record.emailVerified ? 'green' : 'default'} style={{ fontSize: 11 }}>
             Email: {record.emailVerified ? '✓' : '✗'}
           </Tag>
@@ -116,20 +128,36 @@ export const UsersListPage = () => {
     {
       title: 'Действия',
       width: 140,
-      render: (_, record) => (
-        <Button
-          type={record.enabled ? 'default' : 'primary'}
-          danger={record.enabled}
-          size="small"
-          icon={record.enabled ? <LockOutlined /> : <UnlockOutlined />}
-          loading={blockMutation.isPending}
-          onClick={() =>
-            blockMutation.mutate({ id: record.id, blocked: record.enabled })
-          }
-        >
-          {record.enabled ? 'Заблокировать' : 'Разблокировать'}
-        </Button>
-      ),
+      render: (_, record) => {
+        if (record.role === 'ADMIN' || record.role === 'SUPER_ADMIN') {
+          return <Tag>Защищён</Tag>;
+        }
+
+        const blocked = record.enabled;
+        const actionLabel = blocked ? 'Заблокировать' : 'Разблокировать';
+
+        return (
+          <Button
+            type={blocked ? 'default' : 'primary'}
+            danger={blocked}
+            size="small"
+            icon={blocked ? <LockOutlined /> : <UnlockOutlined />}
+            loading={blockMutation.isPending && blockMutation.variables?.id === record.id}
+            onClick={() => modal.confirm({
+              title: `${actionLabel} пользователя?`,
+              content: blocked
+                ? `Активные сессии ${record.email} будут завершены.`
+                : `Доступ для ${record.email} будет восстановлен.`,
+              okText: actionLabel,
+              cancelText: 'Отмена',
+              okButtonProps: { danger: blocked },
+              onOk: () => blockMutation.mutateAsync({ id: record.id, blocked }),
+            })}
+          >
+            {actionLabel}
+          </Button>
+        );
+      },
     },
   ];
 

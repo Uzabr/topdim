@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Tag, Button, Space, Typography, App, Modal, Form, Input, Descriptions } from 'antd';
+import {
+  Table, Tag, Button, Space, Typography, App, Modal, Form, Input, Descriptions,
+  Select, Result,
+} from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/client';
@@ -10,15 +13,23 @@ import dayjs from 'dayjs';
 
 const { Title } = Typography;
 
-const statusColors: Record<string, string> = {
-  PENDING: 'orange',
-  APPROVED: 'green',
-  REJECTED: 'red',
+type ApplicationStatus = PartnerApplication['status'];
+
+const STATUS_INFO: Record<ApplicationStatus, { label: string; color: string }> = {
+  PENDING: { label: 'Ожидает решения', color: 'orange' },
+  PROCESSING: { label: 'Требует повтора', color: 'gold' },
+  APPROVED: { label: 'Одобрена', color: 'green' },
+  REJECTED: { label: 'Отклонена', color: 'red' },
 };
+
+function errorMessage(error: unknown, fallback: string) {
+  const apiError = error as { response?: { data?: { message?: string } } };
+  return apiError.response?.data?.message || fallback;
+}
 
 interface ApprovePayload {
   loginEmail: string;
-  temporaryPassword: string;
+  temporaryPassword?: string;
   merchantName: string;
   contactPerson: string;
   address: string;
@@ -34,6 +45,7 @@ interface RejectPayload {
 
 export const PartnerApplicationsPage = () => {
   const [page, setPage] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | undefined>();
   const [approveTarget, setApproveTarget] = useState<PartnerApplication | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PartnerApplication | null>(null);
   const [detailTarget, setDetailTarget] = useState<PartnerApplication | null>(null);
@@ -43,12 +55,12 @@ export const PartnerApplicationsPage = () => {
   const { message } = App.useApp();
   const navigate = useNavigate();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['partner-applications', page],
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
+    queryKey: ['partner-applications', page, statusFilter],
     queryFn: async () => {
       const res = await api.get<ApiResponse<PageResponse<PartnerApplication>>>(
         '/api/v1/admin/partner-applications',
-        { params: { page, size: 20 } },
+        { params: { page, size: 20, ...(statusFilter ? { status: statusFilter } : {}) } },
       );
       return res.data.data;
     },
@@ -58,12 +70,14 @@ export const PartnerApplicationsPage = () => {
     mutationFn: (args: { id: number; payload: ApprovePayload }) =>
       api.patch(`/api/v1/admin/partner-applications/${args.id}/approve`, args.payload),
     onSuccess: () => {
-      message.success('Заявка одобрена — партнёр и мерчант созданы');
+      message.success('Заявка одобрена — партнёр и мерчант привязаны');
       queryClient.invalidateQueries({ queryKey: ['partner-applications'] });
       setApproveTarget(null);
       approveForm.resetFields();
     },
-    onError: () => message.error('Ошибка при одобрении заявки'),
+    onError: (mutationError) => message.error(
+      errorMessage(mutationError, 'Ошибка при одобрении заявки'),
+    ),
   });
 
   const rejectMutation = useMutation({
@@ -75,7 +89,9 @@ export const PartnerApplicationsPage = () => {
       setRejectTarget(null);
       rejectForm.resetFields();
     },
-    onError: () => message.error('Ошибка при отклонении заявки'),
+    onError: (mutationError) => message.error(
+      errorMessage(mutationError, 'Ошибка при отклонении заявки'),
+    ),
   });
 
   const openApproveModal = (record: PartnerApplication) => {
@@ -93,6 +109,29 @@ export const PartnerApplicationsPage = () => {
     });
   };
 
+  const submitApproval = (values: ApprovePayload) => {
+    if (!approveTarget) return;
+    const payload = { ...values };
+    if (!payload.temporaryPassword?.trim()) {
+      delete payload.temporaryPassword;
+    }
+    approveMutation.mutate({ id: approveTarget.id, payload });
+  };
+
+  if (error) {
+    return (
+      <Result
+        status="error"
+        title="Ошибка загрузки заявок"
+        extra={(
+          <Button type="primary" loading={isFetching} onClick={() => refetch()}>
+            Повторить
+          </Button>
+        )}
+      />
+    );
+  }
+
   const columns: ColumnsType<PartnerApplication> = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     {
@@ -105,7 +144,10 @@ export const PartnerApplicationsPage = () => {
     {
       title: 'Статус',
       dataIndex: 'status',
-      render: (status: string) => <Tag color={statusColors[status]}>{status}</Tag>,
+      render: (status: ApplicationStatus) => {
+        const info = STATUS_INFO[status];
+        return <Tag color={info.color}>{info.label}</Tag>;
+      },
     },
     {
       title: 'Дата',
@@ -152,6 +194,16 @@ export const PartnerApplicationsPage = () => {
               </Button>
             </>
           )}
+          {record.status === 'PROCESSING' && (
+            <Button
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              size="small"
+              onClick={() => openApproveModal(record)}
+            >
+              Повторить одобрение
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -160,11 +212,26 @@ export const PartnerApplicationsPage = () => {
   return (
     <div>
       <Title level={4}>Заявки на партнёрство</Title>
+      <Select<ApplicationStatus>
+        aria-label="Фильтр по статусу"
+        placeholder="Все статусы"
+        value={statusFilter}
+        allowClear
+        style={{ width: 220, marginBottom: 16 }}
+        onChange={(status) => { setStatusFilter(status); setPage(0); }}
+        options={[
+          { value: 'PENDING', label: 'Ожидают решения' },
+          { value: 'PROCESSING', label: 'Требуют повтора' },
+          { value: 'APPROVED', label: 'Одобренные' },
+          { value: 'REJECTED', label: 'Отклонённые' },
+        ]}
+      />
       <Table
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
         rowKey="id"
+        locale={{ emptyText: 'Нет заявок' }}
         pagination={{
           current: page + 1,
           pageSize: 20,
@@ -198,7 +265,9 @@ export const PartnerApplicationsPage = () => {
             <Descriptions.Item label="Комментарий" span={2}>{detailTarget.comment || '—'}</Descriptions.Item>
             <Descriptions.Item label="Источник">{detailTarget.source}</Descriptions.Item>
             <Descriptions.Item label="Статус">
-              <Tag color={statusColors[detailTarget.status]}>{detailTarget.status}</Tag>
+              <Tag color={STATUS_INFO[detailTarget.status].color}>
+                {STATUS_INFO[detailTarget.status].label}
+              </Tag>
             </Descriptions.Item>
             {detailTarget.rejectionReason && (
               <Descriptions.Item label="Причина отказа" span={2}>
@@ -218,23 +287,34 @@ export const PartnerApplicationsPage = () => {
       {/* Approve Modal */}
       <Modal
         open={!!approveTarget}
-        title={`Одобрить заявку #${approveTarget?.id}`}
+        title={approveTarget?.status === 'PROCESSING'
+          ? `Повторить одобрение заявки #${approveTarget.id}`
+          : `Одобрить заявку #${approveTarget?.id}`}
         onCancel={() => { setApproveTarget(null); approveForm.resetFields(); }}
         onOk={() => approveForm.submit()}
         confirmLoading={approveMutation.isPending}
-        okText="Одобрить и создать партнёра"
+        okText={approveTarget?.status === 'PROCESSING'
+          ? 'Повторить одобрение'
+          : 'Одобрить и создать партнёра'}
         cancelText="Отмена"
         width={560}
       >
         <Form
           form={approveForm}
           layout="vertical"
-          onFinish={(values) => approveTarget && approveMutation.mutate({ id: approveTarget.id, payload: values })}
+          onFinish={submitApproval}
         >
           <Form.Item name="loginEmail" label="Email для входа" rules={[{ required: true, type: 'email' }]}>
             <Input placeholder="partner@example.uz" />
           </Form.Item>
-          <Form.Item name="temporaryPassword" label="Временный пароль" rules={[{ required: true, min: 8 }]}>
+          <Form.Item
+            name="temporaryPassword"
+            label="Временный пароль для нового аккаунта"
+            extra={approveTarget?.status === 'PROCESSING'
+              ? 'При повторе существующий пароль не меняется.'
+              : 'Если аккаунт уже существует, его пароль не изменится.'}
+            rules={approveTarget?.status === 'PROCESSING' ? [] : [{ required: true, min: 8 }]}
+          >
             <Input.Password placeholder="Минимум 8 символов" />
           </Form.Item>
           <Form.Item name="merchantName" label="Название мерчанта" rules={[{ required: true }]}>

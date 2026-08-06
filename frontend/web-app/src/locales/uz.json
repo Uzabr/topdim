@@ -566,7 +566,7 @@
       "answer": "Javob: {{text}}"
     },
     "purchasedCoupon": {
-      "defaultMerchant": "TopDim hamkori",
+      "defaultMerchant": "sizbiz hamkori",
       "status": {
         "active": "Faol",
         "used": "Ishlatilgan",
@@ -810,7 +810,7 @@
     "navJoin": "Hamkor bo'ling",
     "heroTitleLine1": "Kelajak",
     "heroTitleLine2": "mahalliy biznes",
-    "heroDesc": "TopDim shaharning eng yaxshi takliflarini bir joyda birlashtiradi. Biz sizni izlayotgan mijozlarni murakkab reklama sozlamalarisiz olib kelamiz.",
+    "heroDesc": "sizbiz shaharning eng yaxshi takliflarini bir joyda birlashtiradi. Biz sizni izlayotgan mijozlarni murakkab reklama sozlamalarisiz olib kelamiz.",
     "ctaJoin": "Hamkor bo'ling",
     "howItWorks": "U qanday ishlaydi",
     "audienceTitle": "Kim uchun",
@@ -829,12 +829,12 @@
         "desc": "Shaklni to'ldirish 1 daqiqa davom etadi. Shu kuni siz bilan bog'lanamiz."
       },
       "setup": {
-        "title": "Rag'batlantirishni o'rnatish",
+        "title": "Taklifni sozlash",
         "desc": "Birgalikda biz ajoyib taklifni taklif qilamiz: chegirma, sovg'a yoki 1 narx uchun 2."
       },
       "live": {
         "title": "Kupon efirda",
-        "desc": "Sizning taklifingizni TopDim ilovasi orqali shahringizdagi minglab odamlar ko'rishadi."
+        "desc": "Sizning taklifingizni sizbiz ilovasi orqali shahringizdagi minglab odamlar ko'rishadi."
       },
       "clients": {
         "title": "Mijozlar oqimi",
@@ -875,7 +875,7 @@
       "a2": "Biz sizga taklifingizni to'plash va ajoyib dizayn yaratishda yordam beramiz.",
       "q3": "Mijoz kupondan qanday foydalanadi?",
       "a3": "Bu PIN yoki QR ko'rsatadi. Kassir uni ofisda tanishtiradi.",
-      "q4": "TopDim kichik biznes uchun mos keladimi?",
+      "q4": "sizbiz kichik biznes uchun mos keladimi?",
       "a4": "Ha, platforma mahalliy trafikni juda yaxshi hosil qiladi."
     },
     "validation": {

@@ -9,7 +9,9 @@ import CouponsPage from './pages/CouponsPage';
 import CouponRequestFormPage from './pages/CouponRequestFormPage';
 import CouponApprovalPage from './pages/CouponApprovalPage';
 import RedeemPage from './pages/RedeemPage';
+import RedemptionHistoryPage from './pages/RedemptionHistoryPage';
 import StaffPage from './pages/StaffPage';
+import { readPartnerContext } from './authSession';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,28 +21,37 @@ const queryClient = new QueryClient({
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('token');
-  if (!token) return <Navigate to="/login" replace />;
+  const partnerContext = readPartnerContext();
+  if (!token || !partnerContext) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
-function isCashierRole(): boolean {
-  try {
-    const raw = localStorage.getItem('partnerContext');
-    if (raw) {
-      const ctx = JSON.parse(raw) as { role?: string };
-      return ctx.role === 'CASHIER';
-    }
-  } catch { /* ignore */ }
-  return false;
+function SmartHome() {
+  const ctx = readPartnerContext();
+  if (!ctx) return <Navigate to="/login" replace />;
+  if (ctx.canViewDashboard) return <DashboardPage />;
+  if (ctx.canRedeem) return <Navigate to="/redeem" replace />;
+  return <Navigate to="/login" replace />;
 }
 
-function SmartHome() {
-  if (isCashierRole()) return <Navigate to="/redeem" replace />;
-  return <DashboardPage />;
+function DashboardAccessOnly({ children }: { children: React.ReactNode }) {
+  const ctx = readPartnerContext();
+  if (!ctx) return <Navigate to="/login" replace />;
+  if (!ctx.canViewDashboard) return <Navigate to="/" replace />;
+  return <>{children}</>;
 }
 
 function OwnerOnly({ children }: { children: React.ReactNode }) {
-  if (isCashierRole()) return <Navigate to="/redeem" replace />;
+  const ctx = readPartnerContext();
+  if (!ctx) return <Navigate to="/login" replace />;
+  if (ctx.role !== 'OWNER') return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+function RedeemAccessOnly({ children }: { children: React.ReactNode }) {
+  const ctx = readPartnerContext();
+  if (!ctx) return <Navigate to="/login" replace />;
+  if (!ctx.canRedeem) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -70,10 +81,12 @@ export default function App() {
                 }
               >
                 <Route index element={<SmartHome />} />
-                <Route path="coupons" element={<OwnerOnly><CouponsPage /></OwnerOnly>} />
-                <Route path="coupons/new" element={<OwnerOnly><CouponRequestFormPage /></OwnerOnly>} />
-                <Route path="coupons/:id/review" element={<OwnerOnly><CouponApprovalPage /></OwnerOnly>} />
-                <Route path="redeem" element={<RedeemPage />} />
+                <Route path="coupons" element={<DashboardAccessOnly><CouponsPage /></DashboardAccessOnly>} />
+                <Route path="coupons/new" element={<DashboardAccessOnly><CouponRequestFormPage /></DashboardAccessOnly>} />
+                <Route path="coupons/:id/edit" element={<DashboardAccessOnly><CouponRequestFormPage /></DashboardAccessOnly>} />
+                <Route path="coupons/:id/review" element={<DashboardAccessOnly><CouponApprovalPage /></DashboardAccessOnly>} />
+                <Route path="redeem" element={<RedeemAccessOnly><RedeemPage /></RedeemAccessOnly>} />
+                <Route path="redemptions" element={<RedemptionHistoryPage />} />
                 <Route path="staff" element={<OwnerOnly><StaffPage /></OwnerOnly>} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -180,7 +180,7 @@ export const CouponFormPage = () => {
     onSuccess: () => {
       message.success('Купон создан как LEAD и ожидает обработки');
       queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
-      navigate('/moderation/coupons/kanban');
+      navigate('/coupons?view=kanban');
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } };
@@ -204,7 +204,7 @@ export const CouponFormPage = () => {
       message.success('Купон успешно обновлён!');
       queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
       queryClient.invalidateQueries({ queryKey: ['admin-coupon', id] });
-      navigate('/moderation/coupons');
+      navigate('/coupons');
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } };
@@ -248,7 +248,7 @@ export const CouponFormPage = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/moderation/coupons')} />
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/coupons')} />
           <Title level={4} style={{ margin: 0 }}>
             {isEditMode ? `Редактировать купон #${id}` : 'Создать купон'}
           </Title>
@@ -276,7 +276,7 @@ export const CouponFormPage = () => {
               />
               <Form.Item
                 name="title"
-                label="Название услуги/акции"
+                label="Название купона"
                 rules={[{ required: true, message: 'Введите название' }]}
                 extra="Крупный жирный шрифт в карточке купона."
               >
@@ -371,7 +371,7 @@ export const CouponFormPage = () => {
               <Form.Item
                 name="coverImageUrl"
                 label="Изображение (Миниатюра купона)"
-                rules={[{ required: true, message: 'Добавьте изображение для карточки товара' }]}
+                rules={[{ required: true, message: 'Добавьте изображение для карточки купона' }]}
               >
                 <Upload
                   name="file"
@@ -456,12 +456,12 @@ export const CouponFormPage = () => {
               </Card>
 
               <Alert 
-                title="Описание оффера" 
-                description="Одно поле для всего текста акции: краткое описание, подробности, условия, правила использования и инструкции. Поддерживается Markdown!"
+                title="Описание купона"
+                description="Одно поле для всего текста купона: краткое описание, подробности, условия, правила использования и инструкции. Поддерживается Markdown!"
                 type="info" showIcon style={{ marginBottom: 16, marginTop: 16 }} 
               />
               
-              <Form.Item name="offerDescription" label="Описание оффера (Markdown)">
+              <Form.Item name="offerDescription" label="Описание купона (Markdown)">
                 <TextArea 
                   rows={12} 
                   placeholder={`Любая пицца 33 см + напиток на выбор
@@ -474,7 +474,7 @@ export const CouponFormPage = () => {
 - Необходимо бронирование
 
 ## Правила использования
-- Акция не суммируется с другими скидками
+- Купон не суммируется с другими скидками
 - Не распространяется на доставку
 
 ## Как использовать

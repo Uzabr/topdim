@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, Button, Input, Typography, message, Result, Space, Tag, Tabs, Alert } from 'antd';
 import { ScanOutlined, NumberOutlined, CheckCircleFilled, CameraOutlined, StopOutlined } from '@ant-design/icons';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -48,6 +49,7 @@ function parseTopDimQrPayload(value: string): string | null {
 }
 
 export default function RedeemPage() {
+  const queryClient = useQueryClient();
   const [pinCode, setPinCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RedeemResult | null>(null);
@@ -66,15 +68,20 @@ export default function RedeemPage() {
     };
   }, []);
 
+  const completeRedemption = useCallback((data: RedeemResult, method: 'PIN' | 'QR') => {
+    setResult(data);
+    setRedeemMethod(method);
+    void queryClient.invalidateQueries({ queryKey: ['partner-redemptions'] });
+    message.success(method === 'QR' ? 'Купон погашен по QR!' : 'Купон погашен по PIN!');
+  }, [queryClient]);
+
   const redeemQrToken = useCallback(async (token: string) => {
     setLoading(true);
     setErrorText('');
     setScannerError('');
     try {
       const res = await api.post('/api/v1/partner/redemptions/qr', { qrToken: token });
-      setResult(res.data.data);
-      setRedeemMethod('QR');
-      message.success('Купон погашен по QR!');
+      completeRedemption(res.data.data, 'QR');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       const raw = e.response?.data?.message || 'Ошибка погашения';
@@ -85,7 +92,7 @@ export default function RedeemPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [completeRedemption]);
 
   const stopScanner = useCallback(async () => {
     try {
@@ -143,7 +150,7 @@ export default function RedeemPage() {
 
           const token = parseTopDimQrPayload(decodedText);
           if (!token) {
-            setScannerError('Это не QR-код TopDim. Попробуйте снова или используйте PIN-код.');
+            setScannerError('Это не QR-код sizbiz. Попробуйте снова или используйте PIN-код.');
             return;
           }
 
@@ -165,9 +172,7 @@ export default function RedeemPage() {
     setErrorText('');
     try {
       const res = await api.post('/api/v1/partner/redemptions', { couponCode: pinCode.trim() });
-      setResult(res.data.data);
-      setRedeemMethod('PIN');
-      message.success('Купон погашен по PIN!');
+      completeRedemption(res.data.data, 'PIN');
       setPinCode('');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
