@@ -1,7 +1,6 @@
 import { Minus, Plus, ShoppingCart, Ticket, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import GuestAuthPrompt from '../components/auth/GuestAuthPrompt';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { useLocalePath } from '../hooks/useLocalePath';
@@ -22,19 +21,13 @@ export default function CartDesktop() {
 
   const countLabel = t('cart.couponsCount', { count: totalItems });
 
-  if (!isAuthenticated) {
-    return (
-      <div className="cart container">
-        <h1 className="cart__title">{t('cart.title')}</h1>
-        <GuestAuthPrompt
-          icon={<ShoppingCart size={46} strokeWidth={1.6} />}
-          title={t('cart.guestTitle')}
-          description={t('cart.guestDesc')}
-          loginLabel={t('cart.guestLogin')}
-        />
-      </div>
-    );
-  }
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      navigate(lp('/login'), { state: { from: lp('/checkout') } });
+      return;
+    }
+    navigate(lp('/checkout'));
+  };
 
   if (items.length === 0) {
     return (
@@ -162,7 +155,7 @@ export default function CartDesktop() {
           <button
             type="button"
             className="cart__checkout"
-            onClick={() => navigate(lp('/checkout'))}
+            onClick={handleCheckout}
           >
             {t('cart.checkout')}
           </button>
