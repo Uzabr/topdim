@@ -9,6 +9,7 @@ import CouponsPage from './pages/CouponsPage';
 import CouponRequestFormPage from './pages/CouponRequestFormPage';
 import CouponApprovalPage from './pages/CouponApprovalPage';
 import RedeemPage from './pages/RedeemPage';
+import RedemptionHistoryPage from './pages/RedemptionHistoryPage';
 import StaffPage from './pages/StaffPage';
 import { readPartnerContext } from './authSession';
 
@@ -85,6 +86,7 @@ export default function App() {
                 <Route path="coupons/:id/edit" element={<DashboardAccessOnly><CouponRequestFormPage /></DashboardAccessOnly>} />
                 <Route path="coupons/:id/review" element={<DashboardAccessOnly><CouponApprovalPage /></DashboardAccessOnly>} />
                 <Route path="redeem" element={<RedeemAccessOnly><RedeemPage /></RedeemAccessOnly>} />
+                <Route path="redemptions" element={<RedemptionHistoryPage />} />
                 <Route path="staff" element={<OwnerOnly><StaffPage /></OwnerOnly>} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />

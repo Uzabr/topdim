@@ -2,7 +2,7 @@ import { Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Button, Tag } from 'antd';
 import {
   DashboardOutlined, ScanOutlined, TeamOutlined,
-  LogoutOutlined, ShopOutlined, GiftOutlined
+  LogoutOutlined, ShopOutlined, GiftOutlined, HistoryOutlined
 } from '@ant-design/icons';
 import { useMemo } from 'react';
 import { clearPartnerSession, readPartnerContext } from '../authSession';
@@ -45,6 +45,15 @@ export default function PartnerLayout() {
     // Redeem — for all (cashier, manager, owner)
     if (ctx?.canRedeem) {
       items.push({ key: '/redeem', icon: <ScanOutlined />, label: 'Погашение' });
+    }
+
+    // Redemption history — read-only and available for every valid partner role
+    if (ctx) {
+      items.push({
+        key: '/redemptions',
+        icon: <HistoryOutlined />,
+        label: 'История погашений',
+      });
     }
 
     // Staff management — only for Owner

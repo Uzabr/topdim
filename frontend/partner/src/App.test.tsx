@@ -11,6 +11,9 @@ vi.mock('./pages/StaffPage', () => ({
 vi.mock('./pages/RedeemPage', () => ({
   default: () => <div>Redeem content</div>,
 }));
+vi.mock('./pages/RedemptionHistoryPage', () => ({
+  default: () => <div>History content</div>,
+}));
 
 describe('partner route authorization', () => {
   beforeEach(() => {
@@ -67,5 +70,32 @@ describe('partner route authorization', () => {
 
     expect(await screen.findByText('Dashboard content')).toBeTruthy();
     expect(screen.queryByText('Redeem content')).toBeNull();
+  });
+
+  it.each([
+    ['OWNER', true, true],
+    ['OWNER', true, false],
+    ['MANAGER', true, true],
+    ['CASHIER', false, true],
+    ['CASHIER', false, false],
+  ])('opens read-only history for %s with dashboard=%s and redeem=%s', async (
+    role,
+    canViewDashboard,
+    canRedeem,
+  ) => {
+    window.history.replaceState({}, '', '/redemptions');
+    localStorage.setItem('token', `${role}-token`);
+    localStorage.setItem('partnerContext', JSON.stringify({
+      role,
+      merchantId: 8,
+      ...(role === 'CASHIER' ? { merchantLocationId: 21, staffId: 15 } : {}),
+      canViewDashboard,
+      canRedeem,
+    }));
+
+    render(<App />);
+
+    expect(await screen.findByText('History content')).toBeTruthy();
+    expect(screen.getByText('История погашений')).toBeTruthy();
   });
 });
