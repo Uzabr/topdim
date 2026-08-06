@@ -16,6 +16,7 @@ import uz.topdim.identity.repository.UserRepository;
 import uz.topdim.identity.security.GoogleTokenVerifier;
 import uz.topdim.identity.security.JwtService;
 import uz.topdim.identity.security.TelegramLoginVerifier;
+import uz.topdim.identity.util.EmailPlaceholders;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -365,6 +366,7 @@ public class AuthService {
                 .user(AuthResponse.UserDto.builder()
                         .id(user.getId())
                         .email(user.getEmail())
+                        .emailPlaceholder(EmailPlaceholders.isPlaceholder(user.getEmail(), user.isEmailVerified()))
                         .phone(user.getPhone())
                         .firstName(user.getFirstName())
                         .lastName(user.getLastName())
