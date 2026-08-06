@@ -46,7 +46,10 @@ export default function CheckoutDesktop() {
         <LogIn size={48} className="checkout-empty__icon" />
         <h2>{t('checkout.authRequiredTitle')}</h2>
         <p>{t('checkout.authRequiredDesc')}</p>
-        <button className="primary-button" onClick={() => navigate(lp('/login'))}>
+        <button
+          className="primary-button"
+          onClick={() => navigate(lp('/login'), { state: { from: lp('/checkout') } })}
+        >
           {t('checkout.login')}
         </button>
       </div>

@@ -62,7 +62,11 @@ export default function CheckoutMobile() {
         <div className="cmpay__stop">
           <h1 className="cmpay__stop-title">{t('checkout.authRequiredTitle')}</h1>
           <p className="cmpay__stop-text">{t('checkout.authRequiredDesc')}</p>
-          <button type="button" className="cmpay__cta" onClick={() => navigate(lp('/login'))}>
+          <button
+            type="button"
+            className="cmpay__cta"
+            onClick={() => navigate(lp('/login'), { state: { from: lp('/checkout') } })}
+          >
             {t('checkout.login')}
           </button>
         </div>
