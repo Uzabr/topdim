@@ -11,7 +11,6 @@ public class ApprovePartnerApplicationRequest {
     @Email
     private String loginEmail;
 
-    @NotBlank
     @Size(min = 8)
     private String temporaryPassword;
 

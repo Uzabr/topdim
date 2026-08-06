@@ -158,7 +158,7 @@ class CouponRefundServiceTest {
         coupon.setStatus(PurchasedCouponStatus.REFUND_PENDING);
         RefundRequest rr = RefundRequest.builder().id(1L).userId(10L).purchasedCoupon(coupon)
                 .order(coupon.getOrder()).status(RefundRequest.RefundStatus.PENDING).reason("test").build();
-        when(refundRequestRepository.findById(1L)).thenReturn(Optional.of(rr));
+        when(refundRequestRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(rr));
         when(refundRequestRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         var result = orderService.approveRefundRequest(1L, "Одобряю");
@@ -173,7 +173,7 @@ class CouponRefundServiceTest {
     void approveRefund_notPending_throws() {
         RefundRequest rr = RefundRequest.builder().id(1L).userId(10L)
                 .status(RefundRequest.RefundStatus.REJECTED).reason("test").build();
-        when(refundRequestRepository.findById(1L)).thenReturn(Optional.of(rr));
+        when(refundRequestRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(rr));
 
         assertThatThrownBy(() -> orderService.approveRefundRequest(1L, null))
                 .isInstanceOf(IllegalStateException.class)
@@ -189,7 +189,7 @@ class CouponRefundServiceTest {
         coupon.setStatus(PurchasedCouponStatus.REFUND_PENDING);
         RefundRequest rr = RefundRequest.builder().id(1L).userId(10L).purchasedCoupon(coupon)
                 .order(coupon.getOrder()).status(RefundRequest.RefundStatus.PENDING).reason("test").build();
-        when(refundRequestRepository.findById(1L)).thenReturn(Optional.of(rr));
+        when(refundRequestRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(rr));
         when(refundRequestRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(purchasedCouponRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
@@ -207,7 +207,7 @@ class CouponRefundServiceTest {
         coupon.setExpiresAt(LocalDateTime.now().minusHours(1));
         RefundRequest rr = RefundRequest.builder().id(1L).userId(10L).purchasedCoupon(coupon)
                 .order(coupon.getOrder()).status(RefundRequest.RefundStatus.PENDING).reason("test").build();
-        when(refundRequestRepository.findById(1L)).thenReturn(Optional.of(rr));
+        when(refundRequestRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(rr));
         when(refundRequestRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(purchasedCouponRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
@@ -225,7 +225,7 @@ class CouponRefundServiceTest {
         coupon.setStatus(PurchasedCouponStatus.REFUND_PENDING);
         RefundRequest rr = RefundRequest.builder().id(1L).userId(10L).purchasedCoupon(coupon)
                 .order(coupon.getOrder()).status(RefundRequest.RefundStatus.APPROVED_PROCESSING).reason("test").build();
-        when(refundRequestRepository.findById(1L)).thenReturn(Optional.of(rr));
+        when(refundRequestRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(rr));
         when(refundRequestRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(purchasedCouponRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
@@ -241,7 +241,7 @@ class CouponRefundServiceTest {
     void completeRefund_pendingRequest_throws() {
         RefundRequest rr = RefundRequest.builder().id(1L).userId(10L)
                 .status(RefundRequest.RefundStatus.PENDING).reason("test").build();
-        when(refundRequestRepository.findById(1L)).thenReturn(Optional.of(rr));
+        when(refundRequestRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(rr));
 
         assertThatThrownBy(() -> orderService.completeRefundRequest(1L, null))
                 .isInstanceOf(IllegalStateException.class)
@@ -253,9 +253,30 @@ class CouponRefundServiceTest {
     void completeRefund_rejectedRequest_throws() {
         RefundRequest rr = RefundRequest.builder().id(1L).userId(10L)
                 .status(RefundRequest.RefundStatus.REJECTED).reason("test").build();
-        when(refundRequestRepository.findById(1L)).thenReturn(Optional.of(rr));
+        when(refundRequestRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(rr));
 
         assertThatThrownBy(() -> orderService.completeRefundRequest(1L, null))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("Отклонение: причина обязательна")
+    void rejectRefund_blankReason_rejected() {
+        assertThatThrownBy(() -> orderService.rejectRefundRequest(1L, "  "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("причину");
+
+        verify(refundRequestRepository, never()).findByIdForUpdate(any());
+        verify(refundRequestRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Решение: отсутствующий запрос возвращает not found")
+    void approveRefund_missingRequest_throwsNotFound() {
+        when(refundRequestRepository.findByIdForUpdate(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.approveRefundRequest(404L, null))
+                .isInstanceOf(uz.topdim.order.exception.ResourceNotFoundException.class)
+                .hasMessageContaining("404");
     }
 }

@@ -132,7 +132,7 @@ JWT роли перечислены в `Role`: `GUEST`, `USER`, `PARTNER`, `MODE
 
 ## 3. PARTNER (продавец / мерчант)
 
-> Создаёт купоны, погашает их, видит свою статистику.
+> Создаёт предложения, принимает или возвращает на доработку подготовленные купоны и видит свою статистику.
 
 ### Погашение купонов
 | Функция | Endpoint | Статус |
@@ -144,10 +144,10 @@ JWT роли перечислены в `Role`: `GUEST`, `USER`, `PARTNER`, `MODE
 ### Мои предложения
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Мои купоны-предложения | `GET /api/v1/partner/coupons` | ✅ |
+| Мои предложения | `GET /api/v1/partner/coupons` | ✅ |
 | Создать предложение (на модерацию) | `POST /api/v1/partner/coupons` | ✅ |
 | Редактировать предложение | `PUT /api/v1/partner/coupons/{id}` | ✅ |
-| Одобрить подготовленный купон | `POST /api/v1/partner/coupons/{id}/approve` | ✅ |
+| Одобрить подготовленное предложение | `POST /api/v1/partner/coupons/{id}/approve` | ✅ |
 | Запросить правки | `POST /api/v1/partner/coupons/{id}/request-revision` | ✅ |
 | Мой merchant context | `GET /api/v1/partner/merchant/me` | ✅ |
 
@@ -170,17 +170,22 @@ JWT роли перечислены в `Role`: `GUEST`, `USER`, `PARTNER`, `MODE
 
 ## 4. MODERATOR (модератор)
 
-> Развивает платформу: создаёт купоны, модерирует отзывы, жалобы и заявки партнёров.
+> Работает с купонами в едином рабочем месте, модерирует отзывы, жалобы и заявки партнёров.
 
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Все купоны | `GET /api/v1/admin/coupons` | ✅ |
+| Рабочее место купонов `/coupons` | `GET /api/v1/admin/coupons` | ✅ |
+| Взять лид в работу | `PATCH /api/v1/admin/coupons/{id}/take-to-work` | ✅ |
 | Создать купон (без партнерки) | `POST /api/v1/admin/coupons` | ✅ |
-| Обновить купон / статус | `PATCH /api/v1/admin/coupons/{id}/status` | ✅ |
+| Редактировать свой черновик / купон с правками | `PUT /api/v1/admin/coupons/{id}` | ✅ |
+| Отправить свой черновик / купон с правками на согласование | `POST /api/v1/admin/coupons/{id}/send-to-approval` | ✅ |
+| Решение вместо партнёра для ожидающего купона | — (только просмотр) | ✅ |
 | Список жалоб | `GET /api/v1/mod/complaints` | ✅ |
 | Решение по жалобе | `PATCH /api/v1/mod/complaints/{id}/resolve` | ✅ |
 | Решение по отзыву | `PATCH /api/v1/mod/reviews/{id}/review` | ✅ |
 | Заявки на партнерство | `GET /api/v1/admin/partner-applications` | ✅ |
+
+Рабочее место `/coupons` содержит шесть вкладок: «Новые», «В работе», «Требуют изменений», «Ожидают партнёра», «Опубликованные» и «Архив». Таблица использует серверную пагинацию с размерами 20, 50 или 100; Kanban загружает по 20 записей на страницу в каждой рабочей колонке. Модератор не может принимать служебное решение за партнёра: у купона в `WAITING_FOR_MERCHANT` ему доступен только просмотр.
 
 ---
 
@@ -191,10 +196,15 @@ JWT роли перечислены в `Role`: `GUEST`, `USER`, `PARTNER`, `MODE
 ### Купоны
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
-| Все купоны | `GET /api/v1/admin/coupons` | ✅ |
+| Рабочее место купонов `/coupons` | `GET /api/v1/admin/coupons` | ✅ |
 | Создать купон | `POST /api/v1/admin/coupons` | ✅ |
-| Изменить статус купона | `PATCH /api/v1/admin/coupons/{id}/status` | ✅ |
-| Удалить купон | `DELETE /api/v1/admin/coupons/{id}` | ✅ |
+| Редактировать купон | `PUT /api/v1/admin/coupons/{id}` | ✅ |
+| Взять лид в работу | `PATCH /api/v1/admin/coupons/{id}/take-to-work` | ✅ |
+| Отправить подготовленный купон партнёру | `POST /api/v1/admin/coupons/{id}/send-to-approval` | ✅ |
+| Служебное решение за партнёра | `PATCH /api/v1/mod/coupons/{id}/review` | ✅ |
+| Приостановить, восстановить или архивировать купон | `PATCH /api/v1/admin/coupons/{id}/status`, `POST /api/v1/admin/coupons/{id}/archive` | ✅ |
+
+ADMIN и SUPER_ADMIN имеют одинаковые права в рабочем месте. Служебное решение доступно только для купона, ожидающего партнёра, и требует непустую бизнес-причину; обычный путь остаётся решением партнёра в partner app или Telegram-боте.
 
 ### Мерчанты
 | Функция | Endpoint | Статус |
@@ -223,15 +233,17 @@ JWT роли перечислены в `Role`: `GUEST`, `USER`, `PARTNER`, `MODE
 | Принять возврат в обработку | `PATCH /api/v1/admin/refunds/{id}/approve` | ✅ |
 | Отклонить возврат | `PATCH /api/v1/admin/refunds/{id}/reject` | ✅ |
 | Завершить возврат | `PATCH /api/v1/admin/refunds/{id}/complete` | ✅ |
-| Legacy решение по возврату | `PATCH /api/v1/admin/refunds/{id}` | ✅ |
+| Legacy решение по возврату | `PATCH /api/v1/admin/refunds/{id}` | Удалено: обходило canonical state machine |
 
 ### Категории
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
+| Все категории, включая выключенные | `GET /api/v1/admin/categories` | ✅ |
 | Категория по ID | `GET /api/v1/admin/categories/{id}` | ✅ |
 | Создать категорию | `POST /api/v1/admin/categories` | ✅ |
 | Обновить категорию | `PUT /api/v1/admin/categories/{id}` | ✅ |
-| Удалить категорию | `DELETE /api/v1/admin/categories/{id}` | ✅ |
+| Удалить неиспользуемую категорию | `DELETE /api/v1/admin/categories/{id}` | ✅; 409, если есть купоны |
+| Импортировать категории | `POST /api/v1/admin/categories/upload` | ✅ |
 
 ### Заказы
 | Функция | Endpoint | Статус |
@@ -250,7 +262,7 @@ JWT роли перечислены в `Role`: `GUEST`, `USER`, `PARTNER`, `MODE
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
 | Промокоды | `POST /api/v1/admin/promocodes` | ✅ |
-| Dashboard (аналитика) | `GET /api/v1/admin/dashboard` | ❌ |
+| Dashboard (заказы, выручка, жалобы, 7 дней) | `GET /api/v1/admin/dashboard` | ✅ |
 
 ---
 
@@ -276,9 +288,9 @@ JWT роли перечислены в `Role`: `GUEST`, `USER`, `PARTNER`, `MODE
 |------|-----------|
 | **GUEST** | Каталог, категории, public reviews, directory и партнёрская заявка доступны без JWT |
 | **USER** | Покупка, профиль, избранное, заказы, purchased coupons, reviews, refunds, complaints, notifications реализованы |
-| **PARTNER** | Partner app, заявки на купоны, approval/revision, staff, stats, PIN/QR redemption реализованы |
-| **MODERATOR** | Модерация купонов, отзывов и жалоб реализована |
-| **ADMIN** | Merchant/catalog/order/support контуры реализованы; часть пунктов меню admin-app ещё не подключена к маршрутам |
+| **PARTNER** | Partner app, предложения, approval/revision, staff, stats, PIN/QR redemption реализованы |
+| **MODERATOR** | Рабочее место купонов, модерация отзывов и жалоб реализованы; решение за партнёра недоступно |
+| **ADMIN** | Merchant/catalog/order/support/user контуры реализованы; UI базаров/магазинов и промокодов остаётся отдельным roadmap-модулем |
 | **SUPER_ADMIN** | Staff, roles, blocking и audit реализованы; системные настройки/финансы ещё вне MVP |
 
 ---

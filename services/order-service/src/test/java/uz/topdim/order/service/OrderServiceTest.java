@@ -14,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.order.client.CouponClient;
 import uz.topdim.order.client.CouponPurchaseSnapshot;
+import uz.topdim.order.dto.AdminOrderResponse;
+import uz.topdim.order.dto.AdminPurchasedCouponLookupResponse;
 import uz.topdim.order.dto.PurchasedCouponResponse;
 import uz.topdim.order.entity.*;
 import uz.topdim.order.repository.*;
@@ -552,7 +554,7 @@ class OrderServiceTest {
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .status(PurchasedCouponStatus.ACTIVE).build();
 
-        when(purchasedCouponRepository.findByCouponCode("CP-TEST1234")).thenReturn(Optional.of(coupon));
+        when(purchasedCouponRepository.findByCouponCodeForUpdate("CP-TEST1234")).thenReturn(Optional.of(coupon));
         when(purchasedCouponRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(redemptionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -569,7 +571,7 @@ class OrderServiceTest {
         PurchasedCoupon coupon = PurchasedCoupon.builder()
                 .id(1L).couponCode("CP-USED1234").status(PurchasedCouponStatus.USED).build();
 
-        when(purchasedCouponRepository.findByCouponCode("CP-USED1234")).thenReturn(Optional.of(coupon));
+        when(purchasedCouponRepository.findByCouponCodeForUpdate("CP-USED1234")).thenReturn(Optional.of(coupon));
 
         assertThatThrownBy(() -> orderService.redeemCoupon("CP-USED1234", 5L, "Анна"))
                 .isInstanceOf(IllegalStateException.class)
@@ -590,7 +592,7 @@ class OrderServiceTest {
                 .status(PurchasedCouponStatus.ACTIVE)
                 .build();
 
-        when(purchasedCouponRepository.findByCouponCode("CP-TEST1234")).thenReturn(Optional.of(coupon));
+        when(purchasedCouponRepository.findByCouponCodeForUpdate("CP-TEST1234")).thenReturn(Optional.of(coupon));
 
         assertThatThrownBy(() -> orderService.redeemCoupon("CP-TEST1234", 88L, "Анна"))
                 .isInstanceOf(IllegalStateException.class)
@@ -611,7 +613,7 @@ class OrderServiceTest {
                 .status(PurchasedCouponStatus.ACTIVE)
                 .build();
 
-        when(purchasedCouponRepository.findByCouponCode("CP-ORPHAN1")).thenReturn(Optional.of(coupon));
+        when(purchasedCouponRepository.findByCouponCodeForUpdate("CP-ORPHAN1")).thenReturn(Optional.of(coupon));
 
         assertThatThrownBy(() -> orderService.redeemCoupon("CP-ORPHAN1", 77L, "Анна"))
                 .isInstanceOf(IllegalStateException.class)
@@ -632,7 +634,7 @@ class OrderServiceTest {
                 .status(PurchasedCouponStatus.ACTIVE)
                 .build();
 
-        when(purchasedCouponRepository.findByCouponCode("CP-OLD1234")).thenReturn(Optional.of(coupon));
+        when(purchasedCouponRepository.findByCouponCodeForUpdate("CP-OLD1234")).thenReturn(Optional.of(coupon));
         when(purchasedCouponRepository.save(any(PurchasedCoupon.class))).thenAnswer(inv -> inv.getArgument(0));
 
         assertThatThrownBy(() -> orderService.redeemCoupon("CP-OLD1234", 77L, "Анна"))
@@ -657,7 +659,7 @@ class OrderServiceTest {
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .status(PurchasedCouponStatus.ACTIVE).build();
 
-        when(purchasedCouponRepository.findByQrToken("qr-token-abc123")).thenReturn(Optional.of(coupon));
+        when(purchasedCouponRepository.findByQrTokenForUpdate("qr-token-abc123")).thenReturn(Optional.of(coupon));
         when(purchasedCouponRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(redemptionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -671,7 +673,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("Погашение по QR-токену: несуществующий токен → IllegalArgumentException")
     void redeemByQrToken_notFound_throwsException() {
-        when(purchasedCouponRepository.findByQrToken("invalid-token")).thenReturn(Optional.empty());
+        when(purchasedCouponRepository.findByQrTokenForUpdate("invalid-token")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.redeemByQrToken("invalid-token", 5L, "Анна"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -685,7 +687,7 @@ class OrderServiceTest {
                 .id(1L).couponCode("CP-USED").qrToken("qr-used")
                 .merchantId(5L).status(PurchasedCouponStatus.USED).build();
 
-        when(purchasedCouponRepository.findByQrToken("qr-used")).thenReturn(Optional.of(coupon));
+        when(purchasedCouponRepository.findByQrTokenForUpdate("qr-used")).thenReturn(Optional.of(coupon));
 
         assertThatThrownBy(() -> orderService.redeemByQrToken("qr-used", 5L, "Анна"))
                 .isInstanceOf(IllegalStateException.class)
@@ -701,7 +703,7 @@ class OrderServiceTest {
                 .expiresAt(LocalDateTime.now().plusDays(1))
                 .status(PurchasedCouponStatus.ACTIVE).build();
 
-        when(purchasedCouponRepository.findByQrToken("qr-token-xyz")).thenReturn(Optional.of(coupon));
+        when(purchasedCouponRepository.findByQrTokenForUpdate("qr-token-xyz")).thenReturn(Optional.of(coupon));
 
         assertThatThrownBy(() -> orderService.redeemByQrToken("qr-token-xyz", 88L, "Анна"))
                 .isInstanceOf(IllegalStateException.class)
@@ -818,7 +820,7 @@ class OrderServiceTest {
 
         when(orderRepository.findAll(any(Pageable.class))).thenReturn(page);
 
-        Page<Order> result = orderService.getAllOrders(null, 0, 20);
+        Page<AdminOrderResponse> result = orderService.getAllOrders(null, 0, 20);
 
         assertThat(result.getContent()).hasSize(2);
         verify(orderRepository).findAll(any(Pageable.class));
@@ -833,7 +835,7 @@ class OrderServiceTest {
 
         when(orderRepository.findByStatus(eq(OrderStatus.PAID), any(Pageable.class))).thenReturn(page);
 
-        Page<Order> result = orderService.getAllOrders(OrderStatus.PAID, 0, 20);
+        Page<AdminOrderResponse> result = orderService.getAllOrders(OrderStatus.PAID, 0, 20);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getStatus()).isEqualTo(OrderStatus.PAID);
@@ -845,7 +847,7 @@ class OrderServiceTest {
         Order order = Order.builder().id(100L).userId(99L).status(OrderStatus.PAID).build();
         when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
 
-        Order result = orderService.getOrderByIdAdmin(100L);
+        AdminOrderResponse result = orderService.getOrderByIdAdmin(100L);
 
         assertThat(result.getId()).isEqualTo(100L);
         assertThat(result.getUserId()).isEqualTo(99L); // не проверяем владельца
@@ -859,6 +861,55 @@ class OrderServiceTest {
         assertThatThrownBy(() -> orderService.getOrderByIdAdmin(999L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("не найден");
+    }
+
+    @Test
+    @DisplayName("Admin lookup: нормализует код и возвращает только support-поля без qrToken")
+    void adminLookupByCouponCode_normalizesAndExcludesQrToken() {
+        Order order = Order.builder().id(100L).build();
+        PurchasedCoupon purchasedCoupon = PurchasedCoupon.builder()
+                .id(501L)
+                .order(order)
+                .userId(10L)
+                .couponOfferId(20L)
+                .couponOptionId(30L)
+                .couponTitle("SPA")
+                .optionTitle("90 минут")
+                .couponCode("CP-ABCD1234")
+                .qrToken("secret-redemption-token")
+                .status(PurchasedCouponStatus.ACTIVE)
+                .merchantId(77L)
+                .merchantName("SPA Oasis")
+                .merchantAddress("Ташкент")
+                .purchasedAt(LocalDateTime.of(2026, 8, 4, 10, 30))
+                .build();
+        when(purchasedCouponRepository.findByCouponCode("CP-ABCD1234"))
+                .thenReturn(Optional.of(purchasedCoupon));
+
+        AdminPurchasedCouponLookupResponse result =
+                orderService.adminLookupByCouponCode("  cp-abcd1234  ");
+
+        assertThat(result.getPurchasedCouponId()).isEqualTo(501L);
+        assertThat(result.getOrderId()).isEqualTo(100L);
+        assertThat(result.getCouponCode()).isEqualTo("CP-ABCD1234");
+        assertThat(result.getMerchantId()).isEqualTo(77L);
+        assertThat(AdminPurchasedCouponLookupResponse.class.getDeclaredFields())
+                .extracting(java.lang.reflect.Field::getName)
+                .doesNotContain("qrToken");
+        verify(purchasedCouponRepository).findByCouponCode("CP-ABCD1234");
+    }
+
+    @Test
+    @DisplayName("Admin lookup: неизвестный нормализованный код отклоняется")
+    void adminLookupByCouponCode_notFound_throws() {
+        when(purchasedCouponRepository.findByCouponCode("CP-NOTFOUND"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.adminLookupByCouponCode(" cp-notfound "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("не найден");
+
+        verify(purchasedCouponRepository).findByCouponCode("CP-NOTFOUND");
     }
 
     // ==================== Task 1: Checkout Revalidation Regression ====================
@@ -1034,7 +1085,7 @@ class OrderServiceTest {
                 .status(PurchasedCouponStatus.ACTIVE)
                 .build();
 
-        when(purchasedCouponRepository.findByCouponCode("CP-CONTEXT1")).thenReturn(Optional.of(coupon));
+        when(purchasedCouponRepository.findByCouponCodeForUpdate("CP-CONTEXT1")).thenReturn(Optional.of(coupon));
         when(purchasedCouponRepository.save(any(PurchasedCoupon.class))).thenAnswer(inv -> inv.getArgument(0));
         when(redemptionRepository.save(any(Redemption.class))).thenAnswer(inv -> inv.getArgument(0));
 

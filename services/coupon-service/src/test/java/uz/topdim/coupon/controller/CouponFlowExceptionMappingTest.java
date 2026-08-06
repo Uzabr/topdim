@@ -66,13 +66,13 @@ class CouponFlowExceptionMappingTest {
     @DisplayName("Mod approve: publication guard failure returns 409 with business message")
     void modApprove_publicationGuardFailure_returnsConflict() throws Exception {
         doThrow(new IllegalStateException("Нельзя публиковать купон без active primary location у мерчанта"))
-                .when(modCouponService).reviewCoupon(7L, 12L, "APPROVE", null);
+                .when(modCouponService).reviewCoupon(7L, 12L, "APPROVE", "SUP-42: подтверждено");
 
         modMvc.perform(patch("/api/v1/mod/coupons/12/review")
                         .header("X-User-Id", 7L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"status":"APPROVE"}
+                                {"status":"APPROVE","reason":"SUP-42: подтверждено"}
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))

@@ -1,12 +1,14 @@
 import api from '../../api/client';
 
+export type UserRole = 'USER' | 'PARTNER' | 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
+
 export interface AdminUser {
   id: number;
   email: string;
   phone: string | null;
   firstName: string;
   lastName: string | null;
-  role: string;
+  role: UserRole;
   enabled: boolean;
   emailVerified: boolean;
   phoneVerified: boolean;
@@ -32,7 +34,7 @@ export const fetchUsersPage = async (params: {
   page?: number;
   size?: number;
   search?: string;
-  role?: string;
+  role?: UserRole;
 }) => {
   const res = await api.get<ApiResponse<PageResponse<AdminUser>>>(
     '/api/v1/admin/users',

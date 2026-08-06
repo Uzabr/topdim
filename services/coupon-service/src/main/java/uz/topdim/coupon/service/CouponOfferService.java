@@ -20,6 +20,9 @@ import uz.topdim.coupon.repository.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static uz.topdim.coupon.util.PhoneUtils.normalize;
@@ -297,6 +300,8 @@ public class CouponOfferService {
      * Результат: статус → WAITING_FOR_MERCHANT.
      *
      * @param id идентификатор купона
+     * @param currentUserId ID сотрудника, выполняющего переход
+     * @param currentUserRole роль сотрудника для ownership-проверки
      * @return обновлённый купон
      */
     @Caching(evict = {
@@ -304,7 +309,7 @@ public class CouponOfferService {
             @CacheEvict(value = "couponDetail", key = "#id")
     })
     @Transactional
-    public CouponOfferResponse sendToApproval(Long id) {
+    public CouponOfferResponse sendToApproval(Long id, Long currentUserId, String currentUserRole) {
         CouponOffer offer = couponOfferRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
@@ -313,6 +318,8 @@ public class CouponOfferService {
                     "Нельзя отправить на согласование из статуса " + offer.getStatus()
                     + ". Допустимые: DRAFT, REVISION_REQUESTED");
         }
+
+        assertModeratorOwnership(offer, currentUserId, currentUserRole);
 
         // Ensure cover image is set before approval — apply category fallback if missing
         if (offer.getCoverImageUrl() == null || offer.getCoverImageUrl().isBlank()) {
@@ -346,18 +353,16 @@ public class CouponOfferService {
      */
     @Transactional
     public CouponOfferResponse takeToWork(Long id, Long moderatorId, String moderatorName) {
-        CouponOffer offer = couponOfferRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
-
-        if (offer.getStatus() != CouponStatus.LEAD) {
-            throw new IllegalStateException(
-                    "Взять в работу можно только из статуса LEAD. Текущий: " + offer.getStatus());
+        int claimed = couponOfferRepository.claimLead(id, moderatorId, moderatorName);
+        if (claimed == 0) {
+            if (!couponOfferRepository.existsById(id)) {
+                throw new ResourceNotFoundException("Купон не найден");
+            }
+            throw new IllegalStateException("Купон уже взят в работу или больше не является лидом");
         }
 
-        offer.setStatus(CouponStatus.DRAFT);
-        offer.setAssignedModeratorId(moderatorId);
-        offer.setAssignedModeratorName(moderatorName);
-        couponOfferRepository.save(offer);
+        CouponOffer offer = couponOfferRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
         log.info("Купон #{} взят в работу модератором {} ({})", id, moderatorName, moderatorId);
 
@@ -411,7 +416,7 @@ public class CouponOfferService {
     })
     @Transactional
     public CouponOfferResponse approveByMerchant(Long id) {
-        CouponOffer offer = couponOfferRepository.findById(id)
+        CouponOffer offer = couponOfferRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
         if (offer.getStatus() != CouponStatus.WAITING_FOR_MERCHANT) {
@@ -434,7 +439,7 @@ public class CouponOfferService {
                     .sum();
             telegramPreviewService.sendPushMessage(
                     offer.getMerchant().getTelegramChatId(),
-                    "🎉 Ура! Акция запущена. Установлен лимит: " + limit + " сертификатов. Следить за продажами можно в разделе «📊 Статистика»."
+                    "🎉 Ура! Предложение запущено. Установлен лимит: " + limit + " сертификатов. Следить за продажами можно в разделе «📊 Статистика»."
             );
         }
 
@@ -455,7 +460,7 @@ public class CouponOfferService {
     })
     @Transactional
     public CouponOfferResponse requestRevisionByMerchant(Long id, String comment) {
-        CouponOffer offer = couponOfferRepository.findById(id)
+        CouponOffer offer = couponOfferRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
         if (offer.getStatus() != CouponStatus.WAITING_FOR_MERCHANT) {
@@ -507,12 +512,7 @@ public class CouponOfferService {
         }
 
         // Ownership check: MODERATOR может редактировать только свои
-        if ("MODERATOR".equals(currentUserRole)
-                && offer.getAssignedModeratorId() != null
-                && !offer.getAssignedModeratorId().equals(currentUserId)) {
-            throw new IllegalStateException(
-                    "Купон закреплён за другим модератором (" + offer.getAssignedModeratorName() + ")");
-        }
+        assertModeratorOwnership(offer, currentUserId, currentUserRole);
 
         // Обновляем мерчанта
         // merchant_id обязательно (NOT NULL) — обновляем если передан, иначе оставляем текущего
@@ -601,9 +601,29 @@ public class CouponOfferService {
         return mapToResponse(couponOfferRepository.findById(offer.getId()).orElseThrow());
     }
 
+    private void assertModeratorOwnership(
+            CouponOffer offer,
+            Long currentUserId,
+            String currentUserRole
+    ) {
+        if (!"MODERATOR".equals(currentUserRole)) {
+            return;
+        }
+
+        if (offer.getAssignedModeratorId() == null) {
+            throw new IllegalStateException("Купон не закреплён за текущим модератором");
+        }
+        if (!offer.getAssignedModeratorId().equals(currentUserId)) {
+            throw new IllegalStateException(
+                    "Купон закреплён за другим модератором ("
+                    + offer.getAssignedModeratorName() + ")");
+        }
+    }
+
     /**
-     * Обновляет статус купона (Admin) — только разрешённые переходы State Machine.
-     * Допустимые: LEAD→DRAFT, DRAFT/REVISION→WAITING, WAITING→ACTIVE/REVISION.
+     * Управляет публикацией купона (Admin) через узкий generic endpoint.
+     * Допустимы только ACTIVE→PAUSED и PAUSED→ACTIVE; workflow-переходы принадлежат
+     * специализированным take/send/partner/bot/support операциям.
      *
      * @param id идентификатор купона
      * @param newStatus новый статус
@@ -621,24 +641,14 @@ public class CouponOfferService {
                 .orElseThrow(() -> new ResourceNotFoundException("Купон не найден"));
 
         CouponStatus current = offer.getStatus();
-        boolean allowed = switch (newStatus) {
-            case DRAFT -> current == CouponStatus.LEAD;
-            case WAITING_FOR_MERCHANT -> current == CouponStatus.DRAFT
-                    || current == CouponStatus.REVISION_REQUESTED;
-            case ACTIVE -> current == CouponStatus.WAITING_FOR_MERCHANT
-                    || current == CouponStatus.PAUSED;
-            case PAUSED -> current == CouponStatus.ACTIVE;
-            case REVISION_REQUESTED -> current == CouponStatus.WAITING_FOR_MERCHANT;
-            case LEAD -> false;
-            case SOLD_OUT -> false; // Устанавливается автоматически через registerSale
-            case ARCHIVED -> false; // Используйте dedicated archive endpoint with reason.
-        };
+        boolean allowed = (current == CouponStatus.ACTIVE && newStatus == CouponStatus.PAUSED)
+                || (current == CouponStatus.PAUSED && newStatus == CouponStatus.ACTIVE);
 
         if (!allowed) {
             throw new IllegalStateException(
                     "Переход " + current + " → " + newStatus + " запрещён. "
-                    + "Допустимые: LEAD→DRAFT, DRAFT/REVISION→WAITING, WAITING→ACTIVE/REVISION. "
-                    + "Для ACTIVE/SOLD_OUT используйте archive endpoint");
+                    + "Generic status endpoint допускает только ACTIVE→PAUSED и PAUSED→ACTIVE. "
+                    + "Для остальных переходов используйте специализированный endpoint");
         }
 
         if (newStatus == CouponStatus.ACTIVE) {
@@ -654,6 +664,9 @@ public class CouponOfferService {
         if (merchant == null) {
             throw new IllegalStateException("Нельзя публиковать купон без мерчанта");
         }
+        if (!merchant.isActive()) {
+            throw new IllegalStateException("Мерчант не активен");
+        }
 
         MerchantLocation primaryLocation = merchantLocationRepository.findByMerchantIdAndPrimaryTrue(merchant.getId())
                 .filter(MerchantLocation::isActive)
@@ -667,7 +680,7 @@ public class CouponOfferService {
     }
 
     /**
-     * Архивирует опубликованный или распроданный купон.
+     * Архивирует опубликованный, приостановленный или распроданный купон.
      * Останавливает будущие продажи, но не меняет уже купленные купоны.
      */
     @Caching(evict = {
@@ -685,10 +698,12 @@ public class CouponOfferService {
             throw new IllegalArgumentException("Причина архивирования обязательна");
         }
 
-        if (offer.getStatus() != CouponStatus.ACTIVE && offer.getStatus() != CouponStatus.SOLD_OUT) {
+        if (offer.getStatus() != CouponStatus.ACTIVE
+                && offer.getStatus() != CouponStatus.PAUSED
+                && offer.getStatus() != CouponStatus.SOLD_OUT) {
             throw new IllegalStateException(
                     "Архивирование запрещено из статуса " + offer.getStatus()
-                    + ". Допустимые: ACTIVE, SOLD_OUT");
+                    + ". Допустимые: ACTIVE, PAUSED, SOLD_OUT");
         }
 
         offer.setStatus(CouponStatus.ARCHIVED);
@@ -734,11 +749,65 @@ public class CouponOfferService {
 
     @Transactional(readOnly = true)
     public Page<CouponOfferResponse> getAllForAdmin(CouponStatus status, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        if (status != null) {
-            return couponOfferRepository.findAllByStatus(status, pageable).map(this::mapToResponse);
+        Set<CouponStatus> statuses = status == null ? Set.of() : Set.of(status);
+        return getAllForAdmin(new AdminCouponFilter(statuses, null, null, null), page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CouponOfferResponse> getAllForAdmin(
+            AdminCouponFilter filter,
+            int page,
+            int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(
+                Sort.Order.desc("createdAt"),
+                Sort.Order.desc("id")));
+        Page<CouponOffer> offers = couponOfferRepository.findAll(
+                CouponOfferSpecifications.forAdmin(filter), pageable);
+        if (offers.isEmpty()) {
+            return offers.map(this::mapToResponse);
         }
-        return couponOfferRepository.findAll(pageable).map(this::mapToResponse);
+
+        List<Long> couponIds = offers.stream().map(CouponOffer::getId).toList();
+        List<Long> merchantIds = offers.stream()
+                .map(CouponOffer::getMerchant)
+                .filter(java.util.Objects::nonNull)
+                .map(Merchant::getId)
+                .distinct()
+                .toList();
+        Map<Long, MerchantLocationResponse> primaryLocations = merchantLocationRepository
+                .findByMerchantIdInAndPrimaryTrue(merchantIds).stream()
+                .collect(Collectors.toMap(
+                        location -> location.getMerchant().getId(),
+                        this::mapMerchantLocation,
+                        (first, ignored) -> first));
+        Map<Long, List<CouponOption>> options = couponOptionRepository
+                .findByCouponOfferIdInOrderById(couponIds).stream()
+                .collect(Collectors.groupingBy(option -> option.getCouponOffer().getId()));
+        Map<Long, List<CouponImage>> images = couponImageRepository
+                .findByCouponOfferIdInOrderBySortOrderAscIdAsc(couponIds).stream()
+                .collect(Collectors.groupingBy(image -> image.getCouponOffer().getId()));
+        Map<Long, CouponReviewSummary> reviews = reviewRepository
+                .summarizeApprovedByCouponIds(couponIds).stream()
+                .collect(Collectors.toMap(CouponReviewSummary::couponId, Function.identity()));
+
+        return offers.map(offer -> {
+            CouponReviewSummary review = reviews.get(offer.getId());
+            return mapToResponse(
+                    offer,
+                    offer.getMerchant() != null
+                            ? primaryLocations.get(offer.getMerchant().getId())
+                            : null,
+                    review != null ? review.averageRating() : 0.0,
+                    review != null ? review.reviewCount().intValue() : 0,
+                    options.getOrDefault(offer.getId(), List.of()),
+                    images.getOrDefault(offer.getId(), List.of()));
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public List<CouponAssigneeResponse> getCouponAssignees() {
+        return couponOfferRepository.findDistinctAssignees();
     }
 
     /**
@@ -765,19 +834,41 @@ public class CouponOfferService {
         if (offer.getMerchant() != null) {
             primaryLoc = merchantLocationRepository
                     .findByMerchantIdAndPrimaryTrue(offer.getMerchant().getId())
-                    .map(loc -> MerchantLocationResponse.builder()
-                            .id(loc.getId())
-                            .title(loc.getTitle())
-                            .address(loc.getAddress())
-                            .phone(loc.getPhone())
-                            .workingHours(loc.getWorkingHours())
-                            .latitude(loc.getLatitude())
-                            .longitude(loc.getLongitude())
-                            .primary(loc.isPrimary())
-                            .active(loc.isActive())
-                            .build())
+                    .map(this::mapMerchantLocation)
                     .orElse(null);
         }
+
+        return mapToResponse(
+                offer,
+                primaryLoc,
+                reviewRepository.getAverageRatingByCouponId(offer.getId()),
+                reviewRepository.countApprovedByCouponId(offer.getId()),
+                offer.getOptions(),
+                offer.getImages());
+    }
+
+    private MerchantLocationResponse mapMerchantLocation(MerchantLocation location) {
+        return MerchantLocationResponse.builder()
+                .id(location.getId())
+                .title(location.getTitle())
+                .address(location.getAddress())
+                .phone(location.getPhone())
+                .workingHours(location.getWorkingHours())
+                .latitude(location.getLatitude())
+                .longitude(location.getLongitude())
+                .primary(location.isPrimary())
+                .active(location.isActive())
+                .build();
+    }
+
+    private CouponOfferResponse mapToResponse(
+            CouponOffer offer,
+            MerchantLocationResponse primaryLoc,
+            double averageRating,
+            int reviewCount,
+            List<CouponOption> options,
+            List<CouponImage> images
+    ) {
 
         String offerDesc = offer.getOfferDescription();
 
@@ -815,9 +906,9 @@ public class CouponOfferService {
                 .redeemedCount(offer.getRedeemedCount())
                 .totalTurnover(offer.getTotalTurnover())
                 .viewCount(offer.getViewCount())
-                .averageRating(reviewRepository.getAverageRatingByCouponId(offer.getId()))
-                .reviewCount(reviewRepository.countApprovedByCouponId(offer.getId()))
-                .options(offer.getOptions().stream()
+                .averageRating(averageRating)
+                .reviewCount(reviewCount)
+                .options(options.stream()
                         .map(opt -> CouponOptionResponse.builder()
                                 .id(opt.getId())
                                 .title(opt.getTitle())
@@ -828,7 +919,7 @@ public class CouponOfferService {
                                 .status(opt.getStatus().name())
                                 .build())
                         .collect(Collectors.toList()))
-                .images(offer.getImages().stream()
+                .images(images.stream()
                         .map(CouponImage::getImageUrl)
                         .collect(Collectors.toList()))
                 .createdAt(offer.getCreatedAt())
@@ -1097,8 +1188,8 @@ public class CouponOfferService {
             if (offer.getMerchant() != null && offer.getMerchant().getTelegramChatId() != null) {
                 telegramPreviewService.sendPushMessage(
                         offer.getMerchant().getTelegramChatId(),
-                        "🛑 Сертификаты по акции распроданы! Публикация автоматически приостановлена. " +
-                        "Чтобы запустить новую, нажмите [➕ Создать купон]."
+                        "🛑 Сертификаты по предложению распроданы! Публикация автоматически приостановлена. " +
+                        "Чтобы запустить новое, подайте купонное предложение."
                 );
             }
         }

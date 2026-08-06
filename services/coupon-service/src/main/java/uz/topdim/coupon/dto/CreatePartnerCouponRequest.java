@@ -25,14 +25,14 @@ import java.util.List;
 @AllArgsConstructor
 public class CreatePartnerCouponRequest {
 
-    @NotBlank(message = "Название акции обязательно")
+    @NotBlank(message = "Название предложения обязательно")
     @Size(max = 200, message = "Название не более 200 символов")
     private String title;
 
     @NotNull(message = "Укажите категорию")
     private Long categoryId;
 
-    @NotBlank(message = "Описание акции обязательно")
+    @NotBlank(message = "Описание предложения обязательно")
     @Size(max = 5000, message = "Описание не более 5000 символов")
     private String offerDescription;
 
@@ -40,8 +40,8 @@ public class CreatePartnerCouponRequest {
     @Positive(message = "Старая цена должна быть положительной")
     private BigDecimal oldPrice;
 
-    @NotNull(message = "Укажите цену по акции")
-    @Positive(message = "Цена по акции должна быть положительной")
+    @NotNull(message = "Укажите цену по предложению")
+    @Positive(message = "Цена по предложению должна быть положительной")
     private BigDecimal fromPrice;
 
     @Min(value = 1, message = "Скидка должна быть от 1%")
@@ -66,8 +66,8 @@ public class CreatePartnerCouponRequest {
     private List<String> imageUrls;
 
     /** Варианты акции (обязательно хотя бы один). */
-    @NotNull(message = "Добавьте хотя бы один вариант акции")
-    @Size(min = 1, message = "Добавьте хотя бы один вариант акции")
+    @NotNull(message = "Добавьте хотя бы один вариант предложения")
+    @Size(min = 1, message = "Добавьте хотя бы один вариант предложения")
     @Valid
     private List<CreateCouponOptionRequest> options;
 }

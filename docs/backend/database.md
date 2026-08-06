@@ -57,7 +57,7 @@ erDiagram
         varchar phone
         varchar company_name
         text comment
-        varchar status "PENDING|APPROVED|REJECTED"
+        varchar status "PENDING|PROCESSING|APPROVED|REJECTED"
         varchar login_email
         varchar city
         varchar business_address
@@ -604,8 +604,8 @@ Shard 3: user_id 4,000,001 — 6,000,000
 
 | Сервис | Миграции |
 |---|---|
-| identity | V1 (users), V2 (refresh_tokens), V3 (audit_logs), V4 (favorites), V5 (staff), V6 (partner_applications), V7 (indexes), V8 (security_version), V9 (auth_action_tokens), V10 (partner onboarding fields), V11 (staff cabinet fields) |
-| coupon | V1-V12 (base tables, indexes, reviews/promos, search, soft delete, draft/status/statistics), V13-V18 (merchant locations, offer_description, phone normalization, archive fields), V19-V20 (sales/redemption ledgers) |
+| identity | V1-V11 (users, auth, staff, partner onboarding), V12 (Telegram/trust), V13 (hashed refresh tokens), V14 (account identifiers), V15 (retryable partner approval) |
+| coupon | V1-V20 (base catalog, merchants/locations, reviews and sales/redemption ledgers), V21 (option versioning), V22-V23 (situations), V24 (coupon questions), V25 (category uniqueness), V26 (unique merchant owner) |
 | order | V1 (tables), V2 (redemptions), V3 (refunds), V4 (indexes), V5 (audit), V6 (partitioning), V7 (complaints), V8-V9 (purchased coupon lifecycle/snapshot), V10 (branch/staff redemption), V11 (per-coupon refunds/complaints) |
 | payment | V1 (tables), V2 (indexes), V3 (audit), V4 (unique order_id) |
 | bazaar | V1 (tables), V2 (indexes), V3 (audit), V4 (GIN search), V5 (user id to shops) |

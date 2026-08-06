@@ -10,14 +10,18 @@ const { Title } = Typography;
 const statusColors: Record<string, string> = {
   PENDING: 'gold',
   PAID: 'green',
+  COMPLETED: 'blue',
   CANCELLED: 'red',
+  REFUND_REQUESTED: 'orange',
   REFUNDED: 'purple',
 };
 
 const statusLabels: Record<string, string> = {
   PENDING: 'Ожидает оплаты',
   PAID: 'Оплачен',
+  COMPLETED: 'Завершён',
   CANCELLED: 'Отменён',
+  REFUND_REQUESTED: 'Запрошен возврат',
   REFUNDED: 'Возвращён',
 };
 
@@ -34,7 +38,8 @@ export function OrdersPage() {
 
   const columns = [
     {
-      title: 'ID', dataIndex: 'id', key: 'id', width: 80,
+      title: 'Заказ', dataIndex: 'orderNumber', key: 'orderNumber', width: 180,
+      render: (orderNumber: string, record: AdminOrder) => orderNumber || `#${record.id}`,
     },
     {
       title: 'Пользователь', key: 'user',
@@ -44,6 +49,7 @@ export function OrdersPage() {
     },
     {
       title: 'Телефон', dataIndex: 'userPhone', key: 'phone',
+      render: (phone: string | null) => phone || '—',
     },
     {
       title: 'Статус', dataIndex: 'status', key: 'status',
@@ -51,7 +57,7 @@ export function OrdersPage() {
     },
     {
       title: 'Сумма', dataIndex: 'totalAmount', key: 'amount',
-      render: (v: number) => v ? `${v.toLocaleString('ru-RU')} сум` : '—',
+      render: (v: number | null) => v == null ? '—' : `${v.toLocaleString('ru-RU')} сум`,
     },
     {
       title: 'Дата', dataIndex: 'createdAt', key: 'date',
@@ -73,7 +79,9 @@ export function OrdersPage() {
             { label: 'Все', value: undefined },
             { label: 'Ожидает оплаты', value: 'PENDING' },
             { label: 'Оплачен', value: 'PAID' },
+            { label: 'Завершён', value: 'COMPLETED' },
             { label: 'Отменён', value: 'CANCELLED' },
+            { label: 'Запрошен возврат', value: 'REFUND_REQUESTED' },
             { label: 'Возвращён', value: 'REFUNDED' },
           ]}
           id="order-status-filter"

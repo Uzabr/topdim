@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Table, Tag, Button, Modal, Input, Space, Typography, App } from 'antd';
+import { App, Button, Input, Modal, Result, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { getPendingComplaints, resolveComplaint } from './api';
 import type { AdminComplaint } from './api';
 
 const { TextArea } = Input;
+
+function getErrorMessage(error: unknown, fallback: string) {
+  const apiError = error as { response?: { data?: { message?: string } } };
+  return apiError.response?.data?.message || fallback;
+}
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   PENDING: { label: 'На рассмотрении', color: 'orange' },
@@ -21,7 +26,7 @@ export function ComplaintsPage() {
   const [actionModal, setActionModal] = useState<{ type: 'resolve' | 'reject'; complaint: AdminComplaint } | null>(null);
   const [resolution, setResolution] = useState('');
 
-  const { data, isLoading } = useQuery({
+  const { data, error, isFetching, isLoading, refetch } = useQuery({
     queryKey: ['admin-complaints', page],
     queryFn: () => getPendingComplaints(page, 20),
   });
@@ -34,7 +39,7 @@ export function ComplaintsPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-complaints'] });
       setActionModal(null);
     },
-    onError: () => message.error('Ошибка обработки'),
+    onError: (error) => message.error(getErrorMessage(error, 'Ошибка обработки')),
   });
 
   const handleAction = () => {
@@ -75,6 +80,16 @@ export function ComplaintsPage() {
     },
   ];
 
+  if (error) {
+    return (
+      <Result
+        status="error"
+        title="Ошибка загрузки обращений"
+        extra={<Button loading={isFetching} onClick={() => refetch()}>Повторить</Button>}
+      />
+    );
+  }
+
   return (
     <div>
       <Typography.Title level={3}>Обращения (жалобы)</Typography.Title>
@@ -84,6 +99,7 @@ export function ComplaintsPage() {
         columns={columns}
         dataSource={data?.content || []}
         loading={isLoading}
+        locale={{ emptyText: 'Нет обращений на рассмотрении' }}
         pagination={{
           total: data?.totalElements || 0,
           pageSize: 20,

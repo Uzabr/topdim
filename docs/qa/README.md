@@ -8,6 +8,8 @@
 | Документ | Назначение |
 |---|---|
 | [manual-test-plan.md](manual-test-plan.md) | ручной E2E тест-план |
+| [admin-launch-manual-test-plan.md](admin-launch-manual-test-plan.md) | запусковой чеклист админки по ролям и бизнес-операциям |
+| [admin-launch-readiness-report.md](admin-launch-readiness-report.md) | текущий вердикт, продуктовая граница и открытые launch-условия |
 | [test-strategy.md](test-strategy.md) | стратегия unit/integration/backend тестов |
 | [purchase-flow-checklist.md](purchase-flow-checklist.md) | чеклист покупки купона |
 | [purchase-flow-walkthrough.md](purchase-flow-walkthrough.md) | пошаговый walkthrough purchase flow |

@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.identity.client.CouponMerchantClient;
+import uz.topdim.identity.client.MerchantLocationResponse;
 import uz.topdim.identity.client.MerchantOnboardingResponse;
 import uz.topdim.identity.dto.CreateStaffRequest;
 import uz.topdim.identity.dto.PartnerAccessContextResponse;
@@ -19,6 +20,7 @@ import uz.topdim.identity.entity.Role;
 import uz.topdim.identity.entity.Staff;
 import uz.topdim.identity.entity.User;
 import uz.topdim.identity.exception.ResourceNotFoundException;
+import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.StaffRepository;
 import uz.topdim.identity.repository.UserRepository;
 
@@ -34,6 +36,8 @@ class PartnerStaffServiceTest {
 
     @Mock private StaffRepository staffRepository;
     @Mock private UserRepository userRepository;
+    @Mock private RefreshTokenRepository refreshTokenRepository;
+    @Mock private SecurityVersionService securityVersionService;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private CouponMerchantClient couponMerchantClient;
 
@@ -58,6 +62,13 @@ class PartnerStaffServiceTest {
                 .thenReturn(ApiResponse.success(merchantResponse));
     }
 
+    private void mockOwnerLocationResolution(Long locationId) {
+        var location = new MerchantLocationResponse(
+                locationId, "Главный филиал", "Ташкент", "+998901234567", "09:00-22:00", true, true);
+        when(couponMerchantClient.getMerchantLocationsByUserId(OWNER_USER_ID))
+                .thenReturn(ApiResponse.success(List.of(location)));
+    }
+
     // ==================== Access Context ====================
 
     @Nested
@@ -80,10 +91,25 @@ class PartnerStaffServiceTest {
         }
 
         @Test
+        @DisplayName("Inactive owner merchant — access context is rejected")
+        void ownerContext_inactiveMerchant_rejected() {
+            when(staffRepository.findByLoginUserId(OWNER_USER_ID)).thenReturn(Optional.empty());
+            when(couponMerchantClient.getMerchantByUserId(OWNER_USER_ID))
+                    .thenReturn(ApiResponse.success(
+                            new MerchantOnboardingResponse(MERCHANT_ID, "Disabled Shop", OWNER_USER_ID, false)));
+
+            assertThatThrownBy(() -> partnerStaffService.resolveAccessContext(OWNER_USER_ID))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("не активен");
+        }
+
+        @Test
         @DisplayName("Cashier — staff login user, returns CASHIER context with location")
         void cashierContext_success() {
             Staff cashier = createCashierStaff();
             when(staffRepository.findByLoginUserId(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.of(cashier));
+            mockOwnerMerchantResolution();
+            mockOwnerLocationResolution(LOCATION_ID);
 
             PartnerAccessContextResponse ctx = partnerStaffService.resolveAccessContext(CASHIER_LOGIN_USER_ID);
 
@@ -94,6 +120,34 @@ class PartnerStaffServiceTest {
             assertThat(ctx.getStaffName()).isEqualTo("Кассир Али");
             assertThat(ctx.isCanViewDashboard()).isFalse();
             assertThat(ctx.isCanRedeem()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Cashier of inactive merchant — access context is rejected")
+        void cashierContext_inactiveMerchant_rejected() {
+            Staff cashier = createCashierStaff();
+            when(staffRepository.findByLoginUserId(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.of(cashier));
+            when(couponMerchantClient.getMerchantByUserId(OWNER_USER_ID))
+                    .thenReturn(ApiResponse.success(
+                            new MerchantOnboardingResponse(MERCHANT_ID, "Disabled Shop", OWNER_USER_ID, false)));
+
+            assertThatThrownBy(() -> partnerStaffService.resolveAccessContext(CASHIER_LOGIN_USER_ID))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("не активен");
+        }
+
+        @Test
+        @DisplayName("Cashier bound to foreign or inactive location — access context is rejected")
+        void cashierContext_unknownLocation_rejected() {
+            Staff cashier = createCashierStaff();
+            when(staffRepository.findByLoginUserId(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.of(cashier));
+            mockOwnerMerchantResolution();
+            when(couponMerchantClient.getMerchantLocationsByUserId(OWNER_USER_ID))
+                    .thenReturn(ApiResponse.success(List.of()));
+
+            assertThatThrownBy(() -> partnerStaffService.resolveAccessContext(CASHIER_LOGIN_USER_ID))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("не принадлежит мерчанту или не активен");
         }
 
         @Test
@@ -127,6 +181,7 @@ class PartnerStaffServiceTest {
             manager.setRole("MANAGER");
             manager.setMerchantLocationId(null);
             when(staffRepository.findByLoginUserId(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.of(manager));
+            mockOwnerMerchantResolution();
 
             PartnerAccessContextResponse ctx = partnerStaffService.resolveAccessContext(CASHIER_LOGIN_USER_ID);
 
@@ -156,6 +211,7 @@ class PartnerStaffServiceTest {
         @DisplayName("Add cashier with login credentials — creates user and staff")
         void addCashierWithLogin() {
             mockOwnerMerchantResolution();
+            mockOwnerLocationResolution(LOCATION_ID);
 
             CreateStaffRequest request = new CreateStaffRequest();
             request.setName("Новый Кассир");
@@ -191,6 +247,7 @@ class PartnerStaffServiceTest {
         @DisplayName("Add cashier with duplicate email — rejected")
         void addCashierDuplicateEmail() {
             mockOwnerMerchantResolution();
+            mockOwnerLocationResolution(LOCATION_ID);
 
             CreateStaffRequest request = new CreateStaffRequest();
             request.setName("Кассир");
@@ -204,6 +261,29 @@ class PartnerStaffServiceTest {
             assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("уже существует");
+        }
+
+        @Test
+        @DisplayName("Add cashier with foreign or inactive location — rejected before creating login user")
+        void addCashier_unknownLocation_rejected() {
+            mockOwnerMerchantResolution();
+            when(couponMerchantClient.getMerchantLocationsByUserId(OWNER_USER_ID))
+                    .thenReturn(ApiResponse.success(List.of()));
+
+            CreateStaffRequest request = new CreateStaffRequest();
+            request.setName("Кассир Чужого Филиала");
+            request.setPhone("+998900000010");
+            request.setRole("CASHIER");
+            request.setLoginEmail("foreign-location@test.com");
+            request.setTemporaryPassword("password123");
+            request.setMerchantLocationId(999L);
+
+            assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("не принадлежит мерчанту или не активен");
+
+            verify(userRepository, never()).save(any());
+            verify(staffRepository, never()).save(any());
         }
 
         @Test
@@ -308,9 +388,68 @@ class PartnerStaffServiceTest {
     class RemoveStaffTests {
 
         @Test
-        @DisplayName("Remove staff — soft delete (sets active=false)")
-        void removeStaff_softDelete() {
+        @DisplayName("Remove cashier — disables staff login and revokes all sessions")
+        void removeStaff_disablesLoginAndRevokesSessions() {
             Staff staff = createCashierStaff();
+            User loginUser = User.builder()
+                    .id(CASHIER_LOGIN_USER_ID)
+                    .email("cashier@test.com")
+                    .password("encoded")
+                    .firstName("Кассир Али")
+                    .role(Role.PARTNER)
+                    .enabled(true)
+                    .securityVersion(3L)
+                    .build();
+            mockOwnerMerchantResolution();
+            when(staffRepository.findByUserIdAndId(OWNER_USER_ID, 1L)).thenReturn(Optional.of(staff));
+            when(userRepository.findByIdForUpdate(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.of(loginUser));
+            when(staffRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            partnerStaffService.removeStaff(OWNER_USER_ID, 1L);
+
+            assertThat(staff.isActive()).isFalse();
+            assertThat(loginUser.isEnabled()).isFalse();
+            assertThat(loginUser.getSecurityVersion()).isEqualTo(4L);
+            verify(staffRepository).save(staff);
+            verify(userRepository).save(loginUser);
+            verify(securityVersionService).publishSecurityVersion(CASHIER_LOGIN_USER_ID, 4L);
+            verify(refreshTokenRepository).revokeAllByUser(loginUser);
+        }
+
+        @Test
+        @DisplayName("Remove cashier retry — keeps disabled state and still revokes stray refresh tokens")
+        void removeStaff_alreadyDisabled_isIdempotent() {
+            Staff staff = createCashierStaff();
+            staff.setActive(false);
+            User loginUser = User.builder()
+                    .id(CASHIER_LOGIN_USER_ID)
+                    .email("cashier@test.com")
+                    .password("encoded")
+                    .firstName("Кассир Али")
+                    .role(Role.PARTNER)
+                    .enabled(false)
+                    .securityVersion(4L)
+                    .build();
+            mockOwnerMerchantResolution();
+            when(staffRepository.findByUserIdAndId(OWNER_USER_ID, 1L)).thenReturn(Optional.of(staff));
+            when(userRepository.findByIdForUpdate(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.of(loginUser));
+
+            partnerStaffService.removeStaff(OWNER_USER_ID, 1L);
+
+            assertThat(loginUser.getSecurityVersion()).isEqualTo(4L);
+            verify(staffRepository, never()).save(any());
+            verify(userRepository, never()).save(any());
+            verifyNoInteractions(securityVersionService);
+            verify(refreshTokenRepository).revokeAllByUser(loginUser);
+        }
+
+        @Test
+        @DisplayName("Remove legacy staff without login — only deactivates staff record")
+        void removeStaff_withoutLoginUser_onlyDeactivatesStaff() {
+            Staff staff = createCashierStaff();
+            staff.setLoginUserId(null);
+            mockOwnerMerchantResolution();
             when(staffRepository.findByUserIdAndId(OWNER_USER_ID, 1L)).thenReturn(Optional.of(staff));
             when(staffRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -318,11 +457,31 @@ class PartnerStaffServiceTest {
 
             assertThat(staff.isActive()).isFalse();
             verify(staffRepository).save(staff);
+            verifyNoInteractions(userRepository, securityVersionService, refreshTokenRepository);
+        }
+
+        @Test
+        @DisplayName("Remove cashier with missing login user — rejects inconsistent partial update")
+        void removeStaff_missingLoginUser_rejectsWithoutDeactivatingStaff() {
+            Staff staff = createCashierStaff();
+            mockOwnerMerchantResolution();
+            when(staffRepository.findByUserIdAndId(OWNER_USER_ID, 1L)).thenReturn(Optional.of(staff));
+            when(userRepository.findByIdForUpdate(CASHIER_LOGIN_USER_ID)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> partnerStaffService.removeStaff(OWNER_USER_ID, 1L))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Учётная запись сотрудника не найдена");
+
+            assertThat(staff.isActive()).isTrue();
+            verify(staffRepository, never()).save(any());
+            verify(userRepository, never()).save(any());
+            verifyNoInteractions(securityVersionService, refreshTokenRepository);
         }
 
         @Test
         @DisplayName("Remove non-existent staff — ResourceNotFoundException")
         void removeStaff_notFound() {
+            mockOwnerMerchantResolution();
             when(staffRepository.findByUserIdAndId(OWNER_USER_ID, 999L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> partnerStaffService.removeStaff(OWNER_USER_ID, 999L))

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Table, Tag, Button, Space, Typography, Popconfirm, message, Tabs, Modal, Form, Input, Select } from 'antd';
+import { App, Button, Empty, Form, Input, Modal, Popconfirm, Result, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { ReloadOutlined, PlusOutlined, LockOutlined, UnlockOutlined, SwapOutlined } from '@ant-design/icons';
@@ -8,6 +8,14 @@ import type { ApiResponse, PageResponse } from '../../types';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Title } = Typography;
+
+const STAFF_ROLE_LABELS: Record<string, string> = {
+  ADMIN: 'Администратор',
+  MODERATOR: 'Модератор',
+};
+
+const STRONG_PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()\-_=+])[A-Za-z\d@$!%*?&#^()\-_=+]{8,128}$/;
+const STRONG_PASSWORD_MESSAGE = '8–128 символов: заглавная и строчная буквы, цифра и спецсимвол';
 
 interface StaffMember {
   id: number;
@@ -21,6 +29,7 @@ interface StaffMember {
 }
 
 export const StaffPage = () => {
+  const { message } = App.useApp();
   const [activeTab, setActiveTab] = useState('ADMIN');
   const [page, setPage] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,7 +40,7 @@ export const StaffPage = () => {
   const [roleForm] = Form.useForm();
   const queryClient = useQueryClient();
 
-  const { data, isLoading, refetch, isFetching } = useQuery({
+  const { data, error, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['staff', activeTab, page],
     queryFn: async () => {
       const res = await api.get<ApiResponse<PageResponse<StaffMember>>>(
@@ -64,8 +73,14 @@ export const StaffPage = () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
     },
     onError: (err: unknown) => {
-      const error = err as { response?: { data?: { message?: string } } };
-      message.error(error.response?.data?.message || 'Ошибка создания сотрудника');
+      const error = err as {
+        response?: { data?: { message?: string; data?: { password?: string } } };
+      };
+      message.error(
+        error.response?.data?.data?.password
+          || error.response?.data?.message
+          || 'Ошибка создания сотрудника',
+      );
     },
   });
 
@@ -86,17 +101,19 @@ export const StaffPage = () => {
   });
 
   const handleCreateStaff = () => {
-    form.validateFields().then((values) => {
-      createMutation.mutate(values);
-    });
+    void form.validateFields()
+      .then((values) => createMutation.mutate(values))
+      .catch(() => undefined);
   };
 
   const handleChangeRole = () => {
-    roleForm.validateFields().then((values) => {
-      if (selectedUserId) {
-        changeRoleMutation.mutate({ id: selectedUserId, newRole: values.newRole });
-      }
-    });
+    void roleForm.validateFields()
+      .then((values) => {
+        if (selectedUserId) {
+          changeRoleMutation.mutate({ id: selectedUserId, newRole: values.newRole });
+        }
+      })
+      .catch(() => undefined);
   };
 
   const openRoleModal = (id: number, currentRole: string) => {
@@ -110,7 +127,7 @@ export const StaffPage = () => {
     {
       title: 'Сотрудник',
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <strong>{record.firstName} {record.lastName}</strong>
           <span style={{ fontSize: '12px', color: '#666' }}>{record.email}</span>
         </Space>
@@ -122,7 +139,7 @@ export const StaffPage = () => {
       dataIndex: 'role',
       render: (role) => (
         <Tag color={role === 'ADMIN' ? 'gold' : role === 'SUPER_ADMIN' ? 'magenta' : 'purple'}>
-          {role}
+          {STAFF_ROLE_LABELS[role] ?? role}
         </Tag>
       ),
     },
@@ -165,7 +182,7 @@ export const StaffPage = () => {
               danger={record.enabled}
               title={!record.enabled ? "Разблокировать" : "Заблокировать"}
               icon={!record.enabled ? <UnlockOutlined /> : <LockOutlined />}
-              loading={blockMutation.isPending}
+              loading={blockMutation.isPending && blockMutation.variables?.id === record.id}
               disabled={record.role === 'SUPER_ADMIN'}
             />
           </Popconfirm>
@@ -173,6 +190,16 @@ export const StaffPage = () => {
       ),
     },
   ];
+
+  if (error) {
+    return (
+      <Result
+        status="error"
+        title="Ошибка загрузки сотрудников"
+        extra={<Button loading={isFetching} onClick={() => refetch()}>Повторить</Button>}
+      />
+    );
+  }
 
   return (
     <div>
@@ -200,6 +227,7 @@ export const StaffPage = () => {
         dataSource={data?.content}
         loading={isLoading}
         rowKey="id"
+        locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Нет сотрудников" /> }}
         pagination={{
           current: page + 1,
           pageSize: 20,
@@ -223,8 +251,16 @@ export const StaffPage = () => {
           <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
             <Input placeholder="example@topdim.uz" />
           </Form.Item>
-          <Form.Item name="password" label="Пароль" rules={[{ required: true, min: 6 }]}>
-            <Input.Password placeholder="Минимум 6 символов" />
+          <Form.Item
+            name="password"
+            label="Пароль"
+            extra={STRONG_PASSWORD_MESSAGE}
+            rules={[
+              { required: true, message: 'Введите пароль' },
+              { pattern: STRONG_PASSWORD_PATTERN, message: STRONG_PASSWORD_MESSAGE },
+            ]}
+          >
+            <Input.Password placeholder="Надёжный пароль" maxLength={128} />
           </Form.Item>
           <Form.Item name="firstName" label="Имя" rules={[{ required: true }]}>
             <Input />

@@ -45,9 +45,13 @@ public class PartnerCouponService {
      * Кассиры не имеют привязки Merchant.userId — им вернётся 404.
      */
     private Merchant getMerchantForOwner(Long userId) {
-        return merchantRepository.findByUserId(userId)
+        Merchant merchant = merchantRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "У вас нет привязанного мерчанта. Создание заявок доступно только владельцам и менеджерам."));
+        if (!merchant.isActive()) {
+            throw new IllegalStateException("Мерчант не активен");
+        }
+        return merchant;
     }
 
     /**
@@ -107,7 +111,7 @@ public class PartnerCouponService {
 
         // Business validation: fromPrice must be less than oldPrice
         if (request.getFromPrice().compareTo(request.getOldPrice()) >= 0) {
-            throw new IllegalArgumentException("Цена по акции должна быть ниже старой цены");
+            throw new IllegalArgumentException("Цена по предложению должна быть ниже старой цены");
         }
 
         // Business validation: useUntil >= buyUntil
@@ -190,7 +194,7 @@ public class PartnerCouponService {
 
         // Business validation
         if (request.getFromPrice().compareTo(request.getOldPrice()) >= 0) {
-            throw new IllegalArgumentException("Цена по акции должна быть ниже старой цены");
+            throw new IllegalArgumentException("Цена по предложению должна быть ниже старой цены");
         }
         if (request.getUseUntil().isBefore(request.getBuyUntil())) {
             throw new IllegalArgumentException("Срок использования не может быть раньше срока покупки");

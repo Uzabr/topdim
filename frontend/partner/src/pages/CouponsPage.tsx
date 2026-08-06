@@ -32,7 +32,7 @@ const fetchMyCoupons = async (): Promise<{ content: CouponItem[]; totalElements:
 const STATUS_CONFIG: Record<string, { color: string; label: string; icon: React.ReactNode }> = {
   ACTIVE:                { color: 'green',   label: 'Опубликована',        icon: <CheckCircleOutlined /> },
   LEAD:                  { color: 'purple',  label: 'Новая заявка',        icon: <SendOutlined /> },
-  DRAFT:                 { color: 'blue',    label: 'В работе у TopDim',   icon: <EditOutlined /> },
+  DRAFT:                 { color: 'blue',    label: 'В работе у sizbiz',   icon: <EditOutlined /> },
   WAITING_FOR_MERCHANT:  { color: 'orange',  label: 'На согласовании',     icon: <ClockCircleOutlined /> },
   REVISION_REQUESTED:    { color: 'gold',    label: 'Нужны уточнения',     icon: <ExclamationCircleOutlined /> },
   SOLD_OUT:              { color: 'volcano', label: 'Распродан',           icon: <FireOutlined /> },
@@ -55,7 +55,7 @@ export default function CouponsPage() {
   });
 
   if (isLoading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
-  if (error) return <Result status="error" title="Ошибка загрузки купонов" subTitle={(error as Error).message} />;
+  if (error) return <Result status="error" title="Ошибка загрузки предложений" subTitle={(error as Error).message} />;
 
   const coupons = data?.content || [];
 
@@ -158,7 +158,12 @@ export default function CouponsPage() {
 
         if (EDITABLE_STATUSES.has(record.status)) {
           return (
-            <Button type="link" icon={<EditOutlined />} size="small">
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              size="small"
+              onClick={() => navigate(`/coupons/${record.id}/edit`)}
+            >
               Изменить
             </Button>
           );
@@ -172,7 +177,7 @@ export default function CouponsPage() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={3} style={{ margin: 0 }}>🎟️ Мои акции</Title>
+        <Title level={3} style={{ margin: 0 }}>🎟️ Мои предложения</Title>
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -189,7 +194,7 @@ export default function CouponsPage() {
           rowKey="id"
           pagination={coupons.length > 10 ? { pageSize: 10 } : false}
           size="middle"
-          locale={{ emptyText: 'У вас пока нет акций. Создайте первую заявку!' }}
+          locale={{ emptyText: 'У вас пока нет предложений. Подайте первое предложение!' }}
         />
       </Card>
     </div>

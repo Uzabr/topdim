@@ -13,7 +13,6 @@ import uz.topdim.order.entity.*;
 import uz.topdim.order.service.OrderService;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * REST контроллер заказов.
@@ -222,7 +221,7 @@ public class OrderController {
     /** Все заказы с пагинацией и фильтром (Admin). */
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/api/v1/admin/orders")
-    public ResponseEntity<ApiResponse<Page<Order>>> getAllOrders(
+    public ResponseEntity<ApiResponse<Page<AdminOrderResponse>>> getAllOrders(
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
@@ -233,7 +232,7 @@ public class OrderController {
     /** Детали заказа без проверки владельца (Admin). */
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/api/v1/admin/orders/{id}")
-    public ResponseEntity<ApiResponse<Order>> getOrderAdmin(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<AdminOrderResponse>> getOrderAdmin(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(orderService.getOrderByIdAdmin(id)));
     }
 
@@ -253,7 +252,7 @@ public class OrderController {
     @PatchMapping("/api/v1/admin/refunds/{id}/approve")
     public ResponseEntity<ApiResponse<RefundRequestResponse>> approveRefund(
             @PathVariable Long id,
-            @RequestBody RefundDecisionRequest request
+            @Valid @RequestBody RefundDecisionRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Возврат одобрен",
@@ -266,7 +265,7 @@ public class OrderController {
     @PatchMapping("/api/v1/admin/refunds/{id}/reject")
     public ResponseEntity<ApiResponse<RefundRequestResponse>> rejectRefund(
             @PathVariable Long id,
-            @RequestBody RefundDecisionRequest request
+            @Valid @RequestBody RefundDecisionRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Возврат отклонён",
@@ -279,24 +278,12 @@ public class OrderController {
     @PatchMapping("/api/v1/admin/refunds/{id}/complete")
     public ResponseEntity<ApiResponse<RefundRequestResponse>> completeRefund(
             @PathVariable Long id,
-            @RequestBody RefundDecisionRequest request
+            @Valid @RequestBody RefundDecisionRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Возврат завершён",
                 orderService.completeRefundRequest(id, request.getAdminComment())
         ));
-    }
-
-    /** Решение по возврату — legacy (Admin). */
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    @PatchMapping("/api/v1/admin/refunds/{id}")
-    public ResponseEntity<ApiResponse<RefundRequest>> resolveRefund(
-            @PathVariable Long id,
-            @RequestBody Map<String, String> request
-    ) {
-        boolean approved = "APPROVED".equals(request.get("status"));
-        RefundRequest refund = orderService.resolveRefundRequest(id, approved, request.get("comment"));
-        return ResponseEntity.ok(ApiResponse.success("Запрос обработан", refund));
     }
 
     /**

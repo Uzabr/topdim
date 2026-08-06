@@ -1,13 +1,19 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, Table, Tag, Typography, Button, Modal, Input, Space, Spin, Result, Rate, message } from 'antd';
+import { App, Button, Card, Input, Modal, Rate, Result, Space, Spin, Table, Tag, Typography } from 'antd';
 import { CheckOutlined, CloseOutlined, MessageOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { getPendingReviews, reviewUserReview, type AdminReview } from './api';
 
 const { Title, Text, Paragraph } = Typography;
 
+function getErrorMessage(error: unknown, fallback: string) {
+  const apiError = error as { response?: { data?: { message?: string } } };
+  return apiError.response?.data?.message || fallback;
+}
+
 export function ReviewsPage() {
+  const { message, modal } = App.useApp();
   const [page, setPage] = useState(0);
   const [rejectModal, setRejectModal] = useState<{ visible: boolean; reviewId: number | null }>({
     visible: false, reviewId: null,
@@ -15,7 +21,7 @@ export function ReviewsPage() {
   const [rejectReason, setRejectReason] = useState('');
   const queryClient = useQueryClient();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, error, isFetching, isLoading, refetch } = useQuery({
     queryKey: ['admin-pending-reviews', page],
     queryFn: () => getPendingReviews(page, 20),
   });
@@ -26,7 +32,7 @@ export function ReviewsPage() {
       message.success('Отзыв одобрен');
       queryClient.invalidateQueries({ queryKey: ['admin-pending-reviews'] });
     },
-    onError: () => message.error('Ошибка при одобрении'),
+    onError: (error) => message.error(getErrorMessage(error, 'Ошибка при одобрении')),
   });
 
   const rejectMutation = useMutation({
@@ -38,10 +44,18 @@ export function ReviewsPage() {
       setRejectReason('');
       queryClient.invalidateQueries({ queryKey: ['admin-pending-reviews'] });
     },
-    onError: () => message.error('Ошибка при отклонении'),
+    onError: (error) => message.error(getErrorMessage(error, 'Ошибка при отклонении')),
   });
 
-  if (error) return <Result status="error" title="Ошибка загрузки отзывов" />;
+  if (error) {
+    return (
+      <Result
+        status="error"
+        title="Ошибка загрузки отзывов"
+        extra={<Button loading={isFetching} onClick={() => refetch()}>Повторить</Button>}
+      />
+    );
+  }
 
   const columns = [
     {
@@ -80,8 +94,15 @@ export function ReviewsPage() {
           <Button
             type="primary" size="small"
             icon={<CheckOutlined />}
-            loading={approveMutation.isPending}
-            onClick={() => approveMutation.mutate(r.id)}
+            loading={approveMutation.isPending && approveMutation.variables === r.id}
+            disabled={rejectMutation.isPending}
+            onClick={() => modal.confirm({
+              title: 'Опубликовать отзыв?',
+              content: 'После подтверждения отзыв станет виден пользователям.',
+              okText: 'Опубликовать',
+              cancelText: 'Отмена',
+              onOk: () => approveMutation.mutateAsync(r.id),
+            })}
             id={`approve-review-${r.id}`}
           >
             Одобрить
@@ -89,6 +110,7 @@ export function ReviewsPage() {
           <Button
             danger size="small"
             icon={<CloseOutlined />}
+            disabled={approveMutation.isPending || rejectMutation.isPending}
             onClick={() => setRejectModal({ visible: true, reviewId: r.id })}
             id={`reject-review-${r.id}`}
           >
@@ -152,7 +174,7 @@ export function ReviewsPage() {
           value={rejectReason}
           onChange={(e) => setRejectReason(e.target.value)}
           rows={3}
-          maxLength={500}
+          maxLength={255}
           id="reject-reason-input"
         />
       </Modal>
