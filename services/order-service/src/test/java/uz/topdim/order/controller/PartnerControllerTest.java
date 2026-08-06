@@ -4,9 +4,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -19,10 +23,14 @@ import uz.topdim.order.service.PartnerAccessResolver;
 import uz.topdim.order.service.PartnerMerchantResolver;
 import uz.topdim.order.service.PartnerService;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.stream.Stream;
 
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -51,6 +59,10 @@ class PartnerControllerTest {
 
     private PartnerAccessContext cashierContext() {
         return new PartnerAccessContext("CASHIER", 77L, 200L, 5L, "Кассир Али", false, true);
+    }
+
+    private PartnerAccessContext managerContext() {
+        return new PartnerAccessContext("MANAGER", 77L, null, 6L, "Менеджер", true, true);
     }
 
     @Test
@@ -165,6 +177,113 @@ class PartnerControllerTest {
                 .andExpect(jsonPath("$.success").value(false));
     }
 
+    @Test
+    @DisplayName("GET redemptions: owner forwards filters with merchant-wide scope")
+    void getRedemptions_ownerForwardsFilters() throws Exception {
+        when(partnerAccessResolver.resolve(10L)).thenReturn(ownerContext());
+        when(partnerService.getRedemptions(
+                77L, null, "CP-12", LocalDate.of(2026, 8, 1),
+                LocalDate.of(2026, 8, 6), 1, 20))
+                .thenReturn(Page.empty(PageRequest.of(1, 20)));
+
+        mockMvc.perform(get("/api/v1/partner/redemptions")
+                        .header("X-User-Id", "10")
+                        .param("couponCode", "CP-12")
+                        .param("dateFrom", "2026-08-01")
+                        .param("dateTo", "2026-08-06")
+                        .param("page", "1")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray());
+
+        verify(partnerService).getRedemptions(
+                77L, null, "CP-12", LocalDate.of(2026, 8, 1),
+                LocalDate.of(2026, 8, 6), 1, 20);
+    }
+
+    @Test
+    @DisplayName("GET redemptions: cashier is always scoped to trusted staff id")
+    void getRedemptions_cashierUsesTrustedStaffScope() throws Exception {
+        when(partnerAccessResolver.resolve(20L)).thenReturn(cashierContext());
+        when(partnerService.getRedemptions(77L, 5L, null, null, null, 0, 20))
+                .thenReturn(Page.empty(PageRequest.of(0, 20)));
+
+        mockMvc.perform(get("/api/v1/partner/redemptions")
+                        .header("X-User-Id", "20")
+                        .param("merchantId", "88")
+                        .param("staffId", "6"))
+                .andExpect(status().isOk());
+
+        verify(partnerService).getRedemptions(77L, 5L, null, null, null, 0, 20);
+    }
+
+    @Test
+    @DisplayName("GET redemptions: manager receives merchant-wide scope")
+    void getRedemptions_managerUsesMerchantWideScope() throws Exception {
+        when(partnerAccessResolver.resolve(25L)).thenReturn(managerContext());
+        when(partnerService.getRedemptions(77L, null, null, null, null, 0, 20))
+                .thenReturn(Page.empty(PageRequest.of(0, 20)));
+
+        mockMvc.perform(get("/api/v1/partner/redemptions")
+                        .header("X-User-Id", "25"))
+                .andExpect(status().isOk());
+
+        verify(partnerService).getRedemptions(77L, null, null, null, null, 0, 20);
+    }
+
+    static Stream<String> invalidHistoryQueries() {
+        return Stream.of(
+                "?page=-1",
+                "?page=abc",
+                "?size=0",
+                "?size=101",
+                "?size=abc",
+                "?couponCode=" + "A".repeat(51),
+                "?dateFrom=2026-02-31",
+                "?dateFrom=2026-08-07&dateTo=2026-08-06");
+    }
+
+    @ParameterizedTest(name = "invalid history query {0} returns 400 before access resolution")
+    @MethodSource("invalidHistoryQueries")
+    void getRedemptions_invalidQuery_returns400(String query) throws Exception {
+        mockMvc.perform(get("/api/v1/partner/redemptions" + query)
+                        .header("X-User-Id", "10"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+
+        verifyNoInteractions(partnerAccessResolver, partnerService);
+    }
+
+    @Test
+    @DisplayName("GET redemptions: cashier without staff id fails closed")
+    void getRedemptions_cashierWithoutStaffId_failsClosed() throws Exception {
+        PartnerAccessContext invalidCashier = new PartnerAccessContext(
+                "CASHIER", 77L, 200L, null, "Broken cashier", false, true);
+        when(partnerAccessResolver.resolve(20L)).thenReturn(invalidCashier);
+
+        mockMvc.perform(get("/api/v1/partner/redemptions")
+                        .header("X-User-Id", "20"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false));
+
+        verifyNoInteractions(partnerService);
+    }
+
+    @Test
+    @DisplayName("GET redemptions: unknown partner role fails closed")
+    void getRedemptions_unknownRole_failsClosed() throws Exception {
+        PartnerAccessContext unknownRole = new PartnerAccessContext(
+                "AUDITOR", 77L, null, 9L, "Unknown", false, false);
+        when(partnerAccessResolver.resolve(30L)).thenReturn(unknownRole);
+
+        mockMvc.perform(get("/api/v1/partner/redemptions")
+                        .header("X-User-Id", "30"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false));
+
+        verifyNoInteractions(partnerService);
+    }
+
     // ==================== Task 4: QR Redemption Trusted Context ====================
 
     @Test
@@ -204,4 +323,3 @@ class PartnerControllerTest {
         verify(orderService).redeemByQrToken("qr-token-abc", 77L, "Кассир Али", 200L, 5L);
     }
 }
-

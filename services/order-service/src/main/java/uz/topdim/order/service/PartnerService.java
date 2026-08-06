@@ -113,17 +113,6 @@ public class PartnerService {
                 .map(this::mapToResponse);
     }
 
-    // Compatibility overloads until PartnerController switches to filtered history.
-    @Transactional(readOnly = true)
-    public Page<RedemptionResponse> getRedemptions(Long merchantId, int page, int size) {
-        return getRedemptions(merchantId, null, null, null, null, page, size);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<RedemptionResponse> getRedemptionsByStaff(Long merchantId, Long staffId, int page, int size) {
-        return getRedemptions(merchantId, staffId, null, null, null, page, size);
-    }
-
     private String normalizeCouponFragment(String couponCode) {
         if (couponCode == null || couponCode.isBlank()) return null;
         return couponCode.trim().toLowerCase(Locale.ROOT)
