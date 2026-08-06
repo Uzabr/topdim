@@ -53,6 +53,12 @@ export interface UserDto {
   avatarUrl?: string;
   emailVerified?: boolean;
   phoneVerified?: boolean;
+  /**
+   * true — на бэкенде за аккаунтом закреплён синтетический адрес
+   * (phone_…@topdim.uz), выданный при входе по телефону/Telegram.
+   * UI должен скрывать его и предлагать добавить настоящую почту.
+   */
+  emailPlaceholder?: boolean;
 }
 
 export interface UserProfileResponse extends UserDto {

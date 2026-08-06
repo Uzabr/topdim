@@ -194,7 +194,9 @@ export default function ProfileDesktop() {
           />
           <div>
             <h1 className="profile-name">{user?.firstName}</h1>
-            <p className="profile-email">{user?.email}</p>
+            <p className="profile-email">
+              {user?.emailPlaceholder ? t('profile.emailNotAdded') : user?.email}
+            </p>
           </div>
         </div>
         <button type="button" className="profile-logout" onClick={logout}>

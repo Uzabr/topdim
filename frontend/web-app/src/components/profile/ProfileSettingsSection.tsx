@@ -369,16 +369,22 @@ export default function ProfileSettingsSection() {
       <div className="settings__row settings__row--stack">
         <div className="settings__field">
           <p className="settings__label">{t('profile.settings.email.title')}</p>
-          <div className="settings__email-value">
-            <span className="settings__value">{user?.email}</span>
-            <span
-              className={`settings__badge${user?.emailVerified ? ' settings__badge--verified' : ''}`}
-            >
-              {user?.emailVerified
-                ? t('profile.settings.email.verified')
-                : t('profile.settings.email.unverified')}
-            </span>
-          </div>
+          {user?.emailPlaceholder ? (
+            <p className="settings__value settings__value--warn">
+              {t('profile.emailNotAdded')}
+            </p>
+          ) : (
+            <div className="settings__email-value">
+              <span className="settings__value">{user?.email}</span>
+              <span
+                className={`settings__badge${user?.emailVerified ? ' settings__badge--verified' : ''}`}
+              >
+                {user?.emailVerified
+                  ? t('profile.settings.email.verified')
+                  : t('profile.settings.email.unverified')}
+              </span>
+            </div>
+          )}
 
           {editing === 'email' && (
             <div className="settings__password-form">
@@ -419,30 +425,38 @@ export default function ProfileSettingsSection() {
 
         {editing !== 'email' && (
           <div className="settings__edit-actions">
-            {!user?.emailVerified && (
+            {user?.emailPlaceholder ? (
+              <button type="button" className="settings__btn" onClick={openEmailChange}>
+                {t('profile.addEmail')}
+              </button>
+            ) : (
               <>
-                <button
-                  type="button"
-                  className="settings__btn"
-                  disabled={emailConfirming}
-                  onClick={requestEmailConfirmation}
-                >
-                  {emailConfirming
-                    ? t('profile.settings.email.sending')
-                    : t('profile.settings.email.confirm')}
-                </button>
-                <button
-                  type="button"
-                  className="settings__link"
-                  onClick={() => navigate(`/${lang}/confirm-email`)}
-                >
-                  {t('profile.settings.email.enterCode')}
+                {!user?.emailVerified && (
+                  <>
+                    <button
+                      type="button"
+                      className="settings__btn"
+                      disabled={emailConfirming}
+                      onClick={requestEmailConfirmation}
+                    >
+                      {emailConfirming
+                        ? t('profile.settings.email.sending')
+                        : t('profile.settings.email.confirm')}
+                    </button>
+                    <button
+                      type="button"
+                      className="settings__link"
+                      onClick={() => navigate(`/${lang}/confirm-email`)}
+                    >
+                      {t('profile.settings.email.enterCode')}
+                    </button>
+                  </>
+                )}
+                <button type="button" className="settings__link" onClick={openEmailChange}>
+                  {t('profile.settings.email.changeAction')}
                 </button>
               </>
             )}
-            <button type="button" className="settings__link" onClick={openEmailChange}>
-              {t('profile.settings.email.changeAction')}
-            </button>
           </div>
         )}
       </div>

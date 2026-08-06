@@ -288,6 +288,8 @@
     "guestDesc": "Kuponlar, buyurtmalar va toʻlov holatini koʻrish uchun tizimga kiring yoki roʻyxatdan oʻting.",
     "login": "Profilga kiring",
     "logout": "Chiqish",
+    "emailNotAdded": "Pochta qo'shilmagan — kuponlarni olish uchun qo'shing",
+    "addEmail": "Email qo'shish",
     "tabs": {
       "coupons": "Kuponlarim",
       "orders": "Xaridlar",

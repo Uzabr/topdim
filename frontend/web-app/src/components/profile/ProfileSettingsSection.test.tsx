@@ -8,11 +8,25 @@ import uz from '../../locales/uz.json';
 import { advanceSessionGeneration } from '../../sessionCleanup';
 import ProfileSettingsSection from './ProfileSettingsSection';
 
-const { navigate, logout, updateProfile, refreshProfile } = vi.hoisted(() => ({
+const DEFAULT_USER = {
+  id: 1,
+  email: 'user@example.com',
+  firstName: 'Ada',
+  role: 'USER',
+} as const;
+
+const { navigate, logout, updateProfile, refreshProfile, authState } = vi.hoisted(() => ({
   navigate: vi.fn(),
   logout: vi.fn(),
   updateProfile: vi.fn(),
   refreshProfile: vi.fn(),
+  // Мутабельный держатель — тесты подменяют user (например, синтетический email).
+  authState: {
+    user: { id: 1, email: 'user@example.com', firstName: 'Ada', role: 'USER' } as Record<
+      string,
+      unknown
+    >,
+  },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -29,7 +43,7 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('../../store/authStore', () => ({
   useAuthStore: () => ({
-    user: { id: 1, email: 'user@example.com', firstName: 'Ada', role: 'USER' },
+    user: authState.user,
     updateProfile,
     logout,
     refreshProfile,
@@ -114,6 +128,7 @@ describe('ProfileSettingsSection profile actions', () => {
     navigate.mockReset();
     refreshProfile.mockReset();
     refreshProfile.mockResolvedValue(undefined);
+    authState.user = { ...DEFAULT_USER };
   });
 
   function openPhoneLinkForm() {
@@ -197,6 +212,50 @@ describe('ProfileSettingsSection profile actions', () => {
 
     expect(screen.queryByLabelText('profile.settings.email.changeLabel')).toBeNull();
     expect(authApi.requestEmailChange).not.toHaveBeenCalled();
+  });
+
+  it('hides the synthetic placeholder email and offers an add-email CTA', () => {
+    authState.user = {
+      ...DEFAULT_USER,
+      email: 'phone_998901234567@topdim.uz',
+      emailPlaceholder: true,
+    };
+    render(<ProfileSettingsSection />);
+
+    expect(screen.getByText('profile.emailNotAdded')).toBeTruthy();
+    expect(screen.queryByText('phone_998901234567@topdim.uz')).toBeNull();
+    expect(screen.getByRole('button', { name: 'profile.addEmail' })).toBeTruthy();
+    // Синтетический адрес не должен иметь ни verify/change actions, ни badge.
+    expect(screen.queryByRole('button', { name: 'profile.settings.email.confirm' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'profile.settings.email.changeAction' }),
+    ).toBeNull();
+  });
+
+  it('opens the existing email-change flow from the add-email CTA', () => {
+    authState.user = {
+      ...DEFAULT_USER,
+      email: 'phone_998901234567@topdim.uz',
+      emailPlaceholder: true,
+    };
+    render(<ProfileSettingsSection />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'profile.addEmail' }));
+
+    expect(screen.getByLabelText('profile.settings.email.changeLabel')).toBeTruthy();
+  });
+
+  it('shows the real email address when it is not a placeholder', () => {
+    authState.user = {
+      ...DEFAULT_USER,
+      email: 'real@example.com',
+      emailPlaceholder: false,
+    };
+    render(<ProfileSettingsSection />);
+
+    expect(screen.getByText('real@example.com')).toBeTruthy();
+    expect(screen.queryByText('profile.emailNotAdded')).toBeNull();
+    expect(screen.getByRole('button', { name: 'profile.settings.email.changeAction' })).toBeTruthy();
   });
 
   it('rejects non-image avatar before upload', () => {
