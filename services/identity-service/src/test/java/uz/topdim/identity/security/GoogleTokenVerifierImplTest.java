@@ -63,6 +63,8 @@ class GoogleTokenVerifierImplTest {
         assertThat(identity.sub()).isEqualTo("google-sub-123");
         assertThat(identity.email()).isEqualTo("user@example.com");
         assertThat(identity.emailVerified()).isTrue();
+        assertThat(identity.firstName()).isEqualTo("Иван");
+        assertThat(identity.lastName()).isEqualTo("Петров");
     }
 
     @Test
@@ -193,6 +195,8 @@ class GoogleTokenVerifierImplTest {
                 .subject("google-sub-123")
                 .claim("email", "user@example.com")
                 .claim("email_verified", true)
+                .claim("given_name", "Иван")
+                .claim("family_name", "Петров")
                 .issuedAt(Date.from(Instant.now().minusSeconds(5)))
                 .expiration(Date.from(expiry))
                 .signWith(signingKey, Jwts.SIG.RS256)

@@ -574,10 +574,10 @@ class AuthServiceTest {
     @Test
     @DisplayName("GoogleAuth: валидный ID-token → резолвит аккаунт через AccountResolutionService и выдаёт токены")
     void googleAuth_validToken_returnsTokens() {
-        when(googleTokenVerifier.verify("tok")).thenReturn(new GoogleIdentity("sub1", "g@x.uz", true));
+        when(googleTokenVerifier.verify("tok")).thenReturn(new GoogleIdentity("sub1", "g@x.uz", true, "Иван", "Петров"));
         User u = User.builder().id(5L).email("g@x.uz").emailVerified(true).googleSub("sub1")
                 .role(Role.USER).enabled(true).build();
-        when(accountResolutionService.resolveByGoogle("sub1", "g@x.uz", true)).thenReturn(u);
+        when(accountResolutionService.resolveByGoogle("sub1", "g@x.uz", true, "Иван", "Петров")).thenReturn(u);
         when(jwtService.generateAccessToken(any())).thenReturn("access");
         when(jwtService.getAccessTokenExpiration()).thenReturn(900_000L);
         when(jwtService.getRefreshTokenExpiration()).thenReturn(604_800_000L);
@@ -597,7 +597,7 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.googleAuth("bad-tok"))
                 .isInstanceOf(AuthException.class);
 
-        verify(accountResolutionService, never()).resolveByGoogle(anyString(), anyString(), org.mockito.ArgumentMatchers.anyBoolean());
+        verify(accountResolutionService, never()).resolveByGoogle(anyString(), anyString(), org.mockito.ArgumentMatchers.anyBoolean(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
         verify(jwtService, never()).generateAccessToken(any());
         verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
     }
@@ -605,10 +605,10 @@ class AuthServiceTest {
     @Test
     @DisplayName("GoogleAuth: заблокированный (enabled=false) аккаунт после резолюции получает отказ, токены не выдаются")
     void googleAuth_disabledAccount_throwsWithoutIssuingTokens() {
-        when(googleTokenVerifier.verify("tok")).thenReturn(new GoogleIdentity("sub2", "blocked@x.uz", true));
+        when(googleTokenVerifier.verify("tok")).thenReturn(new GoogleIdentity("sub2", "blocked@x.uz", true, "Иван", "Петров"));
         User disabled = User.builder().id(6L).email("blocked@x.uz").emailVerified(true).googleSub("sub2")
                 .role(Role.USER).enabled(false).build();
-        when(accountResolutionService.resolveByGoogle("sub2", "blocked@x.uz", true)).thenReturn(disabled);
+        when(accountResolutionService.resolveByGoogle("sub2", "blocked@x.uz", true, "Иван", "Петров")).thenReturn(disabled);
 
         assertThatThrownBy(() -> authService.googleAuth("tok"))
                 .isInstanceOf(AuthException.class);

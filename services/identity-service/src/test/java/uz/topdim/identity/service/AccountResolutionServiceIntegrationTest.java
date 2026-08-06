@@ -53,13 +53,15 @@ class AccountResolutionServiceIntegrationTest extends AbstractIntegrationTest {
         old = users.saveAndFlush(old);
         Long oldId = old.getId();
 
-        User result = svc.resolveByGoogle("google-sub-123", "g@example.com", true);
+        User result = svc.resolveByGoogle("google-sub-123", "g@example.com", true, "Иван", "Петров");
 
-        // (б) новый аккаунт с доказанным email/sub
+        // (б) новый аккаунт с доказанным email/sub + имя из Google
         assertThat(result.getId()).isNotEqualTo(oldId);
         assertThat(result.getGoogleSub()).isEqualTo("google-sub-123");
         assertThat(result.getEmail()).isEqualTo("g@example.com");
         assertThat(result.isEmailVerified()).isTrue();
+        assertThat(result.getFirstName()).isEqualTo("Иван");
+        assertThat(result.getLastName()).isEqualTo("Петров");
 
         // (в) старый аккаунт — email освобождён, сам не входит
         User reloadedOld = users.findById(oldId).orElseThrow();

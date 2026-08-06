@@ -309,7 +309,8 @@ public class AuthService {
         GoogleIdentity identity = googleTokenVerifier.verify(idToken);
 
         User user = accountResolutionService.resolveByGoogle(
-                identity.sub(), identity.email(), identity.emailVerified());
+                identity.sub(), identity.email(), identity.emailVerified(),
+                identity.firstName(), identity.lastName());
 
         if (!user.isEnabled() || user.isDeleted()) {
             throw new AuthException("Аккаунт недоступен");

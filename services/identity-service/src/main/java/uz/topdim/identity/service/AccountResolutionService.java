@@ -80,10 +80,26 @@ public class AccountResolutionService {
      * освобождаем его у старого аккаунта, а доказанный Google-владелец получает его на новом аккаунте.
      */
     @Transactional
-    public User resolveByGoogle(String sub, String email, boolean googleEmailVerified) {
+    public User resolveByGoogle(String sub, String email, boolean googleEmailVerified,
+                                String firstName, String lastName) {
         var bySub = users.findByGoogleSub(sub);
         if (bySub.isPresent()) {
-            return bySub.get();
+            User existing = bySub.get();
+            // Бэкфилл имени из Google для аккаунтов, созданных до появления этой логики
+            // (или оставшихся с плейсхолдером «Пользователь»): реальные имя/фамилия — один раз.
+            boolean changed = false;
+            String storedFirst = existing.getFirstName();
+            if ((storedFirst == null || storedFirst.isBlank() || "Пользователь".equals(storedFirst))
+                    && firstName != null && !firstName.isBlank()) {
+                existing.setFirstName(firstName);
+                changed = true;
+            }
+            if ((existing.getLastName() == null || existing.getLastName().isBlank())
+                    && lastName != null && !lastName.isBlank()) {
+                existing.setLastName(lastName);
+                changed = true;
+            }
+            return changed ? users.save(existing) : existing;
         }
 
         User match = users.findByEmailIgnoreCase(email).orElse(null);
@@ -110,7 +126,9 @@ public class AccountResolutionService {
                 // консервативно-безопаснее и эквивалентно на практике (Google почти всегда verified).
                 .email(email).emailVerified(googleEmailVerified)
                 .password(encoder.encode(UUID.randomUUID().toString()))
-                .firstName("Пользователь").googleSub(sub)
+                .firstName(firstName != null && !firstName.isBlank() ? firstName : "Пользователь")
+                .lastName(lastName != null && !lastName.isBlank() ? lastName : null)
+                .googleSub(sub)
                 .role(Role.USER).enabled(true)
                 .build();
         return users.save(u);

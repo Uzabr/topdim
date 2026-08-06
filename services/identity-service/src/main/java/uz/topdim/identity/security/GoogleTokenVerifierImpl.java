@@ -120,6 +120,10 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
         boolean emailVerified = (verified instanceof Boolean b)
                 ? b
                 : Boolean.parseBoolean(String.valueOf(verified));
-        return new GoogleIdentity(sub, email, emailVerified);
+        // given_name/family_name присылаются при scope=profile (GIS запрашивает его по умолчанию);
+        // могут отсутствовать — тогда null, и при создании юзера подставится плейсхолдер.
+        String firstName = claims.get("given_name", String.class);
+        String lastName = claims.get("family_name", String.class);
+        return new GoogleIdentity(sub, email, emailVerified, firstName, lastName);
     }
 }
