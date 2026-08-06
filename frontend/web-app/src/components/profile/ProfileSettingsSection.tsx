@@ -370,9 +370,12 @@ export default function ProfileSettingsSection() {
         <div className="settings__field">
           <p className="settings__label">{t('profile.settings.email.title')}</p>
           {user?.emailPlaceholder ? (
-            <p className="settings__value settings__value--warn">
-              {t('profile.emailNotAdded')}
-            </p>
+            <>
+              <p className="settings__value settings__value--warn">
+                {t('profile.emailNotAdded')}
+              </p>
+              <p className="settings__hint">{t('profile.emailChannelHint')}</p>
+            </>
           ) : (
             <div className="settings__email-value">
               <span className="settings__value">{user?.email}</span>

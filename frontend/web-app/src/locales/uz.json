@@ -295,7 +295,8 @@
     "refreshStatus": "Holatni yangilash",
     "checkError": "Toʻlovni tekshirishda xatolik yuz berdi",
     "confirmError": "Xaridni tasdiqlashda xatolik yuz berdi",
-    "demoUnavailable": "Demo toʻlov mavjud emas. Administratoringizga murojaat qiling."
+    "demoUnavailable": "Demo toʻlov mavjud emas. Administratoringizga murojaat qiling.",
+    "getCouponsByEmail": "Kuponlarni pochtaga olasizmi? Qo'shish"
   },
   "profile": {
     "greeting": "Salom!",
@@ -304,6 +305,7 @@
     "logout": "Chiqish",
     "emailNotAdded": "Pochta qo'shilmagan — kuponlarni olish uchun qo'shing",
     "addEmail": "Email qo'shish",
+    "emailChannelHint": "Shunda kuponlarni pochtangizga olasiz",
     "tabs": {
       "coupons": "Kuponlarim",
       "orders": "Xaridlar",
