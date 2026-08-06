@@ -20,9 +20,12 @@ import uz.topdim.order.service.PartnerAccessResolver;
 import uz.topdim.order.service.PartnerMerchantResolver;
 import uz.topdim.order.service.PartnerService;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+
 /**
  * Контроллер партнёра — погашение купонов, статистика и история.
- * Использует PartnerAccessResolver для определения роли (OWNER/CASHIER)
+ * Использует PartnerAccessResolver для определения роли (OWNER/MANAGER/CASHIER)
  * и привязки к филиалу.
  */
 @RestController
@@ -78,17 +81,72 @@ public class PartnerController {
     @GetMapping("/redemptions")
     public ResponseEntity<ApiResponse<Page<RedemptionResponse>>> getRedemptions(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "0") String page,
+            @RequestParam(defaultValue = "20") String size,
+            @RequestParam(required = false) String couponCode,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo
     ) {
+        int parsedPage = parseHistoryInteger("page", page);
+        int parsedSize = parseHistoryInteger("size", size);
+        LocalDate parsedDateFrom = parseHistoryDate("dateFrom", dateFrom);
+        LocalDate parsedDateTo = parseHistoryDate("dateTo", dateTo);
+        validateRedemptionHistoryQuery(
+                parsedPage, parsedSize, couponCode, parsedDateFrom, parsedDateTo);
+
         PartnerAccessContext ctx = partnerAccessResolver.resolve(userId);
-        // Cashier sees only own redemptions, Owner/Manager sees all merchant redemptions
-        if ("CASHIER".equals(ctx.getRole()) && ctx.getStaffId() != null) {
-            return ResponseEntity.ok(ApiResponse.success(
-                    partnerService.getRedemptionsByStaff(ctx.getMerchantId(), ctx.getStaffId(), page, size)));
-        }
+        Long staffId = resolveHistoryStaffScope(ctx);
         return ResponseEntity.ok(ApiResponse.success(
-                partnerService.getRedemptions(ctx.getMerchantId(), page, size)));
+                partnerService.getRedemptions(
+                        ctx.getMerchantId(), staffId, couponCode,
+                        parsedDateFrom, parsedDateTo, parsedPage, parsedSize)));
+    }
+
+    private int parseHistoryInteger(String field, String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException(field + " должен быть целым числом");
+        }
+    }
+
+    private LocalDate parseHistoryDate(String field, String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return LocalDate.parse(value);
+        } catch (DateTimeParseException exception) {
+            throw new IllegalArgumentException(
+                    field + " должен быть датой в формате YYYY-MM-DD");
+        }
+    }
+
+    private void validateRedemptionHistoryQuery(
+            int page, int size, String couponCode, LocalDate dateFrom, LocalDate dateTo) {
+        if (page < 0) {
+            throw new IllegalArgumentException("Номер страницы не может быть отрицательным");
+        }
+        if (size < 1 || size > 100) {
+            throw new IllegalArgumentException("Размер страницы должен быть от 1 до 100");
+        }
+        if (couponCode != null && couponCode.trim().length() > 50) {
+            throw new IllegalArgumentException("Код купона не должен превышать 50 символов");
+        }
+        if (dateFrom != null && dateTo != null && dateFrom.isAfter(dateTo)) {
+            throw new IllegalArgumentException("Начало периода не может быть позже окончания");
+        }
+    }
+
+    private Long resolveHistoryStaffScope(PartnerAccessContext ctx) {
+        if ("OWNER".equals(ctx.getRole()) || "MANAGER".equals(ctx.getRole())) {
+            return null;
+        }
+        if ("CASHIER".equals(ctx.getRole())) {
+            if (ctx.getStaffId() == null) {
+                throw new IllegalStateException("Контекст кассира не содержит staffId");
+            }
+            return ctx.getStaffId();
+        }
+        throw new IllegalStateException("История погашений недоступна для роли " + ctx.getRole());
     }
 
     /** Дашборд партнёра — KPI, последние погашения. Owner/Manager only. */

@@ -16,6 +16,7 @@ import uz.topdim.coupon.dto.MerchantResponse;
 import uz.topdim.coupon.entity.Category;
 import uz.topdim.coupon.entity.CouponStatus;
 import uz.topdim.coupon.entity.Merchant;
+import uz.topdim.coupon.entity.MerchantLocation;
 import uz.topdim.coupon.exception.ResourceNotFoundException;
 import uz.topdim.coupon.repository.CategoryRepository;
 import uz.topdim.coupon.repository.CouponOfferRepository;
@@ -85,6 +86,34 @@ class MerchantServiceTest {
             assertThatThrownBy(() -> merchantService.getMerchantById(999L))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("не найден");
+        }
+
+        @Test
+        @DisplayName("Partner profile: inactive merchant is rejected")
+        void getMyMerchant_inactiveMerchant_throws() {
+            Merchant merchant = createTestMerchant();
+            merchant.setUserId(10L);
+            merchant.setActive(false);
+            when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+
+            assertThatThrownBy(() -> merchantService.getMyMerchant(10L))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("Мерчант не активен");
+        }
+
+        @Test
+        @DisplayName("Partner locations: inactive merchant is rejected before returning branches")
+        void getLocationsByOwnerUserId_inactiveMerchant_throws() {
+            Merchant merchant = createTestMerchant();
+            merchant.setUserId(10L);
+            merchant.setActive(false);
+            when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+
+            assertThatThrownBy(() -> merchantService.getLocationsByOwnerUserId(10L))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("Мерчант не активен");
+
+            verifyNoInteractions(merchantLocationRepository);
         }
 
         @Test
@@ -199,6 +228,103 @@ class MerchantServiceTest {
         }
 
         @Test
+        @DisplayName("Обновление: сохраняет ID существующей локации и её координаты")
+        void updateMerchant_existingLocation_updatesInPlace() {
+            Merchant existing = createTestMerchant();
+            MerchantLocation location = MerchantLocation.builder()
+                    .id(10L)
+                    .merchant(existing)
+                    .title("Старое название")
+                    .address("Старый адрес")
+                    .phone("+998901111111")
+                    .latitude(41.1)
+                    .longitude(69.1)
+                    .primary(true)
+                    .active(true)
+                    .build();
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
+            when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(merchantLocationRepository.findByMerchantId(1L)).thenReturn(List.of(location));
+
+            CreateMerchantRequest.LocationRequest locationRequest = new CreateMerchantRequest.LocationRequest();
+            locationRequest.setId(10L);
+            locationRequest.setTitle("Новое название");
+            locationRequest.setAddress("Новый адрес");
+            locationRequest.setPhone("+998 90 999 99 99");
+            locationRequest.setLatitude(41.3111);
+            locationRequest.setLongitude(69.2797);
+            locationRequest.setPrimary(true);
+
+            CreateMerchantRequest request = new CreateMerchantRequest();
+            request.setName("Updated SPA");
+            request.setLocations(List.of(locationRequest));
+
+            merchantService.updateMerchant(1L, request);
+
+            verify(merchantLocationRepository).save(argThat(saved ->
+                    saved == location
+                            && saved.getId().equals(10L)
+                            && saved.getTitle().equals("Новое название")
+                            && saved.getPhone().equals("+998909999999")
+                            && saved.getLatitude().equals(41.3111)
+                            && saved.getLongitude().equals(69.2797)
+                            && saved.isActive()));
+            verify(merchantLocationRepository, never()).deleteAllByMerchantId(anyLong());
+        }
+
+        @Test
+        @DisplayName("Обновление: удалённая из формы локация деактивируется без смены ID")
+        void updateMerchant_omittedLocation_softDeactivates() {
+            Merchant existing = createTestMerchant();
+            MerchantLocation location = MerchantLocation.builder()
+                    .id(10L)
+                    .merchant(existing)
+                    .address("Ташкент")
+                    .phone("+998901111111")
+                    .primary(true)
+                    .active(true)
+                    .build();
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
+            when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(merchantLocationRepository.findByMerchantId(1L)).thenReturn(List.of(location));
+            when(couponOfferRepository.existsByMerchantIdAndStatusIn(eq(1L), anyList())).thenReturn(false);
+
+            CreateMerchantRequest request = new CreateMerchantRequest();
+            request.setName("Updated SPA");
+            request.setLocations(List.of());
+
+            merchantService.updateMerchant(1L, request);
+
+            verify(merchantLocationRepository).save(argThat(saved ->
+                    saved == location && saved.getId().equals(10L) && !saved.isActive() && !saved.isPrimary()));
+            verify(merchantLocationRepository, never()).deleteAllByMerchantId(anyLong());
+        }
+
+        @Test
+        @DisplayName("Обновление: ID локации другого мерчанта отклоняется")
+        void updateMerchant_foreignLocationId_rejected() {
+            Merchant existing = createTestMerchant();
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
+            when(merchantLocationRepository.findByMerchantId(1L)).thenReturn(List.of());
+
+            CreateMerchantRequest.LocationRequest locationRequest = new CreateMerchantRequest.LocationRequest();
+            locationRequest.setId(999L);
+            locationRequest.setAddress("Чужой адрес");
+            locationRequest.setPrimary(true);
+
+            CreateMerchantRequest request = new CreateMerchantRequest();
+            request.setName("Updated SPA");
+            request.setLocations(List.of(locationRequest));
+
+            assertThatThrownBy(() -> merchantService.updateMerchant(1L, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("не принадлежит мерчанту");
+
+            verify(merchantLocationRepository, never()).save(any());
+            verify(merchantLocationRepository, never()).deleteAllByMerchantId(anyLong());
+        }
+
+        @Test
         @DisplayName("Обновление: два primary location отклоняются до удаления существующих локаций")
         void updateMerchant_rejectsMultiplePrimaryLocationsBeforeDelete() {
             Merchant existing = createTestMerchant();
@@ -309,8 +435,8 @@ class MerchantServiceTest {
         }
 
         @Test
-        @DisplayName("updateMerchant: empty locations without dependent coupons clears locations")
-        void updateMerchant_emptyLocationsWithoutDependentCoupons_clearsLocations() {
+        @DisplayName("updateMerchant: empty locations without dependent coupons avoids destructive delete")
+        void updateMerchant_emptyLocationsWithoutDependentCoupons_avoidsDestructiveDelete() {
             Merchant existing = createTestMerchant();
             when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -326,7 +452,7 @@ class MerchantServiceTest {
 
             merchantService.updateMerchant(1L, request);
 
-            verify(merchantLocationRepository).deleteAllByMerchantId(1L);
+            verify(merchantLocationRepository, never()).deleteAllByMerchantId(anyLong());
         }
         @Test
         @DisplayName("createFromOnboarding: existing merchant by userId returns existing merchant")
@@ -661,4 +787,3 @@ class MerchantServiceTest {
         }
     }
 }
-

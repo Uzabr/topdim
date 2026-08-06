@@ -111,7 +111,7 @@ function NavBar() {
     <nav className={`nav-premium ${scrolled ? 'scrolled' : ''}`}>
       <div className="mx nav-inner">
         <a href="/" className="nav-logo">
-          TopDim
+          sizbiz
         </a>
         <div className="hidden md:flex gap-8" style={{ display: 'flex', gap: '8px'}}>
           <a href="#steps" className="btn-outline" style={{ textDecoration: 'none' }}>
@@ -304,7 +304,7 @@ function HeroSection() {
 
 /* ── 2. MARQUEE ── */
 function ImpactMarquee() {
-  const items = ['COUPONS', 'LOCAL DEALS', 'NEW CLIENTS', 'PIN QR', 'TOPDIM', 'COUPONS', 'LOCAL DEALS'];
+  const items = ['COUPONS', 'LOCAL DEALS', 'NEW CLIENTS', 'PIN QR', 'SIZBIZ', 'COUPONS', 'LOCAL DEALS'];
   return (
     <div className="marquee-wrapper">
       <motion.div className="marquee-track" animate={{ x: [0, -2000] }} transition={{ repeat: Infinity, duration: 30, ease: "linear" }}>
@@ -326,7 +326,7 @@ function CategoriesSection() {
     <section className="spacer-section">
       <div className="mx w-full">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={blurReveal}>
-          <h2 className="sec-title">{t('partners.audienceTitle')} <span>TopDim</span></h2>
+          <h2 className="sec-title">{t('partners.audienceTitle')} <span>sizbiz</span></h2>
           <p className="sec-desc">{t('partners.audienceDesc')}</p>
         </motion.div>
         

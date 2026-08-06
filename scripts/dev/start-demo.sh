@@ -22,6 +22,8 @@
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$DIR"
 LOG="$DIR/logs"; mkdir -p "$LOG"
+# shellcheck source=lib/demo-infra.sh
+source "$DIR/scripts/dev/lib/demo-infra.sh"
 
 GREEN='\033[0;32m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
 INFRA=( "infrastructure:discovery-server:8761" "infrastructure:api-gateway:8080" )
@@ -51,7 +53,7 @@ clean_slate
 
 echo -e "${CYAN}[1/3] Docker infra (essential only — no ES/Kibana/Grafana/Loki/Prometheus)${NC}"
 # Тяжёлый observability-стек не нужен для демо и выжирает память (9 JVM + Docker на Mac).
-docker compose up -d postgres redis rabbitmq minio >/dev/null 2>&1
+ensure_demo_infrastructure
 for pn in "5433:postgres" "6380:redis" "5673:rabbitmq" "9000:minio"; do wait_port "${pn%%:*}" "${pn##*:}"; done
 
 # Sync PostgreSQL password with .env — POSTGRES_PASSWORD is only applied on first
@@ -80,6 +82,7 @@ launch() { local grp="$1" name="$2"; nohup ./gradlew ":${grp}:${name}:bootRun" -
 # and launching via a later function call did NOT propagate on some runs).
 ( set -a; source <(sed -e '/^\s*$/d' -e '/^\s*#/d' "$DIR/.env" 2>/dev/null); set +a
   export JWT_SECRET="$(cat "$JWT_FILE")"
+  configure_demo_service_environment
 
   echo -e "${CYAN}[2/3] Discovery + Gateway${NC}"
   launch infrastructure discovery-server; wait_port 8761 discovery-server

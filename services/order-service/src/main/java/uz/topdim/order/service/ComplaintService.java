@@ -13,6 +13,7 @@ import uz.topdim.order.dto.ComplaintResponse;
 import uz.topdim.order.dto.CreateComplaintRequest;
 import uz.topdim.order.dto.ResolveComplaintRequest;
 import uz.topdim.order.entity.*;
+import uz.topdim.order.exception.ResourceNotFoundException;
 import uz.topdim.order.repository.ComplaintRepository;
 import uz.topdim.order.repository.OrderRepository;
 import uz.topdim.order.repository.PurchasedCouponRepository;
@@ -117,23 +118,44 @@ public class ComplaintService {
 
     @Transactional
     public void resolveComplaint(Long modId, Long complaintId, ResolveComplaintRequest request) {
-        Complaint complaint = complaintRepository.findById(complaintId)
-                .orElseThrow(() -> new RuntimeException("Жалоба не найдена"));
-
-        if ("RESOLVE".equalsIgnoreCase(request.getDecision())) {
-            complaint.setStatus(ComplaintStatus.RESOLVED);
-            sendNotification(complaint.getUserId(), "Жалоба рассмотрена", 
-                    "Ваша жалоба (Тема: " + complaint.getSubject() + ") была рассмотрена. Решение: " + request.getResolution(), "SUCCESS");
-        } else if ("REJECT".equalsIgnoreCase(request.getDecision())) {
-            complaint.setStatus(ComplaintStatus.REJECTED);
-            sendNotification(complaint.getUserId(), "Жалоба отклонена", 
-                    "К сожалению, ваша жалоба (Тема: " + complaint.getSubject() + ") была отклонена. Причина: " + request.getResolution(), "INFO");
-        } else {
-            throw new IllegalArgumentException("Unknown decision: " + request.getDecision());
+        String decision = request.getDecision() == null
+                ? ""
+                : request.getDecision().trim().toUpperCase(java.util.Locale.ROOT);
+        if (!"RESOLVE".equals(decision) && !"REJECT".equals(decision)) {
+            throw new IllegalArgumentException("Неизвестное решение: " + request.getDecision());
         }
 
-        complaint.setResolution(request.getResolution());
+        String resolution = request.getResolution() == null ? "" : request.getResolution().trim();
+        if (resolution.isBlank()) {
+            throw new IllegalArgumentException("Укажите ответ по обращению");
+        }
+
+        Complaint complaint = complaintRepository.findByIdForUpdate(complaintId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Обращение не найдено: " + complaintId));
+        if (complaint.getStatus() != ComplaintStatus.PENDING) {
+            throw new IllegalStateException("Обращение уже обработано");
+        }
+
+        if ("RESOLVE".equals(decision)) {
+            complaint.setStatus(ComplaintStatus.RESOLVED);
+        } else {
+            complaint.setStatus(ComplaintStatus.REJECTED);
+        }
+        complaint.setResolution(resolution);
         complaintRepository.save(complaint);
+
+        if ("RESOLVE".equals(decision)) {
+            sendNotification(complaint.getUserId(), "Жалоба рассмотрена",
+                    "Ваша жалоба (Тема: " + complaint.getSubject()
+                            + ") была рассмотрена. Решение: " + resolution,
+                    "SUCCESS");
+        } else {
+            sendNotification(complaint.getUserId(), "Жалоба отклонена",
+                    "К сожалению, ваша жалоба (Тема: " + complaint.getSubject()
+                            + ") была отклонена. Причина: " + resolution,
+                    "INFO");
+        }
     }
 
     private void sendNotification(Long userId, String title, String message, String type) {

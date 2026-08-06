@@ -94,12 +94,18 @@ public class UserService {
     @Transactional(readOnly = true)
     public Page<AdminUserResponse> getAllUsers(String role, String search, int page, int size) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        String normalizedSearch = search != null && !search.isBlank() ? search.trim() : null;
+        Role normalizedRole = role != null && !role.isBlank()
+                ? Role.valueOf(role.trim().toUpperCase())
+                : null;
 
         Page<User> users;
-        if (search != null && !search.isBlank()) {
-            users = userRepository.searchByEmailOrName(search.trim(), pageable);
-        } else if (role != null && !role.isBlank()) {
-            users = userRepository.findByRole(Role.valueOf(role.toUpperCase()), pageable);
+        if (normalizedSearch != null && normalizedRole != null) {
+            users = userRepository.searchForAdmin(normalizedRole, normalizedSearch, pageable);
+        } else if (normalizedSearch != null) {
+            users = userRepository.searchByEmailOrName(normalizedSearch, pageable);
+        } else if (normalizedRole != null) {
+            users = userRepository.findByRole(normalizedRole, pageable);
         } else {
             users = userRepository.findAll(pageable);
         }
@@ -109,12 +115,16 @@ public class UserService {
 
     @Transactional
     public AdminUserResponse blockUser(Long userId, boolean blocked) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
 
         // Защита: нельзя блокировать админов
         if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN) {
             throw new IllegalStateException("Невозможно заблокировать администратора");
+        }
+
+        if (user.isEnabled() == !blocked) {
+            return mapToAdminUser(user);
         }
 
         user.setEnabled(!blocked);

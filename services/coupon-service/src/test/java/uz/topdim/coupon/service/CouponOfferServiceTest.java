@@ -9,7 +9,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import uz.topdim.coupon.dto.AdminCouponFilter;
 import uz.topdim.coupon.dto.CouponOfferResponse;
 import uz.topdim.coupon.dto.CouponPurchaseSnapshotResponse;
 import uz.topdim.coupon.dto.CreateCouponOfferRequest;
@@ -23,6 +27,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -48,7 +53,7 @@ class CouponOfferServiceTest {
     private CouponOfferService couponOfferService;
 
     private CouponOffer createTestOffer() {
-        Merchant merchant = Merchant.builder().id(1L).name("SPA Oasis").logoUrl("/logo.jpg").build();
+        Merchant merchant = Merchant.builder().id(1L).name("SPA Oasis").logoUrl("/logo.jpg").active(true).build();
         Category category = Category.builder().id(1L).name("Красота").slug("beauty").iconUrl("/icon.svg").build();
         return CouponOffer.builder()
                 .id(1L).title("SPA массаж 50%")
@@ -60,6 +65,70 @@ class CouponOfferServiceTest {
                 .giftAvailable(false)
                 .options(new ArrayList<>()).images(new ArrayList<>())
                 .build();
+    }
+
+    @Test
+    @DisplayName("Admin list: production pagination uses createdAt DESC then id DESC")
+    void getAllForAdmin_equalCreatedAt_usesStableIdTieBreaker() {
+        when(couponOfferRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        couponOfferService.getAllForAdmin(
+                new AdminCouponFilter(Set.of(CouponStatus.LEAD), null, null, null),
+                0,
+                20);
+
+        ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+        verify(couponOfferRepository).findAll(any(Specification.class), pageable.capture());
+        assertThat(pageable.getValue().getSort()).containsExactly(
+                Sort.Order.desc("createdAt"),
+                Sort.Order.desc("id"));
+    }
+
+    @Test
+    @DisplayName("Admin list: legacy coupon without merchant maps as merchant null")
+    void getAllForAdmin_nullMerchant_preservesPageAndResponseContract() {
+        CouponOffer legacyOffer = CouponOffer.builder()
+                .id(99L)
+                .title("Legacy incomplete coupon")
+                .offerDescription("Requires merchant cleanup")
+                .status(CouponStatus.LEAD)
+                .options(new ArrayList<>())
+                .images(new ArrayList<>())
+                .build();
+        Page<CouponOffer> page = new PageImpl<>(
+                List.of(legacyOffer),
+                PageRequest.of(2, 1),
+                5);
+        when(couponOfferRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(page);
+        when(merchantLocationRepository.findByMerchantIdInAndPrimaryTrue(List.of()))
+                .thenReturn(List.of());
+        when(couponOptionRepository.findByCouponOfferIdInOrderById(List.of(99L)))
+                .thenReturn(List.of());
+        when(couponImageRepository.findByCouponOfferIdInOrderBySortOrderAscIdAsc(List.of(99L)))
+                .thenReturn(List.of());
+        when(reviewRepository.summarizeApprovedByCouponIds(List.of(99L)))
+                .thenReturn(List.of());
+
+        Page<CouponOfferResponse> result = couponOfferService.getAllForAdmin(
+                new AdminCouponFilter(Set.of(CouponStatus.LEAD), null, null, null),
+                2,
+                1);
+
+        assertThat(result.getNumber()).isEqualTo(2);
+        assertThat(result.getTotalElements()).isEqualTo(5);
+        assertThat(result.getTotalPages()).isEqualTo(5);
+        assertThat(result.getContent()).singleElement().satisfies(response -> {
+            assertThat(response.getId()).isEqualTo(99L);
+            assertThat(response.getTitle()).isEqualTo("Legacy incomplete coupon");
+            assertThat(response.getStatus()).isEqualTo("LEAD");
+            assertThat(response.getMerchant()).isNull();
+            assertThat(response.getOptions()).isEmpty();
+            assertThat(response.getImages()).isEmpty();
+            assertThat(response.getAverageRating()).isZero();
+            assertThat(response.getReviewCount()).isZero();
+        });
     }
 
     // ==================== Catalog ====================
@@ -264,9 +333,11 @@ class CouponOfferServiceTest {
     @DisplayName("State Machine: takeToWork LEAD → DRAFT")
     void takeToWork_fromLead_setsDraft() {
         CouponOffer offer = createTestOffer();
-        offer.setStatus(CouponStatus.LEAD);
+        offer.setStatus(CouponStatus.DRAFT);
+        offer.setAssignedModeratorId(100L);
+        offer.setAssignedModeratorName("mod@test.uz");
+        when(couponOfferRepository.claimLead(1L, 100L, "mod@test.uz")).thenReturn(1);
         when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
-        when(couponOfferRepository.save(any())).thenReturn(offer);
 
         CouponOfferResponse result = couponOfferService.takeToWork(1L, 100L, "mod@test.uz");
 
@@ -278,9 +349,8 @@ class CouponOfferServiceTest {
     @Test
     @DisplayName("State Machine: takeToWork из DRAFT → IllegalStateException")
     void takeToWork_fromDraft_throws() {
-        CouponOffer offer = createTestOffer();
-        offer.setStatus(CouponStatus.DRAFT);
-        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.claimLead(1L, 100L, "mod@test.uz")).thenReturn(0);
+        when(couponOfferRepository.existsById(1L)).thenReturn(true);
 
         assertThatThrownBy(() -> couponOfferService.takeToWork(1L, 100L, "mod@test.uz"))
                 .isInstanceOf(IllegalStateException.class);
@@ -294,7 +364,7 @@ class CouponOfferServiceTest {
         when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
         when(couponOfferRepository.save(any())).thenReturn(offer);
 
-        CouponOfferResponse result = couponOfferService.sendToApproval(1L);
+        CouponOfferResponse result = couponOfferService.sendToApproval(1L, 99L, "ADMIN");
 
         assertThat(result.getStatus()).isEqualTo("WAITING_FOR_MERCHANT");
     }
@@ -306,8 +376,38 @@ class CouponOfferServiceTest {
         offer.setStatus(CouponStatus.ACTIVE);
         when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
 
-        assertThatThrownBy(() -> couponOfferService.sendToApproval(1L))
+        assertThatThrownBy(() -> couponOfferService.sendToApproval(1L, 99L, "ADMIN"))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("State Machine: MODERATOR не отправляет незакреплённый купон")
+    void sendToApproval_unassignedModerator_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        offer.setAssignedModeratorId(null);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.sendToApproval(1L, 99L, "MODERATOR"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("не закреплён");
+
+        verify(couponOfferRepository, never()).save(any());
+        verify(telegramPreviewService, never()).sendPreview(any());
+    }
+
+    @Test
+    @DisplayName("State Machine: MODERATOR отправляет только закреплённый за ним купон")
+    void sendToApproval_ownedModerator_allowed() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        offer.setAssignedModeratorId(99L);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.save(any())).thenReturn(offer);
+
+        CouponOfferResponse result = couponOfferService.sendToApproval(1L, 99L, "MODERATOR");
+
+        assertThat(result.getStatus()).isEqualTo("WAITING_FOR_MERCHANT");
     }
 
     @Test
@@ -322,7 +422,7 @@ class CouponOfferServiceTest {
                 .primary(true)
                 .active(true)
                 .build();
-        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(offer));
         when(merchantLocationRepository.findByMerchantIdAndPrimaryTrue(1L)).thenReturn(Optional.of(location));
         when(couponOfferRepository.save(any())).thenReturn(offer);
 
@@ -332,11 +432,27 @@ class CouponOfferServiceTest {
     }
 
     @Test
+    @DisplayName("State Machine: approveByMerchant не публикует купон неактивного мерчанта")
+    void approve_fromWaiting_withInactiveMerchant_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
+        offer.getMerchant().setActive(false);
+        when(couponOfferRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.approveByMerchant(1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Мерчант не активен");
+
+        verify(merchantLocationRepository, never()).findByMerchantIdAndPrimaryTrue(anyLong());
+        verify(couponOfferRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("State Machine: approveByMerchant WAITING без active primary location → IllegalStateException")
     void approve_fromWaiting_withoutPrimaryLocation_throws() {
         CouponOffer offer = createTestOffer();
         offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
-        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(offer));
         when(merchantLocationRepository.findByMerchantIdAndPrimaryTrue(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> couponOfferService.approveByMerchant(1L))
@@ -356,7 +472,7 @@ class CouponOfferServiceTest {
                 .primary(true)
                 .active(true)
                 .build();
-        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(offer));
         when(merchantLocationRepository.findByMerchantIdAndPrimaryTrue(1L)).thenReturn(Optional.of(location));
 
         assertThatThrownBy(() -> couponOfferService.approveByMerchant(1L))
@@ -369,7 +485,7 @@ class CouponOfferServiceTest {
     void approve_fromDraft_throws() {
         CouponOffer offer = createTestOffer();
         offer.setStatus(CouponStatus.DRAFT);
-        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(offer));
 
         assertThatThrownBy(() -> couponOfferService.approveByMerchant(1L))
                 .isInstanceOf(IllegalStateException.class);
@@ -380,7 +496,7 @@ class CouponOfferServiceTest {
     void reject_fromWaiting_setsRevision() {
         CouponOffer offer = createTestOffer();
         offer.setStatus(CouponStatus.WAITING_FOR_MERCHANT);
-        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(offer));
         when(couponOfferRepository.save(any())).thenReturn(offer);
 
         CouponOfferResponse result = couponOfferService.requestRevisionByMerchant(1L, "Цена неверна");
@@ -494,6 +610,24 @@ class CouponOfferServiceTest {
     }
 
     @Test
+    @DisplayName("Update: MODERATOR не редактирует незакреплённый купон")
+    void update_unassignedModeratorCoupon_throws() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.DRAFT);
+        offer.setAssignedModeratorId(null);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+
+        assertThatThrownBy(() -> couponOfferService.update(
+                1L,
+                new CreateCouponOfferRequest(),
+                100L,
+                "MODERATOR"
+        ))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("не закреплён");
+    }
+
+    @Test
     @DisplayName("Delete: WAITING_FOR_MERCHANT — запрещено")
     void delete_waitingForMerchant_throws() {
         CouponOffer offer = createTestOffer();
@@ -537,6 +671,21 @@ class CouponOfferServiceTest {
 
         assertThat(result.getStatus()).isEqualTo("ARCHIVED");
         assertThat(result.getArchiveReason()).isEqualTo("Оффер больше не актуален");
+    }
+
+    @Test
+    @DisplayName("Archive: PAUSED → ARCHIVED разрешён и причина обрезается")
+    void archive_fromPaused_trimsReason() {
+        CouponOffer offer = createTestOffer();
+        offer.setStatus(CouponStatus.PAUSED);
+        when(couponOfferRepository.findById(1L)).thenReturn(Optional.of(offer));
+        when(couponOfferRepository.save(any(CouponOffer.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        CouponOfferResponse result = couponOfferService.archive(1L, "  Завершено по договору  ");
+
+        assertThat(result.getStatus()).isEqualTo("ARCHIVED");
+        assertThat(result.getArchiveReason()).isEqualTo("Завершено по договору");
     }
 
     @Test

@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -84,7 +85,7 @@ class ModCouponServiceTest {
 
         when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(coupon));
 
-        modCouponService.reviewCoupon(3L, 10L, "APPROVE", null);
+        modCouponService.reviewCoupon(3L, 10L, "APPROVE", "SUP-42: подтверждено");
 
         verify(couponOfferService).approveByMerchant(10L);
 
@@ -109,7 +110,7 @@ class ModCouponServiceTest {
 
         when(couponOfferRepository.findById(10L)).thenReturn(Optional.of(coupon));
 
-        modCouponService.reviewCoupon(3L, 10L, "REJECT", "Добавьте фото");
+        modCouponService.reviewCoupon(3L, 10L, "REJECT", "  Добавьте фото  ");
 
         verify(couponOfferService).requestRevisionByMerchant(10L, "Добавьте фото");
 
@@ -129,9 +130,21 @@ class ModCouponServiceTest {
     @Test
     @DisplayName("reviewCoupon: неизвестное решение отклоняется без вызова state transition")
     void reviewCoupon_unknownDecision_throws() {
-        assertThatThrownBy(() -> modCouponService.reviewCoupon(3L, 10L, "HOLD", ""))
+        assertThatThrownBy(() -> modCouponService.reviewCoupon(3L, 10L, "HOLD", "SUP-42"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unknown decision");
+
+        verify(couponOfferService, never()).approveByMerchant(any());
+        verify(couponOfferService, never()).requestRevisionByMerchant(any(), any());
+        verify(rabbitTemplate, never()).convertAndSend(any(), any(), any(NotificationEvent.class));
+    }
+
+    @Test
+    @DisplayName("reviewCoupon: пустая бизнес-причина отклоняется до state transition")
+    void reviewCoupon_blankReason_throwsBeforeTransition() {
+        assertThatThrownBy(() -> modCouponService.reviewCoupon(3L, 10L, "APPROVE", "   "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Причина");
 
         verify(couponOfferService, never()).approveByMerchant(any());
         verify(couponOfferService, never()).requestRevisionByMerchant(any(), any());
@@ -147,7 +160,7 @@ class ModCouponServiceTest {
         org.mockito.Mockito.doThrow(new IllegalStateException("Нельзя публиковать купон без active primary location у мерчанта"))
                 .when(couponOfferService).approveByMerchant(10L);
 
-        assertThatThrownBy(() -> modCouponService.reviewCoupon(3L, 10L, "APPROVE", null))
+        assertThatThrownBy(() -> modCouponService.reviewCoupon(3L, 10L, "APPROVE", "SUP-42"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("primary location");
 
@@ -166,10 +179,10 @@ class ModCouponServiceTest {
                 .status(ReviewStatus.PENDING)
                 .build();
 
-        when(reviewRepository.findById(44L)).thenReturn(Optional.of(review));
+        when(reviewRepository.findByIdForUpdate(44L)).thenReturn(Optional.of(review));
         when(reviewRepository.save(any(Review.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        modCouponService.reviewUserReview(3L, 44L, "REJECT", "Нарушение правил");
+        modCouponService.reviewUserReview(3L, 44L, "REJECT", "  Нарушение правил  ");
 
         assertThat(review.getStatus()).isEqualTo(ReviewStatus.REJECTED);
         assertThat(review.getRejectReason()).isEqualTo("Нарушение правил");
@@ -185,11 +198,83 @@ class ModCouponServiceTest {
     }
 
     @Test
+    @DisplayName("reviewUserReview: APPROVE публикует только PENDING отзыв")
+    void reviewUserReview_approve_publishesPendingReview() {
+        Review review = Review.builder()
+                .id(45L)
+                .userId(55L)
+                .couponOffer(createCoupon(CouponStatus.ACTIVE))
+                .rating(5)
+                .comment("Полезный отзыв")
+                .status(ReviewStatus.PENDING)
+                .build();
+        when(reviewRepository.findByIdForUpdate(45L)).thenReturn(Optional.of(review));
+
+        modCouponService.reviewUserReview(3L, 45L, " approve ", null);
+
+        assertThat(review.getStatus()).isEqualTo(ReviewStatus.APPROVED);
+        verify(reviewRepository).save(review);
+    }
+
+    @Test
+    @DisplayName("reviewUserReview: уже обработанный отзыв даёт конфликт без повторного решения")
+    void reviewUserReview_alreadyApproved_conflictsWithoutSideEffects() {
+        Review review = Review.builder()
+                .id(46L)
+                .userId(55L)
+                .couponOffer(createCoupon(CouponStatus.ACTIVE))
+                .rating(5)
+                .comment("Полезный отзыв")
+                .status(ReviewStatus.APPROVED)
+                .build();
+        when(reviewRepository.findByIdForUpdate(46L)).thenReturn(Optional.of(review));
+
+        assertThatThrownBy(() -> modCouponService.reviewUserReview(3L, 46L, "REJECT", "Спам"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("уже обработан");
+
+        verify(reviewRepository, never()).save(any(Review.class));
+        verifyNoInteractions(rabbitTemplate);
+    }
+
+    @Test
+    @DisplayName("reviewUserReview: отклонение без причины запрещено до чтения отзыва")
+    void reviewUserReview_rejectWithoutReason_rejectedBeforeLookup() {
+        assertThatThrownBy(() -> modCouponService.reviewUserReview(3L, 47L, "REJECT", "  "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("причину");
+
+        verify(reviewRepository, never()).findByIdForUpdate(any());
+    }
+
+    @Test
+    @DisplayName("reviewUserReview: слишком длинная причина отклоняется до сохранения")
+    void reviewUserReview_rejectReasonOverColumnLimit_rejectedBeforeLookup() {
+        assertThatThrownBy(() -> modCouponService.reviewUserReview(
+                3L, 47L, "REJECT", "x".repeat(256)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("255");
+
+        verify(reviewRepository, never()).findByIdForUpdate(any());
+    }
+
+    @Test
+    @DisplayName("reviewUserReview: отсутствующий отзыв возвращает not found")
+    void reviewUserReview_missingReview_returnsNotFound() {
+        when(reviewRepository.findByIdForUpdate(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> modCouponService.reviewUserReview(3L, 404L, "APPROVE", null))
+                .isInstanceOf(uz.topdim.coupon.exception.ResourceNotFoundException.class)
+                .hasMessageContaining("404");
+    }
+
+    @Test
     @DisplayName("getPendingReviews: возвращает только pending reviews с корректным маппингом")
     void getPendingReviews_mapsReviewPage() {
         Review review = Review.builder()
                 .id(44L)
                 .userId(55L)
+                .userName("Aziza")
                 .couponOffer(createCoupon(CouponStatus.ACTIVE))
                 .rating(5)
                 .comment("Отлично")
@@ -203,6 +288,7 @@ class ModCouponServiceTest {
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getUserId()).isEqualTo(55L);
+        assertThat(result.getContent().get(0).getUserName()).isEqualTo("Aziza");
         assertThat(result.getContent().get(0).getStatus()).isEqualTo(ReviewStatus.PENDING);
     }
 }

@@ -1,13 +1,19 @@
 package uz.topdim.coupon.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import uz.topdim.coupon.entity.CouponOffer;
 import uz.topdim.coupon.entity.CouponStatus;
+import uz.topdim.coupon.dto.CouponAssigneeResponse;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +22,16 @@ import java.util.Optional;
  * Репозиторий купонных предложений.
  * Поиск с фильтрами по категории, статусу, поиску.
  */
-public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> {
+public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long>,
+        JpaSpecificationExecutor<CouponOffer> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT offer FROM CouponOffer offer WHERE offer.id = :id")
+    Optional<CouponOffer> findByIdForUpdate(@Param("id") Long id);
+
+    @Override
+    @EntityGraph(attributePaths = {"merchant", "category"})
+    Page<CouponOffer> findAll(Specification<CouponOffer> specification, Pageable pageable);
 
     Page<CouponOffer> findByStatus(CouponStatus status, Pageable pageable);
 
@@ -112,11 +127,38 @@ public interface CouponOfferRepository extends JpaRepository<CouponOffer, Long> 
     @Query("UPDATE CouponOffer c SET c.viewCount = c.viewCount + 1 WHERE c.id = :id")
     void incrementViewCount(@Param("id") Long id);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE CouponOffer c
+               SET c.status = uz.topdim.coupon.entity.CouponStatus.DRAFT,
+                   c.assignedModeratorId = :moderatorId,
+                   c.assignedModeratorName = :moderatorName
+             WHERE c.id = :id
+               AND c.status = uz.topdim.coupon.entity.CouponStatus.LEAD
+            """)
+    int claimLead(@Param("id") Long id,
+                  @Param("moderatorId") Long moderatorId,
+                  @Param("moderatorName") String moderatorName);
+
     boolean existsByMerchantIdAndStatusIn(Long merchantId, List<CouponStatus> statuses);
+
+    boolean existsByCategoryId(Long categoryId);
 
     long countByMerchantId(Long merchantId);
 
     long countByMerchantIdAndStatus(Long merchantId, CouponStatus status);
+
+    @Query("""
+            SELECT new uz.topdim.coupon.dto.CouponAssigneeResponse(
+                c.assignedModeratorId,
+                MAX(c.assignedModeratorName)
+            )
+            FROM CouponOffer c
+            WHERE c.assignedModeratorId IS NOT NULL
+            GROUP BY c.assignedModeratorId
+            ORDER BY MAX(c.assignedModeratorName), c.assignedModeratorId
+            """)
+    List<CouponAssigneeResponse> findDistinctAssignees();
 
     /**
      * Atomic increment totalSold и totalTurnover.

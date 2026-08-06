@@ -4,6 +4,7 @@ import type {
   MerchantDetail,
   PageResponse,
   ApiResponse,
+  UpdateMerchantRequest,
 } from './types';
 
 /** Paginated merchant list with search/filter */
@@ -29,7 +30,7 @@ export const fetchMerchantDetail = async (id: number) => {
 };
 
 /** Update merchant */
-export const updateMerchant = async (id: number, data: Record<string, unknown>) => {
+export const updateMerchant = async (id: number, data: UpdateMerchantRequest) => {
   const res = await api.put<ApiResponse<MerchantDetail>>(
     `/api/v1/admin/merchants/${id}`,
     data,

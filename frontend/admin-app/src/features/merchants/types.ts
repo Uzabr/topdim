@@ -45,6 +45,28 @@ export interface MerchantDetail {
   locations: MerchantLocationResponse[];
 }
 
+export interface MerchantLocationUpdate {
+  id?: number;
+  title?: string;
+  address?: string;
+  phone?: string;
+  workingHours?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  primary: boolean;
+}
+
+export interface UpdateMerchantRequest {
+  name: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  coverUrl?: string | null;
+  email?: string | null;
+  website?: string | null;
+  contactPerson?: string | null;
+  locations: MerchantLocationUpdate[];
+}
+
 export interface MerchantCoupon {
   id: number;
   title: string;

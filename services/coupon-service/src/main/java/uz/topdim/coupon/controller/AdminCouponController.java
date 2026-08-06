@@ -13,6 +13,7 @@ import uz.topdim.coupon.entity.CouponStatus;
 import uz.topdim.coupon.service.CouponOfferService;
 import uz.topdim.coupon.service.MerchantService;
 import java.util.List;
+import java.util.Set;
 
 /**
  * REST контроллер администрирования купонов.
@@ -33,10 +34,49 @@ public class AdminCouponController {
     @GetMapping("/coupons")
     public ResponseEntity<ApiResponse<Page<CouponOfferResponse>>> getAllCoupons(
             @RequestParam(required = false) CouponStatus status,
+            @RequestParam(required = false) Set<CouponStatus> statuses,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long merchantId,
+            @RequestParam(required = false) Long assignedModeratorId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(ApiResponse.success(couponOfferService.getAllForAdmin(status, page, size)));
+        if (page < 0) {
+            throw new IllegalArgumentException("Номер страницы не может быть отрицательным");
+        }
+        if (size < 1 || size > 100) {
+            throw new IllegalArgumentException("Размер страницы должен быть от 1 до 100");
+        }
+        if (merchantId != null && merchantId <= 0) {
+            throw new IllegalArgumentException("ID партнёра должен быть положительным");
+        }
+        if (assignedModeratorId != null && assignedModeratorId <= 0) {
+            throw new IllegalArgumentException("ID ответственного должен быть положительным");
+        }
+        if (status != null && statuses != null && !statuses.isEmpty()) {
+            throw new IllegalArgumentException("Передайте только status или statuses");
+        }
+
+        Set<CouponStatus> resolvedStatuses = status != null
+                ? Set.of(status)
+                : statuses == null ? Set.of() : Set.copyOf(statuses);
+        String normalizedSearch = search == null || search.isBlank() ? null : search.trim();
+        AdminCouponFilter filter = new AdminCouponFilter(
+                resolvedStatuses,
+                normalizedSearch,
+                merchantId,
+                assignedModeratorId
+        );
+
+        return ResponseEntity.ok(ApiResponse.success(
+                couponOfferService.getAllForAdmin(filter, page, size)
+        ));
+    }
+
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @GetMapping("/coupons/assignees")
+    public ResponseEntity<ApiResponse<List<CouponAssigneeResponse>>> getCouponAssignees() {
+        return ResponseEntity.ok(ApiResponse.success(couponOfferService.getCouponAssignees()));
     }
 
     @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
@@ -65,7 +105,7 @@ public class AdminCouponController {
         return ResponseEntity.ok(ApiResponse.success("Купон обновлён", couponOfferService.update(id, request, userId, userRole)));
     }
 
-    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PatchMapping("/coupons/{id}/status")
     public ResponseEntity<ApiResponse<CouponOfferResponse>> updateCouponStatus(
             @PathVariable Long id,
@@ -74,14 +114,14 @@ public class AdminCouponController {
         return ResponseEntity.ok(ApiResponse.success("Статус обновлён", couponOfferService.updateStatus(id, status)));
     }
 
-    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @DeleteMapping("/coupons/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteCoupon(@PathVariable Long id) {
         couponOfferService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("Купон удалён", null));
     }
 
-    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PostMapping("/coupons/{id}/archive")
     public ResponseEntity<ApiResponse<CouponOfferResponse>> archiveCoupon(
             @PathVariable Long id,
@@ -94,13 +134,18 @@ public class AdminCouponController {
     /** Отправить купон на согласование мерчанту (DRAFT/REVISION_REQUESTED → WAITING_FOR_MERCHANT). */
     @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
     @PostMapping("/coupons/{id}/send-to-approval")
-    public ResponseEntity<ApiResponse<CouponOfferResponse>> sendToApproval(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<CouponOfferResponse>> sendToApproval(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader("X-User-Role") String userRole
+    ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Купон отправлен на согласование", couponOfferService.sendToApproval(id)));
+                "Купон отправлен на согласование",
+                couponOfferService.sendToApproval(id, userId, userRole)));
     }
 
     /** Отклонить заявку партнёра (LEAD/DRAFT → ARCHIVED с причиной). */
-    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PostMapping("/coupons/{id}/reject-request")
     public ResponseEntity<ApiResponse<CouponOfferResponse>> rejectRequest(
             @PathVariable Long id,

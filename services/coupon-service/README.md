@@ -14,7 +14,7 @@ Spring Boot 3.4, Spring Data JPA, Redis Cache, MapStruct, RabbitMQ, PostgreSQL
 
 | Method | URL | Auth | Описание |
 |---|---|---|---|
-| GET | `/api/v1/categories` | ❌ | Все категории |
+| GET | `/api/v1/categories` | ❌ | Активные категории |
 | GET | `/api/v1/coupons` | ❌ | Каталог (page, size, categoryId, search, sortBy) |
 | GET | `/api/v1/coupons/{id}` | ❌ | Детали купона |
 | GET | `/api/v1/coupons/top-selling` | ❌ | Топ продаж |
@@ -23,6 +23,12 @@ Spring Boot 3.4, Spring Data JPA, Redis Cache, MapStruct, RabbitMQ, PostgreSQL
 | PATCH | `/api/v1/admin/coupons/{id}/status` | ✅ ADMIN | Изменить статус |
 | DELETE | `/api/v1/admin/coupons/{id}` | ✅ ADMIN | Удалить |
 | POST | `/api/v1/admin/merchants` | ✅ ADMIN | Создать партнёра |
+| GET | `/api/v1/admin/categories` | ✅ ADMIN | Все категории, включая выключенные |
+| GET | `/api/v1/admin/categories/{id}` | ✅ ADMIN | Категория по ID |
+| POST | `/api/v1/admin/categories` | ✅ ADMIN | Создать категорию |
+| PUT | `/api/v1/admin/categories/{id}` | ✅ ADMIN | Обновить/деактивировать категорию |
+| DELETE | `/api/v1/admin/categories/{id}` | ✅ ADMIN | Удалить, если категория не используется |
+| POST | `/api/v1/admin/categories/upload` | ✅ ADMIN | Импортировать Excel |
 
 ## Кэширование (Redis)
 

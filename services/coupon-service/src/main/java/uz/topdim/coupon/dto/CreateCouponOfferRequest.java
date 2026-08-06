@@ -18,7 +18,7 @@ public class CreateCouponOfferRequest {
     @NotBlank(message = "Название обязательно")
     private String title;
 
-    @NotBlank(message = "Описание оффера обязательно")
+    @NotBlank(message = "Описание купона обязательно")
     private String offerDescription;
 
     @NotNull(message = "Партнер обязателен")

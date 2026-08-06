@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Dev Demo Seed — Orchestrator
-# Creates 50 merchants, 155 users, 100 staff, 500 coupons for local/dev QA.
+# Creates 50 merchants, 158 users, 100 staff, 500 coupons for local/dev QA.
 #
 # Usage:
 #   ./scripts/dev/seed-demo.sh          # seed all demo data
@@ -187,7 +187,10 @@ do_seed() {
 
     local count
     count=$(run_sql_quiet "$IDENTITY_DB" -c "SELECT COUNT(*) FROM users WHERE email LIKE '%@demo.topdim.uz'" | tr -d '[:space:]')
-    echo "Demo users:            $count (expected: 155)"
+    echo "Demo users:            $count (expected: 158)"
+
+    count=$(run_sql_quiet "$IDENTITY_DB" -c "SELECT COUNT(*) FROM users WHERE email IN ('moderator@demo.topdim.uz', 'admin@demo.topdim.uz', 'superadmin@demo.topdim.uz')" | tr -d '[:space:]')
+    echo "  Admin panel users:   $count (expected: 3)"
 
     count=$(run_sql_quiet "$IDENTITY_DB" -c "SELECT COUNT(*) FROM users WHERE email LIKE 'owner%@demo.topdim.uz'" | tr -d '[:space:]')
     echo "  Owners:              $count (expected: 50)"
@@ -232,6 +235,7 @@ do_seed() {
     echo "Owners:   owner001@demo.topdim.uz .. owner050@demo.topdim.uz"
     echo "Cashiers: cashier001a@demo.topdim.uz, cashier001b@demo.topdim.uz .. cashier050a/b"
     echo "Buyers:   buyer001@demo.topdim.uz .. buyer005@demo.topdim.uz"
+    echo "Admin UI: moderator@demo.topdim.uz, admin@demo.topdim.uz, superadmin@demo.topdim.uz"
     echo ""
     info "✅ Demo seed complete!"
 }

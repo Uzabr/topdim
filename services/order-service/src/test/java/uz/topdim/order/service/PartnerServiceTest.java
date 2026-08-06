@@ -18,12 +18,16 @@ import uz.topdim.order.repository.PurchasedCouponRepository;
 import uz.topdim.order.repository.RedemptionRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,15 +57,49 @@ class PartnerServiceTest {
                 .redeemedAt(LocalDateTime.now())
                 .build();
 
-        when(redemptionRepository.findByMerchantId(eq(1L), any(Pageable.class)))
+        when(redemptionRepository.findHistory(
+                eq(1L), isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(r)));
 
-        Page<RedemptionResponse> redemptions = partnerService.getRedemptions(1L, 0, 20);
+        Page<RedemptionResponse> redemptions = partnerService.getRedemptions(
+                1L, null, null, null, null, 0, 20);
 
         assertThat(redemptions.getContent()).hasSize(1);
         assertThat(redemptions.getContent().get(0).getCouponTitle()).isEqualTo("Test Coupon");
         assertThat(redemptions.getContent().get(0).getCouponCode()).isEqualTo("CODE123");
         assertThat(redemptions.getContent().get(0).getRedeemedByStaff()).isEqualTo("Cashier 1");
+    }
+
+    @Test
+    @DisplayName("getRedemptions: normalizes filters and uses stable newest-first sorting")
+    void getRedemptions_normalizesFiltersAndBoundaries() {
+        when(redemptionRepository.findHistory(any(), any(), any(), any(), any(), any()))
+                .thenReturn(Page.empty());
+
+        partnerService.getRedemptions(
+                77L, 5L, " CP_%! ",
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 6), 2, 20);
+
+        verify(redemptionRepository).findHistory(
+                eq(77L), eq(5L), eq("cp!_!%!!"),
+                eq(LocalDateTime.of(2026, 8, 1, 0, 0)),
+                eq(LocalDateTime.of(2026, 8, 7, 0, 0)),
+                argThat(pageable -> pageable.getPageNumber() == 2
+                        && pageable.getPageSize() == 20
+                        && pageable.getSort().getOrderFor("redeemedAt").isDescending()
+                        && pageable.getSort().getOrderFor("id").isDescending()));
+    }
+
+    @Test
+    @DisplayName("getRedemptions: blank code and absent dates remain unfiltered")
+    void getRedemptions_blankFiltersBecomeNull() {
+        when(redemptionRepository.findHistory(any(), any(), any(), any(), any(), any()))
+                .thenReturn(Page.empty());
+
+        partnerService.getRedemptions(77L, null, "   ", null, null, 0, 20);
+
+        verify(redemptionRepository).findHistory(
+                eq(77L), isNull(), isNull(), isNull(), isNull(), any(Pageable.class));
     }
 
     @Test

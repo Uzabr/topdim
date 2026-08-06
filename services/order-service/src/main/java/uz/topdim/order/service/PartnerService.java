@@ -16,7 +16,10 @@ import uz.topdim.order.repository.PurchasedCouponRepository;
 import uz.topdim.order.repository.RedemptionRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 /**
@@ -94,23 +97,28 @@ public class PartnerService {
     }
 
     /**
-     * История погашений по мерчанту (для Owner/Manager).
+     * История погашений с доверенным merchant/staff scope и optional filters.
      */
     @Transactional(readOnly = true)
-    public Page<RedemptionResponse> getRedemptions(Long merchantId, int page, int size) {
-        PageRequest pageable = PageRequest.of(page, size, Sort.by("redeemedAt").descending());
-        return redemptionRepository.findByMerchantId(merchantId, pageable)
+    public Page<RedemptionResponse> getRedemptions(
+            Long merchantId, Long staffId, String couponCode,
+            LocalDate dateFrom, LocalDate dateTo, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Order.desc("redeemedAt"), Sort.Order.desc("id")));
+        String couponFragment = normalizeCouponFragment(couponCode);
+        LocalDateTime fromInclusive = dateFrom != null ? dateFrom.atStartOfDay() : null;
+        LocalDateTime toExclusive = dateTo != null ? dateTo.plusDays(1).atStartOfDay() : null;
+        return redemptionRepository.findHistory(
+                        merchantId, staffId, couponFragment, fromInclusive, toExclusive, pageable)
                 .map(this::mapToResponse);
     }
 
-    /**
-     * История погашений конкретного кассира (для Cashier).
-     */
-    @Transactional(readOnly = true)
-    public Page<RedemptionResponse> getRedemptionsByStaff(Long merchantId, Long staffId, int page, int size) {
-        PageRequest pageable = PageRequest.of(page, size, Sort.by("redeemedAt").descending());
-        return redemptionRepository.findByMerchantIdAndStaffId(merchantId, staffId, pageable)
-                .map(this::mapToResponse);
+    private String normalizeCouponFragment(String couponCode) {
+        if (couponCode == null || couponCode.isBlank()) return null;
+        return couponCode.trim().toLowerCase(Locale.ROOT)
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
     }
 
     private RedemptionResponse mapToResponse(Redemption r) {

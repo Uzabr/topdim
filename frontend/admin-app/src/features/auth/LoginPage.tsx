@@ -58,7 +58,7 @@ export const LoginPage = () => {
       >
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <Title level={3} style={{ marginBottom: 4 }}>
-            TopDim Admin
+            sizbiz Admin
           </Title>
           <Text type="secondary">Войдите в панель управления</Text>
         </div>

@@ -126,6 +126,20 @@ class PartnerCouponServiceTest {
                 .hasMessageContaining("нет привязанного мерчанта");
     }
 
+    @Test
+    @DisplayName("getMyCoupons: неактивный мерчант → IllegalStateException")
+    void getMyCoupons_inactiveMerchant_throws() {
+        Merchant merchant = createMerchant();
+        merchant.setActive(false);
+        when(merchantRepository.findByUserId(10L)).thenReturn(Optional.of(merchant));
+
+        assertThatThrownBy(() -> partnerCouponService.getMyCoupons(10L, null, 0, 20))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("не активен");
+
+        verifyNoInteractions(couponOfferRepository);
+    }
+
     // ==================== getMyCouponById ====================
 
     @Test

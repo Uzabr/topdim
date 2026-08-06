@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import uz.topdim.coupon.entity.MerchantLocation;
 
 import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -13,6 +14,7 @@ public interface MerchantLocationRepository extends JpaRepository<MerchantLocati
     List<MerchantLocation> findByMerchantIdAndActiveTrue(Long merchantId);
     List<MerchantLocation> findByMerchantId(Long merchantId);
     Optional<MerchantLocation> findByMerchantIdAndPrimaryTrue(Long merchantId);
+    List<MerchantLocation> findByMerchantIdInAndPrimaryTrue(Collection<Long> merchantIds);
     void deleteAllByMerchantId(Long merchantId);
 
     // Bot lead: phone lookup across all active locations

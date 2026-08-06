@@ -13,6 +13,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.dao.DataIntegrityViolationException;
 import uz.topdim.common.events.NotificationEvent;
 import uz.topdim.order.dto.CreateComplaintRequest;
+import uz.topdim.order.dto.ResolveComplaintRequest;
 import uz.topdim.order.entity.Complaint;
 import uz.topdim.order.entity.ComplaintStatus;
 import uz.topdim.order.entity.Order;
@@ -191,6 +192,74 @@ class ComplaintServiceTest {
                 any(NotificationEvent.class));
     }
 
+    @Test
+    @DisplayName("Решение обращения: PENDING → RESOLVED, ответ нормализуется до уведомления")
+    void resolveComplaint_pending_resolvesAndNotifiesAfterSave() {
+        Complaint complaint = pendingComplaint(61L);
+        when(complaintRepository.findByIdForUpdate(61L)).thenReturn(Optional.of(complaint));
+        when(complaintRepository.save(complaint)).thenReturn(complaint);
+
+        complaintService.resolveComplaint(3L, 61L, decision("RESOLVE", "  Деньги возвращены  "));
+
+        assertThat(complaint.getStatus()).isEqualTo(ComplaintStatus.RESOLVED);
+        assertThat(complaint.getResolution()).isEqualTo("Деньги возвращены");
+        InOrder saveThenNotification = inOrder(complaintRepository, rabbitTemplate);
+        saveThenNotification.verify(complaintRepository).save(complaint);
+        saveThenNotification.verify(rabbitTemplate).convertAndSend(
+                eq("notification.exchange"), eq("notification.sent"), any(NotificationEvent.class));
+    }
+
+    @Test
+    @DisplayName("Отклонение обращения: PENDING → REJECTED")
+    void resolveComplaint_reject_rejectsPendingComplaint() {
+        Complaint complaint = pendingComplaint(62L);
+        when(complaintRepository.findByIdForUpdate(62L)).thenReturn(Optional.of(complaint));
+        when(complaintRepository.save(complaint)).thenReturn(complaint);
+
+        complaintService.resolveComplaint(3L, 62L, decision("REJECT", "Нет оснований"));
+
+        assertThat(complaint.getStatus()).isEqualTo(ComplaintStatus.REJECTED);
+        assertThat(complaint.getResolution()).isEqualTo("Нет оснований");
+    }
+
+    @Test
+    @DisplayName("Повторно обработанное обращение не меняется и не уведомляет пользователя")
+    void resolveComplaint_alreadyResolved_conflictsWithoutSideEffects() {
+        Complaint complaint = pendingComplaint(63L);
+        complaint.setStatus(ComplaintStatus.RESOLVED);
+        when(complaintRepository.findByIdForUpdate(63L)).thenReturn(Optional.of(complaint));
+
+        assertThatThrownBy(() -> complaintService.resolveComplaint(
+                3L, 63L, decision("REJECT", "Повторное решение")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("уже обработано");
+
+        verify(complaintRepository, never()).save(any(Complaint.class));
+        verifyNoInteractions(rabbitTemplate);
+    }
+
+    @Test
+    @DisplayName("Отсутствующее обращение возвращает not found")
+    void resolveComplaint_missing_returnsNotFound() {
+        when(complaintRepository.findByIdForUpdate(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> complaintService.resolveComplaint(
+                3L, 404L, decision("RESOLVE", "Проверено")))
+                .isInstanceOf(uz.topdim.order.exception.ResourceNotFoundException.class)
+                .hasMessageContaining("404");
+    }
+
+    @Test
+    @DisplayName("Пустой ответ отклоняется до чтения обращения")
+    void resolveComplaint_blankResolution_rejectedBeforeLookup() {
+        assertThatThrownBy(() -> complaintService.resolveComplaint(
+                3L, 61L, decision("RESOLVE", "   ")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ответ");
+
+        verify(complaintRepository, never()).findByIdForUpdate(any());
+    }
+
     private DataIntegrityViolationException integrityViolationForConstraint(String constraintName) {
         ConstraintViolationException hibernateFailure = new ConstraintViolationException(
                 "could not execute statement",
@@ -210,6 +279,24 @@ class ComplaintServiceTest {
                 .userId(userId)
                 .order(order)
                 .build();
+    }
+
+    private Complaint pendingComplaint(Long id) {
+        return Complaint.builder()
+                .id(id)
+                .userId(7L)
+                .order(Order.builder().id(101L).userId(7L).build())
+                .subject("Купон не приняли")
+                .description("Кассир отказал")
+                .status(ComplaintStatus.PENDING)
+                .build();
+    }
+
+    private ResolveComplaintRequest decision(String decision, String resolution) {
+        ResolveComplaintRequest request = new ResolveComplaintRequest();
+        request.setDecision(decision);
+        request.setResolution(resolution);
+        return request;
     }
 
     private CreateComplaintRequest requestForCoupon(Long couponId) {

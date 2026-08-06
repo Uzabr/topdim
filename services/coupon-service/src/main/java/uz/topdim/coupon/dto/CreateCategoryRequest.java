@@ -1,6 +1,7 @@
 package uz.topdim.coupon.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,6 +28,7 @@ public class CreateCategoryRequest {
     @Size(max = 500, message = "URL иконки не более 500 символов")
     private String iconUrl;
 
+    @Min(value = 0, message = "Порядок сортировки не может быть отрицательным")
     private int sortOrder;
 
     private boolean active = true;

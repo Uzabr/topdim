@@ -57,7 +57,7 @@ public class PartnerCouponController {
     ) {
         CouponOfferResponse response = partnerCouponService.createPartnerRequest(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Заявка на акцию принята. TopDim свяжется с вами для оформления.", response));
+                .body(ApiResponse.success("Купонное предложение принято. sizbiz свяжется с вами для оформления.", response));
     }
 
     /** Обновить заявку/купон (только LEAD/DRAFT/REVISION_REQUESTED). */
@@ -67,7 +67,7 @@ public class PartnerCouponController {
             @PathVariable Long id,
             @Valid @RequestBody CreatePartnerCouponRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Заявка обновлена",
+        return ResponseEntity.ok(ApiResponse.success("Предложение обновлено",
                 partnerCouponService.updateMyCoupon(userId, id, request)));
     }
 
@@ -78,7 +78,7 @@ public class PartnerCouponController {
             @PathVariable Long id
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Купон одобрен и опубликован",
+                "Предложение одобрено и опубликовано",
                 partnerCouponService.approveMyCoupon(userId, id)));
     }
 
@@ -90,7 +90,7 @@ public class PartnerCouponController {
             @Valid @RequestBody RequestCouponRevisionRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Купон возвращён на доработку",
+                "Предложение возвращено на доработку",
                 partnerCouponService.requestRevisionForMyCoupon(userId, id, request.getComment())));
     }
 }

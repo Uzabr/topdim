@@ -73,7 +73,7 @@ public class StrongPasswordValidator implements ConstraintValidator<StrongPasswo
         }
 
         // Проверка blocklist (case-insensitive)
-        if (BLOCKED_PASSWORDS.contains(password.toLowerCase())) {
+        if (BLOCKED_PASSWORDS.stream().anyMatch(blocked -> blocked.equalsIgnoreCase(password))) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(
                     "Этот пароль слишком распространённый. Выберите более надёжный пароль"
