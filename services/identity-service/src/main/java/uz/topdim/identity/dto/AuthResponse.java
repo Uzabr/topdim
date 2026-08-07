@@ -30,7 +30,9 @@ public class AuthResponse {
     public static class UserDto {
         private Long id;
         private String email;
+        private boolean emailPlaceholder;
         private String phone;
+        private boolean phoneVerified;
         private String firstName;
         private String lastName;
         private String role;

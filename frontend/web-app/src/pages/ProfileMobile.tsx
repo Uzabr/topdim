@@ -216,7 +216,10 @@ export default function ProfileMobile() {
         <>
           <div className="pmob__head">
             <h1 className="pmob__name">{user?.firstName}</h1>
-            <p className="pmob__contact">{user?.phone || user?.email}</p>
+            <p className="pmob__contact">
+              {user?.phone
+                || (user?.emailPlaceholder ? t('profile.emailNotAdded') : user?.email)}
+            </p>
           </div>
 
           {isCouponPolicyLoading ? (

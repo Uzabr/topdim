@@ -13,6 +13,7 @@ public class UserProfileResponse {
     private String role;
     private String avatarUrl;
     private boolean emailVerified;
+    private boolean emailPlaceholder;
     private boolean phoneVerified;
     private LocalDateTime createdAt;
     private String trustLevel;

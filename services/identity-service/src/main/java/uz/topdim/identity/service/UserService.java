@@ -15,6 +15,7 @@ import uz.topdim.identity.exception.UserNotFoundException;
 import uz.topdim.identity.repository.FavoriteRepository;
 import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.UserRepository;
+import uz.topdim.identity.util.EmailPlaceholders;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -184,6 +185,7 @@ public class UserService {
                 .role(user.getRole().name())
                 .avatarUrl(user.getAvatarUrl())
                 .emailVerified(user.isEmailVerified())
+                .emailPlaceholder(EmailPlaceholders.isPlaceholder(user.getEmail(), user.isEmailVerified()))
                 .phoneVerified(user.isPhoneVerified())
                 .createdAt(user.getCreatedAt())
                 // trustLevel — вычисляется через TrustService (phone_verified || paidAt != null),
