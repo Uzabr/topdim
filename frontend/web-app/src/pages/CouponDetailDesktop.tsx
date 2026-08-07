@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
@@ -16,7 +16,6 @@ import ShareMenu from '../components/coupon-detail/ShareMenu';
 import WhereSection from '../components/coupon-detail/WhereSection';
 import DropTabs from '../components/ui/DropTabs';
 import { flyFunnel } from '../utils/funnel';
-import { useLocalePath } from '../hooks/useLocalePath';
 import { mapCouponOfferToCardData } from '../utils/couponCardMapper';
 import { localizedName } from '../utils/localizedText';
 import './CouponDetailPage.css';
@@ -32,8 +31,6 @@ export default function CouponDetailPage() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'uz' ? 'uz-UZ' : 'ru-RU';
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const lp = useLocalePath();
   const { addToCart } = useCartStore();
 
   const [block, setBlock] = useState<Block>('info');
@@ -113,9 +110,11 @@ export default function CouponDetailPage() {
     });
   };
 
+  // Корзинная модель: «Купить» кладёт купон в корзину и остаётся на странице —
+  // дровер открывается сам (cartStore.addToCart → isOpen: true), оформление
+  // уже из дровера/страницы корзины.
   const handleBuy = () => {
     putInCart();
-    navigate(lp('/checkout'));
   };
 
   // Купон «затягивает» воронкой в кнопку корзины и только потом падает в неё.

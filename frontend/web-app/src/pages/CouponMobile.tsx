@@ -347,10 +347,9 @@ export default function CouponMobile() {
           <button
             type="button"
             className="cmob__cta"
-            onClick={() => {
-              putInCart();
-              navigate(lp('/checkout'));
-            }}
+            // Корзинная модель: кладём купон в корзину и остаёмся на странице —
+            // дровер/бейдж корзины открывается сам (cartStore.addToCart).
+            onClick={putInCart}
             disabled={!selected}
           >
             {t('couponDetail.buy')}

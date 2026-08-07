@@ -34,6 +34,7 @@ export default function PaymentMobile() {
   const lp = useLocalePath();
   const queryClient = useQueryClient();
   const userId = useAuthStore((authState) => authState.user?.id) ?? 0;
+  const emailPlaceholder = useAuthStore((authState) => authState.user?.emailPlaceholder) ?? false;
 
   const id = Number(orderId);
 
@@ -251,6 +252,16 @@ export default function PaymentMobile() {
             </>
           )}
         </p>
+
+        {emailPlaceholder && (
+          <button
+            type="button"
+            className="cmdone__note"
+            onClick={() => navigate(`${lp('/profile')}?tab=settings`)}
+          >
+            {t('payment.getCouponsByEmail')}
+          </button>
+        )}
 
         <div className="cmdone__actions">
           <button

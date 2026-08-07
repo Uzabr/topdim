@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { ChevronLeft, Minus, Plus, ShoppingCart, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import GuestAuthPrompt from '../components/auth/GuestAuthPrompt';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { useLocalePath } from '../hooks/useLocalePath';
@@ -25,6 +24,14 @@ export default function CartMobile() {
   const saving = oldTotal - totalPrice;
 
   const [leaving, setLeaving] = useState<Record<string, boolean>>({});
+
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      navigate(lp('/login'), { state: { from: lp('/checkout') } });
+      return;
+    }
+    navigate(lp('/checkout'));
+  };
 
   const remove = (key: string) => {
     setLeaving((prev) => ({ ...prev, [key]: true }));
@@ -52,18 +59,10 @@ export default function CartMobile() {
 
         <span className="mbar__title">{t('cart.title')}</span>
 
-        <span className="cmcart__count">{isAuthenticated && totalItems ? totalItems : ''}</span>
+        <span className="cmcart__count">{totalItems ? totalItems : ''}</span>
       </div>
 
-      {!isAuthenticated ? (
-        <GuestAuthPrompt
-          icon={<ShoppingCart size={32} strokeWidth={1.6} />}
-          title={t('cart.guestTitle')}
-          description={t('cart.guestDesc')}
-          loginLabel={t('cart.guestLogin')}
-          variant="mobile"
-        />
-      ) : items.length === 0 ? (
+      {items.length === 0 ? (
         <div className="cmcart__empty">
           <span className="cmcart__empty-icon">
             <ShoppingCart size={32} strokeWidth={1.6} />
@@ -156,7 +155,7 @@ export default function CartMobile() {
             <button
               type="button"
               className="cmcart__cta"
-              onClick={() => navigate(lp('/checkout'))}
+              onClick={handleCheckout}
             >
               {t('cart.checkoutShort')}
             </button>
