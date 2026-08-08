@@ -28,10 +28,23 @@ describe('admin coupon navigation', () => {
     },
   );
 
-  it('names the current identity-only audit scope honestly', () => {
-    const auditEntry = flatten(filterMenuByRole(allMenuItems, 'SUPER_ADMIN'))
+  it('shows action journal to ADMIN and SUPER_ADMIN only', () => {
+    const forAdmin = flatten(filterMenuByRole(allMenuItems, 'ADMIN'))
+      .find((item) => item.key === '/system/audit');
+    const forSuper = flatten(filterMenuByRole(allMenuItems, 'SUPER_ADMIN'))
+      .find((item) => item.key === '/system/audit');
+    const forModerator = flatten(filterMenuByRole(allMenuItems, 'MODERATOR'))
       .find((item) => item.key === '/system/audit');
 
-    expect(auditEntry?.label).toBe('Аудит сотрудников');
+    expect(forAdmin?.label).toBe('Журнал действий');
+    expect(forSuper?.label).toBe('Журнал действий');
+    expect(forModerator).toBeUndefined();
+  });
+
+  it('keeps staff management exclusive to SUPER_ADMIN', () => {
+    expect(flatten(filterMenuByRole(allMenuItems, 'ADMIN'))
+      .find((item) => item.key === '/system/staff')).toBeUndefined();
+    expect(flatten(filterMenuByRole(allMenuItems, 'SUPER_ADMIN'))
+      .find((item) => item.key === '/system/staff')?.label).toBe('Сотрудники');
   });
 });

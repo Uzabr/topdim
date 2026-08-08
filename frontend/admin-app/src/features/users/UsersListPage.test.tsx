@@ -5,11 +5,25 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UsersListPage } from './UsersListPage';
 import { blockUser, fetchUsersPage, type AdminUser } from './api';
+import { useAuthStore } from '../../store/authStore';
+import type { UserRole } from '../../types';
 
 vi.mock('./api', () => ({
   blockUser: vi.fn(),
   fetchUsersPage: vi.fn(),
 }));
+
+function loginAs(role: UserRole) {
+  useAuthStore.getState().login('token', {
+    id: 1,
+    email: `${role.toLowerCase()}@topdim.uz`,
+    phone: '+998901234567',
+    firstName: role,
+    lastName: 'Tester',
+    role,
+    avatarUrl: null,
+  });
+}
 
 const ordinaryUser: AdminUser = {
   id: 7,
@@ -47,6 +61,7 @@ function renderPage() {
 
 describe('UsersListPage', () => {
   beforeEach(() => {
+    loginAs('ADMIN');
     vi.mocked(fetchUsersPage).mockResolvedValue({
       content: [ordinaryUser, adminUser],
       totalElements: 2,
@@ -55,6 +70,15 @@ describe('UsersListPage', () => {
       size: 20,
     });
     vi.mocked(blockUser).mockResolvedValue({ ...ordinaryUser, enabled: false });
+  });
+
+  it('hides the actions column for roles other than ADMIN and SUPER_ADMIN', async () => {
+    loginAs('MODERATOR');
+    renderPage();
+    await screen.findByText('user@topdim.uz');
+
+    expect(screen.queryByText('Действия')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Заблокировать' })).toBeNull();
   });
 
   it('sends search and role together instead of dropping one filter', async () => {

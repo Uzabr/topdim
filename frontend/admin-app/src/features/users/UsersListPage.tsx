@@ -11,8 +11,11 @@ import { fetchUsersPage, blockUser } from './api';
 import type { AdminUser, UserRole } from './api';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
+import { useAuthStore } from '../../store/authStore';
 
 const { Title } = Typography;
+
+const ACTION_ROLES = new Set(['ADMIN', 'SUPER_ADMIN']);
 
 function errorMessage(error: unknown) {
   const apiError = error as {
@@ -36,6 +39,8 @@ export const UsersListPage = () => {
   const [roleFilter, setRoleFilter] = useState<UserRole | undefined>(undefined);
   const queryClient = useQueryClient();
   const { message, modal } = App.useApp();
+  const currentRole = useAuthStore((s) => s.user?.role);
+  const canManageUsers = !!currentRole && ACTION_ROLES.has(currentRole);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-users', page, search, roleFilter],
@@ -125,7 +130,10 @@ export const UsersListPage = () => {
       render: (date: string) =>
         date ? dayjs(date).format('DD.MM.YYYY HH:mm') : '—',
     },
-    {
+  ];
+
+  if (canManageUsers) {
+    columns.push({
       title: 'Действия',
       width: 140,
       render: (_, record) => {
@@ -158,8 +166,8 @@ export const UsersListPage = () => {
           </Button>
         );
       },
-    },
-  ];
+    });
+  }
 
   return (
     <div>
