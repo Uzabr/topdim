@@ -42,6 +42,6 @@ class AdminUserControllerValidationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.data.blocked").value("Статус блокировки обязателен"));
 
-        verify(userService, never()).blockUser(any(), any(Boolean.class));
+        verify(userService, never()).blockUser(any(), any(), any(Boolean.class));
     }
 }

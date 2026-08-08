@@ -35,6 +35,7 @@ public class UserService {
     private final SecurityVersionService securityVersionService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final TrustService trustService;
+    private final AuditLogService auditLogService;
 
     // ==================== Profile ====================
 
@@ -115,7 +116,7 @@ public class UserService {
     }
 
     @Transactional
-    public AdminUserResponse blockUser(Long userId, boolean blocked) {
+    public AdminUserResponse blockUser(Long actorId, Long userId, boolean blocked) {
         User user = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
 
@@ -141,6 +142,15 @@ public class UserService {
         if (blocked) {
             refreshTokenRepository.revokeAllByUser(user);
         }
+
+        String action = blocked ? "BLOCK_USER" : "UNBLOCK_USER";
+        auditLogService.logAction(
+                actorId,
+                action,
+                "users",
+                userId,
+                (blocked ? "Заблокирован" : "Разблокирован") + " пользователь: " + user.getEmail()
+        );
 
         log.info("ADMIN: Пользователь {} (email: {}) {}, securityVersion={}",
                 userId, user.getEmail(),

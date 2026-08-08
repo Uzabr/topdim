@@ -84,7 +84,8 @@ public class SuperAdminController {
             @RequestParam(defaultValue = "20") int size
     ) {
         validatePage(page, size);
-        Page<AuditLogResponse> logs = superAdminService.getAuditLogs(PageRequest.of(page, size));
+        Page<AuditLogResponse> logs = superAdminService.getAuditLogs(
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
         return ResponseEntity.ok(ApiResponse.success(logs));
     }
 

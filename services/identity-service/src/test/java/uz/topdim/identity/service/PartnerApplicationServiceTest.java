@@ -33,6 +33,7 @@ class PartnerApplicationServiceTest {
     @Mock private PartnerApplicationRepository repository;
     @Mock private CouponMerchantClient couponMerchantClient;
     @Mock private PartnerApplicationApprovalService approvalService;
+    @Mock private AuditLogService auditLogService;
 
     @InjectMocks
     private PartnerApplicationService service;

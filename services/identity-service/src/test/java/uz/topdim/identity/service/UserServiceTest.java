@@ -41,6 +41,7 @@ class UserServiceTest {
     @Mock private SecurityVersionService securityVersionService;
     @Mock private RefreshTokenRepository refreshTokenRepository;
     @Mock private TrustService trustService;
+    @Mock private AuditLogService auditLogService;
 
     @InjectMocks
     private UserService userService;
@@ -177,27 +178,29 @@ class UserServiceTest {
         user.setSecurityVersion(4L);
         when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
 
-        AdminUserResponse response = userService.blockUser(1L, true);
+        AdminUserResponse response = userService.blockUser(7L, 1L, true);
 
         assertThat(response.isEnabled()).isFalse();
         assertThat(user.getSecurityVersion()).isEqualTo(4L);
         verify(userRepository, never()).save(any(User.class));
-        verifyNoInteractions(securityVersionService, refreshTokenRepository);
+        verifyNoInteractions(securityVersionService, refreshTokenRepository, auditLogService);
     }
 
     @Test
-    @DisplayName("blockUser: блокировка под write lock инвалидирует обе сессии")
+    @DisplayName("blockUser: блокировка под write lock инвалидирует обе сессии и пишет аудит")
     void blockUser_activeUser_blocksAndInvalidatesSessions() {
         User user = createUser();
         user.setSecurityVersion(4L);
         when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
         when(userRepository.save(user)).thenReturn(user);
 
-        AdminUserResponse response = userService.blockUser(1L, true);
+        AdminUserResponse response = userService.blockUser(7L, 1L, true);
 
         assertThat(response.isEnabled()).isFalse();
         assertThat(user.getSecurityVersion()).isEqualTo(5L);
         verify(securityVersionService).publishSecurityVersion(1L, 5L);
         verify(refreshTokenRepository).revokeAllByUser(user);
+        verify(auditLogService).logAction(7L, "BLOCK_USER", "users", 1L,
+                "Заблокирован пользователь: user@topdim.uz");
     }
 }

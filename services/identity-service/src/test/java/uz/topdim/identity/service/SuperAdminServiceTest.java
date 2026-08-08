@@ -16,7 +16,6 @@ import uz.topdim.identity.dto.CreateAdminRequest;
 import uz.topdim.identity.entity.Role;
 import uz.topdim.identity.entity.User;
 import uz.topdim.identity.exception.ResourceNotFoundException;
-import uz.topdim.identity.repository.AuditLogRepository;
 import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.UserRepository;
 
@@ -36,7 +35,6 @@ class SuperAdminServiceTest {
 
     @Mock private UserRepository userRepository;
     @Mock private AuditLogService auditLogService;
-    @Mock private AuditLogRepository auditLogRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private SecurityVersionService securityVersionService;
     @Mock private RefreshTokenRepository refreshTokenRepository;
@@ -172,7 +170,7 @@ class SuperAdminServiceTest {
         verify(userRepository).save(target);
         verify(securityVersionService).publishSecurityVersion(8L, 4L);
         verify(refreshTokenRepository).revokeAllByUser(target);
-        verify(auditLogService).logAction(7L, "CHANGE_ROLE", "USER", 8L,
+        verify(auditLogService).logAction(7L, "CHANGE_ROLE", "staff", 8L,
                 "Роль изменена с MODERATOR на ADMIN");
     }
 
@@ -238,7 +236,7 @@ class SuperAdminServiceTest {
         verify(userRepository).save(target);
         verify(securityVersionService).publishSecurityVersion(8L, 4L);
         verify(refreshTokenRepository).revokeAllByUser(target);
-        verify(auditLogService).logAction(7L, "BLOCK_USER", "USER", 8L,
+        verify(auditLogService).logAction(7L, "BLOCK_USER", "staff", 8L,
                 "Заблокирован пользователь: staff8@topdim.uz");
     }
 

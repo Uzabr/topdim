@@ -7,12 +7,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.identity.dto.AdminStaffResponse;
+import uz.topdim.identity.dto.AuditLogFilterRequest;
 import uz.topdim.identity.dto.AuditLogResponse;
 import uz.topdim.identity.dto.CreateAdminRequest;
 import uz.topdim.identity.entity.Role;
 import uz.topdim.identity.entity.User;
 import uz.topdim.identity.exception.ResourceNotFoundException;
-import uz.topdim.identity.repository.AuditLogRepository;
 import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.UserRepository;
 
@@ -24,7 +24,6 @@ public class SuperAdminService {
 
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
-    private final AuditLogRepository auditLogRepository;
     private final PasswordEncoder passwordEncoder;
     private final SecurityVersionService securityVersionService;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -59,7 +58,7 @@ public class SuperAdminService {
 
         userRepository.save(adminUser);
 
-        auditLogService.logAction(currentAdminId, "CREATE_ADMIN", "USER", adminUser.getId(),
+        auditLogService.logAction(currentAdminId, "CREATE_ADMIN", "staff", adminUser.getId(),
                 "Создан пользователь с ролью " + assignRole.name() + ", email: " + normalizedEmail);
 
         return adminUser.getId();
@@ -75,7 +74,7 @@ public class SuperAdminService {
         securityVersionService.removeSecurityVersion(userId);
 
         userRepository.delete(user);
-        auditLogService.logAction(currentAdminId, "DELETE_USER", "USER", userId,
+        auditLogService.logAction(currentAdminId, "DELETE_USER", "staff", userId,
                 "Удален пользователь: " + user.getEmail());
     }
 
@@ -101,17 +100,13 @@ public class SuperAdminService {
         // Revoke all refresh tokens — force re-login с новой ролью
         refreshTokenRepository.revokeAllByUser(user);
 
-        auditLogService.logAction(currentAdminId, "CHANGE_ROLE", "USER", userId,
+        auditLogService.logAction(currentAdminId, "CHANGE_ROLE", "staff", userId,
                 "Роль изменена с " + oldRole + " на " + newRole.name());
     }
 
     @Transactional(readOnly = true)
     public Page<AuditLogResponse> getAuditLogs(Pageable pageable) {
-        return auditLogRepository.findAllByOrderByCreatedAtDesc(pageable)
-                .map(log -> AuditLogResponse.builder()
-                        .id(log.getId()).userId(log.getUserId()).action(log.getAction())
-                        .entityName(log.getEntityName()).entityId(log.getEntityId())
-                        .details(log.getDetails()).createdAt(log.getCreatedAt()).build());
+        return auditLogService.search(AuditLogFilterRequest.builder().build(), pageable);
     }
 
     @Transactional(readOnly = true)
@@ -147,7 +142,7 @@ public class SuperAdminService {
         }
 
         String action = blocked ? "BLOCK_USER" : "UNBLOCK_USER";
-        auditLogService.logAction(currentAdminId, action, "USER", userId,
+        auditLogService.logAction(currentAdminId, action, "staff", userId,
                 (blocked ? "Заблокирован" : "Разблокирован") + " пользователь: " + user.getEmail());
     }
 
