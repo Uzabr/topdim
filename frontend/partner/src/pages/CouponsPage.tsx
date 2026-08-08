@@ -176,7 +176,7 @@ export default function CouponsPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
         <Title level={3} style={{ margin: 0 }}>🎟️ Мои предложения</Title>
         <Button
           type="primary"

@@ -284,7 +284,7 @@ export const CouponFormPage = () => {
               </Form.Item>
 
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item
                     name="merchantId"
                     label="Партнер (Мерчант)"
@@ -296,6 +296,7 @@ export const CouponFormPage = () => {
                       allowClear
                       showSearch
                       optionFilterProp="children"
+                      style={{ width: '100%' }}
                     >
                       {merchants?.map((m: { id: number; name: string }) => (
                         <Select.Option key={m.id} value={m.id}>{m.name}</Select.Option>
@@ -329,14 +330,14 @@ export const CouponFormPage = () => {
                     />
                   </Col>
                 )}
-                <Col span={12}>
+                <Col xs={24} md={12}>
                   <Form.Item
                     name="categoryId"
                     label="Категория"
                     rules={[{ required: true, message: 'Выберите категорию' }]}
                     extra="Определяет раздел в клиентском каталоге."
                   >
-                    <Select placeholder="Выберите категорию" loading={isCategoriesLoading} showSearch optionFilterProp="children">
+                    <Select placeholder="Выберите категорию" loading={isCategoriesLoading} showSearch optionFilterProp="children" style={{ width: '100%' }}>
                       {categories?.map((c: { id: number; name: string }) => (
                         <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>
                       ))}
@@ -346,12 +347,12 @@ export const CouponFormPage = () => {
               </Row>
 
               <Row gutter={16}>
-                <Col span={8}>
+                <Col xs={24} sm={8}>
                   <Form.Item name="oldPrice" label="Старая цена (сум)" tooltip="Цена без скидки (будет эффектно перечеркнута в карточке)">
                     <InputNumber min={0} style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
-                <Col span={8}>
+                <Col xs={24} sm={8}>
                   <Form.Item
                     name="fromPrice"
                     label="Новая цена (сум)"
@@ -361,7 +362,7 @@ export const CouponFormPage = () => {
                     <InputNumber min={0} style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
-                <Col span={8}>
+                <Col xs={24} sm={8}>
                   <Form.Item name="discountPercent" label="Процент скидки (%)" tooltip="Выводится в виде яркого красного бейджа, например '-50%'">
                     <InputNumber min={0} max={100} style={{ width: '100%' }} />
                   </Form.Item>
@@ -490,7 +491,7 @@ export const CouponFormPage = () => {
                     <>
                       {fields.map(({ key, name, ...restField }) => (
                         <Row gutter={16} key={key} style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
-                          <Col span={8}>
+                          <Col xs={24} sm={12} md={8}>
                             <Form.Item
                               {...restField}
                               name={[name, 'title']}
@@ -500,7 +501,7 @@ export const CouponFormPage = () => {
                               <Input placeholder="Например: Сет для двоих" />
                             </Form.Item>
                           </Col>
-                          <Col span={5}>
+                          <Col xs={12} sm={6} md={5}>
                             <Form.Item
                               {...restField}
                               name={[name, 'regularPrice']}
@@ -510,7 +511,7 @@ export const CouponFormPage = () => {
                               <InputNumber min={0} style={{ width: '100%' }} />
                             </Form.Item>
                           </Col>
-                          <Col span={5}>
+                          <Col xs={12} sm={6} md={5}>
                             <Form.Item
                               {...restField}
                               name={[name, 'couponPrice']}
@@ -520,7 +521,7 @@ export const CouponFormPage = () => {
                               <InputNumber min={0} style={{ width: '100%' }} />
                             </Form.Item>
                           </Col>
-                          <Col span={4}>
+                          <Col xs={20} sm={8} md={4}>
                             <Form.Item
                               {...restField}
                               name={[name, 'quantityLimit']}
@@ -529,7 +530,7 @@ export const CouponFormPage = () => {
                               <InputNumber min={1} style={{ width: '100%' }} placeholder="∞" />
                             </Form.Item>
                           </Col>
-                          <Col span={2} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Col xs={4} sm={4} md={2} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <MinusCircleOutlined onClick={() => remove(name)} style={{ color: 'red', fontSize: '20px', marginTop: '10px', cursor: 'pointer' }} />
                           </Col>
                         </Row>

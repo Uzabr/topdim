@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Descriptions, Tag, Button, Typography, Space, Card, Table, Tabs, App,
-  Modal, Form, Input, InputNumber, Switch, Divider, Spin, Alert,
+  Modal, Form, Input, InputNumber, Switch, Divider, Spin, Alert, Row, Col,
 } from 'antd';
 import {
   ArrowLeftOutlined, EditOutlined, PlusOutlined,
@@ -309,14 +309,18 @@ export const MerchantDetailPage = () => {
                     <Form.Item {...restField} name={[name, 'workingHours']} label="Часы работы">
                       <Input />
                     </Form.Item>
-                    <Space style={{ width: '100%' }} align="start">
-                      <Form.Item {...restField} name={[name, 'latitude']} label="Широта">
-                        <InputNumber min={-90} max={90} precision={7} style={{ width: 180 }} />
-                      </Form.Item>
-                      <Form.Item {...restField} name={[name, 'longitude']} label="Долгота">
-                        <InputNumber min={-180} max={180} precision={7} style={{ width: 180 }} />
-                      </Form.Item>
-                    </Space>
+                    <Row gutter={16}>
+                      <Col xs={24} sm={12}>
+                        <Form.Item {...restField} name={[name, 'latitude']} label="Широта">
+                          <InputNumber min={-90} max={90} precision={7} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item {...restField} name={[name, 'longitude']} label="Долгота">
+                          <InputNumber min={-180} max={180} precision={7} style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
                     <Form.Item {...restField} name={[name, 'primary']} label="Primary" valuePropName="checked">
                       <Switch />
                     </Form.Item>

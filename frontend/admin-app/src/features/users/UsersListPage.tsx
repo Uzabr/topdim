@@ -173,14 +173,14 @@ export const UsersListPage = () => {
           prefix={<SearchOutlined />}
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          style={{ width: 320 }}
+          style={{ width: 320, maxWidth: '100%' }}
           allowClear
         />
         <Select
           placeholder="Роль"
           value={roleFilter}
           onChange={(v) => { setRoleFilter(v); setPage(0); }}
-          style={{ width: 180 }}
+          style={{ width: 180, maxWidth: '100%' }}
           allowClear
           options={[
             { value: 'USER', label: 'Пользователи' },

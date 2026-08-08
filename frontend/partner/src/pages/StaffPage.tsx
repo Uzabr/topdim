@@ -112,7 +112,7 @@ export default function StaffPage() {
 
   return (
     <div>
-      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}>
+      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }} wrap>
         <Title level={3} style={{ margin: 0 }}>👥 Сотрудники</Title>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)} id="add-staff-btn">
           Добавить
@@ -126,6 +126,7 @@ export default function StaffPage() {
           rowKey="id"
           pagination={{ pageSize: 10 }}
           locale={{ emptyText: 'Нет сотрудников' }}
+          scroll={{ x: 900 }}
         />
       </Card>
 
@@ -137,6 +138,7 @@ export default function StaffPage() {
         confirmLoading={addMutation.isPending}
         okText="Добавить"
         cancelText="Отмена"
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={(values) => addMutation.mutate(values)}>
           <Form.Item name="name" label="Имя" rules={[{ required: true, message: 'Введите имя' }]}>
@@ -146,17 +148,28 @@ export default function StaffPage() {
             <Input id="staff-phone" />
           </Form.Item>
           <Form.Item name="role" label="Роль" initialValue="CASHIER">
-            <Select id="staff-role">
+            <Select id="staff-role" style={{ width: '100%' }}>
               <Option value="CASHIER">Кассир</Option>
               {/* MANAGER скрыт до полной поддержки (beta) */}
             </Select>
           </Form.Item>
           <Form.Item name="merchantLocationId" label="Филиал (обязательно)" rules={[{ required: true, message: 'Кассир должен быть привязан к филиалу' }]}>
-            <Select placeholder="Выберите филиал" id="staff-location">
-              {locations?.map((loc) => (
-                <Option key={loc.id} value={loc.id}>{loc.title} — {loc.address}</Option>
-              ))}
-            </Select>
+            <Select
+              placeholder="Выберите филиал"
+              id="staff-location"
+              style={{ width: '100%' }}
+              optionLabelProp="label"
+              options={locations?.map((loc) => ({
+                value: loc.id,
+                label: loc.title,
+                title: `${loc.title} — ${loc.address}`,
+              }))}
+              optionRender={(option) => (
+                <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                  {option.data.title}
+                </span>
+              )}
+            />
           </Form.Item>
           <Form.Item name="loginEmail" label="Email для входа (обязательно)" rules={[{ required: true, message: 'Email обязателен для кассира' }, { type: 'email', message: 'Некорректный email' }]}>
             <Input placeholder="cashier@example.com" id="staff-email" />

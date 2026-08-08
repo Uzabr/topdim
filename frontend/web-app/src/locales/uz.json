@@ -929,6 +929,7 @@
       "label": "Kun kuponi",
       "endsIn": "{{time}} dan keyin tugaydi",
       "endsOn": "{{date}} gacha sotib oling",
+      "endsOnShort": "{{date}} gacha",
       "buy": "Kupon sotib olish",
       "left": "{{total}} tadan {{left}} ta qoldi"
     },

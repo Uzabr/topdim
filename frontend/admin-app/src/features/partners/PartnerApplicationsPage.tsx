@@ -217,7 +217,7 @@ export const PartnerApplicationsPage = () => {
         placeholder="Все статусы"
         value={statusFilter}
         allowClear
-        style={{ width: 220, marginBottom: 16 }}
+        style={{ width: 220, maxWidth: '100%', marginBottom: 16 }}
         onChange={(status) => { setStatusFilter(status); setPage(0); }}
         options={[
           { value: 'PENDING', label: 'Ожидают решения' },
@@ -250,7 +250,7 @@ export const PartnerApplicationsPage = () => {
         width={600}
       >
         {detailTarget && (
-          <Descriptions column={2} bordered size="small">
+          <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small" styles={{ content: { wordBreak: 'break-word' } }}>
             <Descriptions.Item label="Имя">{detailTarget.firstName}</Descriptions.Item>
             <Descriptions.Item label="Фамилия">{detailTarget.lastName}</Descriptions.Item>
             <Descriptions.Item label="Телефон">{detailTarget.phone}</Descriptions.Item>

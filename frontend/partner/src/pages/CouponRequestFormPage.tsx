@@ -318,6 +318,7 @@ function CouponRequestForm({ coupon, couponId, isEditMode }: CouponRequestFormPr
               loading={catLoading}
               showSearch
               optionFilterProp="label"
+              style={{ width: '100%' }}
               options={categories.map(c => ({ value: c.id, label: c.name }))}
             />
           </Form.Item>
@@ -334,7 +335,7 @@ function CouponRequestForm({ coupon, couponId, isEditMode }: CouponRequestFormPr
           <Divider>Цены и скидка</Divider>
 
           <Row gutter={16}>
-            <Col span={8}>
+            <Col xs={24} sm={8}>
               <Form.Item name="oldPrice" label="Обычная цена" rules={[{ required: true, message: 'Укажите цену' }]}>
                 <InputNumber
                   min={1}
@@ -345,7 +346,7 @@ function CouponRequestForm({ coupon, couponId, isEditMode }: CouponRequestFormPr
                 />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col xs={24} sm={8}>
               <Form.Item name="fromPrice" label="Цена по предложению" rules={[{ required: true, message: 'Укажите цену' }]}>
                 <InputNumber
                   min={1}
@@ -356,7 +357,7 @@ function CouponRequestForm({ coupon, couponId, isEditMode }: CouponRequestFormPr
                 />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col xs={24} sm={8}>
               <Form.Item name="discountPercent" label="Скидка %" help="Рассчитывается автоматически">
                 <InputNumber min={1} max={99} style={{ width: '100%' }} placeholder="авто" addonAfter="%" />
               </Form.Item>
@@ -366,7 +367,7 @@ function CouponRequestForm({ coupon, couponId, isEditMode }: CouponRequestFormPr
           <Divider>Сроки</Divider>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item name="buyUntil" label="Купить до" rules={[{ required: true, message: 'Укажите срок' }]}>
                 <DatePicker
                   showTime
@@ -376,7 +377,7 @@ function CouponRequestForm({ coupon, couponId, isEditMode }: CouponRequestFormPr
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item name="useUntil" label="Использовать до" rules={[{ required: true, message: 'Укажите срок' }]}>
                 <DatePicker
                   showTime
@@ -405,7 +406,7 @@ function CouponRequestForm({ coupon, couponId, isEditMode }: CouponRequestFormPr
               ) : null}
             >
               <Row gutter={16} align="top">
-                <Col span={6}>
+                <Col xs={24} sm={12} md={6}>
                   <div style={{ marginBottom: 4, fontSize: 13, color: '#555' }}>Название</div>
                   <Input
                     placeholder="Базовый / VIP"
@@ -413,7 +414,7 @@ function CouponRequestForm({ coupon, couponId, isEditMode }: CouponRequestFormPr
                     onChange={e => updateOption(opt.key, 'title', e.target.value)}
                   />
                 </Col>
-                <Col span={6}>
+                <Col xs={24} sm={12} md={6}>
                   <div style={{ marginBottom: 4, fontSize: 13, color: '#555' }}>Обычная цена (сум)</div>
                   <InputNumber
                     min={1} style={{ width: '100%' }}
@@ -422,7 +423,7 @@ function CouponRequestForm({ coupon, couponId, isEditMode }: CouponRequestFormPr
                     onChange={v => updateOption(opt.key, 'regularPrice', v)}
                   />
                 </Col>
-                <Col span={6}>
+                <Col xs={24} sm={12} md={6}>
                   <div style={{ marginBottom: 4, fontSize: 13, color: '#555' }}>Цена по предложению (сум)</div>
                   <InputNumber
                     min={1} style={{ width: '100%' }}
@@ -431,7 +432,7 @@ function CouponRequestForm({ coupon, couponId, isEditMode }: CouponRequestFormPr
                     onChange={v => updateOption(opt.key, 'couponPrice', v)}
                   />
                 </Col>
-                <Col span={6}>
+                <Col xs={24} sm={12} md={6}>
                   <div style={{ marginBottom: 4, fontSize: 13, color: '#555' }}>Лимит (шт.)</div>
                   <InputNumber
                     min={1} style={{ width: '100%' }}

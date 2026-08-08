@@ -28,6 +28,16 @@ export function formatDate(dateStr: string): string {
   });
 }
 
+/** Короткий срок для узких бейджей: 31.12.26 */
+export function formatShortDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '';
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2);
+  return `${day}.${month}.${year}`;
+}
+
 /**
  * Calculate days remaining until a date
  */

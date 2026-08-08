@@ -149,27 +149,29 @@ export default function RedemptionHistoryPage() {
       <Card style={{ marginBottom: 16, borderRadius: 12 }}>
         <Form<HistoryFormValues>
           form={form}
-          layout="inline"
+          layout="vertical"
           onFinish={applyFilters}
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}
         >
-          <Form.Item name="code" label="Код купона">
+          <Form.Item name="code" label="Код купона" style={{ marginBottom: 0, minWidth: 180, flex: '1 1 180px' }}>
             <Input
               allowClear
               maxLength={50}
               placeholder="CP-XXXX1234"
-              style={{ width: 220 }}
+              style={{ width: '100%', maxWidth: 280 }}
             />
           </Form.Item>
-          <Form.Item name="period" label="Период">
+          <Form.Item name="period" label="Период" style={{ marginBottom: 0, minWidth: 240, flex: '1 1 260px' }}>
             <RangePicker
               allowClear
               allowEmpty={[true, true]}
               format="DD.MM.YYYY"
               placeholder={['Дата от', 'Дата до']}
+              style={{ width: '100%' }}
             />
           </Form.Item>
-          <Form.Item>
-            <Space>
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Space wrap>
               <Button type="primary" htmlType="submit">Найти</Button>
               <Button onClick={resetFilters}>Сбросить</Button>
             </Space>

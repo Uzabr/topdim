@@ -115,7 +115,7 @@ export default function PartnerLayout() {
             Выйти
           </Button>
         </Header>
-        <Content style={{ margin: 24, padding: 24, background: '#f5f5f5', minHeight: 280, borderRadius: 8 }}>
+        <Content style={{ margin: 16, padding: 16, background: '#f5f5f5', minHeight: 280, borderRadius: 8, minWidth: 0, overflowX: 'auto' }}>
           <Outlet />
         </Content>
       </Layout>

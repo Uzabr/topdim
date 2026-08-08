@@ -933,6 +933,7 @@
       "label": "Купон дня",
       "endsIn": "закончится через {{time}}",
       "endsOn": "купить до {{date}}",
+      "endsOnShort": "до {{date}}",
       "buy": "Купить купон",
       "left": "осталось {{left}} из {{total}}"
     },

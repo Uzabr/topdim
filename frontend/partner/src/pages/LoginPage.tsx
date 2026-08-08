@@ -50,11 +50,14 @@ export default function LoginPage() {
     <div style={{
       display: 'flex', justifyContent: 'center', alignItems: 'center',
       minHeight: '100vh',
+      padding: 16,
       background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
     }}>
       <Card
         style={{
-          width: 420, borderRadius: 16,
+          width: '100%',
+          maxWidth: 420,
+          borderRadius: 16,
           boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
           background: 'rgba(255,255,255,0.95)',
           backdropFilter: 'blur(10px)',
