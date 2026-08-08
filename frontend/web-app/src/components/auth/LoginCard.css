@@ -30,6 +30,24 @@
   justify-content: center;
   margin-top: 20px;
   min-height: 46px;
+  /* Иначе в dark mode ОС iframe рисует непрозрачный чёрный canvas
+     в углах за скруглённой кнопкой Telegram. */
+  color-scheme: light;
+}
+
+.tg-login-widget {
+  display: flex;
+  justify-content: center;
+  color-scheme: light;
+}
+
+.tg-login-widget iframe,
+.lcard__telegram-widget iframe {
+  color-scheme: light;
+  background: transparent !important;
+  border: 0;
+  outline: none;
+  box-shadow: none;
 }
 
 .lcard__telegram {

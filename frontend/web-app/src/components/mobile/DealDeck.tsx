@@ -7,7 +7,7 @@ import type { CouponOffer } from '../../api/coupons';
 import { useCountdown } from '../../hooks/useCountdown';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import { couponStock } from '../../utils/couponStock';
-import { calcDiscount, formatDate } from '../../utils/format';
+import { calcDiscount, formatShortDate } from '../../utils/format';
 import './DealDeck.css';
 
 interface DealDeckProps {
@@ -26,7 +26,9 @@ function DeadlineBadge({ until, className }: { until: string; className: string 
 
   return (
     <span className={className}>
-      {countdown?.isUrgent ? countdown.clock : t('home.hero.endsOn', { date: formatDate(until) })}
+      {countdown?.isUrgent
+        ? countdown.clock
+        : t('home.hero.endsOnShort', { date: formatShortDate(until) })}
     </span>
   );
 }

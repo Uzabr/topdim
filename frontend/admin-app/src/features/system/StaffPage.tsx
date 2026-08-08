@@ -272,7 +272,7 @@ export const StaffPage = () => {
             <Input placeholder="+998901234567" />
           </Form.Item>
           <Form.Item name="role" label="Роль" rules={[{ required: true }]}>
-            <Select>
+            <Select style={{ width: '100%' }}>
               <Select.Option value="MODERATOR">Модератор</Select.Option>
               <Select.Option value="ADMIN">Администратор</Select.Option>
             </Select>
@@ -292,7 +292,7 @@ export const StaffPage = () => {
       >
         <Form form={roleForm} layout="vertical">
           <Form.Item name="newRole" label="Новая роль" rules={[{ required: true }]}>
-            <Select>
+            <Select style={{ width: '100%' }}>
               <Select.Option value="MODERATOR">Модератор</Select.Option>
               <Select.Option value="ADMIN">Администратор</Select.Option>
             </Select>

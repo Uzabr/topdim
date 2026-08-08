@@ -21,7 +21,7 @@ export default function TelegramLoginButton({
   botUsername,
   onAuth,
   size = 'large',
-  cornerRadius = 12,
+  cornerRadius = 20,
 }: TelegramLoginButtonProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onAuthRef = useRef(onAuth);
