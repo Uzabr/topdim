@@ -194,11 +194,11 @@ spring:
             - Path=/api/v1/partners/applications
             - Method=POST
 
-        # Identity Service — users, admin, partner staff
+        # Identity Service — users, admin (users, audit-logs), partner staff
         - id: identity-service-users
           uri: lb://identity-service
           predicates:
-            - Path=/api/v1/users/**, /api/v1/admin/users/**, /api/v1/partner/staff/**, /api/v1/admin/partner-applications/**
+            - Path=/api/v1/users/**, /api/v1/admin/users/**, /api/v1/partner/staff/**, /api/v1/admin/partner-applications/**, /api/v1/admin/audit-logs
 
         # Coupon Service — bot webhook (approve/reject, защищён X-Bot-Api-Key)
         - id: coupon-service-bot
