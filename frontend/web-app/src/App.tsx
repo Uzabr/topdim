@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -13,28 +13,34 @@ import Footer from './components/layout/Footer';
 import CartDrawer from './components/cart/CartDrawer';
 import CookieConsent from './components/ui/CookieConsent';
 import LimitModal from './components/ui/LimitModal';
+// Частые входы — грузим сразу (без флеша фолбэка на первой загрузке).
 import HomePage from './pages/HomePage';
 import CouponCatalogPage from './pages/CouponCatalogPage';
-import CouponDetailPage from './pages/CouponDetailPage';
-import CartPage from './pages/CartPage';
-import CheckoutPage from './pages/CheckoutPage';
-import PaymentPage from './pages/PaymentPage';
-import BazaarMapPage from './pages/BazaarMapPage';
-import BazaarDetailPage from './pages/BazaarDetailPage';
-import ShopDetailPage from './pages/ShopDetailPage';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import ProfilePage from './pages/ProfilePage';
-import SearchPage from './pages/SearchPage';
-import FavoritesPage from './pages/FavoritesPage';
-import NotFoundPage from './pages/NotFoundPage';
-import PartnersPage from './pages/legal/PartnersPage';
-import FAQPage from './pages/legal/FAQPage';
-import TermsPage from './pages/legal/TermsPage';
-import PrivacyPage from './pages/legal/PrivacyPage';
-import EmailConfirmationPage from './pages/EmailConfirmationPage';
-import EmailChangeConfirmationPage from './pages/EmailChangeConfirmationPage';
+
+// Остальное — lazy: динамический import() уводит код (и его тяжёлые
+// транзитивные зависимости) в отдельные чанки, которые грузятся ТОЛЬКО при
+// переходе на маршрут. Так с главной уходят three/@react-three/framer/lenis
+// (страница /partners) и @2gis/mapgl (карты и деталь купона → WhereSection).
+const CouponDetailPage = lazy(() => import('./pages/CouponDetailPage'));
+const CartPage = lazy(() => import('./pages/CartPage'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const PaymentPage = lazy(() => import('./pages/PaymentPage'));
+const BazaarMapPage = lazy(() => import('./pages/BazaarMapPage'));
+const BazaarDetailPage = lazy(() => import('./pages/BazaarDetailPage'));
+const ShopDetailPage = lazy(() => import('./pages/ShopDetailPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const SearchPage = lazy(() => import('./pages/SearchPage'));
+const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const PartnersPage = lazy(() => import('./pages/legal/PartnersPage'));
+const FAQPage = lazy(() => import('./pages/legal/FAQPage'));
+const TermsPage = lazy(() => import('./pages/legal/TermsPage'));
+const PrivacyPage = lazy(() => import('./pages/legal/PrivacyPage'));
+const EmailConfirmationPage = lazy(() => import('./pages/EmailConfirmationPage'));
+const EmailChangeConfirmationPage = lazy(() => import('./pages/EmailChangeConfirmationPage'));
 import { queryClient } from './queryClient';
 
 /** Redirect bare "/" to "/:lang/" */
@@ -74,6 +80,7 @@ function AppShell() {
       {!isPartnerLanding && <MobileBackdrop />}
       {!isPartnerLanding && <Header />}
       <main className={`app-main${isLoginPage ? ' app-main--login' : ''}`}>
+      <Suspense fallback={<div className="route-fallback" style={{ minHeight: '60vh' }} />}>
       <Routes>
         {/* Bare root → redirect to /ru or /uz */}
         <Route path="/" element={<RootRedirect />} />
@@ -105,6 +112,7 @@ function AppShell() {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </Suspense>
       </main>
       {!isPartnerLanding && !isLoginPage && <Footer />}
       {!isPartnerLanding && !isLoginPage && !noBottomNav && <BottomNav />}

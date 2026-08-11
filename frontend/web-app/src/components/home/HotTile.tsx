@@ -5,6 +5,7 @@ import { useCountdown } from '../../hooks/useCountdown';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import { couponStock } from '../../utils/couponStock';
 import { calcDiscount } from '../../utils/format';
+import { srcAt } from '../../utils/imageUrl';
 import './HotTile.css';
 
 interface HotTileProps {
@@ -44,7 +45,7 @@ export default function HotTile({ coupon, lead }: HotTileProps) {
 
       <div className="hot-tile__media">
         {coupon.coverImageUrl ? (
-          <img src={coupon.coverImageUrl} alt={coupon.title} loading="lazy" />
+          <img src={srcAt(coupon.coverImageUrl, 640)} alt={coupon.title} loading="lazy" />
         ) : (
           <span className="hot-tile__media-fallback">{coupon.merchant?.name}</span>
         )}
