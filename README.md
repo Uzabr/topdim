@@ -25,6 +25,16 @@
 
 <sub>Catalog — real offers across 6 categories, with filters &amp; sorting</sub>
 
+<br>
+
+<img src="docs/assets/screenshot-mobile-home.jpg" alt="sizbiz mobile — home" width="215">
+&nbsp;
+<img src="docs/assets/screenshot-mobile-deals.jpg" alt="sizbiz mobile — deals of the day" width="215">
+&nbsp;
+<img src="docs/assets/screenshot-mobile-catalog.jpg" alt="sizbiz mobile — catalog" width="215">
+
+<sub>Mobile web — home, deals of the day &amp; catalog (Telegram-native, mobile-first)</sub>
+
 </div>
 
 ---
