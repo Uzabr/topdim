@@ -15,6 +15,16 @@
 
 **[🌐 sizbiz.uz](https://sizbiz.uz)**  ·  **[📊 Pitch deck](docs/sizbiz-pitch-deck.pdf)**  ·  **[📄 License](LICENSE)**
 
+<br>
+
+<img src="docs/assets/screenshot-home.jpg" alt="sizbiz storefront — coupon of the day and curated situations" width="860">
+
+<sub>Buyer web app — storefront: coupon of the day &amp; curated situations</sub>
+
+<img src="docs/assets/screenshot-catalog.jpg" alt="sizbiz catalog — 40 offers across 6 categories with filters" width="860">
+
+<sub>Catalog — real offers across 6 categories, with filters &amp; sorting</sub>
+
 </div>
 
 ---
