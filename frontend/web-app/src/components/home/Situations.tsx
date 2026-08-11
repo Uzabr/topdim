@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { couponsApi } from '../../api/coupons';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import { localizedTitle } from '../../utils/localizedText';
+import { srcAt } from '../../utils/imageUrl';
 import './Situations.css';
 
 /**
@@ -34,7 +35,7 @@ export default function Situations() {
             key={situation.key}
             to={`${lp('/coupons')}?situation=${encodeURIComponent(situation.key)}`}
             className={`tile${situation.featured ? ' tile--lead' : ''}${situation.imageUrl ? ' tile--photo' : ''}`}
-            style={situation.imageUrl ? { backgroundImage: `url(${situation.imageUrl})` } : undefined}
+            style={situation.imageUrl ? { backgroundImage: `url(${srcAt(situation.imageUrl, 800)})` } : undefined}
           >
             <span className="tile__name">{localizedTitle(situation, i18n.language)}</span>
             {situation.couponCount > 0 && (
