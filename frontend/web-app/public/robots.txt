@@ -1,0 +1,6 @@
+# sizbiz.uz — публичный сайт купонов и скидок.
+# Обход разрешён; внутренние сервисы (admin/partner/API) — на других хостах.
+User-agent: *
+Allow: /
+
+Sitemap: https://sizbiz.uz/sitemap.xml

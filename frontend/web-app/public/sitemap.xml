@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <url>
+    <loc>https://sizbiz.uz/</loc>
+    <lastmod>2026-08-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Главная (ru / uz) -->
+  <url><loc>https://sizbiz.uz/ru</loc><lastmod>2026-08-12</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://sizbiz.uz/uz</loc><lastmod>2026-08-12</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>
+
+  <!-- Каталог купонов -->
+  <url><loc>https://sizbiz.uz/ru/coupons</loc><lastmod>2026-08-12</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://sizbiz.uz/uz/coupons</loc><lastmod>2026-08-12</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+
+  <!-- Базары / справочник -->
+  <url><loc>https://sizbiz.uz/ru/bazaar</loc><lastmod>2026-08-12</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://sizbiz.uz/uz/bazaar</loc><lastmod>2026-08-12</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
+
+  <!-- Партнёрам -->
+  <url><loc>https://sizbiz.uz/ru/partners</loc><lastmod>2026-08-12</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://sizbiz.uz/uz/partners</loc><lastmod>2026-08-12</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+
+  <!-- Инфо-страницы -->
+  <url><loc>https://sizbiz.uz/ru/faq</loc><lastmod>2026-08-12</lastmod><changefreq>monthly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://sizbiz.uz/ru/terms</loc><lastmod>2026-08-12</lastmod><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://sizbiz.uz/ru/privacy</loc><lastmod>2026-08-12</lastmod><changefreq>yearly</changefreq><priority>0.2</priority></url>
+
+</urlset>
