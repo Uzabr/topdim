@@ -1,4 +1,4 @@
-import { Instagram, Send, Mail, MapPin, Phone, Smartphone } from 'lucide-react';
+import { Mail, MapPin, Phone, Smartphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocalePath } from '../../hooks/useLocalePath';
@@ -17,14 +17,6 @@ export default function Footer() {
         <div className="footer-column footer-brand">
           <Logo size="md" className="footer-logo" />
           <p className="footer-desc">{t('footer.desc')}</p>
-          <div className="footer-socials">
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-              <Instagram size={20} />
-            </a>
-            <a href="https://t.me" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
-              <Send size={20} />
-            </a>
-          </div>
         </div>
 
         {/* User links */}
@@ -56,13 +48,13 @@ export default function Footer() {
           <h3>{t('footer.contacts')}</h3>
           <ul>
             <li>
-              <a href="mailto:info@topdim.uz" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'inherit' }}>
-                <Mail size={15} /> info@topdim.uz
+              <a href="mailto:info@sizbiz.uz" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'inherit' }}>
+                <Mail size={15} /> info@sizbiz.uz
               </a>
             </li>
             <li>
-              <a href="tel:+998712000000" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'inherit' }}>
-                <Phone size={15} /> +998 71 200 00 00
+              <a href="tel:+998507256066" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'inherit' }}>
+                <Phone size={15} /> +998 50 725 60 66
               </a>
             </li>
             <li><MapPin size={15} /> {t('common.city')}</li>
