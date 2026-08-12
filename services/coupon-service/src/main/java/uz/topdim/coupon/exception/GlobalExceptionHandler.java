@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import uz.topdim.common.dto.ApiResponse;
 
 import java.util.Map;
@@ -49,6 +50,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    /**
+     * Неверный тип path/query-параметра (напр. нечисловой id в /coupons/{id}).
+     * Это ошибка клиента → 400, а не 500 (иначе падало в общий Exception-хендлер).
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(String.format("Некорректное значение параметра '%s'", ex.getName())));
     }
 
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
