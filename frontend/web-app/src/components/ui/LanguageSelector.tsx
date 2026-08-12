@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { switchLanguage } from '../../i18n';
 import Select from './Select';
 
 /* Код языка текстом: эмодзи-флаги в UI запрещены (дизайн-система «Оса») */
@@ -27,8 +28,7 @@ export default function LanguageSelector() {
       value={currentLang}
       onChange={(val) => {
         const newLang = val as string;
-        i18n.changeLanguage(newLang);
-        localStorage.setItem('language', newLang);
+        void switchLanguage(newLang);
         
         const currentPath = location.pathname;
         const pathWithoutLang = currentPath.replace(/^\/(ru|uz)/, '');

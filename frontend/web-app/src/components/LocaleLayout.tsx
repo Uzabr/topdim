@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { switchLanguage } from '../i18n';
 
 const SUPPORTED_LANGS = ['ru', 'uz'];
 
@@ -24,8 +25,7 @@ export default function LocaleLayout() {
     }
 
     if (i18n.language !== lang) {
-      i18n.changeLanguage(lang);
-      localStorage.setItem('language', lang);
+      void switchLanguage(lang);
     }
   }, [lang, i18n, navigate, location.pathname, location.search]);
 
