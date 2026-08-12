@@ -19,8 +19,11 @@ import uz.topdim.identity.exception.ResourceNotFoundException;
 import uz.topdim.identity.repository.RefreshTokenRepository;
 import uz.topdim.identity.repository.StaffRepository;
 import uz.topdim.identity.repository.UserRepository;
+import uz.topdim.identity.validation.StrongPasswordValidator;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -45,41 +48,40 @@ public class PartnerStaffService {
         // Resolve merchant for this owner
         Long merchantId = resolveMerchantId(userId);
 
-        // Beta safety: validate cashier requirements
-        validateStaffRequest(request);
-        if (isCashierRole(request.getRole())
+        String role = normalizeStaffRole(request.getRole());
+        validateStaffRequest(request, role);
+        if (isCashierRole(role)
                 && !isActiveMerchantLocation(userId, request.getMerchantLocationId())) {
             throw new IllegalArgumentException("Филиал не принадлежит мерчанту или не активен");
         }
+
+        String loginEmail = request.getLoginEmail().trim().toLowerCase(Locale.ROOT);
 
         Staff staff = Staff.builder()
                 .userId(userId)
                 .name(request.getName())
                 .phone(request.getPhone())
-                .role(request.getRole() != null ? request.getRole() : "CASHIER")
+                .role(role)
                 .merchantId(merchantId)
-                .merchantLocationId(request.getMerchantLocationId())
+                .merchantLocationId(isCashierRole(role) ? request.getMerchantLocationId() : null)
                 .active(true)
                 .build();
 
-        // Create login user for cashier if loginEmail and password provided
-        if (request.getLoginEmail() != null && request.getTemporaryPassword() != null) {
-            if (userRepository.existsByEmailIgnoreCase(request.getLoginEmail())) {
-                throw new IllegalArgumentException("Пользователь с таким email уже существует");
-            }
-            User loginUser = User.builder()
-                    .email(request.getLoginEmail().toLowerCase())
-                    .password(passwordEncoder.encode(request.getTemporaryPassword()))
-                    .firstName(request.getName())
-                    .phone(request.getPhone())
-                    .role(Role.PARTNER)
-                    .enabled(true)
-                    .emailVerified(true)
-                    .build();
-            loginUser = userRepository.save(loginUser);
-            staff.setLoginUserId(loginUser.getId());
-            log.info("PARTNER: created login user {} for staff of owner {}", loginUser.getId(), userId);
+        if (userRepository.existsByEmailIgnoreCase(loginEmail)) {
+            throw new IllegalArgumentException("Пользователь с таким email уже существует");
         }
+        User loginUser = User.builder()
+                .email(loginEmail)
+                .password(passwordEncoder.encode(request.getTemporaryPassword()))
+                .firstName(request.getName())
+                .phone(request.getPhone())
+                .role(Role.PARTNER)
+                .enabled(true)
+                .emailVerified(true)
+                .build();
+        loginUser = userRepository.save(loginUser);
+        staff.setLoginUserId(loginUser.getId());
+        log.info("PARTNER: created login user {} for staff of owner {}", loginUser.getId(), userId);
 
         staff = staffRepository.save(staff);
         log.info("PARTNER: userId={} добавил сотрудника {} ({}) для мерчанта {}", userId, staff.getId(), staff.getPhone(), merchantId);
@@ -127,23 +129,24 @@ public class PartnerStaffService {
         var staffOpt = staffRepository.findByLoginUserId(userId);
         if (staffOpt.isPresent()) {
             Staff staff = staffOpt.get();
+            String role = normalizeStaffRole(staff.getRole());
             if (!staff.isActive()) {
                 throw new IllegalStateException("Сотрудник деактивирован. Обратитесь к владельцу бизнеса.");
             }
-            if ("CASHIER".equals(staff.getRole()) && staff.getMerchantLocationId() == null) {
+            if ("CASHIER".equals(role) && staff.getMerchantLocationId() == null) {
                 throw new IllegalStateException("Кассир не привязан к филиалу. Обратитесь к владельцу бизнеса.");
             }
             Long activeMerchantId = resolveMerchantId(staff.getUserId());
             if (staff.getMerchantId() == null || !staff.getMerchantId().equals(activeMerchantId)) {
                 throw new IllegalStateException("Контекст сотрудника не соответствует активному мерчанту");
             }
-            if ("CASHIER".equals(staff.getRole())
+            if ("CASHIER".equals(role)
                     && !isActiveMerchantLocation(staff.getUserId(), staff.getMerchantLocationId())) {
                 throw new IllegalStateException("Филиал кассира не принадлежит мерчанту или не активен");
             }
-            boolean canViewDashboard = "MANAGER".equals(staff.getRole());
+            boolean canViewDashboard = "MANAGER".equals(role);
             return PartnerAccessContextResponse.builder()
-                    .role(staff.getRole())
+                    .role(role)
                     .merchantId(activeMerchantId)
                     .merchantLocationId(staff.getMerchantLocationId())
                     .staffId(staff.getId())
@@ -167,26 +170,32 @@ public class PartnerStaffService {
     }
 
     /**
-     * Beta safety: cashier must have location, login email, and temporary password.
-     * Without these, the cashier cannot log in or could redeem at the wrong branch.
+     * Every staff member must have an independent login. Cashiers additionally require a location.
      */
-    private void validateStaffRequest(CreateStaffRequest request) {
-        String role = request.getRole() != null ? request.getRole().trim().toUpperCase() : "CASHIER";
+    private void validateStaffRequest(CreateStaffRequest request, String role) {
         if ("CASHIER".equals(role)) {
             if (request.getMerchantLocationId() == null) {
                 throw new IllegalArgumentException("Кассир должен быть привязан к филиалу");
             }
-            if (request.getLoginEmail() == null || request.getLoginEmail().isBlank()) {
-                throw new IllegalArgumentException("Для кассира обязателен email для входа");
-            }
-            if (request.getTemporaryPassword() == null || request.getTemporaryPassword().length() < 6) {
-                throw new IllegalArgumentException("Временный пароль кассира должен быть не короче 6 символов");
-            }
+        }
+        if (request.getLoginEmail() == null || request.getLoginEmail().isBlank()) {
+            throw new IllegalArgumentException("Для сотрудника обязателен email для входа");
+        }
+        if (!StrongPasswordValidator.isStrong(request.getTemporaryPassword())) {
+            throw new IllegalArgumentException("Укажите надёжный временный пароль для сотрудника");
         }
     }
 
+    private String normalizeStaffRole(String rawRole) {
+        String role = rawRole == null ? "CASHIER" : rawRole.trim().toUpperCase(Locale.ROOT);
+        if (!Set.of("CASHIER", "MANAGER").contains(role)) {
+            throw new IllegalArgumentException("Допустимы роли CASHIER или MANAGER");
+        }
+        return role;
+    }
+
     private boolean isCashierRole(String role) {
-        return role == null || "CASHIER".equals(role.trim().toUpperCase());
+        return "CASHIER".equals(role);
     }
 
     private boolean isActiveMerchantLocation(Long ownerUserId, Long locationId) {
