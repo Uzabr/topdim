@@ -18,10 +18,8 @@ import HomePage from './pages/HomePage';
 import CouponCatalogPage from './pages/CouponCatalogPage';
 import LoginPage from './pages/LoginPage';
 
-// Остальное — lazy: динамический import() уводит код (и его тяжёлые
-// транзитивные зависимости) в отдельные чанки, которые грузятся ТОЛЬКО при
-// переходе на маршрут. Так с главной уходят three/@react-three/framer/lenis
-// (страница /partners) и @2gis/mapgl (карты и деталь купона → WhereSection).
+// Остальное — lazy: тяжёлые зависимости (например @2gis/mapgl на картах)
+// уходят в отдельные чанки и не грузятся с главной.
 const CouponDetailPage = lazy(() => import('./pages/CouponDetailPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
@@ -52,20 +50,11 @@ function RootRedirect() {
 
 function AppShell() {
   const location = useLocation();
-  const isPartnerLanding = /^\/(ru|uz)\/partners\/?$/.test(location.pathname);
   const isLoginPage = /^\/(ru|uz)\/login\/?$/.test(location.pathname);
   // Купон/корзина/оплата/поиск: снизу своя кнопка — таблетка навигации налезала бы.
   const noBottomNav = hidesBottomNav(location.pathname);
 
   useEffect(() => {
-    if (isPartnerLanding) {
-      document.body.classList.add('td-partner-body');
-      document.documentElement.classList.add('td-partner-body');
-    } else {
-      document.body.classList.remove('td-partner-body');
-      document.documentElement.classList.remove('td-partner-body');
-    }
-
     if (isLoginPage) {
       document.body.classList.add('td-login-body');
       document.documentElement.classList.add('td-login-body');
@@ -73,12 +62,12 @@ function AppShell() {
       document.body.classList.remove('td-login-body');
       document.documentElement.classList.remove('td-login-body');
     }
-  }, [isPartnerLanding, isLoginPage]);
+  }, [isLoginPage]);
 
   return (
     <div className="app-shell">
-      {!isPartnerLanding && <MobileBackdrop />}
-      {!isPartnerLanding && <Header />}
+      <MobileBackdrop />
+      <Header />
       <main className={`app-main${isLoginPage ? ' app-main--login' : ''}`}>
       <Suspense fallback={<div className="route-fallback" style={{ minHeight: '60vh' }} />}>
       <Routes>
@@ -114,8 +103,8 @@ function AppShell() {
       </Routes>
       </Suspense>
       </main>
-      {!isPartnerLanding && !isLoginPage && <Footer />}
-      {!isPartnerLanding && !isLoginPage && !noBottomNav && <BottomNav />}
+      {!isLoginPage && <Footer />}
+      {!isLoginPage && !noBottomNav && <BottomNav />}
       <CartDrawer />
       <LimitModal />
       <CookieConsent />
