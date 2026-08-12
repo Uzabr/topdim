@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
 import { CheckCircle2, MailCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -20,7 +19,6 @@ export default function EmailConfirmationPage() {
   const lp = useLocalePath();
   const [searchParams] = useSearchParams();
   const queryToken = searchParams.get('token')?.trim() ?? '';
-  const [token, setToken] = useState(queryToken);
   const [status, setStatus] = useState<ConfirmationStatus>('idle');
   const [message, setMessage] = useState('');
   const processedToken = useRef('');
@@ -67,10 +65,25 @@ export default function EmailConfirmationPage() {
     return () => window.clearTimeout(timer);
   }, [confirm, queryToken]);
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    void confirm(token);
-  };
+  if (!queryToken) {
+    return (
+      <div className="email-confirm-page">
+        <Logo size="md" />
+        <section className="email-confirm-card">
+          <MailCheck className="email-confirm-card__icon" size={44} />
+          <h1>{t('profile.emailConfirmation.title')}</h1>
+          <p className="email-confirm-card__message email-confirm-card__message--error" role="alert">
+            {t('profile.emailConfirmation.missingToken')}
+          </p>
+          <Link className="email-confirm-card__link" to={lp(isAuthenticated ? '/profile?tab=settings' : '/login')}>
+            {isAuthenticated
+              ? t('profile.emailConfirmation.toProfile')
+              : t('profile.emailConfirmation.toLogin')}
+          </Link>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="email-confirm-page">
@@ -82,26 +95,9 @@ export default function EmailConfirmationPage() {
           <MailCheck className="email-confirm-card__icon" size={44} />
         )}
         <h1>{t('profile.emailConfirmation.title')}</h1>
-        <p className="email-confirm-card__hint">{t('profile.emailConfirmation.hint')}</p>
 
-        {status !== 'success' && (
-          <form className="email-confirm-card__form" onSubmit={submit}>
-            <label>
-              <span>{t('profile.emailConfirmation.code')}</span>
-              <input
-                value={token}
-                onChange={(event) => setToken(event.target.value)}
-                autoComplete="one-time-code"
-                disabled={status === 'confirming'}
-                autoFocus={!queryToken}
-              />
-            </label>
-            <button type="submit" disabled={status === 'confirming'}>
-              {status === 'confirming'
-                ? t('profile.emailConfirmation.confirming')
-                : t('profile.emailConfirmation.submit')}
-            </button>
-          </form>
+        {status !== 'success' && status !== 'error' && (
+          <p className="email-confirm-card__hint">{t('profile.emailConfirmation.confirming')}</p>
         )}
 
         {message && (

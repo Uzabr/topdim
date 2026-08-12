@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { authApi } from '../api/auth';
@@ -57,19 +57,15 @@ describe('EmailChangeConfirmationPage', () => {
     );
   });
 
-  it('allows manual token entry and surfaces a backend error message for an expired token', async () => {
+  it('surfaces a backend error message for an expired link token', async () => {
     vi.mocked(authApi.confirmEmailChange).mockRejectedValue({
       response: { status: 401, data: { message: 'Недействительный или просроченный токен подтверждения' } },
     });
-    renderPage('/uz/confirm-email-change');
+    renderPage('/uz/confirm-email-change?token=expired-token');
 
-    fireEvent.change(screen.getByLabelText('profile.emailChangeConfirmation.code'), {
-      target: { value: 'expired-token' },
-    });
-    fireEvent.click(
-      screen.getByRole('button', { name: 'profile.emailChangeConfirmation.submit' }),
+    await waitFor(() =>
+      expect(authApi.confirmEmailChange).toHaveBeenCalledWith('expired-token'),
     );
-
     expect(await screen.findByRole('alert')).toHaveProperty(
       'textContent',
       'Недействительный или просроченный токен подтверждения',
@@ -89,17 +85,12 @@ describe('EmailChangeConfirmationPage', () => {
     );
   });
 
-  it('shows a missing-token message when submitted with an empty field', async () => {
+  it('prompts to open the email link when no token is present', () => {
     renderPage('/ru/confirm-email-change');
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'profile.emailChangeConfirmation.submit' }),
-    );
-
-    expect(await screen.findByRole('alert')).toHaveProperty(
-      'textContent',
+    expect(authApi.confirmEmailChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert').textContent).toBe(
       'profile.emailChangeConfirmation.missingToken',
     );
-    expect(authApi.confirmEmailChange).not.toHaveBeenCalled();
   });
 });
