@@ -455,7 +455,7 @@
       "confirming": "Tasdiqlanmoqda...",
       "success": "Email muvaffaqiyatli tasdiqlandi",
       "error": "Emailni tasdiqlab bo'lmadi",
-      "missingToken": "Tasdiqlash kodini kiriting",
+      "missingToken": "Xatdagi tasdiqlash havolasini oching.",
       "toProfile": "Profilga o'tish",
       "toLogin": "Hisobga kirish"
     },
@@ -468,7 +468,7 @@
       "success": "Email muvaffaqiyatli o'zgartirildi",
       "error": "Email almashtirishni tasdiqlab bo'lmadi",
       "taken": "Bu email boshqa hisobda allaqachon ishlatilmoqda",
-      "missingToken": "Tasdiqlash kodini kiriting",
+      "missingToken": "Xatdagi tasdiqlash havolasini oching.",
       "toProfile": "Profilga o'tish",
       "toLogin": "Hisobga kirish"
     },
