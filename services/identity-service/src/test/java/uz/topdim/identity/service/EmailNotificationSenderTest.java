@@ -26,7 +26,7 @@ class EmailNotificationSenderTest {
     @BeforeEach
     void init() {
         registry = new SimpleMeterRegistry();
-        sender = new EmailNotificationSender(mailSender, "noreply@topdim.uz", registry, "smtp-user", "smtp-pass");
+        sender = new EmailNotificationSender(mailSender, "noreply@sizbiz.uz", registry, "https://sizbiz.uz", "smtp-user", "smtp-pass");
     }
 
     @Test
