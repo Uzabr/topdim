@@ -89,6 +89,34 @@ class MerchantServiceTest {
         }
 
         @Test
+        @DisplayName("Partner profile by resolved merchant ID exposes published profile version")
+        void getPartnerMerchant_returnsProfileVersion() {
+            Merchant merchant = createTestMerchant();
+            merchant.setProfileVersion(5L);
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+            when(merchantLocationRepository.findByMerchantIdAndActiveTrue(1L)).thenReturn(List.of());
+
+            MerchantResponse result = merchantService.getPartnerMerchant(1L);
+
+            assertThat(result.getId()).isEqualTo(1L);
+            assertThat(result.getProfileVersion()).isEqualTo(5L);
+        }
+
+        @Test
+        @DisplayName("Partner profile by resolved merchant ID rejects inactive merchant")
+        void getPartnerMerchant_inactiveMerchant_throws() {
+            Merchant merchant = createTestMerchant();
+            merchant.setActive(false);
+            when(merchantRepository.findById(1L)).thenReturn(Optional.of(merchant));
+
+            assertThatThrownBy(() -> merchantService.getPartnerMerchant(1L))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("Мерчант не активен");
+
+            verifyNoInteractions(merchantLocationRepository);
+        }
+
+        @Test
         @DisplayName("Partner profile: inactive merchant is rejected")
         void getMyMerchant_inactiveMerchant_throws() {
             Merchant merchant = createTestMerchant();

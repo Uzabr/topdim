@@ -68,6 +68,14 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Доступ запрещен"));
     }
 
+    @ExceptionHandler(PartnerAccessUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePartnerAccessUnavailable(
+            PartnerAccessUnavailableException ex
+    ) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
     public ResponseEntity<ApiResponse<Void>> handleResponseStatus(org.springframework.web.server.ResponseStatusException ex) {
         return ResponseEntity.status(ex.getStatusCode())

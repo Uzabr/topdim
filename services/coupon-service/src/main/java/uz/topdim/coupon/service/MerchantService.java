@@ -90,9 +90,32 @@ public class MerchantService {
         return mapMerchant(merchant);
     }
 
+    @Transactional(readOnly = true)
+    public MerchantResponse getPartnerMerchant(Long merchantId) {
+        return mapMerchant(getActiveMerchantById(merchantId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<MerchantLocationResponse> getPartnerLocations(Long merchantId) {
+        getActiveMerchantById(merchantId);
+        return merchantLocationRepository.findByMerchantIdAndActiveTrue(merchantId)
+                .stream()
+                .map(this::mapLocation)
+                .collect(Collectors.toList());
+    }
+
     private Merchant getActiveMerchantByOwnerUserId(Long userId) {
         Merchant merchant = merchantRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Мерчант для пользователя не найден"));
+        if (!merchant.isActive()) {
+            throw new IllegalStateException("Мерчант не активен");
+        }
+        return merchant;
+    }
+
+    private Merchant getActiveMerchantById(Long merchantId) {
+        Merchant merchant = merchantRepository.findById(merchantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Мерчант не найден"));
         if (!merchant.isActive()) {
             throw new IllegalStateException("Мерчант не активен");
         }
@@ -527,6 +550,7 @@ public class MerchantService {
                 .contactPerson(merchant.getContactPerson())
                 .userId(merchant.getUserId())
                 .active(merchant.isActive())
+                .profileVersion(merchant.getProfileVersion())
                 .publicationReady(readiness[0] == null)
                 .publicationBlockReason(readiness[0])
                 .primaryLocation(primaryLoc)
