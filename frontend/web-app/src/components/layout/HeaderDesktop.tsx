@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Heart, MapPin, Search, ShoppingBag } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { switchLanguage } from '../../i18n';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import { useFavoritesStore } from '../../store/favoritesStore';
@@ -134,8 +135,7 @@ export default function HeaderDesktop() {
 
   const switchLang = (next: 'ru' | 'uz') => {
     if (next === lang) return;
-    i18n.changeLanguage(next);
-    localStorage.setItem('language', next);
+    void switchLanguage(next);
     const pathWithoutLang = location.pathname.replace(/^\/(ru|uz)/, '');
     navigate(`/${next}${pathWithoutLang || '/'}${location.search}`, { replace: true });
   };
