@@ -21,6 +21,7 @@ import uz.topdim.coupon.service.PartnerCouponService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -44,9 +45,11 @@ class CouponControllerValidationTest {
 
     @InjectMocks private AdminCouponController adminCouponController;
     @InjectMocks private PartnerCouponController partnerCouponController;
+    @InjectMocks private CouponController couponController;
 
     private MockMvc adminMvc;
     private MockMvc partnerMvc;
+    private MockMvc publicMvc;
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule());
 
@@ -58,6 +61,9 @@ class CouponControllerValidationTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
         partnerMvc = MockMvcBuilders.standaloneSetup(partnerCouponController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+        publicMvc = MockMvcBuilders.standaloneSetup(couponController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -293,6 +299,20 @@ class CouponControllerValidationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .header("X-User-Id", "10")
                             .content(objectMapper.writeValueAsString(payload)))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    // ==================== CouponController (public): GET /{id} ====================
+
+    @Nested
+    @DisplayName("GET /api/v1/coupons/{id} — некорректный id")
+    class PublicGetByIdValidation {
+
+        @Test
+        @DisplayName("Нечисловой id → 400 (а не 500)")
+        void nonNumericId_returns400() throws Exception {
+            publicMvc.perform(get("/api/v1/coupons/catalog"))
                     .andExpect(status().isBadRequest());
         }
     }
