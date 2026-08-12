@@ -20,7 +20,7 @@ public class EmailService {
 
     public EmailService(
             @Value("${notification.email.enabled:false}") boolean enabled,
-            @Value("${notification.email.from:noreply@topdim.uz}") String fromAddress,
+            @Value("${notification.email.from:noreply@sizbiz.uz}") String fromAddress,
             JavaMailSender mailSender
     ) {
         this.enabled = enabled;
@@ -37,7 +37,7 @@ public class EmailService {
      * @param couponCode код купона
      */
     public void sendCouponPurchasedEmail(String to, String couponTitle, String couponCode) {
-        String subject = "TopDim — Ваш купон: " + couponTitle;
+        String subject = "sizbiz — Ваш купон: " + couponTitle;
         String body = String.format("""
                 Здравствуйте!
                 
@@ -48,7 +48,7 @@ public class EmailService {
                 Покажите этот код при визите к партнёру для получения скидки.
                 
                 Спасибо за покупку!
-                Команда TopDim
+                Команда sizbiz
                 """, couponTitle, couponCode);
 
         sendEmail(to, subject, body);
@@ -61,7 +61,7 @@ public class EmailService {
      * @param orderNumber номер заказа
      */
     public void sendOrderConfirmationEmail(String to, String orderNumber) {
-        String subject = "TopDim — Заказ " + orderNumber + " подтверждён";
+        String subject = "sizbiz — Заказ " + orderNumber + " подтверждён";
         String body = String.format("""
                 Здравствуйте!
                 
@@ -69,7 +69,7 @@ public class EmailService {
                 Купоны доступны в вашем профиле.
                 
                 Спасибо за покупку!
-                Команда TopDim
+                Команда sizbiz
                 """, orderNumber);
 
         sendEmail(to, subject, body);

@@ -33,7 +33,7 @@ public class EmailNotificationSender implements NotificationSender {
 
     public EmailNotificationSender(
             JavaMailSender mailSender,
-            @Value("${notification.email.from:noreply@topdim.uz}") String fromAddress,
+            @Value("${notification.email.from:noreply@sizbiz.uz}") String fromAddress,
             MeterRegistry meterRegistry,
             @Value("${spring.mail.username:}") String mailUsername,
             @Value("${spring.mail.password:}") String mailPassword
@@ -50,18 +50,18 @@ public class EmailNotificationSender implements NotificationSender {
 
     @Override
     public void sendPasswordResetToken(String target, String token) {
-        String subject = "TopDim — Сброс пароля";
+        String subject = "sizbiz — Сброс пароля";
         String body = String.format("""
                 Здравствуйте!
                 
-                Вы запросили сброс пароля на TopDim.
+                Вы запросили сброс пароля на sizbiz.
                 
                 Ваш код для сброса пароля: %s
                 
-                Код действителен в течение 15 минут.
+                Код действителен в течение 30 минут.
                 Если вы не запрашивали сброс пароля — проигнорируйте это письмо.
                 
-                Команда TopDim
+                Команда sizbiz
                 """, token);
 
         sendEmail(target, subject, body, TYPE_RESET);
@@ -69,17 +69,17 @@ public class EmailNotificationSender implements NotificationSender {
 
     @Override
     public void sendEmailConfirmationToken(String email, String token) {
-        String subject = "TopDim — Подтверждение email";
+        String subject = "sizbiz — Подтверждение email";
         String body = String.format("""
                 Здравствуйте!
                 
-                Для подтверждения вашего email на TopDim используйте код:
+                Для подтверждения вашего email на sizbiz используйте код:
                 
                 %s
                 
                 Код действителен в течение 60 минут.
                 
-                Команда TopDim
+                Команда sizbiz
                 """, token);
 
         sendEmail(email, subject, body, TYPE_CONFIRM);
@@ -93,18 +93,18 @@ public class EmailNotificationSender implements NotificationSender {
 
     @Override
     public void sendEmailChangeToken(String newEmail, String token) {
-        String subject = "TopDim — Подтверждение смены email";
+        String subject = "sizbiz — Подтверждение смены email";
         String body = String.format("""
                 Здравствуйте!
 
-                Вы запросили смену email на TopDim. Для подтверждения нового адреса используйте код:
+                Вы запросили смену email на sizbiz. Для подтверждения нового адреса используйте код:
 
                 %s
 
                 Код действителен в течение 60 минут.
                 Если вы не запрашивали смену email — проигнорируйте это письмо.
 
-                Команда TopDim
+                Команда sizbiz
                 """, token);
 
         sendEmail(newEmail, subject, body, TYPE_CHANGE);

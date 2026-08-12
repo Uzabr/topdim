@@ -38,7 +38,7 @@ public class SmsService {
      * @param couponCode код купона
      */
     public void sendCouponPurchasedSms(String phone, String couponTitle, String couponCode) {
-        String message = String.format("TopDim: Купон \"%s\" — код: %s", couponTitle, couponCode);
+        String message = String.format("sizbiz: Купон \"%s\" — код: %s", couponTitle, couponCode);
         sendSms(phone, message);
     }
 
