@@ -34,7 +34,11 @@ USER topdim
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -Djava.security.egd=file:/dev/./urandom"
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
+# start-period покрывает реальный старт Spring Boot-сервиса: config/eureka bootstrap + init
+# контекста у тяжёлых (coupon-service) занимает ~130-150с. При 60с Swarm душил ещё грузящийся
+# контейнер (health "unhealthy" → SIGKILL 137/143 → rolling-update залипал на 2/1). 180с = запас
+# над наблюдаемым максимумом. Отдельно оптимизировать сам старт — follow-up.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=180s --retries=5 \
   CMD curl -fsS "http://127.0.0.1:${SERVER_PORT:-8080}/actuator/health" || exit 1
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

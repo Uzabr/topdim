@@ -55,20 +55,6 @@ spring:
                 key-resolver: "#{@ipKeyResolver}"
                 deny-empty-key: false
 
-        # Auth Service — guest account (строго: 1 req/sec, burst 2)
-        - id: auth-guest
-          uri: lb://identity-service
-          predicates:
-            - Path=/api/v1/auth/guest
-          filters:
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 1
-                redis-rate-limiter.burstCapacity: 2
-                redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@ipKeyResolver}"
-                deny-empty-key: false
-
         # Auth Service — password reset request (строго: 1 req/sec, burst 2)
         - id: auth-password-reset-request
           uri: lb://identity-service
@@ -139,11 +125,53 @@ spring:
                 key-resolver: "#{@ipKeyResolver}"
                 deny-empty-key: false
 
+        # Auth Service — phone link (T8a — привязка телефона к аккаунту по OTP, строго: 2 req/sec, burst 3, по образцу auth-phone-confirm)
+        - id: auth-phone-link
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/phone/link
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 2
+                redis-rate-limiter.burstCapacity: 3
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
         # Auth Service — google login (2 req/sec, burst 3)
         - id: auth-google
           uri: lb://identity-service
           predicates:
             - Path=/api/v1/auth/google
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 2
+                redis-rate-limiter.burstCapacity: 3
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
+        # Auth Service — email change request (строго: 1 req/sec, burst 2)
+        - id: auth-email-change-request
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/email-change/request
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 2
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: false
+
+        # Auth Service — email change confirm (2 req/sec, burst 3)
+        - id: auth-email-change-confirm
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/email-change/confirm
           filters:
             - name: RequestRateLimiter
               args:
@@ -166,11 +194,11 @@ spring:
             - Path=/api/v1/partners/applications
             - Method=POST
 
-        # Identity Service — users, admin, partner staff
+        # Identity Service — users, admin (users, audit-logs), partner staff
         - id: identity-service-users
           uri: lb://identity-service
           predicates:
-            - Path=/api/v1/users/**, /api/v1/admin/users/**, /api/v1/partner/staff/**, /api/v1/admin/partner-applications/**
+            - Path=/api/v1/users/**, /api/v1/admin/users/**, /api/v1/partner/staff/**, /api/v1/admin/partner-applications/**, /api/v1/admin/audit-logs
 
         # Coupon Service — bot webhook (approve/reject, защищён X-Bot-Api-Key)
         - id: coupon-service-bot

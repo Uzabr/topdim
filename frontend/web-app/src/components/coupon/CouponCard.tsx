@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import FavoriteButton from '../ui/FavoriteButton';
 import { useLocalePath } from '../../hooks/useLocalePath';
+import { srcAt } from '../../utils/imageUrl';
 import './CouponCard.css';
 
 export interface CouponCardData {
@@ -63,7 +64,7 @@ export default function CouponCard({ coupon, layout = 'card' }: CouponCardProps)
     <Link to={lp(`/coupons/${coupon.id}`)} className={`coupon-card coupon-card--${layout}`}>
       <div className="coupon-card__media">
         {coupon.coverImageUrl ? (
-          <img src={coupon.coverImageUrl} alt={coupon.title} loading="lazy" />
+          <img src={srcAt(coupon.coverImageUrl, 640)} alt={coupon.title} loading="lazy" />
         ) : (
           <div className="coupon-card__img-placeholder">
             <span>{coupon.merchant?.name?.charAt(0) || coupon.title.charAt(0)}</span>

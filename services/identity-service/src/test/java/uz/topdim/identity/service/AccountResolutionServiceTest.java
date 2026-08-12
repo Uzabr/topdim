@@ -153,15 +153,29 @@ class AccountResolutionServiceTest {
     // ==================== resolveByGoogle ====================
 
     @Test
-    @DisplayName("resolveByGoogle: sub уже привязан → вход в тот же аккаунт")
+    @DisplayName("resolveByGoogle: sub уже привязан, имя есть → вход в тот же аккаунт, без записи")
     void resolveByGoogle_matchBySub_returnsSame() {
-        User a = User.builder().id(1L).googleSub("s").build();
+        User a = User.builder().id(1L).googleSub("s").firstName("Иван").lastName("Петров").build();
         when(users.findByGoogleSub("s")).thenReturn(Optional.of(a));
 
-        User r = svc.resolveByGoogle("s", "g@topdim.uz", true);
+        User r = svc.resolveByGoogle("s", "g@topdim.uz", true, "Иван", "Петров");
 
         assertThat(r.getId()).isEqualTo(1L);
         verify(users, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("resolveByGoogle: sub привязан, но имя-плейсхолдер → бэкфилл реального имени из Google")
+    void resolveByGoogle_matchBySub_backfillsPlaceholderName() {
+        User a = User.builder().id(1L).googleSub("s").firstName("Пользователь").build();
+        when(users.findByGoogleSub("s")).thenReturn(Optional.of(a));
+        when(users.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        User r = svc.resolveByGoogle("s", "g@topdim.uz", true, "Иван", "Петров");
+
+        assertThat(r.getFirstName()).isEqualTo("Иван");
+        assertThat(r.getLastName()).isEqualTo("Петров");
+        verify(users).save(a);
     }
 
     @Test
@@ -172,7 +186,7 @@ class AccountResolutionServiceTest {
         when(users.findByEmailIgnoreCase("g@topdim.uz")).thenReturn(Optional.of(a));
         when(users.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
-        User r = svc.resolveByGoogle("s", "g@topdim.uz", true);
+        User r = svc.resolveByGoogle("s", "g@topdim.uz", true, "Иван", "Петров");
 
         assertThat(r.getId()).isEqualTo(1L);
         assertThat(r.getGoogleSub()).isEqualTo("s");
@@ -191,7 +205,7 @@ class AccountResolutionServiceTest {
             return u;
         });
 
-        User r = svc.resolveByGoogle("s", "g@topdim.uz", true);
+        User r = svc.resolveByGoogle("s", "g@topdim.uz", true, "Иван", "Петров");
 
         assertThat(a.getEmail()).isNotEqualTo("g@topdim.uz");
         assertThat(a.isEmailVerified()).isFalse();
@@ -201,6 +215,8 @@ class AccountResolutionServiceTest {
         assertThat(r.getEmail()).isEqualTo("g@topdim.uz");
         assertThat(r.isEmailVerified()).isTrue();
         assertThat(r.getRole()).isEqualTo(Role.USER);
+        assertThat(r.getFirstName()).isEqualTo("Иван");
+        assertThat(r.getLastName()).isEqualTo("Петров");
     }
 
     @Test
@@ -215,7 +231,7 @@ class AccountResolutionServiceTest {
             return u;
         });
 
-        User r = svc.resolveByGoogle("s", "new@topdim.uz", true);
+        User r = svc.resolveByGoogle("s", "new@topdim.uz", true, "Иван", "Петров");
 
         assertThat(r.getId()).isEqualTo(10L);
         assertThat(r.getGoogleSub()).isEqualTo("s");
@@ -223,5 +239,7 @@ class AccountResolutionServiceTest {
         assertThat(r.isEmailVerified()).isTrue();
         assertThat(r.getRole()).isEqualTo(Role.USER);
         assertThat(r.isEnabled()).isTrue();
+        assertThat(r.getFirstName()).isEqualTo("Иван");
+        assertThat(r.getLastName()).isEqualTo("Петров");
     }
 }

@@ -145,6 +145,8 @@ export const AdminLayout = () => {
             background: themeToken.colorBgContainer,
             borderRadius: themeToken.borderRadiusLG,
             minHeight: 280,
+            minWidth: 0,
+            overflowX: 'auto',
           }}
         >
           <Outlet />

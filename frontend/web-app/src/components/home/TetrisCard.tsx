@@ -4,6 +4,7 @@ import type { CouponOffer } from '../../api/coupons';
 import FavoriteButton from '../ui/FavoriteButton';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import { calcDiscount } from '../../utils/format';
+import { srcAt } from '../../utils/imageUrl';
 import './TetrisCard.css';
 
 /**
@@ -49,7 +50,7 @@ export default function TetrisCard({ coupon, shape }: TetrisCardProps) {
       <Link to={to} className="tcard__photo" aria-label={coupon.title}>
         <span className="tcard__frame">
           {coupon.coverImageUrl ? (
-            <img src={coupon.coverImageUrl} alt="" loading="lazy" />
+            <img src={srcAt(coupon.coverImageUrl, 640)} alt="" loading="lazy" />
           ) : (
             <span className="tcard__fallback">{coupon.merchant?.name}</span>
           )}

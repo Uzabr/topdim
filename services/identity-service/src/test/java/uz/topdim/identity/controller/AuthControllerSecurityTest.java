@@ -15,6 +15,7 @@ import uz.topdim.identity.security.CustomUserDetailsService;
 import uz.topdim.identity.security.RoleHeaderAuthenticationFilter;
 import uz.topdim.identity.dto.AuthResponse;
 import uz.topdim.identity.service.AuthService;
+import uz.topdim.identity.service.EmailChangeService;
 import uz.topdim.identity.service.EmailConfirmationService;
 import uz.topdim.identity.service.OtpService;
 import uz.topdim.identity.service.PasswordResetService;
@@ -46,6 +47,9 @@ class AuthControllerSecurityTest {
 
     @MockBean
     private EmailConfirmationService emailConfirmationService;
+
+    @MockBean
+    private EmailChangeService emailChangeService;
 
     @MockBean
     private OtpService otpService;
@@ -357,5 +361,125 @@ class AuthControllerSecurityTest {
                 .andExpect(status().isAccepted());
 
         verify(emailConfirmationService).requestEmailConfirmation(7L);
+    }
+
+    // ==================== T7a: Email Change ====================
+
+    @Test
+    @DisplayName("email-change/request: без gateway headers endpoint недоступен")
+    void requestEmailChange_withoutAuthentication_isRejected() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/email-change/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "newEmail": "new@topdim.uz"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+
+        verify(emailChangeService, never()).requestEmailChange(any(), any());
+    }
+
+    @Test
+    @DisplayName("email-change/request: с gateway headers запрос проходит")
+    void requestEmailChange_withGatewayHeaders_callsService() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/email-change/request")
+                        .header("X-User-Id", "7")
+                        .header("X-User-Role", "USER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "newEmail": "new@topdim.uz"
+                                }
+                                """))
+                .andExpect(status().isAccepted());
+
+        verify(emailChangeService).requestEmailChange(7L, "new@topdim.uz");
+    }
+
+    @Test
+    @DisplayName("email-change/request: невалидный email отклоняется до сервиса")
+    void requestEmailChange_invalidEmail_returnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/email-change/request")
+                        .header("X-User-Id", "7")
+                        .header("X-User-Role", "USER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "newEmail": "not-an-email"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(emailChangeService, never()).requestEmailChange(any(), any());
+    }
+
+    @Test
+    @DisplayName("email-change/confirm: публичный endpoint доступен без аутентификации")
+    void confirmEmailChange_publicEndpoint_acceptsAnonymousRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/email-change/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "token": "email-change-token"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        verify(emailChangeService).confirmEmailChange("email-change-token");
+    }
+
+    // ==================== T8a: Phone Link ====================
+
+    @Test
+    @DisplayName("phone/link: без gateway headers endpoint недоступен")
+    void linkPhone_withoutAuthentication_isRejected() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/phone/link")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "phone": "+998901234567",
+                                  "code": "111111"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+
+        verify(authService, never()).linkPhone(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("phone/link: с gateway headers запрос проходит")
+    void linkPhone_withGatewayHeaders_callsService() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/phone/link")
+                        .header("X-User-Id", "7")
+                        .header("X-User-Role", "USER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "phone": "+998901234567",
+                                  "code": "111111"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        verify(authService).linkPhone(7L, "+998901234567", "111111");
+    }
+
+    @Test
+    @DisplayName("phone/link: некорректный формат телефона отклоняется до сервиса")
+    void linkPhone_invalidPhone_returnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/phone/link")
+                        .header("X-User-Id", "7")
+                        .header("X-User-Role", "USER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "phone": "not-a-phone",
+                                  "code": "111111"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(authService, never()).linkPhone(any(), any(), any());
     }
 }

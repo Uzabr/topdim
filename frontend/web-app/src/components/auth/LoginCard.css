@@ -30,6 +30,24 @@
   justify-content: center;
   margin-top: 20px;
   min-height: 46px;
+  /* Иначе в dark mode ОС iframe рисует непрозрачный чёрный canvas
+     в углах за скруглённой кнопкой Telegram. */
+  color-scheme: light;
+}
+
+.tg-login-widget {
+  display: flex;
+  justify-content: center;
+  color-scheme: light;
+}
+
+.tg-login-widget iframe,
+.lcard__telegram-widget iframe {
+  color-scheme: light;
+  background: transparent !important;
+  border: 0;
+  outline: none;
+  box-shadow: none;
 }
 
 .lcard__telegram {
@@ -105,6 +123,7 @@
 
 .lcard__providers {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   margin-top: 14px;
 }
@@ -130,6 +149,16 @@
 
 .lcard__provider--active {
   border-color: var(--ink);
+}
+
+/* Официальная кнопка Google (GIS) — её стилизовать нельзя, поэтому показываем как
+   есть на всю ширину, а остальные кнопки-провайдеры стоят в колонку (тоже во всю
+   ширину) → единый размер. min-height под высоту GIS-кнопки (size:large). */
+.lcard__google-widget {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
 }
 
 .lcard__g-mark {

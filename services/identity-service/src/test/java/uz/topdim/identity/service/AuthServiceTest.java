@@ -574,10 +574,10 @@ class AuthServiceTest {
     @Test
     @DisplayName("GoogleAuth: валидный ID-token → резолвит аккаунт через AccountResolutionService и выдаёт токены")
     void googleAuth_validToken_returnsTokens() {
-        when(googleTokenVerifier.verify("tok")).thenReturn(new GoogleIdentity("sub1", "g@x.uz", true));
+        when(googleTokenVerifier.verify("tok")).thenReturn(new GoogleIdentity("sub1", "g@x.uz", true, "Иван", "Петров"));
         User u = User.builder().id(5L).email("g@x.uz").emailVerified(true).googleSub("sub1")
                 .role(Role.USER).enabled(true).build();
-        when(accountResolutionService.resolveByGoogle("sub1", "g@x.uz", true)).thenReturn(u);
+        when(accountResolutionService.resolveByGoogle("sub1", "g@x.uz", true, "Иван", "Петров")).thenReturn(u);
         when(jwtService.generateAccessToken(any())).thenReturn("access");
         when(jwtService.getAccessTokenExpiration()).thenReturn(900_000L);
         when(jwtService.getRefreshTokenExpiration()).thenReturn(604_800_000L);
@@ -597,7 +597,7 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.googleAuth("bad-tok"))
                 .isInstanceOf(AuthException.class);
 
-        verify(accountResolutionService, never()).resolveByGoogle(anyString(), anyString(), org.mockito.ArgumentMatchers.anyBoolean());
+        verify(accountResolutionService, never()).resolveByGoogle(anyString(), anyString(), org.mockito.ArgumentMatchers.anyBoolean(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
         verify(jwtService, never()).generateAccessToken(any());
         verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
     }
@@ -605,15 +605,68 @@ class AuthServiceTest {
     @Test
     @DisplayName("GoogleAuth: заблокированный (enabled=false) аккаунт после резолюции получает отказ, токены не выдаются")
     void googleAuth_disabledAccount_throwsWithoutIssuingTokens() {
-        when(googleTokenVerifier.verify("tok")).thenReturn(new GoogleIdentity("sub2", "blocked@x.uz", true));
+        when(googleTokenVerifier.verify("tok")).thenReturn(new GoogleIdentity("sub2", "blocked@x.uz", true, "Иван", "Петров"));
         User disabled = User.builder().id(6L).email("blocked@x.uz").emailVerified(true).googleSub("sub2")
                 .role(Role.USER).enabled(false).build();
-        when(accountResolutionService.resolveByGoogle("sub2", "blocked@x.uz", true)).thenReturn(disabled);
+        when(accountResolutionService.resolveByGoogle("sub2", "blocked@x.uz", true, "Иван", "Петров")).thenReturn(disabled);
 
         assertThatThrownBy(() -> authService.googleAuth("tok"))
                 .isInstanceOf(AuthException.class);
 
         verify(jwtService, never()).generateAccessToken(any());
         verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
+    }
+
+    // ==================== linkPhone (T8a) ====================
+
+    @Test
+    @DisplayName("linkPhone: верный OTP + номер свободен → привязывает через AccountResolutionService")
+    void linkPhone_validOtpAndFreeNumber_linksPhone() {
+        User user = createUser(Role.USER, true);
+        when(otpService.verifyOtp("+998901112233", "111111")).thenReturn(true);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(accountResolutionService.linkPhone(user, "+998901112233")).thenReturn(user);
+
+        authService.linkPhone(1L, "+998901112233", "111111");
+
+        verify(accountResolutionService).linkPhone(user, "+998901112233");
+    }
+
+    @Test
+    @DisplayName("linkPhone: неверный/просроченный OTP → AuthException, привязка не выполняется")
+    void linkPhone_badOtp_throwsWithoutLinking() {
+        when(otpService.verifyOtp("+998901112233", "000000")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.linkPhone(1L, "+998901112233", "000000"))
+                .isInstanceOf(AuthException.class);
+
+        verify(userRepository, never()).findById(anyLong());
+        verify(accountResolutionService, never()).linkPhone(any(User.class), anyString());
+    }
+
+    @Test
+    @DisplayName("linkPhone: номер занят другим аккаунтом → IllegalStateException (409 через GlobalExceptionHandler)")
+    void linkPhone_numberTakenByOther_throwsIllegalState() {
+        User user = createUser(Role.USER, true);
+        when(otpService.verifyOtp("+998901112233", "111111")).thenReturn(true);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(accountResolutionService.linkPhone(user, "+998901112233"))
+                .thenThrow(new IllegalStateException("Номер уже занят"));
+
+        assertThatThrownBy(() -> authService.linkPhone(1L, "+998901112233", "111111"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Номер уже занят");
+    }
+
+    @Test
+    @DisplayName("linkPhone: несуществующий userId → AuthException, привязка не выполняется")
+    void linkPhone_userNotFound_throwsWithoutLinking() {
+        when(otpService.verifyOtp("+998901112233", "111111")).thenReturn(true);
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.linkPhone(999L, "+998901112233", "111111"))
+                .isInstanceOf(AuthException.class);
+
+        verify(accountResolutionService, never()).linkPhone(any(User.class), anyString());
     }
 }

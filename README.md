@@ -1,220 +1,165 @@
-# sizbiz Platform
+<div align="center">
 
-> Платформа купонов и скидок для базаров Узбекистана
+<img src="docs/assets/logo-sizbiz-mark.png" alt="sizbiz" width="340">
 
-> Публичный бренд — **sizbiz** (`sizbiz.uz`). `topdim` сохраняется как
-> историческое внутреннее имя в пакетах, базах, инфраструктуре и командах.
+### The coupon marketplace for local business in Uzbekistan
 
-## Документация / Documentation
+**Buyers get transparent savings nearby. Merchants pay only for a coupon that was actually redeemed at their counter.**
 
-- [Русская документация](docs/ru/README.md)
-- [English documentation](docs/en/README.md)
-- [Бизнес-документация для sales и сотрудников](docs/ru/business/README.md)
-- [Business documentation for sales and employees](docs/en/business/README.md)
+[![Status](https://img.shields.io/badge/status-live%20in%20production-2ea043?style=flat-square)](https://sizbiz.uz)
+[![President Tech Award](https://img.shields.io/badge/President%20Tech%20Award-2026-ffd23c?style=flat-square&labelColor=141414)](https://sizbiz.uz)
+![Java](https://img.shields.io/badge/Java-21-e11f27?style=flat-square)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4-6DB33F?style=flat-square&logo=springboot&logoColor=white)
+![React](https://img.shields.io/badge/React-19-20232a?style=flat-square&logo=react)
+![License](https://img.shields.io/badge/license-proprietary-999?style=flat-square)
 
-Обе версии имеют одинаковую структуру технических разделов, ADR,
-C4/PlantUML и отдельного бизнес-комплекта. Существующие предметные, QA,
-security и operational документы в `docs/` сохранены как дополнительные
-источники.
+**[🌐 sizbiz.uz](https://sizbiz.uz)**  ·  **[📊 Pitch deck](docs/sizbiz-pitch-deck.pdf)**  ·  **[📄 License](LICENSE)**
 
-## Архитектура
+<br>
 
-```
-┌─────────────┐     ┌──────────────┐     ┌────────────────────────────────┐
-│ Frontend x3 │────▶│  API Gateway │────▶│  Microservices (Eureka)        │
-│ React/Vite  │     │  :8080       │     │                                │
-└─────────────┘     └──────────────┘     │  identity-service   :8081      │
-                          │              │  coupon-service     :8083      │
-                    JWT Validation       │  order-service      :8084      │
-                                         │  payment-service    :8085      │
-                                         │  bazaar-service     :8086      │
-                                         │  notification-svc   :8087      │
-                                         │  media-service      :8088      │
-                                         └────────────────────────────────┘
-                                                    │
-                               ┌────────────────────┼────────────────────┐
-                               │                    │                    │
-                          PostgreSQL            RabbitMQ             Redis
-                          :5433                 :5673               :6380
-                                                                   MinIO
-                                                                   :9000
-```
+<img src="docs/assets/screenshot-home.jpg" alt="sizbiz storefront — coupon of the day and curated situations" width="860">
 
-## Технологический стек
+<sub>Buyer web app — storefront: coupon of the day &amp; curated situations</sub>
 
-| Компонент | Технология |
+<img src="docs/assets/screenshot-catalog.jpg" alt="sizbiz catalog — 40 offers across 6 categories with filters" width="860">
+
+<sub>Catalog — real offers across 6 categories, with filters &amp; sorting</sub>
+
+<br>
+
+<img src="docs/assets/screenshot-mobile-home.jpg" alt="sizbiz mobile — home" width="215">
+&nbsp;
+<img src="docs/assets/screenshot-mobile-deals.jpg" alt="sizbiz mobile — deals of the day" width="215">
+&nbsp;
+<img src="docs/assets/screenshot-mobile-catalog.jpg" alt="sizbiz mobile — catalog" width="215">
+
+<sub>Mobile web — home, deals of the day &amp; catalog (Telegram-native, mobile-first)</sub>
+
+</div>
+
+---
+
+## Overview
+
+Promotions happen every day in Uzbekistan — scattered across Instagram, Telegram chats and offline banners. Nobody can find them in one place, verify their real terms, or prove a purchase at the counter. And nobody can measure them.
+
+**sizbiz** turns that noise into **one controlled loop — from offer to a redeemed customer.** A merchant publishes a coupon after moderation; a buyer sees the real price and buys it; staff redeem it by QR or PIN, once, at that location; every sale, redemption, refund and review is recorded.
+
+> **1.21 million small businesses generate 51.5% of Uzbekistan's GDP** — most have no marketing staff and no affordable way to buy measurable demand. sizbiz gives them **pay-per-result** marketing.
+
+---
+
+## The problem
+
+| For buyers | For small businesses |
 |---|---|
-| Backend | Java 21, Spring Boot 3.4, Spring Cloud 2024.0 |
-| Database | PostgreSQL 16 |
-| Cache | Redis 7 |
-| Message Broker | RabbitMQ 3.13 |
-| Object Storage | MinIO |
-| Service Discovery | Eureka |
-| API Gateway | Spring Cloud Gateway |
-| ORM | Spring Data JPA + Flyway |
-| Mapping | MapStruct 1.6 |
-| API Docs | SpringDoc OpenAPI (Swagger) |
-| Frontend | React 19, Vite, Zustand, React Query |
-| Map | 2GIS MapGL |
+| Offers are scattered across Instagram, Telegram and banners. No single place to find an offer, verify its terms, buy it and prove the purchase. Conditions stay unclear until payment. | The standard alternative is an SMM / ads agency: **$700–2,500 / month + $500–2,000 media budget, paid upfront** — whether or not a single customer walks in. The business pays for impressions, not customers. |
 
-## Быстрый старт
+## The solution — one controlled loop
 
-### Требования
-- Java 21+
-- Docker & Docker Compose
-- Node.js 22+ (рекомендуется для текущих Vite 8 приложений)
+| 1. Apply | 2. Moderate | 3. Buy | 4. Redeem | 5. Measure |
+|---|---|---|---|---|
+| Merchant applies via web or Telegram bot. No app, no paperwork. | Our team verifies price, terms and limits. Merchant approves before publication. | Buyer sees real price, discount and expiry — then buys and stores the coupon. | Staff scan QR or PIN. Locked to that merchant, that location, exactly once. | Sales, redemptions, reviews, refunds and complaints — all recorded. |
 
-### 1. Запуск инфраструктуры
-```bash
-docker compose up -d
-```
-Это поднимет: PostgreSQL (:5433), Redis (:6380), RabbitMQ (:5673), MinIO (:9000).
+**Access channels:** three web applications — **buyer, partner, admin** — plus a **Telegram bot**, in a country where Telegram reaches ~25 million monthly users.
 
-### 2. Запуск всех сервисов (скрипт)
-```bash
-chmod +x start-all.sh
-./start-all.sh start
-```
+---
 
-### 3. Запуск вручную (по одному)
-```bash
-# Eureka Discovery
-./gradlew :infrastructure:discovery-server:bootRun
+## Why it works
 
-# API Gateway
-./gradlew :infrastructure:api-gateway:bootRun
+- **Full closed loop.** Publication → purchase → QR/PIN redemption → statistics → reviews & refunds. Social networks and classifieds stop at publication.
+- **Trust layer by design.** Every offer passes moderation and explicit merchant approval. Complaints, refunds and audit are built into the product, not bolted on.
+- **Telegram-native.** Login, notifications and a concierge bot in the channel where the whole country already lives.
+- **Anti-fraud by design.** Idempotent sale and redemption ledgers, exactly one payment guaranteed per order, location-bound redemption rights for cashiers.
 
-# Backend services
-./gradlew :services:identity-service:bootRun
-./gradlew :services:coupon-service:bootRun
-./gradlew :services:order-service:bootRun
-# ... и т.д.
-```
+## Business model
 
-### 4. Frontend
-```bash
-cd frontend/web-app
-npm install
-npm run dev     # http://localhost:5173
+The merchant pays a commission **only when a coupon is actually redeemed** at their location. No listing fees. No retainer. No upfront media budget.
 
-cd ../admin-app
-npm install
-npm run dev     # http://localhost:3001
-
-cd ../partner
-npm install
-npm run dev     # http://localhost:3002
-```
-
-## Базы данных
-
-| Сервис | База данных | Порт |
+| | Ads / SMM agency | **sizbiz** |
 |---|---|---|
-| identity-service | `topdim_identity` | 5433 |
-| coupon-service | `topdim_coupon` | 5433 |
-| order-service | `topdim_order` | 5433 |
-| payment-service | `topdim_payment` | 5433 |
-| bazaar-service | `topdim_bazaar` | 5433 |
-| notification-service | `topdim_notification` | 5433 |
+| Upfront cost | $700–2,500/mo + media | **Zero** — free listing after moderation |
+| Pays for | Impressions and clicks | **A real customer at the counter** |
+| Risk | Fully on the merchant | **Shared — we earn only on results** |
+| Measurability | Indirect: reach, CTR | **Exact: sales, redemptions, repeat buyers** |
 
-Все БД создаются автоматически через `docker/init-databases.sql`.
+---
 
-## Swagger UI
+## Architecture
 
-После запуска каждый сервис доступен:
+Spring Cloud microservices behind a single API gateway; service-per-database; async events over RabbitMQ.
 
-| Сервис | Swagger URL |
-|---|---|
-| identity-service | http://localhost:8081/swagger-ui.html |
-| coupon-service | http://localhost:8083/swagger-ui.html |
-| order-service | http://localhost:8084/swagger-ui.html |
-| payment-service | http://localhost:8085/swagger-ui.html |
-| bazaar-service | http://localhost:8086/swagger-ui.html |
-| notification-service | http://localhost:8087/swagger-ui.html |
-| media-service | http://localhost:8088/swagger-ui.html |
-
-## Мониторинг
-
-| Компонент | URL |
-|---|---|
-| Eureka Dashboard | http://localhost:8761 |
-| RabbitMQ Management | http://localhost:15673 |
-| MinIO Console | http://localhost:9001 |
-
-## Проектная структура
-
-```
-topdim/
-├── infrastructure/
-│   ├── discovery-server/     # Eureka
-│   ├── api-gateway/          # Spring Cloud Gateway + JWT
-│   └── config-server/        # Centralized config
-├── services/
-│   ├── identity-service/     # Аутентификация, JWT, профиль, партнёрские заявки
-│   ├── coupon-service/       # Купоны, категории, партнёры, справочник базаров
-│   ├── order-service/        # Корзина, заказы, купленные купоны, погашение, возвраты, жалобы
-│   ├── payment-service/      # Платежи, demo/provider mode
-│   ├── notification-service/ # In-app уведомления, Email/SMS stub/real mode
-│   ├── media-service/        # Загрузка файлов (MinIO)
-│   └── bazaar-service/       # Базары, магазины, геолокация
-├── shared/
-│   ├── common-dto/           # ApiResponse<T>, общие DTO
-│   └── common-events/        # RabbitMQ events
-├── frontend/
-│   ├── web-app/              # Покупательский React + Vite SPA
-│   ├── admin-app/            # Админка и модерация
-│   ├── partner/              # Партнёрский портал
-│   └── web-app.bak/          # Backup, не считать текущим приложением
-├── docker/
-│   ├── init-databases.sql    # Инициализация БД
-│   ├── postgresql.conf        # Оптимизация PostgreSQL
-│   ├── prometheus.yml         # Конфиг Prometheus
-│   └── loki.yml              # Конфиг Loki
-├── docs/
-│   ├── README.md             # Навигация по актуальной документации
-│   ├── documentation-audit.md # Что было сверено и какие docs ещё рискованные
-│   ├── backend/              # services overview, API contract, database
-│   ├── frontend/             # web/admin/partner apps
-│   ├── product/              # роли, PRD, бизнес-флоу
-│   ├── qa/                   # ручные тест-планы и стратегия
-│   ├── superpowers/          # рабочие планы для AI/agent
-│   └── archive/              # исторические документы, не источник правды
-├── docker-compose.yml
-├── start-all.sh
-└── .gitignore
+```mermaid
+flowchart LR
+  subgraph Clients
+    B[Buyer web app]
+    P[Partner web app]
+    A[Admin web app]
+    T[Telegram bot]
+  end
+  B & P & A & T --> GW[API Gateway]
+  GW --> ID[identity]
+  GW --> CO[coupon]
+  GW --> OR[order]
+  GW --> PAY[payment]
+  GW --> BZ[bazaar]
+  GW --> NO[notification]
+  GW --> ME[media]
+  ID & CO & OR & PAY & BZ & NO --> PG[(PostgreSQL)]
+  CO & OR & NO <--> MQ[[RabbitMQ]]
+  ID & CO --> RD[(Redis)]
+  ME --> S3[(MinIO)]
 ```
 
-## Production deploy через EasyPanel
+Discovery via **Eureka**, centralised configuration via a **config server**, observability via **Prometheus / Grafana / Loki**.
 
-Production Docker artifacts:
+## Tech stack
 
-- `docker/backend/Dockerfile` — generic Spring Boot image, configured with `MODULE_PATH`.
-- `docker/frontend/Dockerfile` — generic Vite/Nginx image, configured with `APP_PATH`.
-- `telegram-bot/Dockerfile` — Telegram bot image.
-- `docker-compose.prod.yml` — production Compose stack.
-- `.env.prod.example` — production env template.
+**Backend** — Java 21 · Spring Boot 3.4 · Spring Cloud Gateway · Eureka · Spring Security / JWT · PostgreSQL 16 · RabbitMQ · Redis · MinIO
+**Frontend** — React 19 · Vite · TypeScript
+**Delivery** — Docker · Docker Swarm · GitHub Actions CI/CD · Prometheus · Grafana · Loki
 
-Минимальный порядок:
+## Status
 
-1. Скопировать `.env.prod.example` в EasyPanel Environment и заменить все `CHANGE_ME_*`.
-2. Настроить домены:
-   - `api.example.com` -> `api-gateway`, port `8080`
-   - `app.example.com` -> `web-app`, port `80`
-   - `admin.example.com` -> `admin-app`, port `80`
-   - `partner.example.com` -> `partner-app`, port `80`
-   - `bot.example.com` -> `telegram-bot`, port `3000`
-3. Указать frontend build args:
-   - `VITE_API_URL=https://api.example.com`
-   - `VITE_API_BASE_URL=https://api.example.com`
-4. В backend env использовать Docker service names:
-   - `DB_HOST=postgres`
-   - `REDIS_HOST=redis`
-   - `RABBITMQ_HOST=rabbitmq`
-   - `MINIO_URL=http://minio:9000`
-   - `EUREKA_HOST=discovery-server`
-5. Запустить stack и проверить:
+<div align="center">
 
-```bash
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d
-docker compose --env-file .env.prod -f docker-compose.prod.yml ps
-```
+| 8 | 173 | 3 + bot | 40 · 6 |
+|:--:|:--:|:--:|:--:|
+| deployed microservices | REST API endpoints | web platforms live | offers · categories |
+
+</div>
+
+**Honest status:** onboarding, moderation, catalog, cart, orders, QR/PIN redemption, refunds, complaints and statistics are implemented and working in production. **Online payments currently run in demo mode** — integration with a local provider (**Payme / Click / Uzum**) is the next milestone.
+
+## Roadmap
+
+| Stage | Period | Targets |
+|---|---|---|
+| **Pilot — Tashkent** | Months 1–6 | Payment provider integration · 100–150 active partners · 10,000+ buyers · redemption rate >60% |
+| **City scale-up** | Months 6–18 | 500+ partners · 100,000+ buyers · promoted placement revenue · repeat purchases >30% |
+| **National** | Months 18–36 | Samarkand, Bukhara, Namangan, Andijan · 3,000+ partners · partner self-service analytics |
+
+*Figures are management targets, not audited forecasts.*
+
+## Team
+
+Built in-house — the founding team owns every layer of the product.
+
+- **Abror Khaitboboev** — Founder · Software Engineer. Backend and platform architecture, the entire microservice system, deployment and CI/CD.
+- **Kamola Esanova** — Product Manager. Product flows, merchant onboarding and moderation, partner research and offer quality.
+
+---
+
+## Documentation
+
+- [Russian documentation](docs/ru/README.md) · [English documentation](docs/en/README.md)
+- [Business documentation (sales & staff)](docs/ru/business/README.md)
+- [Pitch deck (PDF)](docs/sizbiz-pitch-deck.pdf)
+
+## License
+
+**Proprietary — All rights reserved.** This is closed commercial software. Access may be granted **solely for evaluation and review** (including technology-award juries); it grants no right to use, copy, modify or distribute the code. See [`LICENSE`](LICENSE).
+
+<div align="center">
+<sub>sizbiz.uz — Benefit to people. Growth to business. Value nearby.</sub>
+</div>

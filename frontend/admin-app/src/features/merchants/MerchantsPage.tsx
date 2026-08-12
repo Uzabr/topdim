@@ -118,14 +118,14 @@ export const MerchantsPage = () => {
           prefix={<SearchOutlined />}
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          style={{ width: 320 }}
+          style={{ width: 320, maxWidth: '100%' }}
           allowClear
         />
         <Select
           placeholder="Статус"
           value={activeFilter}
           onChange={(v) => { setActiveFilter(v); setPage(0); }}
-          style={{ width: 160 }}
+          style={{ width: 160, maxWidth: '100%' }}
           allowClear
           options={[
             { value: true, label: 'Активные' },

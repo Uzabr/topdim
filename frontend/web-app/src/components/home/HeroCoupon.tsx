@@ -5,6 +5,7 @@ import { useCountdown } from '../../hooks/useCountdown';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import { couponStock } from '../../utils/couponStock';
 import { calcDiscount, formatDate } from '../../utils/format';
+import { srcAt } from '../../utils/imageUrl';
 import './HeroCoupon.css';
 
 interface HeroCouponProps {
@@ -68,7 +69,8 @@ export default function HeroCoupon({ coupon }: HeroCouponProps) {
 
       <Link to={lp(`/coupons/${coupon.id}`)} className="hero-coupon__media">
         {coupon.coverImageUrl ? (
-          <img src={coupon.coverImageUrl} alt={coupon.title} />
+          // Hero = LCP: грузим eager, но в размер контейнера (≤340×310), а не w=1200.
+          <img src={srcAt(coupon.coverImageUrl, 800)} alt={coupon.title} />
         ) : (
           <span className="hero-coupon__media-fallback">{coupon.merchant?.name}</span>
         )}

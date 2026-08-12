@@ -8,10 +8,25 @@ import uz from '../../locales/uz.json';
 import { advanceSessionGeneration } from '../../sessionCleanup';
 import ProfileSettingsSection from './ProfileSettingsSection';
 
-const { navigate, logout, updateProfile } = vi.hoisted(() => ({
+const DEFAULT_USER = {
+  id: 1,
+  email: 'user@example.com',
+  firstName: 'Ada',
+  role: 'USER',
+} as const;
+
+const { navigate, logout, updateProfile, refreshProfile, authState } = vi.hoisted(() => ({
   navigate: vi.fn(),
   logout: vi.fn(),
   updateProfile: vi.fn(),
+  refreshProfile: vi.fn(),
+  // Мутабельный держатель — тесты подменяют user (например, синтетический email).
+  authState: {
+    user: { id: 1, email: 'user@example.com', firstName: 'Ada', role: 'USER' } as Record<
+      string,
+      unknown
+    >,
+  },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -28,14 +43,21 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('../../store/authStore', () => ({
   useAuthStore: () => ({
-    user: { id: 1, email: 'user@example.com', firstName: 'Ada', role: 'USER' },
+    user: authState.user,
     updateProfile,
     logout,
+    refreshProfile,
   }),
 }));
 
 vi.mock('../../api/auth', () => ({
-  authApi: { changePassword: vi.fn(), requestEmailConfirm: vi.fn() },
+  authApi: {
+    changePassword: vi.fn(),
+    requestEmailConfirm: vi.fn(),
+    requestEmailChange: vi.fn(),
+    requestPhoneOtp: vi.fn(),
+    linkPhone: vi.fn(),
+  },
 }));
 
 vi.mock('../../api/media', () => ({
@@ -43,6 +65,26 @@ vi.mock('../../api/media', () => ({
 }));
 
 vi.mock('./NotificationsSection', () => ({ default: () => null }));
+
+// react-imask processes real DOM 'input' events internally to apply the mask;
+// jsdom + fireEvent.change doesn't drive that. Stub it with a plain input so
+// onAccept fires with the value the test types — same contract as the real
+// component (см. LoginCard.test.tsx для того же приёма).
+vi.mock('react-imask', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  IMaskInput: (props: any) => {
+    const { mask, onAccept, inputRef, value, ...rest } = props;
+    void mask;
+    return (
+      <input
+        ref={inputRef}
+        value={value ?? ''}
+        onChange={(e) => onAccept?.(e.target.value)}
+        {...rest}
+      />
+    );
+  },
+}));
 
 function openPasswordForm() {
   render(<ProfileSettingsSection />);
@@ -77,11 +119,27 @@ describe('ProfileSettingsSection profile actions', () => {
   beforeEach(() => {
     vi.mocked(authApi.changePassword).mockReset();
     vi.mocked(authApi.requestEmailConfirm).mockReset();
+    vi.mocked(authApi.requestEmailChange).mockReset();
+    vi.mocked(authApi.requestPhoneOtp).mockReset();
+    vi.mocked(authApi.linkPhone).mockReset();
     vi.mocked(mediaApi.uploadFile).mockReset();
     updateProfile.mockReset();
     logout.mockReset();
     navigate.mockReset();
+    refreshProfile.mockReset();
+    refreshProfile.mockResolvedValue(undefined);
+    authState.user = { ...DEFAULT_USER };
   });
+
+  function openPhoneLinkForm() {
+    render(<ProfileSettingsSection />);
+    fireEvent.click(screen.getByRole('button', { name: 'common.add' }));
+  }
+
+  function openEmailChangeForm() {
+    render(<ProfileSettingsSection />);
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.email.changeAction' }));
+  }
 
   it('requests email confirmation and shows sent notice', async () => {
     vi.mocked(authApi.requestEmailConfirm).mockResolvedValue(
@@ -95,6 +153,109 @@ describe('ProfileSettingsSection profile actions', () => {
     expect((await screen.findByRole('status')).textContent).toBe(
       'profile.settings.email.sent',
     );
+  });
+
+  it('requests an email change for a valid new address and shows the confirmation notice', async () => {
+    vi.mocked(authApi.requestEmailChange).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof authApi.requestEmailChange>>,
+    );
+    openEmailChangeForm();
+
+    fireEvent.change(screen.getByLabelText('profile.settings.email.changeLabel'), {
+      target: { value: 'new@example.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.email.changeSubmit' }));
+
+    await waitFor(() =>
+      expect(authApi.requestEmailChange).toHaveBeenCalledWith('new@example.com'),
+    );
+    expect((await screen.findByRole('status')).textContent).toBe(
+      'profile.settings.email.changeSent',
+    );
+    // Форма закрывается после успешной отправки.
+    expect(screen.queryByLabelText('profile.settings.email.changeLabel')).toBeNull();
+  });
+
+  it('rejects an invalid new email before calling the backend', () => {
+    openEmailChangeForm();
+
+    fireEvent.change(screen.getByLabelText('profile.settings.email.changeLabel'), {
+      target: { value: 'not-an-email' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.email.changeSubmit' }));
+
+    expect(screen.getByText('profile.settings.email.changeInvalid')).toBeTruthy();
+    expect(authApi.requestEmailChange).not.toHaveBeenCalled();
+  });
+
+  it('shows a clear message when the new email is already taken (409)', async () => {
+    vi.mocked(authApi.requestEmailChange).mockRejectedValue({
+      response: { status: 409 },
+    });
+    openEmailChangeForm();
+
+    fireEvent.change(screen.getByLabelText('profile.settings.email.changeLabel'), {
+      target: { value: 'taken@example.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.email.changeSubmit' }));
+
+    expect(await screen.findByText('profile.settings.email.changeTaken')).toBeTruthy();
+  });
+
+  it('cancels the email change form without calling the backend', () => {
+    openEmailChangeForm();
+
+    fireEvent.change(screen.getByLabelText('profile.settings.email.changeLabel'), {
+      target: { value: 'new@example.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
+
+    expect(screen.queryByLabelText('profile.settings.email.changeLabel')).toBeNull();
+    expect(authApi.requestEmailChange).not.toHaveBeenCalled();
+  });
+
+  it('hides the synthetic placeholder email and offers an add-email CTA', () => {
+    authState.user = {
+      ...DEFAULT_USER,
+      email: 'phone_998901234567@topdim.uz',
+      emailPlaceholder: true,
+    };
+    render(<ProfileSettingsSection />);
+
+    expect(screen.getByText('profile.emailNotAdded')).toBeTruthy();
+    expect(screen.queryByText('phone_998901234567@topdim.uz')).toBeNull();
+    expect(screen.getByRole('button', { name: 'profile.addEmail' })).toBeTruthy();
+    // Синтетический адрес не должен иметь ни verify/change actions, ни badge.
+    expect(screen.queryByRole('button', { name: 'profile.settings.email.confirm' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'profile.settings.email.changeAction' }),
+    ).toBeNull();
+  });
+
+  it('opens the existing email-change flow from the add-email CTA', () => {
+    authState.user = {
+      ...DEFAULT_USER,
+      email: 'phone_998901234567@topdim.uz',
+      emailPlaceholder: true,
+    };
+    render(<ProfileSettingsSection />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'profile.addEmail' }));
+
+    expect(screen.getByLabelText('profile.settings.email.changeLabel')).toBeTruthy();
+  });
+
+  it('shows the real email address when it is not a placeholder', () => {
+    authState.user = {
+      ...DEFAULT_USER,
+      email: 'real@example.com',
+      emailPlaceholder: false,
+    };
+    render(<ProfileSettingsSection />);
+
+    expect(screen.getByText('real@example.com')).toBeTruthy();
+    expect(screen.queryByText('profile.emailNotAdded')).toBeNull();
+    expect(screen.getByRole('button', { name: 'profile.settings.email.changeAction' })).toBeTruthy();
   });
 
   it('rejects non-image avatar before upload', () => {
@@ -154,17 +315,114 @@ describe('ProfileSettingsSection profile actions', () => {
     expect(screen.queryByText('profile.settings.avatar.success')).toBeNull();
   });
 
-  it('does not submit a phone outside the canonical Uzbekistan format', () => {
-    render(<ProfileSettingsSection />);
+  it('keeps the send-code button disabled for a phone outside the canonical Uzbekistan format', () => {
+    openPhoneLinkForm();
 
-    fireEvent.click(screen.getByRole('button', { name: 'common.add' }));
-    fireEvent.change(screen.getByPlaceholderText('+998 90 123 45 67'), {
+    const sendButton = screen.getByRole('button', {
+      name: 'profile.settings.phoneOtp.sendCode',
+    }) as HTMLButtonElement;
+    expect(sendButton.disabled).toBe(true);
+
+    fireEvent.change(screen.getByLabelText('profile.settings.phoneOtp.label'), {
       target: { value: '+998abcdefgh' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
 
-    expect(screen.getByText('profile.settings.validation.phoneMin')).toBeTruthy();
+    expect(sendButton.disabled).toBe(true);
+    expect(authApi.requestPhoneOtp).not.toHaveBeenCalled();
+  });
+
+  it('requests an OTP for a valid phone and moves to the code screen', async () => {
+    vi.mocked(authApi.requestPhoneOtp).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof authApi.requestPhoneOtp>>,
+    );
+    openPhoneLinkForm();
+
+    fireEvent.change(screen.getByLabelText('profile.settings.phoneOtp.label'), {
+      target: { value: '+998901234567' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.phoneOtp.sendCode' }));
+
+    await waitFor(() => expect(authApi.requestPhoneOtp).toHaveBeenCalledWith('+998901234567'));
+    expect(await screen.findByLabelText('profile.settings.phoneOtp.codeLabel')).toBeTruthy();
+    expect(screen.getByText('profile.settings.phoneOtp.codeSent')).toBeTruthy();
+    expect(authApi.linkPhone).not.toHaveBeenCalled();
+  });
+
+  it('links the phone with the OTP code, refreshes the profile and shows a success notice', async () => {
+    vi.mocked(authApi.requestPhoneOtp).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof authApi.requestPhoneOtp>>,
+    );
+    vi.mocked(authApi.linkPhone).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof authApi.linkPhone>>,
+    );
+    openPhoneLinkForm();
+
+    fireEvent.change(screen.getByLabelText('profile.settings.phoneOtp.label'), {
+      target: { value: '+998901234567' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.phoneOtp.sendCode' }));
+    await waitFor(() => expect(authApi.requestPhoneOtp).toHaveBeenCalledOnce());
+
+    fireEvent.change(await screen.findByLabelText('profile.settings.phoneOtp.codeLabel'), {
+      target: { value: '123456' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.phoneOtp.confirm' }));
+
+    await waitFor(() =>
+      expect(authApi.linkPhone).toHaveBeenCalledWith({ phone: '+998901234567', code: '123456' }),
+    );
+    await waitFor(() => expect(refreshProfile).toHaveBeenCalledOnce());
+    expect((await screen.findByRole('status')).textContent).toBe(
+      'profile.settings.phoneOtp.success',
+    );
+    // Форма закрывается после успешной привязки.
+    expect(screen.queryByLabelText('profile.settings.phoneOtp.codeLabel')).toBeNull();
+    // Привязка идёт через authApi.linkPhone (OTP), а не через legacy updateProfile({phone}).
     expect(updateProfile).not.toHaveBeenCalled();
+  });
+
+  it('shows a clear message when the phone is already linked to another account (409)', async () => {
+    vi.mocked(authApi.requestPhoneOtp).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof authApi.requestPhoneOtp>>,
+    );
+    vi.mocked(authApi.linkPhone).mockRejectedValue({ response: { status: 409 } });
+    openPhoneLinkForm();
+
+    fireEvent.change(screen.getByLabelText('profile.settings.phoneOtp.label'), {
+      target: { value: '+998901234567' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.phoneOtp.sendCode' }));
+    await waitFor(() => expect(authApi.requestPhoneOtp).toHaveBeenCalledOnce());
+
+    fireEvent.change(await screen.findByLabelText('profile.settings.phoneOtp.codeLabel'), {
+      target: { value: '123456' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.phoneOtp.confirm' }));
+
+    expect(await screen.findByText('profile.settings.phoneOtp.taken')).toBeTruthy();
+    expect(refreshProfile).not.toHaveBeenCalled();
+  });
+
+  it('shows a clear message for an invalid/expired code (401)', async () => {
+    vi.mocked(authApi.requestPhoneOtp).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof authApi.requestPhoneOtp>>,
+    );
+    vi.mocked(authApi.linkPhone).mockRejectedValue({ response: { status: 401 } });
+    openPhoneLinkForm();
+
+    fireEvent.change(screen.getByLabelText('profile.settings.phoneOtp.label'), {
+      target: { value: '+998901234567' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.phoneOtp.sendCode' }));
+    await waitFor(() => expect(authApi.requestPhoneOtp).toHaveBeenCalledOnce());
+
+    fireEvent.change(await screen.findByLabelText('profile.settings.phoneOtp.codeLabel'), {
+      target: { value: '000000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'profile.settings.phoneOtp.confirm' }));
+
+    expect(await screen.findByText('profile.settings.phoneOtp.invalidCode')).toBeTruthy();
+    expect(refreshProfile).not.toHaveBeenCalled();
   });
 
   it('submits an empty trimmed last name so the backend can clear it', async () => {

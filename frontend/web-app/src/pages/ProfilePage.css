@@ -302,7 +302,6 @@
 }
 
 /* ── Пустые состояния ── */
-.profile-guest,
 .profile-empty {
   display: flex;
   flex-direction: column;
@@ -312,12 +311,10 @@
   text-align: center;
 }
 
-.profile-guest h2,
 .profile-empty h3 {
   margin: 8px 0 0;
 }
 
-.profile-guest p,
 .profile-empty p {
   margin: 0 0 12px;
   color: var(--ink-2);

@@ -53,6 +53,12 @@ export interface UserDto {
   avatarUrl?: string;
   emailVerified?: boolean;
   phoneVerified?: boolean;
+  /**
+   * true — на бэкенде за аккаунтом закреплён синтетический адрес
+   * (phone_…@topdim.uz), выданный при входе по телефону/Telegram.
+   * UI должен скрывать его и предлагать добавить настоящую почту.
+   */
+  emailPlaceholder?: boolean;
 }
 
 export interface UserProfileResponse extends UserDto {
@@ -72,7 +78,6 @@ export interface AuthResponse {
 export interface UpdateProfileRequest {
   firstName?: string;
   lastName?: string;
-  phone?: string;
   avatarUrl?: string;
 }
 
@@ -109,14 +114,6 @@ export const authApi = {
     ),
 
   // M4: POST без body — refreshToken приходит из httpOnly cookie
-  refresh: () =>
-    apiClient.post<ApiResponse<AuthResponse>>(
-      '/api/v1/auth/refresh',
-      undefined,
-      authRequestConfig(),
-    ),
-
-  // M4: POST без body — refreshToken приходит из httpOnly cookie
   logout: (context?: LogoutRequestContext) => {
     const config: SessionAxiosRequestConfig = {
       ...authRequestConfig(context),
@@ -137,13 +134,6 @@ export const authApi = {
     );
   },
 
-  guestAuth: (data: { phone: string; name: string }) =>
-    apiClient.post<ApiResponse<AuthResponse>>(
-      '/api/v1/auth/guest',
-      data,
-      authRequestConfig(),
-    ),
-
   telegramAuth: (
     data: TelegramAuthPayload,
     context?: AuthenticationRequestContext,
@@ -153,6 +143,47 @@ export const authApi = {
       data,
       authRequestConfig(context),
     ),
+
+  /** idToken — ID-token, полученный от Google Identity Services (GIS) на клиенте. */
+  googleAuth: (
+    idToken: string,
+    context?: AuthenticationRequestContext,
+  ) =>
+    apiClient.post<ApiResponse<AuthResponse>>(
+      '/api/v1/auth/google',
+      { idToken },
+      authRequestConfig(context),
+    ),
+
+  /** Всегда 202 — бэкенд не раскрывает, существует ли номер (anti-enumeration). */
+  requestPhoneOtp: (phone: string) =>
+    apiClient.post<ApiResponse<void>>(
+      '/api/v1/auth/phone/request',
+      { phone },
+      authRequestConfig(),
+    ),
+
+  confirmPhoneOtp: (
+    data: { phone: string; code: string },
+    context?: AuthenticationRequestContext,
+  ) =>
+    apiClient.post<ApiResponse<AuthResponse>>(
+      '/api/v1/auth/phone/confirm',
+      data,
+      authRequestConfig(context),
+    ),
+
+  /**
+   * Привязка телефона к текущему (авторизованному) аккаунту (T8b, backend T8a).
+   * Заменяет легаси-смену телефона через PUT /users/me (была в обход OTP-подтверждения).
+   * Authenticated — БЕЗ authRequestConfig, как changePassword/requestEmailChange, чтобы
+   * при истёкшем access-токене сработал silent-refresh интерцептора apiClient.
+   * Неверный код → 401, номер занят другим аккаунтом → 409.
+   * Отвечает 200 без тела — после успеха обязательно перечитать профиль (refreshProfile()),
+   * иначе UI покажет устаревшие phone/phoneVerified.
+   */
+  linkPhone: (data: { phone: string; code: string }) =>
+    apiClient.post<ApiResponse<void>>('/api/v1/auth/phone/link', data),
 
   /** Всегда 202 — бэкенд не раскрывает, зарегистрирован ли email. */
   requestPasswordReset: (email: string) =>
@@ -174,6 +205,14 @@ export const authApi = {
 
   confirmEmail: (token: string) =>
     apiClient.post<ApiResponse<void>>('/api/v1/auth/confirm/email', { token }),
+
+  /** Authenticated: письмо со ссылкой подтверждения уходит на newEmail (доказательство владения). */
+  requestEmailChange: (newEmail: string) =>
+    apiClient.post<ApiResponse<void>>('/api/v1/auth/email-change/request', { newEmail }),
+
+  /** Публичный — переход по ссылке из письма на новый адрес. Занят → 409, битый/просроченный токен → 401. */
+  confirmEmailChange: (token: string) =>
+    apiClient.post<ApiResponse<void>>('/api/v1/auth/email-change/confirm', { token }),
 
   getMe: () =>
     apiClient.get<ApiResponse<UserProfileResponse>>('/api/v1/users/me'),

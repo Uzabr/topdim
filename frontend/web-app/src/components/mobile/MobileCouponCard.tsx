@@ -7,6 +7,7 @@ import type { CouponOffer } from '../../api/coupons';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { calcDiscount } from '../../utils/format';
+import { srcAt } from '../../utils/imageUrl';
 import './MobileCouponCard.css';
 
 interface MobileCouponCardProps {
@@ -47,7 +48,7 @@ export default function MobileCouponCard({ coupon, variant }: MobileCouponCardPr
       {...(variant === 'grid' ? { 'data-lens': '' } : {})}
     >
       <span className="mcard__photo">
-        {coupon.coverImageUrl && <img src={coupon.coverImageUrl} alt="" loading="lazy" />}
+        {coupon.coverImageUrl && <img src={srcAt(coupon.coverImageUrl, 640)} alt="" loading="lazy" />}
       </span>
 
       <button

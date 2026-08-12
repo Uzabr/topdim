@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Pre-push: не даём случайно запушить напрямую в `main`.
+# В main — только через Pull Request (иначе работа обходит CI-гейт и Claude-ревью,
+# которые запускаются лишь на pull_request).
+#
+# Enable once per clone:
+#   git config core.hooksPath .githooks
+#
+# Bypass in a true emergency:  git push --no-verify
+
+protected="main"
+
+# git подаёт на stdin по строке на каждый пушимый ref:
+#   <local ref> <local sha> <remote ref> <remote sha>
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/$protected" ]; then
+    echo ""
+    echo "⛔  Прямой push в '$protected' заблокирован (pre-push hook)."
+    echo "    В main — только через Pull Request."
+    echo ""
+    echo "    Как надо:"
+    echo "      git switch -c feat/<название>"
+    echo "      git push -u origin feat/<название>"
+    echo "      gh pr create --base main"
+    echo ""
+    echo "    Осознанный прямой push (редко): git push --no-verify"
+    echo ""
+    exit 1
+  fi
+done
+
+exit 0

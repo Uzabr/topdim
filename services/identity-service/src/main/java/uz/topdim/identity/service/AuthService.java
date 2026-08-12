@@ -16,6 +16,7 @@ import uz.topdim.identity.repository.UserRepository;
 import uz.topdim.identity.security.GoogleTokenVerifier;
 import uz.topdim.identity.security.JwtService;
 import uz.topdim.identity.security.TelegramLoginVerifier;
+import uz.topdim.identity.util.EmailPlaceholders;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -309,7 +310,8 @@ public class AuthService {
         GoogleIdentity identity = googleTokenVerifier.verify(idToken);
 
         User user = accountResolutionService.resolveByGoogle(
-                identity.sub(), identity.email(), identity.emailVerified());
+                identity.sub(), identity.email(), identity.emailVerified(),
+                identity.firstName(), identity.lastName());
 
         if (!user.isEnabled() || user.isDeleted()) {
             throw new AuthException("Аккаунт недоступен");
@@ -320,6 +322,27 @@ public class AuthService {
         log.info("SECURITY: Google auth for userId: {}", user.getId());
 
         return buildAuthResponse(user);
+    }
+
+    /**
+     * Привязка номера телефона к текущему (залогиненному) аккаунту (T8a).
+     * OTP доказывает владение номером ({@link OtpService#verifyOtp}), сама привязка —
+     * {@link AccountResolutionService#linkPhone(User, String)} («занят другим» →
+     * {@link IllegalStateException} → 409 через {@code GlobalExceptionHandler}, без слияния).
+     * Заменяет легаси-смену телефона через {@code UserService#updateProfile} (была в обход OTP).
+     */
+    @Transactional
+    public void linkPhone(Long userId, String phone, String code) {
+        if (!otpService.verifyOtp(phone, code)) {
+            throw new AuthException("Неверный или просроченный код");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthException("Пользователь не найден"));
+
+        accountResolutionService.linkPhone(user, phone);
+
+        log.info("SECURITY: Phone linked for userId: {}", userId);
     }
 
     private static String nonBlankOr(String value, String fallback) {
@@ -343,7 +366,9 @@ public class AuthService {
                 .user(AuthResponse.UserDto.builder()
                         .id(user.getId())
                         .email(user.getEmail())
+                        .emailPlaceholder(EmailPlaceholders.isPlaceholder(user.getEmail(), user.isEmailVerified()))
                         .phone(user.getPhone())
+                        .phoneVerified(user.isPhoneVerified())
                         .firstName(user.getFirstName())
                         .lastName(user.getLastName())
                         .role(user.getRole().name())

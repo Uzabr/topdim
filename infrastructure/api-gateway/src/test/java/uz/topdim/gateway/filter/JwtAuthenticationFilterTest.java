@@ -324,6 +324,53 @@ class JwtAuthenticationFilterTest {
         verify(gatewayFilterChain).filter(any());
     }
 
+    // ==================== T7a: email-change — новый open endpoint (confirm), request требует JWT ====================
+
+    @Test
+    @DisplayName("T7a: /api/v1/auth/email-change/confirm без токена — open endpoint (токен сам аутентифицирует)")
+    void emailChangeConfirm_isOpen() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/auth/email-change/confirm").build()
+        );
+
+        when(gatewayFilterChain.filter(any())).thenReturn(Mono.empty());
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        verify(gatewayFilterChain).filter(any());
+    }
+
+    @Test
+    @DisplayName("T7a: /api/v1/auth/email-change/request без токена — требует JWT (НЕ open endpoint)")
+    void emailChangeRequest_requiresAuth() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/auth/email-change/request").build()
+        );
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(gatewayFilterChain, never()).filter(any());
+    }
+
+    // ==================== T8a: phone/link — привязка телефона, требует JWT ====================
+
+    @Test
+    @DisplayName("T8a: /api/v1/auth/phone/link без токена — требует JWT (НЕ open endpoint)")
+    void phoneLink_requiresAuth() {
+        ReflectionTestUtils.setField(jwtAuthenticationFilter, "jwtSecret", SECRET);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/auth/phone/link").build()
+        );
+
+        jwtAuthenticationFilter.filter(exchange, gatewayFilterChain).block();
+
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(gatewayFilterChain, never()).filter(any());
+    }
+
     private String createToken(String subject, String role, String email, String jti, long securityVersion) {
         SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET));
         return Jwts.builder()

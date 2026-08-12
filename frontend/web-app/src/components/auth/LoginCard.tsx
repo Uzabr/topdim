@@ -9,16 +9,35 @@ import type { TelegramAuthPayload } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 import { STRONG_PASSWORD_PATTERN } from '../../utils/password';
 import TelegramLoginButton from './TelegramLoginButton';
+import GoogleLoginButton from './GoogleLoginButton';
 import './LoginCard.css';
 
 /** Username бота покупателей (@BotFather). Публичное значение. */
 const TELEGRAM_BOT_USERNAME = 'sizbiz_uz_bot';
 
-type Mode = 'login' | 'register' | 'resetRequest' | 'resetConfirm';
+/**
+ * OAuth client_id для Google Identity Services — публичное значение,
+ * пробрасывается на билде через build-arg VITE_GOOGLE_CLIENT_ID
+ * (см. docker/frontend/Dockerfile, docker-compose.prod.yml). Пусто на
+ * dev-сборках без конфигурации — кнопка Google в этом случае деградирует
+ * до заглушки «скоро» (см. ниже), а не падает.
+ */
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
+type Mode = 'login' | 'register' | 'resetRequest' | 'resetConfirm' | 'phoneRequest' | 'phoneConfirm';
+
+/** Тот же формат, что и в регистрации: маска "+{998} 00 000-00-00" → +998XXXXXXXXX. */
+const PHONE_PATTERN = /^\+998\d{9}$/;
 
 interface LoginCardProps {
   /** Вызывается после успешного входа/регистрации. */
   onSuccess: () => void;
+  /**
+   * Начальный режим карточки. Используется deep-link'ом /register (T9), чтобы
+   * сразу открыть форму регистрации, а не «вход в один тап». По умолчанию —
+   * обычный вход.
+   */
+  initialMode?: Mode;
 }
 
 /** Сообщение об ошибке от бэкенда: поля лежат в data, общий текст — в message. */
@@ -31,16 +50,27 @@ function serverMessage(err: unknown, fallback: string): string {
 /**
  * «Вход за один тап» — референс: design_handoff_sizbiz/«Главная - образец.dc.html».
  *
- * Telegram, «по номеру телефона» и Google в бэкенде отсутствуют (или небезопасны:
- * /auth/guest выдаёт токен по одному номеру, без SMS-кода), поэтому они помечены
- * как «скоро» и не отправляют запросов. Рабочий путь — почта и пароль.
+ * Telegram, Google (GIS) и «по номеру телефона» (SMS-OTP) — реальные, рабочие
+ * пути входа. Google деградирует до заглушки «скоро», если на билде не задан
+ * VITE_GOOGLE_CLIENT_ID (см. GOOGLE_CLIENT_ID выше).
+ * Заметка про /auth/guest остаётся в силе: он выдаёт токен по одному номеру без
+ * SMS-кода, поэтому для входа не используется — только request/confirm с кодом.
  */
-export default function LoginCard({ onSuccess }: LoginCardProps) {
+export default function LoginCard({ onSuccess, initialMode = 'login' }: LoginCardProps) {
   const { t } = useTranslation();
-  const { login, telegramLogin, register: registerUser, isLoading } = useAuthStore();
+  const {
+    login,
+    telegramLogin,
+    googleLogin,
+    phoneLogin,
+    register: registerUser,
+    isLoading,
+  } = useAuthStore();
 
-  const [mode, setMode] = useState<Mode>('login');
-  const [emailOpen, setEmailOpen] = useState(false);
+  const [mode, setMode] = useState<Mode>(initialMode);
+  // Регистрация/вход показываются внутри email-формы — если карточка открыта
+  // сразу в режиме регистрации (/register), форма должна быть видна сразу.
+  const [emailOpen, setEmailOpen] = useState(initialMode === 'register');
   const [serverError, setServerError] = useState('');
   const [notice, setNotice] = useState('');
   const [soon, setSoon] = useState('');
@@ -49,6 +79,10 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
   const [resetToken, setResetToken] = useState('');
   const [resetPassword, setResetPassword] = useState('');
   const [resetBusy, setResetBusy] = useState(false);
+
+  const [phone, setPhone] = useState('');
+  const [phoneCode, setPhoneCode] = useState('');
+  const [phoneBusy, setPhoneBusy] = useState(false);
 
   const loginSchema = useMemo(
     () =>
@@ -148,6 +182,17 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
     }
   };
 
+  const handleGoogleAuth = async (idToken: string) => {
+    setServerError('');
+    setSoon('');
+    try {
+      const authenticated = await googleLogin(idToken);
+      if (authenticated) onSuccess();
+    } catch (err) {
+      setServerError(serverMessage(err, t('login.serverError')));
+    }
+  };
+
   const requestReset = async () => {
     setServerError('');
     setResetBusy(true);
@@ -178,6 +223,37 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
       setServerError(serverMessage(err, t('login.serverError')));
     } finally {
       setResetBusy(false);
+    }
+  };
+
+  const requestPhoneOtp = async () => {
+    setServerError('');
+    if (!PHONE_PATTERN.test(phone)) {
+      setServerError(t('login.phoneInvalid'));
+      return;
+    }
+    setPhoneBusy(true);
+    try {
+      await authApi.requestPhoneOtp(phone);
+      setNotice(t('login.phoneCodeSent'));
+      setMode('phoneConfirm');
+    } catch (err) {
+      setServerError(serverMessage(err, t('login.serverError')));
+    } finally {
+      setPhoneBusy(false);
+    }
+  };
+
+  const confirmPhoneOtp = async () => {
+    setServerError('');
+    setPhoneBusy(true);
+    try {
+      const authenticated = await phoneLogin(phone, phoneCode.trim());
+      if (authenticated) onSuccess();
+    } catch (err) {
+      setServerError(serverMessage(err, t('login.codeInvalid')));
+    } finally {
+      setPhoneBusy(false);
     }
   };
 
@@ -245,6 +321,75 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
     );
   }
 
+  // ── Вход по номеру телефона (SMS-код): отдельные экраны той же карточки ──
+  if (mode === 'phoneRequest' || mode === 'phoneConfirm') {
+    const request = mode === 'phoneRequest';
+    return (
+      <div className="lcard">
+        <h2 className="lcard__title">
+          {request ? t('login.phoneEnterTitle') : t('login.phoneCodeTitle')}
+        </h2>
+
+        <div className="lcard__form">
+          {request ? (
+            <IMaskInput
+              className="lcard__input"
+              mask="+{998} 00 000-00-00"
+              autoFocus
+              placeholder={t('login.phoneNumberLabel')}
+              value={phone}
+              onAccept={(val) => setPhone(val.replace(/\s|-/g, ''))}
+            />
+          ) : (
+            <input
+              className="lcard__input"
+              autoFocus
+              inputMode="numeric"
+              maxLength={6}
+              placeholder={t('login.phoneCodeLabel')}
+              value={phoneCode}
+              onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            />
+          )}
+
+          {notice && <p className="lcard__notice">{notice}</p>}
+          {serverError && <p className="lcard__error">{serverError}</p>}
+
+          <button
+            type="button"
+            className="lcard__submit"
+            disabled={
+              phoneBusy
+              || (request ? !PHONE_PATTERN.test(phone) : phoneCode.trim().length !== 6)
+            }
+            onClick={request ? requestPhoneOtp : confirmPhoneOtp}
+          >
+            {phoneBusy
+              ? t('common.loading')
+              : request
+                ? t('login.phoneSend')
+                : t('login.submitLogin')}
+          </button>
+
+          {!request && (
+            <button
+              type="button"
+              className="lcard__link"
+              disabled={phoneBusy}
+              onClick={requestPhoneOtp}
+            >
+              {t('login.phoneResend')}
+            </button>
+          )}
+
+          <button type="button" className="lcard__link" onClick={() => switchMode('login')}>
+            {t('common.back')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="lcard">
       <h2 className="lcard__title">{t('login.oneTapTitle')}</h2>
@@ -255,16 +400,17 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
         <TelegramLoginButton botUsername={TELEGRAM_BOT_USERNAME} onAuth={handleTelegramAuth} />
       </div>
 
-      {/* Вход по номеру: на бэкенде есть /auth/guest, но он выдаёт токен без SMS-кода —
-          подключать нельзя, иначе чужой номер = чужие купоны. */}
+      {/* Вход по номеру телефона: SMS-OTP (request/confirm) — не /auth/guest,
+          он выдаёт токен без SMS-кода, поэтому для входа не используется. */}
       <button
         type="button"
         className="lcard__outline"
-        onClick={() => showSoon(t('login.viaPhone'))}
-        aria-disabled="true"
+        onClick={() => {
+          setSoon('');
+          switchMode('phoneRequest');
+        }}
       >
         {t('login.viaPhone')}
-        <span className="lcard__soon-tag">{t('common.soon')}</span>
       </button>
 
       <div className="lcard__divider">
@@ -272,16 +418,20 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
       </div>
 
       <div className="lcard__providers">
-        <button
-          type="button"
-          className="lcard__provider"
-          onClick={() => showSoon('Google')}
-          aria-disabled="true"
-        >
-          <span className="lcard__g-mark">G</span>
-          Google
-          <span className="lcard__soon-tag">{t('common.soon')}</span>
-        </button>
+        {GOOGLE_CLIENT_ID ? (
+          <GoogleLoginButton clientId={GOOGLE_CLIENT_ID} onAuth={handleGoogleAuth} />
+        ) : (
+          <button
+            type="button"
+            className="lcard__provider"
+            onClick={() => showSoon('Google')}
+            aria-disabled="true"
+          >
+            <span className="lcard__g-mark">G</span>
+            Google
+            <span className="lcard__soon-tag">{t('common.soon')}</span>
+          </button>
+        )}
 
         <button
           type="button"
@@ -297,6 +447,9 @@ export default function LoginCard({ onSuccess }: LoginCardProps) {
       </div>
 
       {soon && <p className="lcard__notice">{soon}</p>}
+      {/* Ошибка Telegram/Google-входа: emailOpen может быть закрыт (вход в один тап),
+          поэтому показываем её здесь, а не только внутри email-формы ниже. */}
+      {!emailOpen && serverError && <p className="lcard__error">{serverError}</p>}
 
       {emailOpen && (
         <form className="lcard__form" onSubmit={handleSubmit(submit)}>

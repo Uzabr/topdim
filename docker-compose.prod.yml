@@ -1,3 +1,24 @@
+x-backend-env: &backend_env
+  SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+  EUREKA_HOST: discovery-server
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_USERNAME: ${DB_USERNAME}
+  DB_PASSWORD: ${DB_PASSWORD}
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: 5672
+  RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+  JWT_SECRET: ${JWT_SECRET}
+  MAIL_USERNAME: ${MAIL_USERNAME}
+  MAIL_PASSWORD: ${MAIL_PASSWORD}
+  MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+  MAIL_PORT: ${MAIL_PORT:-587}
+  MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
+  MAIL_FROM: ${MAIL_FROM:-noreply@sizbiz.uz}
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -115,22 +136,14 @@ services:
       args:
         MODULE_PATH: services:identity-service
     restart: unless-stopped
-    environment: &backend_env
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      EUREKA_HOST: discovery-server
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
+    environment:
+      <<: *backend_env
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      ESKIZ_ENABLED: ${ESKIZ_ENABLED}
+      ESKIZ_EMAIL: ${ESKIZ_EMAIL}
+      ESKIZ_PASSWORD: ${ESKIZ_PASSWORD}
+      ESKIZ_FROM: ${ESKIZ_FROM}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     depends_on: &backend_depends_on
       postgres:
         condition: service_healthy
@@ -256,6 +269,7 @@ services:
         APP_PATH: frontend/web-app
         VITE_API_URL: ${VITE_API_URL}
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     restart: unless-stopped
     ports:
       - "3000:80"

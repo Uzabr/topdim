@@ -35,10 +35,11 @@ public class AdminUserController {
 
     @PatchMapping("/{id}/block")
     public ResponseEntity<ApiResponse<AdminUserResponse>> blockUser(
+            @RequestHeader("X-User-Id") Long actorId,
             @PathVariable Long id,
             @Valid @RequestBody BlockUserRequest request) {
         boolean blocked = request.getBlocked();
-        AdminUserResponse user = userService.blockUser(id, blocked);
+        AdminUserResponse user = userService.blockUser(actorId, id, blocked);
         String message = blocked ? "Пользователь заблокирован" : "Пользователь разблокирован";
         return ResponseEntity.ok(ApiResponse.success(message, user));
     }

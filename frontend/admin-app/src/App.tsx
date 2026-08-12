@@ -99,6 +99,7 @@ function App() {
 
                     <Route path="/users/partner-applications" element={<PartnerApplicationsPage />} />
                     <Route path="/users/list" element={<UsersListPage />} />
+                    <Route path="/system/audit" element={<AuditLogPage />} />
                   </Route>
                 </Route>
               </Route>
@@ -107,7 +108,6 @@ function App() {
               <Route element={<ProtectedRoute allowedRoles={SUPER_ADMIN_ROLES} />}>
                 <Route element={<AdminLayout />}>
                   <Route path="/system/staff" element={<StaffPage />} />
-                  <Route path="/system/audit" element={<AuditLogPage />} />
                 </Route>
               </Route>
 

@@ -46,12 +46,14 @@ export const LoginPage = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        padding: 16,
         background: 'linear-gradient(135deg, #001529 0%, #003a70 100%)',
       }}
     >
       <Card
         style={{
-          width: 420,
+          width: '100%',
+          maxWidth: 420,
           borderRadius: 12,
           boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
         }}

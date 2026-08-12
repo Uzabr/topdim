@@ -125,6 +125,7 @@ jobs:
           build-args: |
             APP_PATH=${{ matrix.app_path }}
             VITE_API_URL=${{ matrix.api_url }}
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 

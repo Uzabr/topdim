@@ -13,6 +13,7 @@ const { authState, clearCart, navigate } = vi.hoisted(() => ({
       id: 1,
       email: 'a@example.com',
       phone: '+998901234567',
+      phoneVerified: true,
       firstName: 'Account A',
       role: 'USER',
     },
@@ -97,6 +98,7 @@ describe.each(variants)('$name checkout session isolation', ({
       id: 1,
       email: 'a@example.com',
       phone: '+998901234567',
+      phoneVerified: true,
       firstName: 'Account A',
       role: 'USER',
     };
@@ -169,6 +171,7 @@ describe.each(variants)('$name checkout session isolation', ({
       id: 2,
       email: 'b@example.com',
       phone: '+998907654321',
+      phoneVerified: true,
       firstName: 'Account B',
       role: 'USER',
     };

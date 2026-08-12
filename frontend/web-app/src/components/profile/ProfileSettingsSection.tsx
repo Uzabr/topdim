@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { IMaskInput } from 'react-imask';
 import { authApi } from '../../api/auth';
 import { mediaApi } from '../../api/media';
 import {
@@ -14,8 +15,13 @@ import UserAvatar from '../ui/UserAvatar';
 import NotificationsSection from './NotificationsSection';
 import './ProfileSettingsSection.css';
 
-type EditableProfileField = 'name' | 'phone';
-type EditingField = EditableProfileField | 'password' | null;
+type EditingField = 'name' | 'phone' | 'password' | 'email' | null;
+
+/** Простая RFC-достаточная проверка формата — строгая валидация всё равно на бэкенде. */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Тот же формат, что и в LoginCard (T4): маска "+{998} 00 000-00-00" → +998XXXXXXXXX. */
+const PHONE_PATTERN = /^\+998\d{9}$/;
 
 interface PasswordErrors {
   currentPassword?: string;
@@ -27,7 +33,7 @@ interface PasswordErrors {
 /** Настройки — строки-карточки (design_handoff_sizbiz → «Профиль», таб «Настройки»). */
 export default function ProfileSettingsSection() {
   const { t, i18n } = useTranslation();
-  const { user, updateProfile, logout } = useAuthStore();
+  const { user, updateProfile, logout, refreshProfile } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -35,6 +41,11 @@ export default function ProfileSettingsSection() {
   const [firstName, setFirstName] = useState(user?.firstName ?? '');
   const [lastName, setLastName] = useState(user?.lastName ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
+  const [phoneCode, setPhoneCode] = useState('');
+  const [phoneOtpStep, setPhoneOtpStep] = useState<'phone' | 'code'>('phone');
+  const [phoneBusy, setPhoneBusy] = useState(false);
+  const [phoneOtpError, setPhoneOtpError] = useState('');
+  const [phoneNotice, setPhoneNotice] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -46,6 +57,10 @@ export default function ProfileSettingsSection() {
   const [emailConfirming, setEmailConfirming] = useState(false);
   const [emailNotice, setEmailNotice] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [emailChangeSubmitting, setEmailChangeSubmitting] = useState(false);
+  const [emailChangeNotice, setEmailChangeNotice] = useState('');
+  const [emailChangeError, setEmailChangeError] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -103,26 +118,63 @@ export default function ProfileSettingsSection() {
     }
   };
 
-  const save = async (field: EditableProfileField) => {
-    setError('');
+  const openEmailChange = () => {
+    setEmailChangeNotice('');
+    setEmailChangeError('');
+    setNewEmail('');
+    setEditing('email');
+  };
 
-    if (field === 'name' && !firstName.trim()) {
-      setError(t('profile.settings.validation.firstNameRequired'));
+  const cancelEmailChange = () => {
+    setNewEmail('');
+    setEmailChangeError('');
+    setEditing(null);
+  };
+
+  const submitEmailChange = async () => {
+    setEmailChangeError('');
+    const trimmed = newEmail.trim();
+    if (!EMAIL_PATTERN.test(trimmed)) {
+      setEmailChangeError(t('profile.settings.email.changeInvalid'));
       return;
     }
-    if (field === 'phone' && !/^\+998\d{9}$/.test(phone.trim())) {
-      setError(t('profile.settings.validation.phoneMin'));
+
+    const sessionGeneration = captureSessionGeneration();
+    setEmailChangeSubmitting(true);
+    setEmailChangeNotice('');
+    try {
+      await authApi.requestEmailChange(trimmed);
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      setEmailChangeNotice(t('profile.settings.email.changeSent'));
+      setNewEmail('');
+      setEditing(null);
+    } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      const e = err as { response?: { status?: number; data?: { message?: string } } };
+      const fallback =
+        e.response?.status === 409
+          ? t('profile.settings.email.changeTaken')
+          : t('profile.settings.email.changeError');
+      setEmailChangeError(e.response?.data?.message || fallback);
+    } finally {
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setEmailChangeSubmitting(false);
+      }
+    }
+  };
+
+  const saveName = async () => {
+    setError('');
+
+    if (!firstName.trim()) {
+      setError(t('profile.settings.validation.firstNameRequired'));
       return;
     }
 
     const sessionGeneration = captureSessionGeneration();
     setSaving(true);
     try {
-      await updateProfile(
-        field === 'name'
-          ? { firstName: firstName.trim(), lastName: lastName.trim() }
-          : { phone: phone.trim() },
-      );
+      await updateProfile({ firstName: firstName.trim(), lastName: lastName.trim() });
       if (!isSessionGenerationCurrent(sessionGeneration)) return;
       setEditing(null);
     } catch (err: unknown) {
@@ -139,13 +191,90 @@ export default function ProfileSettingsSection() {
   const cancel = () => {
     setFirstName(user?.firstName ?? '');
     setLastName(user?.lastName ?? '');
-    setPhone(user?.phone ?? '');
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
     setPasswordErrors({});
     setError('');
     setEditing(null);
+  };
+
+  const openPhoneLink = () => {
+    setPhone(user?.phone ?? '');
+    setPhoneCode('');
+    setPhoneOtpStep('phone');
+    setPhoneOtpError('');
+    setPhoneNotice('');
+    setEditing('phone');
+  };
+
+  const cancelPhoneLink = () => {
+    setPhone(user?.phone ?? '');
+    setPhoneCode('');
+    setPhoneOtpStep('phone');
+    setPhoneOtpError('');
+    setEditing(null);
+  };
+
+  const requestPhoneLinkOtp = async () => {
+    setPhoneOtpError('');
+    const trimmed = phone.trim();
+    if (!PHONE_PATTERN.test(trimmed)) {
+      setPhoneOtpError(t('profile.settings.phoneOtp.invalid'));
+      return;
+    }
+
+    const sessionGeneration = captureSessionGeneration();
+    setPhoneBusy(true);
+    setPhoneNotice('');
+    try {
+      await authApi.requestPhoneOtp(trimmed);
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      setPhoneNotice(t('profile.settings.phoneOtp.codeSent'));
+      setPhoneOtpStep('code');
+    } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      const e = err as { response?: { data?: { message?: string } } };
+      setPhoneOtpError(e.response?.data?.message || t('profile.settings.phoneOtp.requestError'));
+    } finally {
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setPhoneBusy(false);
+      }
+    }
+  };
+
+  /**
+   * Успешный /auth/phone/link отвечает 200 без тела — обязательно перечитываем
+   * профиль (refreshProfile), иначе UI покажет устаревшие phone/phoneVerified.
+   */
+  const submitPhoneLink = async () => {
+    setPhoneOtpError('');
+    const sessionGeneration = captureSessionGeneration();
+    setPhoneBusy(true);
+    try {
+      await authApi.linkPhone({ phone: phone.trim(), code: phoneCode.trim() });
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      await refreshProfile();
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      setPhoneCode('');
+      setPhoneOtpStep('phone');
+      setEditing(null);
+      setPhoneNotice(t('profile.settings.phoneOtp.success'));
+    } catch (err: unknown) {
+      if (!isSessionGenerationCurrent(sessionGeneration)) return;
+      const e = err as { response?: { status?: number; data?: { message?: string } } };
+      const fallback =
+        e.response?.status === 409
+          ? t('profile.settings.phoneOtp.taken')
+          : e.response?.status === 401
+            ? t('profile.settings.phoneOtp.invalidCode')
+            : t('profile.settings.phoneOtp.error');
+      setPhoneOtpError(e.response?.data?.message || fallback);
+    } finally {
+      if (isSessionGenerationCurrent(sessionGeneration)) {
+        setPhoneBusy(false);
+      }
+    }
   };
 
   const savePassword = async () => {
@@ -237,44 +366,108 @@ export default function ProfileSettingsSection() {
       {avatarNotice && <p className="settings__success" role="status">{avatarNotice}</p>}
 
       {/* Email */}
-      <div className="settings__row">
+      <div className="settings__row settings__row--stack">
         <div className="settings__field">
           <p className="settings__label">{t('profile.settings.email.title')}</p>
-          <div className="settings__email-value">
-            <span className="settings__value">{user?.email}</span>
-            <span
-              className={`settings__badge${user?.emailVerified ? ' settings__badge--verified' : ''}`}
-            >
-              {user?.emailVerified
-                ? t('profile.settings.email.verified')
-                : t('profile.settings.email.unverified')}
-            </span>
-          </div>
+          {user?.emailPlaceholder ? (
+            <>
+              <p className="settings__value settings__value--warn">
+                {t('profile.emailNotAdded')}
+              </p>
+              <p className="settings__hint">{t('profile.emailChannelHint')}</p>
+            </>
+          ) : (
+            <div className="settings__email-value">
+              <span className="settings__value">{user?.email}</span>
+              <span
+                className={`settings__badge${user?.emailVerified ? ' settings__badge--verified' : ''}`}
+              >
+                {user?.emailVerified
+                  ? t('profile.settings.email.verified')
+                  : t('profile.settings.email.unverified')}
+              </span>
+            </div>
+          )}
+
+          {editing === 'email' && (
+            <div className="settings__password-form">
+              <label className="settings__password-field">
+                <span>{t('profile.settings.email.changeLabel')}</span>
+                <input
+                  className="settings__input"
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder={t('profile.settings.email.changePlaceholder')}
+                  autoFocus
+                />
+              </label>
+              {emailChangeError && (
+                <small className="settings__field-error" role="alert">
+                  {emailChangeError}
+                </small>
+              )}
+              <div className="settings__edit-actions">
+                <button
+                  type="button"
+                  className="settings__save"
+                  disabled={emailChangeSubmitting}
+                  onClick={submitEmailChange}
+                >
+                  {emailChangeSubmitting
+                    ? t('profile.settings.email.changeSending')
+                    : t('profile.settings.email.changeSubmit')}
+                </button>
+                <button type="button" className="settings__link" onClick={cancelEmailChange}>
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-        {!user?.emailVerified && (
+
+        {editing !== 'email' && (
           <div className="settings__edit-actions">
-            <button
-              type="button"
-              className="settings__btn"
-              disabled={emailConfirming}
-              onClick={requestEmailConfirmation}
-            >
-              {emailConfirming
-                ? t('profile.settings.email.sending')
-                : t('profile.settings.email.confirm')}
-            </button>
-            <button
-              type="button"
-              className="settings__link"
-              onClick={() => navigate(`/${lang}/confirm-email`)}
-            >
-              {t('profile.settings.email.enterCode')}
-            </button>
+            {user?.emailPlaceholder ? (
+              <button type="button" className="settings__btn" onClick={openEmailChange}>
+                {t('profile.addEmail')}
+              </button>
+            ) : (
+              <>
+                {!user?.emailVerified && (
+                  <>
+                    <button
+                      type="button"
+                      className="settings__btn"
+                      disabled={emailConfirming}
+                      onClick={requestEmailConfirmation}
+                    >
+                      {emailConfirming
+                        ? t('profile.settings.email.sending')
+                        : t('profile.settings.email.confirm')}
+                    </button>
+                    <button
+                      type="button"
+                      className="settings__link"
+                      onClick={() => navigate(`/${lang}/confirm-email`)}
+                    >
+                      {t('profile.settings.email.enterCode')}
+                    </button>
+                  </>
+                )}
+                <button type="button" className="settings__link" onClick={openEmailChange}>
+                  {t('profile.settings.email.changeAction')}
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
       {emailError && <p className="settings__error" role="alert">{emailError}</p>}
       {emailNotice && <p className="settings__success" role="status">{emailNotice}</p>}
+      {emailChangeNotice && (
+        <p className="settings__success" role="status">{emailChangeNotice}</p>
+      )}
 
       {/* Имя */}
       <div className="settings__row">
@@ -306,7 +499,7 @@ export default function ProfileSettingsSection() {
 
         {editing === 'name' ? (
           <div className="settings__edit-actions">
-            <button type="button" className="settings__save" disabled={saving} onClick={() => save('name')}>
+            <button type="button" className="settings__save" disabled={saving} onClick={saveName}>
               {saving ? t('profile.settings.saving') : t('common.save')}
             </button>
             <button type="button" className="settings__link" onClick={cancel}>
@@ -320,51 +513,100 @@ export default function ProfileSettingsSection() {
         )}
       </div>
 
-      {/* Телефон */}
-      <div className="settings__row">
+      {error && <p className="settings__error">{error}</p>}
+
+      {/* Телефон — привязка/смена только через OTP (T8b), заменяет легаси PUT /users/me. */}
+      <div className="settings__row settings__row--stack">
         <div className="settings__field">
           <p className="settings__label">{t('profile.settings.phoneLabel')}</p>
 
-          {editing === 'phone' ? (
-            <div className="settings__inputs">
-              <input
-                className="settings__input"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+998 90 123 45 67"
-                maxLength={20}
-                autoFocus
-              />
-            </div>
-          ) : user?.phone ? (
+          {user?.phone ? (
             <p className="settings__value">{user.phone}</p>
           ) : (
             <p className="settings__value settings__value--warn">{t('profile.settings.phoneMissing')}</p>
           )}
+
+          {editing === 'phone' && (
+            <div className="settings__password-form">
+              {phoneOtpStep === 'phone' ? (
+                <label className="settings__password-field">
+                  <span>{t('profile.settings.phoneOtp.label')}</span>
+                  <IMaskInput
+                    className="settings__input"
+                    mask="+{998} 00 000-00-00"
+                    placeholder={t('profile.settings.phoneOtp.placeholder')}
+                    value={phone}
+                    onAccept={(val) => setPhone(val.replace(/\s|-/g, ''))}
+                    autoFocus
+                  />
+                </label>
+              ) : (
+                <label className="settings__password-field">
+                  <span>{t('profile.settings.phoneOtp.codeLabel')}</span>
+                  <input
+                    className="settings__input"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={phoneCode}
+                    onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    autoFocus
+                  />
+                </label>
+              )}
+
+              {phoneOtpError && (
+                <small className="settings__field-error" role="alert">
+                  {phoneOtpError}
+                </small>
+              )}
+
+              <div className="settings__edit-actions">
+                <button
+                  type="button"
+                  className="settings__save"
+                  disabled={
+                    phoneBusy
+                    || (phoneOtpStep === 'phone'
+                      ? !PHONE_PATTERN.test(phone.trim())
+                      : phoneCode.trim().length !== 6)
+                  }
+                  onClick={phoneOtpStep === 'phone' ? requestPhoneLinkOtp : submitPhoneLink}
+                >
+                  {phoneBusy
+                    ? t('profile.settings.saving')
+                    : phoneOtpStep === 'phone'
+                      ? t('profile.settings.phoneOtp.sendCode')
+                      : t('profile.settings.phoneOtp.confirm')}
+                </button>
+                {phoneOtpStep === 'code' && (
+                  <button
+                    type="button"
+                    className="settings__link"
+                    disabled={phoneBusy}
+                    onClick={requestPhoneLinkOtp}
+                  >
+                    {t('profile.settings.phoneOtp.resend')}
+                  </button>
+                )}
+                <button type="button" className="settings__link" onClick={cancelPhoneLink}>
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {editing === 'phone' ? (
-          <div className="settings__edit-actions">
-            <button type="button" className="settings__save" disabled={saving} onClick={() => save('phone')}>
-              {saving ? t('profile.settings.saving') : t('common.save')}
-            </button>
-            <button type="button" className="settings__link" onClick={cancel}>
-              {t('common.cancel')}
-            </button>
-          </div>
-        ) : user?.phone ? (
-          <button type="button" className="settings__link" onClick={() => setEditing('phone')}>
-            {t('common.edit')}
-          </button>
-        ) : (
-          <button type="button" className="settings__btn" onClick={() => setEditing('phone')}>
-            {t('common.add')}
+        {editing !== 'phone' && (
+          <button
+            type="button"
+            className={user?.phone ? 'settings__link' : 'settings__btn'}
+            onClick={openPhoneLink}
+          >
+            {user?.phone ? t('common.edit') : t('common.add')}
           </button>
         )}
       </div>
-
-      {error && <p className="settings__error">{error}</p>}
+      {phoneNotice && <p className="settings__success" role="status">{phoneNotice}</p>}
 
       {/* Пароль */}
       <div className="settings__row settings__row--stack">

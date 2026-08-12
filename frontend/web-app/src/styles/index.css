@@ -41,6 +41,8 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Убирает системную синюю вспышку при тапе (iOS/Android/WebKit) */
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -69,6 +71,28 @@ button {
   border: none;
   background: none;
   cursor: pointer;
+}
+
+/* Кнопки/ссылки-кнопки: без синего выделения текста и иконок при клике.
+   :focus-visible не трогаем — клавиатурный фокус остаётся. */
+button,
+a,
+[role='button'],
+summary {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+[role='button'],
+summary {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button svg,
+a svg,
+[role='button'] svg {
+  pointer-events: none;
 }
 
 img {

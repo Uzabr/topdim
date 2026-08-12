@@ -91,13 +91,30 @@ describe('admin application role access', () => {
     },
   );
 
-  it('keeps system routes exclusive to SUPER_ADMIN', async () => {
+  it('keeps staff management exclusive to SUPER_ADMIN', async () => {
     loginAs('ADMIN');
 
     renderPath('/system/staff');
 
     expect(await screen.findByRole('heading', { name: 'FORBIDDEN_PAGE' })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'STAFF_PAGE' })).toBeNull();
+  });
+
+  it('allows ADMIN to open the action journal', async () => {
+    loginAs('ADMIN');
+
+    renderPath('/system/audit');
+
+    expect(await screen.findByRole('heading', { name: 'AUDIT_PAGE' })).toBeTruthy();
+  });
+
+  it('denies MODERATOR access to the action journal', async () => {
+    loginAs('MODERATOR');
+
+    renderPath('/system/audit');
+
+    expect(await screen.findByRole('heading', { name: 'FORBIDDEN_PAGE' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'AUDIT_PAGE' })).toBeNull();
   });
 
   it('redirects an unauthenticated user to login', async () => {

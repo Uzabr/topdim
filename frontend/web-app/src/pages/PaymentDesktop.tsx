@@ -40,6 +40,7 @@ export default function PaymentDesktop() {
   const lp = useLocalePath();
   const queryClient = useQueryClient();
   const userId = useAuthStore((authState) => authState.user?.id) ?? 0;
+  const emailPlaceholder = useAuthStore((authState) => authState.user?.emailPlaceholder) ?? false;
 
   const [state, setState] = useState<PaymentState>('polling');
   const [payment, setPayment] = useState<PaymentResponse | null>(null);
@@ -402,6 +403,16 @@ export default function PaymentDesktop() {
             <button className="secondary-button" style={{ marginTop: 8 }} onClick={() => navigate(lp('/profile') + '?tab=orders')}>
               {t('payment.orderHistory')}
             </button>
+            {emailPlaceholder && (
+              <button
+                type="button"
+                className="secondary-button"
+                style={{ marginTop: 8 }}
+                onClick={() => navigate(lp('/profile') + '?tab=settings')}
+              >
+                {t('payment.getCouponsByEmail')}
+              </button>
+            )}
           </div>
         )}
 

@@ -1,0 +1,95 @@
+/* Гостевой экран — визуально как empty-state корзины / избранного / профиля. */
+
+.guest-auth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+/* ── Desktop: как .cart__empty / .profile-empty ── */
+.guest-auth--desktop {
+  max-width: 460px;
+  margin: 70px auto 0;
+  padding: 0 var(--space-lg);
+}
+
+.guest-auth--desktop .guest-auth__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--price-old);
+}
+
+.guest-auth--desktop .guest-auth__title {
+  margin: 22px 0 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.guest-auth--desktop .guest-auth__text {
+  margin: 8px 0 0;
+  max-width: 360px;
+  color: var(--ink-2);
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+
+.guest-auth--desktop .primary-button {
+  margin-top: 22px;
+}
+
+/* ── Mobile: как .fmob__empty / .cmcart__empty / .pmob__guest ── */
+.guest-auth--mobile {
+  padding: 90px 30px 0;
+  animation: vFade 0.35s ease both;
+}
+
+.guest-auth--mobile .guest-auth__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--ink-3);
+}
+
+.guest-auth--mobile .guest-auth__title {
+  margin: 18px 0 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.guest-auth--mobile .guest-auth__text {
+  margin: 6px 0 0;
+  max-width: 320px;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.guest-auth__btn {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 13px 28px;
+  border-radius: var(--radius-pill);
+  background: var(--btn);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guest-auth--mobile {
+    animation: none;
+  }
+}

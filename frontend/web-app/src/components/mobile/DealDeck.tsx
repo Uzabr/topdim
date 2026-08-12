@@ -7,7 +7,8 @@ import type { CouponOffer } from '../../api/coupons';
 import { useCountdown } from '../../hooks/useCountdown';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import { couponStock } from '../../utils/couponStock';
-import { calcDiscount, formatDate } from '../../utils/format';
+import { calcDiscount, formatShortDate } from '../../utils/format';
+import { srcAt } from '../../utils/imageUrl';
 import './DealDeck.css';
 
 interface DealDeckProps {
@@ -26,7 +27,9 @@ function DeadlineBadge({ until, className }: { until: string; className: string 
 
   return (
     <span className={className}>
-      {countdown?.isUrgent ? countdown.clock : t('home.hero.endsOn', { date: formatDate(until) })}
+      {countdown?.isUrgent
+        ? countdown.clock
+        : t('home.hero.endsOnShort', { date: formatShortDate(until) })}
     </span>
   );
 }
@@ -55,7 +58,7 @@ export default function DealDeck({ deals }: DealDeckProps) {
         <span className="deck__back deck__back--2" />
 
         <span className="deck__card">
-          {top.coverImageUrl && <img src={top.coverImageUrl} alt="" loading="lazy" />}
+          {top.coverImageUrl && <img src={srcAt(top.coverImageUrl, 700)} alt="" loading="lazy" />}
 
           <span className="deck__tag">{t('home.hero.label')}</span>
           <DeadlineBadge until={top.buyUntil} className="deck__timer" />
@@ -102,7 +105,7 @@ export default function DealDeck({ deals }: DealDeckProps) {
                   <Link to={lp(`/coupons/${deal.id}`)} className="dcard__link" aria-label={deal.title} />
 
                   <div className="dcard__photo">
-                    {deal.coverImageUrl && <img src={deal.coverImageUrl} alt="" loading="lazy" />}
+                    {deal.coverImageUrl && <img src={srcAt(deal.coverImageUrl, 640)} alt="" loading="lazy" />}
                   </div>
 
                   {/* Первый — «купон дня», остальные — просто горящие. */}

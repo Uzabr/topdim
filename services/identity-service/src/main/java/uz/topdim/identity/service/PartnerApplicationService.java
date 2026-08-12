@@ -28,6 +28,7 @@ public class PartnerApplicationService {
     private final PartnerApplicationRepository repository;
     private final CouponMerchantClient couponMerchantClient;
     private final PartnerApplicationApprovalService approvalService;
+    private final AuditLogService auditLogService;
 
     // ==================== Submit ====================
 
@@ -99,7 +100,10 @@ public class PartnerApplicationService {
             throw new IllegalStateException("Merchant onboarding failed");
         }
 
-        return toResponse(approvalService.complete(id, adminId, merchant.getId()));
+        PartnerApplicationResponse response = toResponse(approvalService.complete(id, adminId, merchant.getId()));
+        auditLogService.logAction(adminId, "APPROVE_PARTNER", "partner-applications", id,
+                "Одобрена заявка партнёра #" + id + ", merchantId=" + merchant.getId());
+        return response;
     }
 
     // ==================== Reject ====================
@@ -117,7 +121,10 @@ public class PartnerApplicationService {
         app.setReviewedBy(adminId);
         app.setReviewedAt(LocalDateTime.now());
         app.setRejectionReason(request.getReason().trim());
-        return toResponse(repository.save(app));
+        PartnerApplication saved = repository.save(app);
+        auditLogService.logAction(adminId, "REJECT_PARTNER", "partner-applications", id,
+                "Отклонена заявка партнёра #" + id);
+        return toResponse(saved);
     }
 
     // ==================== Mappers ====================

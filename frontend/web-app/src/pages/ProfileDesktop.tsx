@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Ticket } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { ordersApi } from '../api/orders';
@@ -15,6 +15,7 @@ import { getCouponActions } from '../components/profile/couponActions';
 import ProfileSettingsSection from '../components/profile/ProfileSettingsSection';
 import ProfileHelpSection from '../components/profile/ProfileHelpSection';
 import DropTabs from '../components/ui/DropTabs';
+import GuestAuthPrompt from '../components/auth/GuestAuthPrompt';
 import UserAvatar from '../components/ui/UserAvatar';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { formatDate, formatPrice } from '../utils/format';
@@ -171,12 +172,12 @@ export default function ProfileDesktop() {
   if (!isAuthenticated) {
     return (
       <div className="profile-page container">
-        <div className="profile-guest">
-          <Ticket className="profile-empty-icon" size={48} strokeWidth={1.5} />
-          <h2>{t('profile.greeting')}</h2>
-          <p>{t('profile.guestDesc')}</p>
-          <Link to={lp('/login')} className="primary-button">{t('profile.login')}</Link>
-        </div>
+        <GuestAuthPrompt
+          icon={<Ticket size={48} strokeWidth={1.5} />}
+          title={t('profile.greeting')}
+          description={t('profile.guestDesc')}
+          loginLabel={t('profile.login')}
+        />
       </div>
     );
   }
@@ -193,7 +194,9 @@ export default function ProfileDesktop() {
           />
           <div>
             <h1 className="profile-name">{user?.firstName}</h1>
-            <p className="profile-email">{user?.email}</p>
+            <p className="profile-email">
+              {user?.emailPlaceholder ? t('profile.emailNotAdded') : user?.email}
+            </p>
           </div>
         </div>
         <button type="button" className="profile-logout" onClick={logout}>

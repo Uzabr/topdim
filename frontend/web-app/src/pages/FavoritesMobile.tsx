@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { couponsApi } from '../api/coupons';
+import GuestAuthPrompt from '../components/auth/GuestAuthPrompt';
 import MobileCouponCard from '../components/mobile/MobileCouponCard';
+import { useAuthStore } from '../store/authStore';
 import { useFavoritesStore } from '../store/favoritesStore';
 import { useLocalePath } from '../hooks/useLocalePath';
 import './FavoritesMobile.css';
@@ -13,12 +15,14 @@ export default function FavoritesMobile() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const lp = useLocalePath();
+  const { isAuthenticated } = useAuthStore();
   const { favoriteIds } = useFavoritesStore();
 
   const { data: coupons = [] } = useQuery({
     queryKey: ['coupons-favorites'],
     queryFn: () => couponsApi.getCatalog({ size: 200 }),
     select: (res) => res.data.data.content,
+    enabled: isAuthenticated,
   });
 
   const favorites = coupons.filter((c) => favoriteIds.includes(c.id));
@@ -37,10 +41,18 @@ export default function FavoritesMobile() {
 
         <span className="mbar__title">{t('favorites.title')}</span>
 
-        <span className="fmob__count">{favorites.length || ''}</span>
+        <span className="fmob__count">{isAuthenticated && favorites.length ? favorites.length : ''}</span>
       </div>
 
-      {favorites.length === 0 ? (
+      {!isAuthenticated ? (
+        <GuestAuthPrompt
+          icon={<Heart size={34} strokeWidth={1.6} />}
+          title={t('favorites.guestTitle')}
+          description={t('favorites.guestDesc')}
+          loginLabel={t('favorites.guestLogin')}
+          variant="mobile"
+        />
+      ) : favorites.length === 0 ? (
         <div className="fmob__empty">
           <span className="fmob__empty-icon">
             <Heart size={34} strokeWidth={1.6} />

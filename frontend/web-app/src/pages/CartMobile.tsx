@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronLeft, Minus, Plus, ShoppingCart, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { useLocalePath } from '../hooks/useLocalePath';
 import { formatPrice } from '../utils/format';
@@ -14,6 +15,7 @@ export default function CartMobile() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const lp = useLocalePath();
+  const { isAuthenticated } = useAuthStore();
   const { items, totalItems, totalPrice, removeFromCart, updateQuantity } = useCartStore();
 
   // Старую цену знаем не для всех позиций (backend-корзина её не отдаёт) —
@@ -22,6 +24,14 @@ export default function CartMobile() {
   const saving = oldTotal - totalPrice;
 
   const [leaving, setLeaving] = useState<Record<string, boolean>>({});
+
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      navigate(lp('/login'), { state: { from: lp('/checkout') } });
+      return;
+    }
+    navigate(lp('/checkout'));
+  };
 
   const remove = (key: string) => {
     setLeaving((prev) => ({ ...prev, [key]: true }));
@@ -49,7 +59,7 @@ export default function CartMobile() {
 
         <span className="mbar__title">{t('cart.title')}</span>
 
-        <span className="cmcart__count">{totalItems || ''}</span>
+        <span className="cmcart__count">{totalItems ? totalItems : ''}</span>
       </div>
 
       {items.length === 0 ? (
@@ -145,7 +155,7 @@ export default function CartMobile() {
             <button
               type="button"
               className="cmcart__cta"
-              onClick={() => navigate(lp('/checkout'))}
+              onClick={handleCheckout}
             >
               {t('cart.checkoutShort')}
             </button>

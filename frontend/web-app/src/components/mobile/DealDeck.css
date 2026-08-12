@@ -45,28 +45,38 @@
 .deck__tag {
   position: absolute;
   top: 16px;
-  left: 16px;
-  padding: 6px 13px;
+  left: 12px;
+  z-index: 1;
+  max-width: calc(50% - 8px);
+  padding: 6px 10px;
+  overflow: hidden;
   border-radius: var(--radius-pill);
   background: var(--wasp);
   color: var(--on-wasp);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .deck__timer {
   position: absolute;
   top: 16px;
-  right: 16px;
-  padding: 6px 11px;
+  right: 12px;
+  z-index: 1;
+  max-width: calc(50% - 8px);
+  padding: 6px 9px;
+  overflow: hidden;
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .deck__foot {
@@ -206,12 +216,16 @@
 
 .dcard__tag {
   left: 14px;
-  padding: 5px 12px;
+  max-width: calc(50% - 8px);
+  padding: 5px 10px;
+  overflow: hidden;
   background: var(--wasp);
   color: var(--on-wasp);
   font-size: 10.5px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 /* Не «купон дня», а просто горящие: тёмный полупрозрачный тег, жёлтый текст. */
@@ -222,12 +236,16 @@
 
 .dcard__timer {
   right: 14px;
-  padding: 5px 10px;
+  max-width: calc(50% - 8px);
+  padding: 5px 9px;
+  overflow: hidden;
   background: rgba(9, 9, 9, 0.75);
   color: #ffffff;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dcard__body {
