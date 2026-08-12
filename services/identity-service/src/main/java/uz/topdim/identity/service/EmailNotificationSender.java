@@ -30,17 +30,20 @@ public class EmailNotificationSender implements NotificationSender {
     private final JavaMailSender mailSender;
     private final String fromAddress;
     private final MeterRegistry meterRegistry;
+    private final String frontendUrl;
 
     public EmailNotificationSender(
             JavaMailSender mailSender,
             @Value("${notification.email.from:noreply@sizbiz.uz}") String fromAddress,
             MeterRegistry meterRegistry,
+            @Value("${app.frontend-url:https://sizbiz.uz}") String frontendUrl,
             @Value("${spring.mail.username:}") String mailUsername,
             @Value("${spring.mail.password:}") String mailPassword
     ) {
         this.mailSender = mailSender;
         this.fromAddress = fromAddress;
         this.meterRegistry = meterRegistry;
+        this.frontendUrl = frontendUrl;
         log.info("EmailNotificationSender activated — real emails will be sent from {}", fromAddress);
         if (!StringUtils.hasText(mailUsername) || !StringUtils.hasText(mailPassword)) {
             log.warn("notification.email.enabled=true, но SMTP-креды (MAIL_USERNAME/MAIL_PASSWORD) не заданы " +
@@ -51,18 +54,20 @@ public class EmailNotificationSender implements NotificationSender {
     @Override
     public void sendPasswordResetToken(String target, String token) {
         String subject = "sizbiz — Сброс пароля";
+        String link = frontendUrl + "/ru/reset-password?token=" + token;
         String body = String.format("""
                 Здравствуйте!
-                
+
                 Вы запросили сброс пароля на sizbiz.
-                
-                Ваш код для сброса пароля: %s
-                
-                Код действителен в течение 30 минут.
-                Если вы не запрашивали сброс пароля — проигнорируйте это письмо.
-                
+
+                Чтобы задать новый пароль, перейдите по ссылке:
+                %s
+
+                Ссылка действительна в течение 30 минут.
+                Если вы не запрашивали сброс пароля — просто проигнорируйте это письмо.
+
                 Команда sizbiz
-                """, token);
+                """, link);
 
         sendEmail(target, subject, body, TYPE_RESET);
     }
@@ -70,17 +75,17 @@ public class EmailNotificationSender implements NotificationSender {
     @Override
     public void sendEmailConfirmationToken(String email, String token) {
         String subject = "sizbiz — Подтверждение email";
+        String link = frontendUrl + "/ru/confirm-email?token=" + token;
         String body = String.format("""
                 Здравствуйте!
-                
-                Для подтверждения вашего email на sizbiz используйте код:
-                
+
+                Подтвердите ваш email на sizbiz — перейдите по ссылке:
                 %s
-                
-                Код действителен в течение 60 минут.
-                
+
+                Ссылка действительна в течение 60 минут.
+
                 Команда sizbiz
-                """, token);
+                """, link);
 
         sendEmail(email, subject, body, TYPE_CONFIRM);
     }
@@ -94,18 +99,18 @@ public class EmailNotificationSender implements NotificationSender {
     @Override
     public void sendEmailChangeToken(String newEmail, String token) {
         String subject = "sizbiz — Подтверждение смены email";
+        String link = frontendUrl + "/ru/confirm-email-change?token=" + token;
         String body = String.format("""
                 Здравствуйте!
 
-                Вы запросили смену email на sizbiz. Для подтверждения нового адреса используйте код:
-
+                Вы запросили смену email на sizbiz. Подтвердите новый адрес по ссылке:
                 %s
 
-                Код действителен в течение 60 минут.
-                Если вы не запрашивали смену email — проигнорируйте это письмо.
+                Ссылка действительна в течение 60 минут.
+                Если вы не запрашивали смену email — просто проигнорируйте это письмо.
 
                 Команда sizbiz
-                """, token);
+                """, link);
 
         sendEmail(newEmail, subject, body, TYPE_CHANGE);
     }
