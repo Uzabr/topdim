@@ -214,9 +214,8 @@ function CouponRequestForm({ coupon, couponId, isEditMode }: CouponRequestFormPr
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await api.post('/api/v1/media/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // Do not set Content-Type manually: the browser must add the multipart boundary.
+      const res = await api.post('/api/v1/media/upload', formData);
       const url = res.data?.data?.url || res.data?.url || res.data?.data;
       if (url) {
         setUploadedUrls(prev => [...prev, url]);

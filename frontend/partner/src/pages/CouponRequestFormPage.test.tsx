@@ -140,4 +140,45 @@ describe('CouponRequestFormPage edit mode', () => {
     expect(screen.queryByRole('button', { name: /Сохранить изменения/i })).toBeNull();
     expect(mockedApi.put).not.toHaveBeenCalled();
   });
+
+  it('lets the browser add the multipart boundary when uploading a photo', async () => {
+    mockedApi.post.mockResolvedValue({
+      data: {
+        data: {
+          fileName: 'manicure.jpg',
+          url: '/api/v1/media/manicure.jpg',
+        },
+      },
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <AntApp>
+          <MemoryRouter initialEntries={['/coupons/new']}>
+            <Routes>
+              <Route path="/coupons/new" element={<CouponRequestFormPage />} />
+            </Routes>
+          </MemoryRouter>
+        </AntApp>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole('heading', { name: /Подать купонное предложение/i }))
+      .toBeTruthy();
+    const fileInput = container.querySelector('input[type="file"]');
+    expect(fileInput).toBeTruthy();
+    const file = new File(['photo'], 'manicure.jpg', { type: 'image/jpeg' });
+
+    fireEvent.change(fileInput!, { target: { files: [file] } });
+
+    await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith(
+      '/api/v1/media/upload',
+      expect.any(FormData),
+    ));
+    expect((await screen.findByAltText('Фото 1')).getAttribute('src'))
+      .toBe('/api/v1/media/manicure.jpg');
+  });
 });
