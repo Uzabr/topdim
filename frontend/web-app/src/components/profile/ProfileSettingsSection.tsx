@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { switchLanguage } from '../../i18n';
 import { IMaskInput } from 'react-imask';
 import { authApi } from '../../api/auth';
 import { mediaApi } from '../../api/media';
@@ -327,8 +328,7 @@ export default function ProfileSettingsSection() {
 
   const switchLang = () => {
     const next = lang === 'ru' ? 'uz' : 'ru';
-    i18n.changeLanguage(next);
-    localStorage.setItem('language', next);
+    void switchLanguage(next);
     const pathWithoutLang = location.pathname.replace(/^\/(ru|uz)/, '');
     navigate(`/${next}${pathWithoutLang || '/'}${location.search}`, { replace: true });
   };

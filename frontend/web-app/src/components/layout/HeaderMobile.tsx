@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LayoutGrid, User } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { switchLanguage } from '../../i18n';
 import { useAuthStore } from '../../store/authStore';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import CatalogSheet from '../mobile/CatalogSheet';
@@ -40,8 +41,7 @@ export default function HeaderMobile() {
 
   const switchLang = (next: 'ru' | 'uz') => {
     if (next === lang) return;
-    i18n.changeLanguage(next);
-    localStorage.setItem('language', next);
+    void switchLanguage(next);
     const path = location.pathname.replace(/^\/(ru|uz)/, '');
     navigate(`/${next}${path || '/'}${location.search}`, { replace: true });
   };
