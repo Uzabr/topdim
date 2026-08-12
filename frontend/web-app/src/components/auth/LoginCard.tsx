@@ -24,7 +24,7 @@ const TELEGRAM_BOT_USERNAME = 'sizbiz_uz_bot';
  */
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
-type Mode = 'login' | 'register' | 'resetRequest' | 'resetConfirm' | 'phoneRequest' | 'phoneConfirm';
+type Mode = 'login' | 'register' | 'resetRequest' | 'resetSent' | 'phoneRequest' | 'phoneConfirm';
 
 /** Тот же формат, что и в регистрации: маска "+{998} 00 000-00-00" → +998XXXXXXXXX. */
 const PHONE_PATTERN = /^\+998\d{9}$/;
@@ -76,8 +76,6 @@ export default function LoginCard({ onSuccess, initialMode = 'login' }: LoginCar
   const [soon, setSoon] = useState('');
 
   const [resetEmail, setResetEmail] = useState('');
-  const [resetToken, setResetToken] = useState('');
-  const [resetPassword, setResetPassword] = useState('');
   const [resetBusy, setResetBusy] = useState(false);
 
   const [phone, setPhone] = useState('');
@@ -198,27 +196,7 @@ export default function LoginCard({ onSuccess, initialMode = 'login' }: LoginCar
     setResetBusy(true);
     try {
       await authApi.requestPasswordReset(resetEmail.trim());
-      setNotice(t('login.resetSent'));
-      setMode('resetConfirm');
-    } catch (err) {
-      setServerError(serverMessage(err, t('login.serverError')));
-    } finally {
-      setResetBusy(false);
-    }
-  };
-
-  const confirmReset = async () => {
-    setServerError('');
-    setResetBusy(true);
-    try {
-      await authApi.confirmPasswordReset({
-        token: resetToken.trim(),
-        newPassword: resetPassword,
-        confirmPassword: resetPassword,
-      });
-      setNotice(t('login.resetDone'));
-      setMode('login');
-      setEmailOpen(true);
+      setMode('resetSent');
     } catch (err) {
       setServerError(serverMessage(err, t('login.serverError')));
     } finally {
@@ -257,18 +235,18 @@ export default function LoginCard({ onSuccess, initialMode = 'login' }: LoginCar
     }
   };
 
-  // ── Сброс пароля: отдельные экраны той же карточки ──
-  if (mode === 'resetRequest' || mode === 'resetConfirm') {
-    const request = mode === 'resetRequest';
+  // ── Сброс пароля: запрос ссылки → экран «ссылка отправлена» ──
+  if (mode === 'resetRequest' || mode === 'resetSent') {
+    const sent = mode === 'resetSent';
     return (
       <div className="lcard">
         <h2 className="lcard__title">{t('login.resetTitle')}</h2>
         <p className="lcard__subtitle">
-          {request ? t('login.resetHint') : t('login.resetConfirmHint')}
+          {sent ? t('login.resetSentHint', { email: resetEmail.trim() }) : t('login.resetHint')}
         </p>
 
         <div className="lcard__form">
-          {request ? (
+          {!sent && (
             <input
               className="lcard__input"
               type="email"
@@ -277,41 +255,20 @@ export default function LoginCard({ onSuccess, initialMode = 'login' }: LoginCar
               value={resetEmail}
               onChange={(e) => setResetEmail(e.target.value)}
             />
-          ) : (
-            <>
-              <input
-                className="lcard__input"
-                autoFocus
-                placeholder={t('login.resetToken')}
-                value={resetToken}
-                onChange={(e) => setResetToken(e.target.value)}
-              />
-              <input
-                className="lcard__input"
-                type="password"
-                placeholder={t('login.newPassword')}
-                value={resetPassword}
-                onChange={(e) => setResetPassword(e.target.value)}
-              />
-              <p className="lcard__hint">{t('login.passwordHint')}</p>
-            </>
           )}
 
-          {notice && <p className="lcard__notice">{notice}</p>}
           {serverError && <p className="lcard__error">{serverError}</p>}
 
-          <button
-            type="button"
-            className="lcard__submit"
-            disabled={resetBusy || (request ? !resetEmail.trim() : !resetToken.trim() || !resetPassword)}
-            onClick={request ? requestReset : confirmReset}
-          >
-            {resetBusy
-              ? t('common.loading')
-              : request
-                ? t('login.resetSend')
-                : t('login.resetSave')}
-          </button>
+          {!sent && (
+            <button
+              type="button"
+              className="lcard__submit"
+              disabled={resetBusy || !resetEmail.trim()}
+              onClick={requestReset}
+            >
+              {resetBusy ? t('common.loading') : t('login.resetSend')}
+            </button>
+          )}
 
           <button type="button" className="lcard__link" onClick={() => switchMode('login')}>
             {t('common.back')}
