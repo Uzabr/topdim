@@ -1,6 +1,8 @@
 package uz.topdim.coupon.repository;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -23,6 +25,38 @@ public interface MerchantProfileChangeRequestRepository
     @EntityGraph(attributePaths = "locations")
     @Query("SELECT request FROM MerchantProfileChangeRequest request WHERE request.id = :id")
     Optional<MerchantProfileChangeRequest> findDetailedByIdForUpdate(@Param("id") Long id);
+
+    @EntityGraph(attributePaths = "locations")
+    @Query("""
+            SELECT request FROM MerchantProfileChangeRequest request
+            WHERE request.id = :id AND request.merchant.id = :merchantId
+            """)
+    Optional<MerchantProfileChangeRequest> findDetailedByIdAndMerchantId(
+            @Param("id") Long id,
+            @Param("merchantId") Long merchantId
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @EntityGraph(attributePaths = "locations")
+    @Query("""
+            SELECT request FROM MerchantProfileChangeRequest request
+            WHERE request.id = :id AND request.merchant.id = :merchantId
+            """)
+    Optional<MerchantProfileChangeRequest> findDetailedByIdAndMerchantIdForUpdate(
+            @Param("id") Long id,
+            @Param("merchantId") Long merchantId
+    );
+
+    Page<MerchantProfileChangeRequest> findByMerchantIdOrderByUpdatedAtDesc(
+            Long merchantId,
+            Pageable pageable
+    );
+
+    Page<MerchantProfileChangeRequest> findByMerchantIdAndStatusOrderByUpdatedAtDesc(
+            Long merchantId,
+            MerchantProfileChangeStatus status,
+            Pageable pageable
+    );
 
     long countByMerchantIdAndStatusIn(
             Long merchantId,
