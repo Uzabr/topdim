@@ -191,7 +191,7 @@ class MerchantProfileDraftServiceTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("только черновик");
 
-        verify(requestRepository, never()).delete(any());
+        verify(requestRepository, never()).delete(any(MerchantProfileChangeRequest.class));
     }
 
     private Merchant publishedMerchant() {

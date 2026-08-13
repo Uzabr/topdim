@@ -198,16 +198,19 @@ public class MerchantProfileMapper {
     public MerchantProfileChangeSummary toSummary(MerchantProfileChangeRequest request) {
         return new MerchantProfileChangeSummary(
                 request.getId(),
+                request.getMerchant().getId(),
                 request.getName(),
                 request.getStatus(),
                 request.getBaseProfileVersion(),
                 request.getAuthorUserId(),
                 request.getAuthorStaffId(),
                 request.getAuthorRole(),
+                request.getAssigneeUserId(),
                 request.getModerationComment(),
                 request.getCreatedAt(),
                 request.getUpdatedAt(),
-                request.getSubmittedAt()
+                request.getSubmittedAt(),
+                request.getAssignedAt()
         );
     }
 

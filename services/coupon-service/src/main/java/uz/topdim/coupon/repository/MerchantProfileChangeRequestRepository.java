@@ -6,16 +6,20 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import uz.topdim.coupon.entity.MerchantProfileChangeRequest;
 import uz.topdim.coupon.entity.MerchantProfileChangeStatus;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Optional;
 
 public interface MerchantProfileChangeRequestRepository
-        extends JpaRepository<MerchantProfileChangeRequest, Long> {
+        extends JpaRepository<MerchantProfileChangeRequest, Long>,
+        JpaSpecificationExecutor<MerchantProfileChangeRequest> {
 
     @EntityGraph(attributePaths = "locations")
     @Query("SELECT request FROM MerchantProfileChangeRequest request WHERE request.id = :id")
@@ -61,5 +65,24 @@ public interface MerchantProfileChangeRequestRepository
     long countByMerchantIdAndStatusIn(
             Long merchantId,
             Collection<MerchantProfileChangeStatus> statuses
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE MerchantProfileChangeRequest request
+               SET request.status = :inReview,
+                   request.assigneeUserId = :actorUserId,
+                   request.assignedAt = :assignedAt,
+                   request.updatedAt = :assignedAt,
+                   request.lockVersion = request.lockVersion + 1
+             WHERE request.id = :requestId
+               AND request.status = :pendingReview
+            """)
+    int claimPending(
+            @Param("requestId") Long requestId,
+            @Param("actorUserId") Long actorUserId,
+            @Param("pendingReview") MerchantProfileChangeStatus pendingReview,
+            @Param("inReview") MerchantProfileChangeStatus inReview,
+            @Param("assignedAt") LocalDateTime assignedAt
     );
 }

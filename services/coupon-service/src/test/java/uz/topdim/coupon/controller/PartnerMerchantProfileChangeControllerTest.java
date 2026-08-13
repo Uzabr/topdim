@@ -68,8 +68,8 @@ class PartnerMerchantProfileChangeControllerTest {
     void listUsesOwnedStatusFilterAndBoundedPage() throws Exception {
         when(accessResolver.resolveOwnerOrManager(41L)).thenReturn(ownerAccess);
         MerchantProfileChangeSummary summary = new MerchantProfileChangeSummary(
-                100L, "Draft", MerchantProfileChangeStatus.DRAFT, 4L,
-                41L, null, "OWNER", null, null, null, null
+                100L, 7L, "Draft", MerchantProfileChangeStatus.DRAFT, 4L,
+                41L, null, "OWNER", null, null, null, null, null, null
         );
         when(draftService.list(eq(MerchantProfileChangeStatus.DRAFT), any(), eq(ownerAccess)))
                 .thenReturn(new PageImpl<>(List.of(summary), PageRequest.of(2, 5), 11));
