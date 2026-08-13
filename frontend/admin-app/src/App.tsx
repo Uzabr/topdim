@@ -1,32 +1,53 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { App as AntApp, ConfigProvider } from 'antd';
+import { App as AntApp, ConfigProvider, Spin } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
 
 import { AdminLayout } from './components/layout/AdminLayout';
 import { ProtectedRoute } from './routes/ProtectedRoute';
-import { LoginPage } from './features/auth/LoginPage';
-import { ForbiddenPage } from './features/auth/ForbiddenPage';
-import { DashboardPage } from './features/dashboard/DashboardPage';
-import { PartnerApplicationsPage } from './features/partners/PartnerApplicationsPage';
-import { MerchantProfileChangeQueuePage } from './features/merchant-profile-changes/MerchantProfileChangeQueuePage';
-import { MerchantProfileChangeDetailPage } from './features/merchant-profile-changes/MerchantProfileChangeDetailPage';
-
-import { CouponFormPage } from './features/coupons/CouponFormPage';
-import { CouponWorkspacePage } from './features/coupons/workspace/CouponWorkspacePage';
-import { LegacyCouponRedirect } from './features/coupons/workspace/LegacyCouponRedirect';
-import { CategoriesPage } from './features/catalog/CategoriesPage';
-import { StaffPage } from './features/system/StaffPage';
-import { AuditLogPage } from './features/system/AuditLogPage';
-import { MerchantsPage } from './features/merchants/MerchantsPage';
-import { MerchantDetailPage } from './features/merchants/MerchantDetailPage';
-import { OrdersPage } from './features/orders/OrdersPage';
-import { PurchasedCouponLookupPage } from './features/orders/PurchasedCouponLookupPage';
-import { ReviewsPage } from './features/support/ReviewsPage';
-import { RefundsPage } from './features/support/RefundsPage';
-import { ComplaintsPage } from './features/support/ComplaintsPage';
-import { UsersListPage } from './features/users/UsersListPage';
 import type { UserRole } from './types';
+
+const LoginPage = lazy(() => import('./features/auth/LoginPage')
+  .then((module) => ({ default: module.LoginPage })));
+const ForbiddenPage = lazy(() => import('./features/auth/ForbiddenPage')
+  .then((module) => ({ default: module.ForbiddenPage })));
+const DashboardPage = lazy(() => import('./features/dashboard/DashboardPage')
+  .then((module) => ({ default: module.DashboardPage })));
+const PartnerApplicationsPage = lazy(() => import('./features/partners/PartnerApplicationsPage')
+  .then((module) => ({ default: module.PartnerApplicationsPage })));
+const MerchantProfileChangeQueuePage = lazy(() => import('./features/merchant-profile-changes/MerchantProfileChangeQueuePage')
+  .then((module) => ({ default: module.MerchantProfileChangeQueuePage })));
+const MerchantProfileChangeDetailPage = lazy(() => import('./features/merchant-profile-changes/MerchantProfileChangeDetailPage')
+  .then((module) => ({ default: module.MerchantProfileChangeDetailPage })));
+const CouponFormPage = lazy(() => import('./features/coupons/CouponFormPage')
+  .then((module) => ({ default: module.CouponFormPage })));
+const CouponWorkspacePage = lazy(() => import('./features/coupons/workspace/CouponWorkspacePage')
+  .then((module) => ({ default: module.CouponWorkspacePage })));
+const LegacyCouponRedirect = lazy(() => import('./features/coupons/workspace/LegacyCouponRedirect')
+  .then((module) => ({ default: module.LegacyCouponRedirect })));
+const CategoriesPage = lazy(() => import('./features/catalog/CategoriesPage')
+  .then((module) => ({ default: module.CategoriesPage })));
+const StaffPage = lazy(() => import('./features/system/StaffPage')
+  .then((module) => ({ default: module.StaffPage })));
+const AuditLogPage = lazy(() => import('./features/system/AuditLogPage')
+  .then((module) => ({ default: module.AuditLogPage })));
+const MerchantsPage = lazy(() => import('./features/merchants/MerchantsPage')
+  .then((module) => ({ default: module.MerchantsPage })));
+const MerchantDetailPage = lazy(() => import('./features/merchants/MerchantDetailPage')
+  .then((module) => ({ default: module.MerchantDetailPage })));
+const OrdersPage = lazy(() => import('./features/orders/OrdersPage')
+  .then((module) => ({ default: module.OrdersPage })));
+const PurchasedCouponLookupPage = lazy(() => import('./features/orders/PurchasedCouponLookupPage')
+  .then((module) => ({ default: module.PurchasedCouponLookupPage })));
+const ReviewsPage = lazy(() => import('./features/support/ReviewsPage')
+  .then((module) => ({ default: module.ReviewsPage })));
+const RefundsPage = lazy(() => import('./features/support/RefundsPage')
+  .then((module) => ({ default: module.RefundsPage })));
+const ComplaintsPage = lazy(() => import('./features/support/ComplaintsPage')
+  .then((module) => ({ default: module.ComplaintsPage })));
+const UsersListPage = lazy(() => import('./features/users/UsersListPage')
+  .then((module) => ({ default: module.UsersListPage })));
 
 const STAFF_ROLES: UserRole[] = ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'];
 const ADMIN_ROLES: UserRole[] = ['ADMIN', 'SUPER_ADMIN'];
@@ -61,7 +82,10 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AntApp>
           <BrowserRouter>
-            <Routes>
+            <Suspense
+              fallback={<Spin aria-label="Загрузка страницы" size="large" style={{ display: 'block', margin: 80 }} />}
+            >
+              <Routes>
               {/* Публичные роуты */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/403" element={<ForbiddenPage />} />
@@ -119,7 +143,8 @@ function App() {
               {/* Корневой редирект */}
               <Route path="/" element={<HomeRedirect />} />
               <Route path="*" element={<HomeRedirect />} />
-            </Routes>
+              </Routes>
+            </Suspense>
           </BrowserRouter>
         </AntApp>
       </QueryClientProvider>

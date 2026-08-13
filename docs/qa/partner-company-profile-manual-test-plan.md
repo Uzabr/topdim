@@ -227,8 +227,9 @@ frontend cache.
   и текущего исполнителя; server-side должны отклоняться отсутствующий,
   disabled/deleted, non-staff и автор заявки, а при недоступности identity-service
   назначение не должно изменяться.
-- Production build предупреждает о крупных initial JS chunks partner/admin;
-  функционально сборка проходит, route-level code splitting остаётся P2.
+- Admin production build использует route-level chunks без >500 kB warning;
+  при smoke проверить loading-state при первом открытии каждого lazy route.
+  Оптимизация partner bundle остаётся отдельной P2-задачей.
 - Автотесты не заменяют прогон с реальными PostgreSQL, RabbitMQ, SMTP и Telegram.
 
 ## Критерии приёмки

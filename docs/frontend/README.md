@@ -100,8 +100,9 @@ npm run lint
 - Admin reassign использует staff selector из активных MODERATOR/ADMIN/
   SUPER_ADMIN. Backend повторно проверяет существование, активность и staff-роль
   выбранного исполнителя и не разрешает назначить заявку её автору.
-- Production bundles partner/admin превышают 500 kB gzip-warning threshold;
-  сборка успешна, но route-level code splitting остаётся performance-задачей.
+- Admin pages загружаются через route-level lazy chunks: крупнейший initial shared
+  chunk меньше 500 kB, production build не выдаёт chunk-size warning. Partner
+  bundle остаётся отдельной performance-задачей.
 
 ### Админ / модератор
 
