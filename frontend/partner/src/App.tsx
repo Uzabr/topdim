@@ -13,6 +13,7 @@ import RedemptionHistoryPage from './pages/RedemptionHistoryPage';
 import StaffPage from './pages/StaffPage';
 import { readPartnerContext } from './authSession';
 import { canManageCompany } from './features/company/permissions';
+import CompanyProfilePage from './features/company/CompanyProfilePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,7 +57,7 @@ function CompanyManagerOnly({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function CompanyRouteEntry() {
+function CompanyRequestRouteEntry() {
   return (
     <section aria-label="Раздел компании">
       Раздел профиля компании
@@ -104,8 +105,8 @@ export default function App() {
                 <Route path="redeem" element={<RedeemAccessOnly><RedeemPage /></RedeemAccessOnly>} />
                 <Route path="redemptions" element={<RedemptionHistoryPage />} />
                 <Route path="staff" element={<OwnerOnly><StaffPage /></OwnerOnly>} />
-                <Route path="company" element={<CompanyManagerOnly><CompanyRouteEntry /></CompanyManagerOnly>} />
-                <Route path="company/requests/:id" element={<CompanyManagerOnly><CompanyRouteEntry /></CompanyManagerOnly>} />
+                <Route path="company" element={<CompanyManagerOnly><CompanyProfilePage /></CompanyManagerOnly>} />
+                <Route path="company/requests/:id" element={<CompanyManagerOnly><CompanyRequestRouteEntry /></CompanyManagerOnly>} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

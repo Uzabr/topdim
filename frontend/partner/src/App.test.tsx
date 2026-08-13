@@ -14,6 +14,9 @@ vi.mock('./pages/RedeemPage', () => ({
 vi.mock('./pages/RedemptionHistoryPage', () => ({
   default: () => <div>History content</div>,
 }));
+vi.mock('./features/company/CompanyProfilePage', () => ({
+  default: () => <section aria-label="Раздел компании">Профиль компании открыт</section>,
+}));
 
 describe('partner route authorization', () => {
   beforeEach(() => {
@@ -100,7 +103,29 @@ describe('partner route authorization', () => {
   });
 
   it.each(['OWNER', 'MANAGER'] as const)(
-    'opens company routes and menu for %s',
+    'opens the company profile and menu for %s',
+    async (role) => {
+      window.history.replaceState({}, '', '/company');
+      localStorage.setItem('token', `${role}-token`);
+      localStorage.setItem('partnerContext', JSON.stringify({
+        role,
+        merchantId: 8,
+        canViewDashboard: true,
+        canRedeem: true,
+      }));
+
+      render(<App />);
+
+      expect(await screen.findByRole('region', { name: 'Раздел компании' })).toBeTruthy();
+      expect(screen.getByText('Профиль компании открыт')).toBeTruthy();
+      expect(screen.getByRole('menuitem', { name: /Моя компания/ })
+        .classList.contains('ant-menu-item-selected')).toBe(true);
+      expect(window.location.pathname).toBe('/company');
+    },
+  );
+
+  it.each(['OWNER', 'MANAGER'] as const)(
+    'keeps the company request editor route protected for %s',
     async (role) => {
       window.history.replaceState({}, '', '/company/requests/17');
       localStorage.setItem('token', `${role}-token`);
@@ -114,8 +139,7 @@ describe('partner route authorization', () => {
       render(<App />);
 
       expect(await screen.findByRole('region', { name: 'Раздел компании' })).toBeTruthy();
-      expect(screen.getByRole('menuitem', { name: /Моя компания/ })
-        .classList.contains('ant-menu-item-selected')).toBe(true);
+      expect(screen.getByText('Раздел профиля компании')).toBeTruthy();
       expect(window.location.pathname).toBe('/company/requests/17');
     },
   );
