@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Alert,
   Badge,
@@ -118,7 +119,7 @@ export function MerchantProfileChangeQueuePage() {
       dataIndex: 'name',
       render: (name: string, record) => (
         <div>
-          <Text strong>{name}</Text>
+          <Link to={`/merchants/profile-changes/${record.id}`}><Text strong>{name}</Text></Link>
           <div><Text type="secondary">Merchant ID: {record.merchantId}</Text></div>
         </div>
       ),

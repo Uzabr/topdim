@@ -68,6 +68,8 @@ describe('MerchantProfileChangeQueuePage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Изменения компаний' })).toBeTruthy();
     expect(await screen.findByText('Safia Cafe')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Safia Cafe' }).getAttribute('href'))
+      .toBe('/merchants/profile-changes/71');
 
     await user.click(screen.getByRole('button', { name: 'Взять в работу' }));
 

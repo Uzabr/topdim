@@ -1,8 +1,11 @@
 import api from '../../api/client';
 import type { ApiResponse } from '../../types';
+import type { UserRole } from '../../types';
 import type {
+  MerchantProfileChangeDetail,
   MerchantProfileChangePage,
   MerchantProfileChangeQueueFilters,
+  PublishedMerchantProfile,
 } from './types';
 
 const ENDPOINT = '/api/v1/admin/merchant-change-requests';
@@ -40,4 +43,55 @@ export async function takeMerchantProfileChangeToWork(
   id: number,
 ): Promise<void> {
   await api.post(`${ENDPOINT}/${id}/take-to-work`);
+}
+
+export async function fetchMerchantProfileChangeDetail(
+  id: number,
+): Promise<MerchantProfileChangeDetail> {
+  const response = await api.get<ApiResponse<MerchantProfileChangeDetail>>(`${ENDPOINT}/${id}`);
+  return response.data.data;
+}
+
+export async function fetchPublishedMerchantProfile(
+  merchantId: number,
+  role: UserRole,
+): Promise<PublishedMerchantProfile> {
+  if (role === 'MODERATOR') {
+    const response = await api.get<ApiResponse<PublishedMerchantProfile[]>>(
+      '/api/v1/admin/merchants',
+    );
+    const merchant = response.data.data.find((item) => item.id === merchantId);
+    if (!merchant) throw new Error('Опубликованный профиль компании не найден');
+    return merchant;
+  }
+  const response = await api.get<ApiResponse<PublishedMerchantProfile>>(
+    `/api/v1/admin/merchants/${merchantId}`,
+  );
+  return response.data.data;
+}
+
+export async function approveMerchantProfileChange(id: number): Promise<void> {
+  await api.post(`${ENDPOINT}/${id}/approve`);
+}
+
+export async function requestMerchantProfileChangeRevision(
+  id: number,
+  comment: string,
+): Promise<void> {
+  await api.post(`${ENDPOINT}/${id}/request-revision`, { comment: comment.trim() });
+}
+
+export async function rejectMerchantProfileChange(id: number, comment: string): Promise<void> {
+  await api.post(`${ENDPOINT}/${id}/reject`, { comment: comment.trim() });
+}
+
+export async function releaseMerchantProfileChange(id: number): Promise<void> {
+  await api.post(`${ENDPOINT}/${id}/release`);
+}
+
+export async function reassignMerchantProfileChange(
+  id: number,
+  assigneeUserId: number,
+): Promise<void> {
+  await api.post(`${ENDPOINT}/${id}/reassign`, { assigneeUserId });
 }

@@ -10,6 +10,7 @@ import { ForbiddenPage } from './features/auth/ForbiddenPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { PartnerApplicationsPage } from './features/partners/PartnerApplicationsPage';
 import { MerchantProfileChangeQueuePage } from './features/merchant-profile-changes/MerchantProfileChangeQueuePage';
+import { MerchantProfileChangeDetailPage } from './features/merchant-profile-changes/MerchantProfileChangeDetailPage';
 
 import { CouponFormPage } from './features/coupons/CouponFormPage';
 import { CouponWorkspacePage } from './features/coupons/workspace/CouponWorkspacePage';
@@ -75,6 +76,7 @@ function App() {
                   <Route path="/coupons/new" element={<CouponFormPage />} />
                   <Route path="/coupons/:id/edit" element={<CouponFormPage />} />
                   <Route path="/merchants/profile-changes" element={<MerchantProfileChangeQueuePage />} />
+                  <Route path="/merchants/profile-changes/:id" element={<MerchantProfileChangeDetailPage />} />
 
                   {/* Совместимость сохранённых ссылок на старые экраны купонов */}
                   <Route path="/moderation/coupons" element={<LegacyCouponRedirect target="workspace" />} />
