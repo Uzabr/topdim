@@ -169,6 +169,11 @@ public class PartnerStaffService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public Set<Long> getActiveStaffLocationIds(Long merchantId) {
+        return staffRepository.findActiveLocationIdsByMerchantId(merchantId);
+    }
+
     /**
      * Every staff member must have an independent login. Cashiers additionally require a location.
      */

@@ -12,9 +12,13 @@ import uz.topdim.coupon.entity.MerchantProfileChangeLocation;
 import uz.topdim.coupon.entity.MerchantProfileChangeRequest;
 import uz.topdim.coupon.entity.MerchantProfileChangeStatus;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import static uz.topdim.coupon.util.PhoneUtils.normalize;
@@ -61,6 +65,57 @@ public class MerchantProfileMapper {
                     .build());
         }
         return request;
+    }
+
+    public MerchantProfileChangeRequest copyRebased(
+            MerchantProfileChangeRequest source,
+            Merchant merchant,
+            List<MerchantLocation> publishedLocations,
+            Long authorUserId,
+            ResolvedPartnerAccess access
+    ) {
+        MerchantProfileChangeRequest copy = MerchantProfileChangeRequest.builder()
+                .merchant(merchant)
+                .authorUserId(authorUserId)
+                .authorStaffId(access.staffId())
+                .authorRole(access.role())
+                .baseProfileVersion(merchant.getProfileVersion())
+                .status(MerchantProfileChangeStatus.DRAFT)
+                .name(source.getName())
+                .description(source.getDescription())
+                .logoUrl(source.getLogoUrl())
+                .coverUrl(source.getCoverUrl())
+                .email(source.getEmail())
+                .website(source.getWebsite())
+                .contactPerson(source.getContactPerson())
+                .build();
+
+        Map<Long, MerchantProfileChangeLocation> sourceByPublishedId = new HashMap<>();
+        List<MerchantProfileChangeLocation> requestedNewLocations = new ArrayList<>();
+        source.getLocations().stream()
+                .sorted(Comparator.comparingInt(MerchantProfileChangeLocation::getSortOrder))
+                .forEach(location -> {
+                    if (location.getSourceLocationId() == null) {
+                        requestedNewLocations.add(location);
+                    } else {
+                        sourceByPublishedId.putIfAbsent(location.getSourceLocationId(), location);
+                    }
+                });
+
+        int sortOrder = 0;
+        for (MerchantLocation published : publishedLocations) {
+            MerchantProfileChangeLocation requested = sourceByPublishedId.get(published.getId());
+            MerchantProfileChangeLocation rebased = requested == null
+                    ? fromPublishedLocation(copy, published, sortOrder)
+                    : fromRequestedLocation(copy, requested, published.getId(), sortOrder);
+            copy.getLocations().add(rebased);
+            sortOrder++;
+        }
+        for (MerchantProfileChangeLocation requestedNew : requestedNewLocations) {
+            copy.getLocations().add(fromRequestedLocation(copy, requestedNew, null, sortOrder));
+            sortOrder++;
+        }
+        return copy;
     }
 
     public void applyPayload(
@@ -172,6 +227,47 @@ public class MerchantProfileMapper {
                 location.isActive(),
                 location.getSortOrder()
         );
+    }
+
+    private MerchantProfileChangeLocation fromPublishedLocation(
+            MerchantProfileChangeRequest request,
+            MerchantLocation source,
+            int sortOrder
+    ) {
+        return MerchantProfileChangeLocation.builder()
+                .request(request)
+                .sourceLocationId(source.getId())
+                .title(source.getTitle())
+                .address(source.getAddress())
+                .phone(source.getPhone())
+                .workingHours(source.getWorkingHours())
+                .latitude(source.getLatitude())
+                .longitude(source.getLongitude())
+                .primary(source.isPrimary())
+                .active(source.isActive())
+                .sortOrder(sortOrder)
+                .build();
+    }
+
+    private MerchantProfileChangeLocation fromRequestedLocation(
+            MerchantProfileChangeRequest request,
+            MerchantProfileChangeLocation source,
+            Long sourceLocationId,
+            int sortOrder
+    ) {
+        return MerchantProfileChangeLocation.builder()
+                .request(request)
+                .sourceLocationId(sourceLocationId)
+                .title(source.getTitle())
+                .address(source.getAddress())
+                .phone(source.getPhone())
+                .workingHours(source.getWorkingHours())
+                .latitude(source.getLatitude())
+                .longitude(source.getLongitude())
+                .primary(source.isPrimary())
+                .active(source.isActive())
+                .sortOrder(sortOrder)
+                .build();
     }
 
     private String normalizeEmail(String value) {

@@ -24,6 +24,7 @@ import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangePayload;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeResponse;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeSummary;
+import uz.topdim.coupon.dto.merchantprofile.WithdrawMerchantProfileChangeRequest;
 import uz.topdim.coupon.entity.MerchantProfileChangeStatus;
 import uz.topdim.coupon.service.MerchantProfileDraftService;
 import uz.topdim.coupon.service.PartnerAccessResolver;
@@ -90,5 +91,39 @@ public class PartnerMerchantProfileChangeController {
         ResolvedPartnerAccess access = partnerAccessResolver.resolveOwnerOrManager(userId);
         draftService.deleteDraft(id, access);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/submit")
+    public ResponseEntity<ApiResponse<MerchantProfileChangeResponse>> submit(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long id
+    ) {
+        ResolvedPartnerAccess access = partnerAccessResolver.resolveOwnerOrManager(userId);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Заявка отправлена на модерацию",
+                draftService.submit(id, userId, access)));
+    }
+
+    @PostMapping("/{id}/withdraw")
+    public ResponseEntity<ApiResponse<MerchantProfileChangeResponse>> withdraw(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long id,
+            @Valid @RequestBody WithdrawMerchantProfileChangeRequest request
+    ) {
+        ResolvedPartnerAccess access = partnerAccessResolver.resolveOwnerOrManager(userId);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Заявка отозвана",
+                draftService.withdraw(id, userId, request.reason(), access)));
+    }
+
+    @PostMapping("/{id}/copy")
+    public ResponseEntity<ApiResponse<MerchantProfileChangeResponse>> copy(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long id
+    ) {
+        ResolvedPartnerAccess access = partnerAccessResolver.resolveOwnerOrManager(userId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
+                "Создан новый черновик на базе актуального профиля",
+                draftService.copy(id, userId, access)));
     }
 }

@@ -162,6 +162,61 @@ class PartnerMerchantProfileChangeControllerTest {
         verifyNoInteractions(draftService);
     }
 
+    @Test
+    void submitUsesAuthenticatedActorAndResolvedMerchant() throws Exception {
+        when(accessResolver.resolveOwnerOrManager(41L)).thenReturn(ownerAccess);
+        when(draftService.submit(100L, 41L, ownerAccess)).thenReturn(response(100L));
+
+        mockMvc.perform(partner(post(
+                        "/api/v1/partner/merchant/change-requests/100/submit")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(100));
+
+        verify(draftService).submit(100L, 41L, ownerAccess);
+    }
+
+    @Test
+    void withdrawRejectsBlankReasonBeforeService() throws Exception {
+        when(accessResolver.resolveOwnerOrManager(41L)).thenReturn(ownerAccess);
+
+        mockMvc.perform(partner(post(
+                        "/api/v1/partner/merchant/change-requests/100/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"reason":"   "}
+                                """)))
+                .andExpect(status().isBadRequest());
+
+        verify(draftService, never()).withdraw(any(), any(), any(), any());
+    }
+
+    @Test
+    void withdrawReturnsWithdrawnSnapshot() throws Exception {
+        when(accessResolver.resolveOwnerOrManager(41L)).thenReturn(ownerAccess);
+        when(draftService.withdraw(100L, 41L, "Company changed", ownerAccess))
+                .thenReturn(response(100L));
+
+        mockMvc.perform(partner(post(
+                        "/api/v1/partner/merchant/change-requests/100/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"reason":"Company changed"}
+                                """)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(100));
+    }
+
+    @Test
+    void copyCreatesNewDraft() throws Exception {
+        when(accessResolver.resolveOwnerOrManager(41L)).thenReturn(ownerAccess);
+        when(draftService.copy(100L, 41L, ownerAccess)).thenReturn(response(101L));
+
+        mockMvc.perform(partner(post(
+                        "/api/v1/partner/merchant/change-requests/100/copy")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.id").value(101));
+    }
+
     private MockHttpServletRequestBuilder partner(MockHttpServletRequestBuilder request) {
         return request
                 .header("X-User-Id", "41")

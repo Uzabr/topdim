@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangePayload;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeResponse;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileLocationPayload;
+import uz.topdim.coupon.client.IdentityPartnerAccessClient;
 import uz.topdim.coupon.entity.Merchant;
 import uz.topdim.coupon.entity.MerchantLocation;
 import uz.topdim.coupon.entity.MerchantProfileChangeHistory;
@@ -38,6 +39,7 @@ class MerchantProfileDraftServiceTest {
     @Mock private MerchantLocationRepository merchantLocationRepository;
     @Mock private MerchantProfileChangeRequestRepository requestRepository;
     @Mock private MerchantProfileChangeHistoryRepository historyRepository;
+    @Mock private IdentityPartnerAccessClient identityClient;
 
     private MerchantProfileDraftService service;
 
@@ -51,7 +53,8 @@ class MerchantProfileDraftServiceTest {
                 merchantLocationRepository,
                 requestRepository,
                 historyRepository,
-                new MerchantProfileMapper()
+                new MerchantProfileMapper(),
+                identityClient
         );
     }
 
