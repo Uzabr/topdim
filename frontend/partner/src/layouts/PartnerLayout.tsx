@@ -6,6 +6,7 @@ import {
 } from '@ant-design/icons';
 import { useMemo } from 'react';
 import { clearPartnerSession, readPartnerContext } from '../authSession';
+import { canManageCompany } from '../features/company/permissions';
 
 const { Header, Sider, Content } = Layout;
 
@@ -28,6 +29,9 @@ export default function PartnerLayout() {
 
   const isCashier = ctx?.role === 'CASHIER';
   const isOwner = ctx?.role === 'OWNER';
+  const selectedMenuKey = location.pathname.startsWith('/company')
+    ? '/company'
+    : location.pathname;
 
   const menuItems = useMemo(() => {
     const items = [];
@@ -40,6 +44,10 @@ export default function PartnerLayout() {
     // My Coupons — only for Owner and Manager
     if (isOwner || ctx?.canViewDashboard) {
       items.push({ key: '/coupons', icon: <GiftOutlined />, label: 'Мои предложения' });
+    }
+
+    if (canManageCompany(ctx)) {
+      items.push({ key: '/company', icon: <ShopOutlined />, label: 'Моя компания' });
     }
 
     // Redeem — for all (cashier, manager, owner)
@@ -93,7 +101,7 @@ export default function PartnerLayout() {
         <Menu
           theme="dark"
           mode="inline"
-          selectedKeys={[location.pathname]}
+          selectedKeys={[selectedMenuKey]}
           onClick={({ key }) => navigate(key)}
           items={menuItems}
           style={{ background: 'transparent', borderRight: 'none' }}

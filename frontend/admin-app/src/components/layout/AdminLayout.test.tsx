@@ -17,6 +17,18 @@ function flatten(items: MenuItem[]): MenuItem[] {
 
 describe('admin coupon navigation', () => {
   it.each<UserRole>(['MODERATOR', 'ADMIN', 'SUPER_ADMIN'])(
+    'shows company profile moderation to %s',
+    (role) => {
+      expect(flatten(filterMenuByRole(allMenuItems, role)))
+        .toEqual(expect.arrayContaining([
+          expect.objectContaining({
+            key: '/merchants/profile-changes',
+          }),
+        ]));
+    },
+  );
+
+  it.each<UserRole>(['MODERATOR', 'ADMIN', 'SUPER_ADMIN'])(
     'shows one canonical coupon entry to %s',
     (role) => {
       const couponEntries = flatten(filterMenuByRole(allMenuItems, role))

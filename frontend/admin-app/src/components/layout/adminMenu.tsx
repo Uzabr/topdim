@@ -5,6 +5,7 @@ import {
   CommentOutlined,
   DashboardOutlined,
   FileTextOutlined,
+  FormOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
   ShopOutlined,
@@ -35,6 +36,12 @@ export const allMenuItems: MenuItem[] = [
     key: '/coupons',
     icon: <TagOutlined />,
     label: 'Купоны',
+    roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'],
+  },
+  {
+    key: '/merchants/profile-changes',
+    icon: <FormOutlined />,
+    label: 'Изменения компаний',
     roles: ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'],
   },
   {
