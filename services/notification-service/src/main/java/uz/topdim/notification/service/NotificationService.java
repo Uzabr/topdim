@@ -55,6 +55,7 @@ public class NotificationService {
                 .title(n.getTitle())
                 .message(n.getMessage())
                 .type(n.getType())
+                .deepLink(n.getDeepLink())
                 .read(n.isRead())
                 .createdAt(n.getCreatedAt())
                 .build();
