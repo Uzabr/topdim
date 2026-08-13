@@ -56,6 +56,10 @@
 - **notification:** `TELEGRAM_BOT_TOKEN=<секрет>` включает Telegram-доставку; пустой токен
   fail-closed и переводит доставку в retry, после исчерпания попыток используется подтверждённый email.
   `PARTNER_APP_URL` задаёт базовый адрес ссылок в Telegram и email.
+- **internal S2S:** `INTERNAL_AUTH_SECRET=<одинаковый непустой секрет>` обязателен в
+  production для gateway, identity, coupon, notification и остальных Feign-клиентов.
+  При пустом значении internal-фильтр сохраняет legacy-совместимость и не требует
+  `X-Gateway-Auth`, поэтому одной сетевой изоляции недостаточно для production.
 - DB: `DB_HOST=topdim_postgres DB_PORT=5432 DB_USERNAME=topdim DB_PASSWORD=<секрет>`.
   Redis: `REDIS_HOST=topdim_redis REDIS_PORT=6379 SPRING_DATA_REDIS_PASSWORD=<секрет>`.
   Rabbit: `RABBITMQ_HOST=topdim_rabbitmq RABBITMQ_PORT=5672 RABBITMQ_USERNAME=topdim RABBITMQ_PASSWORD=<секрет>`.

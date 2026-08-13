@@ -33,10 +33,12 @@ npm run build
 npm run lint
 
 cd ../admin-app
+npm test
 npm run build
 npm run lint
 
 cd ../partner
+npm test
 npm run build
 npm run lint
 ```
@@ -71,7 +73,11 @@ npm run lint
 4. Создаёт заявку на купон.
 5. Смотрит статус модерации.
 6. Согласовывает готовый купон или просит правки.
-7. Кассир гасит купоны по PIN/QR.
+7. Владелец или менеджер открывает «Моя компания», создаёт полный снимок профиля
+   и филиалов, сохраняет/предпросматривает его и отправляет на модерацию.
+8. После возврата на доработку исправляет ту же заявку; терминальную заявку может
+   скопировать на актуальную версию. Кассир раздел компании не видит.
+9. Кассир гасит купоны по PIN/QR.
 
 ## Известные frontend gaps
 
@@ -79,8 +85,23 @@ npm run lint
   показывается и остаётся отдельным roadmap-модулем вне текущего admin MVP.
 - В `web-app` checkout/profile/payment flow реализован, но перед релизом нужен e2e smoke: каталог → корзина → checkout → demo payment → profile coupons → partner redemption.
 - В `web-app` избранное синхронизируется localStorage ↔ backend; при правках auth/favorites обязательно проверять merge guest favorites после login.
-- `admin-app` и `web-app` имеют Vitest regression suites; `partner` пока
-  проверяется lint/build и ручным E2E основного маршрута.
+- `admin-app`, `partner` и `web-app` имеют Vitest regression suites. Для
+  профиля компании дополнительно обязателен ручной multi-role acceptance:
+  OWNER + MANAGER + CASHIER + MODERATOR.
+- В admin detail изменений компании показываются текущий снимок, field/location
+  diff и moderation comment, но пока нет полной ленты переходов из history table.
+- Admin UI не получает отдельный preflight с количеством активных кассиров или
+  опубликованных предложений; запрет отключения филиала с кассиром проверяется
+  backend при submit/approve и отображается как бизнес-ошибка.
+- Поле загрузки логотипа/обложки ограничено `image/*` только на клиенте.
+  media-service пока не валидирует MIME/signature/размер файла на сервере, поэтому
+  это не считается достаточной production-защитой.
+- Admin reassign сейчас вводится как числовой user ID; backend не проверяет роль и
+  активность нового исполнителя через identity-service. Невалидное назначение
+  можно исправить release/reassign, но перед production нужен staff selector и
+  серверная проверка.
+- Production bundles partner/admin превышают 500 kB gzip-warning threshold;
+  сборка успешна, но route-level code splitting остаётся performance-задачей.
 
 ### Админ / модератор
 
@@ -90,6 +111,10 @@ npm run lint
 4. Готовит купон.
 5. Отправляет на согласование партнёру.
 6. Публикует, архивирует или снимает с продажи по правилам статусов.
+7. В отдельном разделе «Изменения компаний» фильтрует заявки, берёт одну в работу,
+   сравнивает опубликованный и предложенный профиль и одобряет, возвращает на
+   доработку либо отклоняет. ADMIN/SUPER_ADMIN также может освободить или
+   переназначить заявку.
 
 ## Что проверять перед сдачей frontend-задачи
 

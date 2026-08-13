@@ -9,6 +9,8 @@ order-service ──▶ coupon-service   (CouponClient: getPurchaseSnapshot, reg
 order-service ──▶ identity-service (UserClient: getUserById)
 bazaar-service ──▶ coupon-service  (CouponClient: getCouponOfferById)
 identity-service ──▶ coupon-service (CouponMerchantClient: createMerchant)
+coupon-service ──▶ identity-service (partner access context, active cashier locations)
+notification-service ──▶ identity-service (notification target and linked channels)
 ```
 
 ### Асинхронные события (RabbitMQ)
@@ -26,7 +28,8 @@ order-service ──publish──▶ coupon.exchange / coupon.purchased
 order-service ──publish──▶ coupon.exchange / coupon.redeemed
                               └──▶ coupon-service (CouponRedeemedListener)
 
-notification-service ──publish──▶ notification.exchange / notification.sent
+coupon-service ──outbox/publish──▶ notification.exchange / notification.sent
+                                      └──▶ notification-service (NotificationEventListener)
 ```
 
 ### Общие модули (shared)
@@ -52,6 +55,9 @@ notification-service ──publish──▶ notification.exchange / notification
 - Сброс пароля через email (одноразовый токен)
 - Верификация email (cooldown 60 сек между повторными запросами)
 - Партнёрские заявки: публичная подача заявки → модерация Admin
+- Источник partner access context: OWNER/MANAGER/CASHIER, merchant и location
+- Внутренний lookup активных staff locations для защиты филиалов с кассирами
+- Внутренний lookup Telegram/email получателя для notification-service
 
 ### API Endpoints
 
@@ -110,6 +116,13 @@ notification-service ──publish──▶ notification.exchange / notification
 | POST | `/api/v1/partner/staff` | ✅ PARTNER | Добавить сотрудника |
 | DELETE | `/api/v1/partner/staff/{id}` | ✅ PARTNER | Удалить сотрудника |
 
+#### Internal partner/notification context
+| Method | URL | Auth | Описание |
+|---|---|---|---|
+| GET | `/api/v1/internal/partner-access/{userId}` | internal key | Merchant, staff, роль и разрешения пользователя |
+| GET | `/api/v1/internal/partner-access/merchants/{merchantId}/active-staff-location-ids` | internal key | Филиалы с активными сотрудниками |
+| GET | `/api/v1/internal/notification-targets/{userId}` | internal key | Разрешённые Telegram/email каналы получателя |
+
 ### Ключевые классы
 - `AuthController` — register, login, refresh, logout, guest, password-reset, confirm
 - `UserController` — профиль, избранное
@@ -118,6 +131,8 @@ notification-service ──publish──▶ notification.exchange / notification
 - `PartnerApplicationController` — публичная подача заявок
 - `AdminPartnerApplicationController` — модерация заявок
 - `PartnerStaffController` — управление кассирами
+- `InternalPartnerAccessController` — внутренний partner context и активные staff locations
+- `InternalNotificationTargetController` — внутренние каналы получателя уведомлений
 - `AuthService` — основная бизнес-логика
 - `JwtService` — генерация/валидация JWT
 - `TokenBlacklistService` — Redis blacklist для отозванных токенов
@@ -140,6 +155,9 @@ notification-service ──publish──▶ notification.exchange / notification
 - Redis кэш: categories активен; catalog/topSelling временно отключены в коде до настройки Redis serializer
 - Жизненный цикл купона: LEAD → DRAFT → WAITING_FOR_MERCHANT → REVISION_REQUESTED → ACTIVE → PAUSED/SOLD_OUT/ARCHIVED
 - Партнёр создаёт купон (LEAD), модератор берёт в работу (DRAFT), отправляет на согласование мерчанту
+- OWNER/MANAGER создают версионированный снимок профиля компании; публикация происходит только после модерации
+- Одобрение профиля и `OUTDATED` конкурирующих заявок одной базовой версии выполняются в одной транзакции
+- Transactional outbox отделяет бизнес-транзакцию профиля от доставки уведомлений
 - Admin/Moderator CRUD купонов и партнёров
 - Справочник базаров и магазинов (с геопоиском по области)
 
@@ -197,6 +215,29 @@ notification-service ──publish──▶ notification.exchange / notification
 | PATCH | `/api/v1/admin/merchants/{id}/active` | ✅ ADMIN | Активировать/деактивировать мерчанта |
 | GET | `/api/v1/admin/merchants/{id}/coupons` | ✅ ADMIN | Купоны мерчанта |
 
+#### Partner — профиль компании (`/api/v1/partner/merchant`)
+| Method | URL | Auth | Описание |
+|---|---|---|---|
+| GET | `/api/v1/partner/merchant` | OWNER/MANAGER | Опубликованный профиль с `profileVersion` и филиалами |
+| GET | `/api/v1/partner/merchant/change-requests` | OWNER/MANAGER | Свои заявки, статус и пагинация |
+| POST | `/api/v1/partner/merchant/change-requests` | OWNER/MANAGER | Черновик из текущего профиля; максимум 10 активных |
+| GET/PUT/DELETE | `/api/v1/partner/merchant/change-requests/{id}` | OWNER/MANAGER | Просмотр, редактирование или удаление своего черновика |
+| POST | `/api/v1/partner/merchant/change-requests/{id}/submit` | OWNER/MANAGER | Отправить черновик/доработку на модерацию |
+| POST | `/api/v1/partner/merchant/change-requests/{id}/withdraw` | OWNER/MANAGER | Отозвать с обязательной причиной |
+| POST | `/api/v1/partner/merchant/change-requests/{id}/copy` | OWNER/MANAGER | Новый черновик из терминальной заявки на актуальной базе |
+
+#### Admin — изменения компаний (`/api/v1/admin/merchant-change-requests`)
+| Method | URL | Auth | Описание |
+|---|---|---|---|
+| GET | `/api/v1/admin/merchant-change-requests` | MOD+ | Очередь: статус, поиск, исполнитель, период, пагинация |
+| GET | `/api/v1/admin/merchant-change-requests/{id}` | MOD+ | Снимок заявки для сравнения |
+| POST | `/api/v1/admin/merchant-change-requests/{id}/take-to-work` | MOD+ | Атомарно закрепить ожидающую заявку |
+| POST | `/api/v1/admin/merchant-change-requests/{id}/approve` | MOD+ | Опубликовать; только назначенный исполнитель, не автор |
+| POST | `/api/v1/admin/merchant-change-requests/{id}/request-revision` | MOD+ | Вернуть на доработку с комментарием |
+| POST | `/api/v1/admin/merchant-change-requests/{id}/reject` | MOD+ | Отклонить с комментарием |
+| POST | `/api/v1/admin/merchant-change-requests/{id}/release` | ADMIN/SUPER_ADMIN | Вернуть заявку в общую очередь |
+| POST | `/api/v1/admin/merchant-change-requests/{id}/reassign` | ADMIN/SUPER_ADMIN | Назначить другого исполнителя |
+
 #### Admin — категории (`/api/v1/admin/categories`)
 | Method | URL | Auth | Описание |
 |---|---|---|---|
@@ -252,6 +293,8 @@ notification-service ──publish──▶ notification.exchange / notification
 - `CouponOption` (title, regularPrice, couponPrice, quantityLimit, quantitySold)
 - `Category` (name, nameUz, slug, iconUrl, sortOrder, active)
 - `Merchant` (name, description, logoUrl, coverUrl, address, phone, email, website, workingHours, contactPerson, active, userId, telegramChatId)
+- `MerchantProfileChangeRequest` + locations/history (версия базы, полный снимок, автор, исполнитель, статус, optimistic lock)
+- `NotificationOutbox` (уникальный eventKey, получатель, payload, retry state)
 
 ### Статусы купона
 ```
@@ -443,13 +486,15 @@ PENDING → COMPLETED
 
 ## notification-service (:8087)
 
-**Назначение:** In-app уведомления, Email и SMS уведомления.
+**Назначение:** In-app уведомления и внешняя доставка через Telegram/email; legacy purchase flow также использует email/SMS.
 
 ### Бизнес-логика
 - Слушает `CouponPurchasedEvent` и другие notification events из RabbitMQ
 - Сохраняет in-app notifications для пользователя
-- Отправляет email (Spring Mail / SMTP) и SMS (Eskiz.uz API)
-- По умолчанию — **stub mode** (только логирование)
+- Для событий профиля дедуплицирует in-app запись по `eventKey + userId`
+- Сначала использует связанный Telegram; без него — подтверждённый email
+- Внешняя доставка имеет отдельное состояние, до пяти попыток и exponential backoff
+- Ошибка внешнего канала не удаляет in-app уведомление; после исчерпания Telegram retries используется подтверждённый email как fallback
 
 ### API Endpoints
 | Method | URL | Auth | Описание |
@@ -461,12 +506,22 @@ PENDING → COMPLETED
 ```yaml
 notification:
   email:
-    enabled: true           # включить SMTP
-    from: noreply@topdim.uz
-  sms:
-    enabled: true           # включить Eskiz.uz
-    api-token: YOUR_TOKEN
+    enabled: true
+    from: noreply@sizbiz.uz
+  telegram:
+    bot-token: ${TELEGRAM_BOT_TOKEN}
+    partner-base-url: ${PARTNER_APP_URL:https://partner.sizbiz.uz}
+  delivery:
+    retry-delay-ms: ${NOTIFICATION_RETRY_DELAY_MS:60000}
 ```
+
+Пустой `TELEGRAM_BOT_TOKEN` не отключает in-app запись: Telegram delivery уйдёт
+в retry/failed. Реальный email требует рабочие `MAIL_HOST`, `MAIL_USERNAME`,
+`MAIL_PASSWORD` и подтверждённый email пользователя.
+
+Все новые coupon/notification → identity вызовы используют `X-Gateway-Auth`.
+В production `INTERNAL_AUTH_SECRET` должен быть одинаковым и непустым у вызывающих
+и принимающих сервисов; пустое значение оставляет legacy fail-open режим фильтра.
 
 ---
 
