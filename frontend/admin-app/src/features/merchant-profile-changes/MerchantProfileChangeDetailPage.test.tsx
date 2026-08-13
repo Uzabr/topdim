@@ -12,6 +12,7 @@ import type { UserRole } from '../../types';
 vi.mock('./api', () => ({
   MERCHANT_PROFILE_CHANGES_QUERY_KEY: ['merchant-profile-changes'],
   fetchMerchantProfileChangeDetail: vi.fn(),
+  fetchMerchantProfileChangeHistory: vi.fn(),
   fetchModerationAssignees: vi.fn(),
   fetchPublishedMerchantProfile: vi.fn(),
   approveMerchantProfileChange: vi.fn(),
@@ -119,6 +120,17 @@ describe('MerchantProfileChangeDetailPage', () => {
     loginAs(42, 'MODERATOR');
     vi.mocked(profileChangesApi.fetchMerchantProfileChangeDetail).mockResolvedValue(request);
     vi.mocked(profileChangesApi.fetchPublishedMerchantProfile).mockResolvedValue(published);
+    vi.mocked(profileChangesApi.fetchMerchantProfileChangeHistory).mockResolvedValue([
+      {
+        id: 1,
+        previousStatus: 'PENDING_REVIEW',
+        newStatus: 'IN_REVIEW',
+        actorUserId: 42,
+        actorRole: 'MODERATOR',
+        comment: 'Взята в работу',
+        createdAt: '2026-08-12T10:00:00',
+      },
+    ]);
     vi.mocked(profileChangesApi.fetchModerationAssignees).mockResolvedValue([
       { userId: 88, name: 'Ali Valiyev', email: 'ali@topdim.uz', role: 'MODERATOR' },
       { userId: 18, name: 'Request Author', email: 'author@topdim.uz', role: 'ADMIN' },
@@ -141,6 +153,10 @@ describe('MerchantProfileChangeDetailPage', () => {
     expect(screen.getByText('Филиал будет отключён')).toBeTruthy();
     expect(document.body.textContent).toContain('User ID: 18 · MANAGER');
     expect(screen.getAllByText('Версия 3')).toHaveLength(2);
+    expect(screen.getByText('История заявки')).toBeTruthy();
+    expect(screen.getByText('Ожидает проверки → В работе')).toBeTruthy();
+    expect(screen.getByText('MODERATOR · User ID: 42')).toBeTruthy();
+    expect(screen.getByText('Взята в работу')).toBeTruthy();
   });
 
   it('requires a comment before returning the request for revision', async () => {

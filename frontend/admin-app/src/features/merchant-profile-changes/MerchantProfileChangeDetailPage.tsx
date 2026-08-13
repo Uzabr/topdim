@@ -13,14 +13,17 @@ import {
   Space,
   Spin,
   Tag,
+  Timeline,
   Typography,
 } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/authStore';
 import {
   approveMerchantProfileChange,
   fetchMerchantProfileChangeDetail,
+  fetchMerchantProfileChangeHistory,
   fetchPublishedMerchantProfile,
   fetchModerationAssignees,
   MERCHANT_PROFILE_CHANGES_QUERY_KEY,
@@ -71,6 +74,12 @@ export function MerchantProfileChangeDetailPage() {
   const detailQuery = useQuery({
     queryKey: [...MERCHANT_PROFILE_CHANGES_QUERY_KEY, 'detail', requestId],
     queryFn: () => fetchMerchantProfileChangeDetail(requestId),
+    enabled: Number.isInteger(requestId) && requestId > 0,
+  });
+
+  const historyQuery = useQuery({
+    queryKey: [...MERCHANT_PROFILE_CHANGES_QUERY_KEY, 'detail', requestId, 'history'],
+    queryFn: () => fetchMerchantProfileChangeHistory(requestId),
     enabled: Number.isInteger(requestId) && requestId > 0,
   });
 
@@ -243,6 +252,40 @@ export function MerchantProfileChangeDetailPage() {
           currentLocations={published.locations}
           proposedLocations={request.locations}
         />
+      </Card>
+
+      <Card title="История заявки" size="small" style={{ marginBottom: 16 }}>
+        {historyQuery.isLoading && <Spin size="small" />}
+        {historyQuery.isError && (
+          <Alert
+            type="error"
+            title="Не удалось загрузить историю заявки"
+            action={<Button size="small" onClick={() => historyQuery.refetch()}>Повторить</Button>}
+          />
+        )}
+        {!historyQuery.isLoading && !historyQuery.isError && historyQuery.data?.length === 0 && (
+          <Text type="secondary">История пока пуста</Text>
+        )}
+        {!historyQuery.isLoading && !historyQuery.isError && !!historyQuery.data?.length && (
+          <Timeline
+            items={historyQuery.data.map((event) => {
+              const previous = event.previousStatus
+                ? (STATUS_LABELS[event.previousStatus]?.label ?? event.previousStatus)
+                : 'Создана';
+              const next = STATUS_LABELS[event.newStatus]?.label ?? event.newStatus;
+              return {
+                content: (
+                  <Space orientation="vertical" size={2}>
+                    <Text strong>{previous} → {next}</Text>
+                    <Text type="secondary">{event.actorRole} · User ID: {event.actorUserId}</Text>
+                    {event.comment && <Text>{event.comment}</Text>}
+                    <Text type="secondary">{dayjs(event.createdAt).format('DD.MM.YYYY HH:mm')}</Text>
+                  </Space>
+                ),
+              };
+            })}
+          />
+        )}
       </Card>
 
       <Space wrap>

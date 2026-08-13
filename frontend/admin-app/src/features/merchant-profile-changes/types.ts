@@ -70,6 +70,16 @@ export interface MerchantProfileChangeDetail {
   lockVersion: number;
 }
 
+export interface MerchantProfileChangeHistoryEvent {
+  id: number;
+  previousStatus: MerchantProfileChangeStatus | null;
+  newStatus: MerchantProfileChangeStatus;
+  actorUserId: number;
+  actorRole: string;
+  comment: string | null;
+  createdAt: string;
+}
+
 export interface PublishedMerchantLocation {
   id: number;
   title: string | null;

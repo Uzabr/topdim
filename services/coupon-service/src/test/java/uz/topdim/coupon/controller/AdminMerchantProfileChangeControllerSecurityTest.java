@@ -49,6 +49,7 @@ class AdminMerchantProfileChangeControllerSecurityTest {
 
         mockMvc.perform(withStaff(get(BASE_PATH), role)).andExpect(status().isOk());
         mockMvc.perform(withStaff(get(BASE_PATH + "/10"), role)).andExpect(status().isOk());
+        mockMvc.perform(withStaff(get(BASE_PATH + "/10/history"), role)).andExpect(status().isOk());
         mockMvc.perform(withStaff(post(BASE_PATH + "/10/take-to-work"), role))
                 .andExpect(status().isOk());
         mockMvc.perform(withStaff(post(BASE_PATH + "/10/approve"), role))

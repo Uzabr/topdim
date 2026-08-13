@@ -19,6 +19,7 @@ import uz.topdim.coupon.exception.PartnerAccessUnavailableException;
 import uz.topdim.coupon.entity.Merchant;
 import uz.topdim.coupon.entity.MerchantProfileChangeRequest;
 import uz.topdim.coupon.entity.MerchantProfileChangeStatus;
+import uz.topdim.coupon.entity.MerchantProfileChangeHistory;
 import uz.topdim.coupon.repository.AbstractIntegrationTest;
 import uz.topdim.coupon.repository.MerchantProfileChangeHistoryRepository;
 import uz.topdim.coupon.repository.MerchantProfileChangeRequestRepository;
@@ -357,6 +358,55 @@ class MerchantProfileModerationAssignmentTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> service.get(draft.getId()))
                 .isInstanceOf(uz.topdim.coupon.exception.ResourceNotFoundException.class)
                 .hasMessageContaining("не найдена");
+    }
+
+    @Test
+    void historyReturnsAllTransitionsInStableChronologicalOrder() {
+        MerchantProfileChangeRequest inReview = request(
+                merchant("History Market"),
+                MerchantProfileChangeStatus.IN_REVIEW,
+                1301L,
+                77L,
+                LocalDateTime.of(2026, 8, 13, 13, 0));
+        historyRepository.saveAndFlush(MerchantProfileChangeHistory.builder()
+                .request(inReview)
+                .previousStatus(MerchantProfileChangeStatus.PENDING_REVIEW)
+                .newStatus(MerchantProfileChangeStatus.IN_REVIEW)
+                .actorUserId(77L)
+                .actorRole("MODERATOR")
+                .comment("Взята в работу")
+                .build());
+        historyRepository.saveAndFlush(MerchantProfileChangeHistory.builder()
+                .request(inReview)
+                .previousStatus(MerchantProfileChangeStatus.IN_REVIEW)
+                .newStatus(MerchantProfileChangeStatus.IN_REVIEW)
+                .actorUserId(5L)
+                .actorRole("ADMIN")
+                .comment("Исполнитель изменён с 77 на 88")
+                .build());
+
+        var history = service.getHistory(inReview.getId());
+
+        assertThat(history).hasSize(2);
+        assertThat(history).extracting(event -> event.actorUserId())
+                .containsExactly(77L, 5L);
+        assertThat(history.get(1).comment()).contains("77", "88");
+        assertThat(history.get(0).createdAt()).isNotNull();
+    }
+
+    @Test
+    void historyDoesNotExposeDraftOrMissingRequest() {
+        MerchantProfileChangeRequest draft = request(
+                merchant("History Draft"),
+                MerchantProfileChangeStatus.DRAFT,
+                1302L,
+                null,
+                LocalDateTime.of(2026, 8, 13, 13, 10));
+
+        assertThatThrownBy(() -> service.getHistory(draft.getId()))
+                .isInstanceOf(uz.topdim.coupon.exception.ResourceNotFoundException.class);
+        assertThatThrownBy(() -> service.getHistory(999999L))
+                .isInstanceOf(uz.topdim.coupon.exception.ResourceNotFoundException.class);
     }
 
     @Test

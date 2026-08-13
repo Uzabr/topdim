@@ -217,8 +217,8 @@ frontend cache.
 
 ## Известные ограничения текущего acceptance
 
-- Полная `merchant_profile_change_history` хранится, но отдельный history endpoint
-  и лента переходов в admin/partner UI пока не реализованы.
+- Admin detail показывает полную `merchant_profile_change_history` по времени:
+  старый/новый статус, роль и ID сотрудника, комментарий и дату события.
 - Admin detail не показывает preflight-счётчик активных кассиров или текущих
   предложений. Проверка кассиров выполняется backend на submit/approve; отдельного
   предупреждения о предложениях нет.

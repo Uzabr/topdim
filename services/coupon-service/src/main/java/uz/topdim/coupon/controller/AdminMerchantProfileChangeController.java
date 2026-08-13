@@ -20,6 +20,7 @@ import uz.topdim.coupon.dto.merchantprofile.AdminMerchantProfileChangeFilter;
 import uz.topdim.coupon.dto.merchantprofile.AssignMerchantProfileChangeRequest;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeResponse;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeSummary;
+import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeHistoryResponse;
 import uz.topdim.coupon.dto.merchantprofile.ModerationCommentRequest;
 import uz.topdim.coupon.entity.MerchantProfileChangeStatus;
 import uz.topdim.coupon.service.MerchantProfileModerationService;
@@ -73,6 +74,14 @@ public class AdminMerchantProfileChangeController {
             @PathVariable Long id
     ) {
         return ResponseEntity.ok(ApiResponse.success(moderationService.get(id)));
+    }
+
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @GetMapping("/{id}/history")
+    public ResponseEntity<ApiResponse<List<MerchantProfileChangeHistoryResponse>>> getHistory(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(moderationService.getHistory(id)));
     }
 
     @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")

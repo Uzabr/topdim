@@ -19,6 +19,7 @@ import uz.topdim.coupon.client.ModerationAssigneeOption;
 import uz.topdim.coupon.dto.merchantprofile.AdminMerchantProfileChangeFilter;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeResponse;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeSummary;
+import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeHistoryResponse;
 import uz.topdim.coupon.entity.Merchant;
 import uz.topdim.coupon.entity.MerchantLocation;
 import uz.topdim.coupon.entity.MerchantProfileChangeHistory;
@@ -309,6 +310,24 @@ public class MerchantProfileModerationService {
                 .filter(candidate -> candidate.getStatus() != MerchantProfileChangeStatus.DRAFT)
                 .orElseThrow(() -> new ResourceNotFoundException("Заявка не найдена"));
         return mapper.toResponse(request);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MerchantProfileChangeHistoryResponse> getHistory(Long requestId) {
+        MerchantProfileChangeRequest request = requestRepository.findDetailedById(requestId)
+                .filter(candidate -> candidate.getStatus() != MerchantProfileChangeStatus.DRAFT)
+                .orElseThrow(() -> new ResourceNotFoundException("Заявка не найдена"));
+        return historyRepository.findByRequestIdOrderByCreatedAtAscIdAsc(request.getId())
+                .stream()
+                .map(history -> new MerchantProfileChangeHistoryResponse(
+                        history.getId(),
+                        history.getPreviousStatus(),
+                        history.getNewStatus(),
+                        history.getActorUserId(),
+                        history.getActorRole(),
+                        history.getComment(),
+                        history.getCreatedAt()))
+                .toList();
     }
 
     private MerchantProfileChangeRequest findDetailedForUpdate(Long requestId) {

@@ -4,6 +4,7 @@ import type { UserRole } from '../../types';
 import type {
   MerchantProfileChangeDetail,
   MerchantProfileChangePage,
+  MerchantProfileChangeHistoryEvent,
   MerchantProfileChangeQueueFilters,
   PublishedMerchantProfile,
   ModerationAssigneeOption,
@@ -50,6 +51,15 @@ export async function fetchMerchantProfileChangeDetail(
   id: number,
 ): Promise<MerchantProfileChangeDetail> {
   const response = await api.get<ApiResponse<MerchantProfileChangeDetail>>(`${ENDPOINT}/${id}`);
+  return response.data.data;
+}
+
+export async function fetchMerchantProfileChangeHistory(
+  id: number,
+): Promise<MerchantProfileChangeHistoryEvent[]> {
+  const response = await api.get<ApiResponse<MerchantProfileChangeHistoryEvent[]>>(
+    `${ENDPOINT}/${id}/history`,
+  );
   return response.data.data;
 }
 

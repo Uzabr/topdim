@@ -338,7 +338,6 @@ email. Ошибка внешней доставки не откатывает о
 | Реальная payment integration | Есть demo/provider mode и callbacks, но Payme/Click/Uzum provider ещё не доведён до production |
 | Legacy purchase email/SMS | Профиль компании использует in-app + Telegram/email delivery; отдельный legacy SMS-канал покупки остаётся конфигурационно зависимым |
 | Admin roadmap modules | `/users/list` подключён. UI базаров/магазинов и промокодов не входит в текущий admin MVP и остаётся отдельным roadmap-модулем |
-| Полная история заявки в admin UI | История хранится в БД, но detail API/UI пока показывают только текущий статус и moderation comment |
 | Предупреждения перед решением | Admin UI не показывает заранее число активных кассиров/предложений; конфликт активного кассира возвращается backend при approve |
 
 ## Обработка бизнес-ошибок (coupon flow)

@@ -8,5 +8,9 @@ import java.util.List;
 public interface MerchantProfileChangeHistoryRepository
         extends JpaRepository<MerchantProfileChangeHistory, Long> {
 
-    List<MerchantProfileChangeHistory> findByRequestIdOrderByCreatedAtAsc(Long requestId);
+    List<MerchantProfileChangeHistory> findByRequestIdOrderByCreatedAtAscIdAsc(Long requestId);
+
+    default List<MerchantProfileChangeHistory> findByRequestIdOrderByCreatedAtAsc(Long requestId) {
+        return findByRequestIdOrderByCreatedAtAscIdAsc(requestId);
+    }
 }

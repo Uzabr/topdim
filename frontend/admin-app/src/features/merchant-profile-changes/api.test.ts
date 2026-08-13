@@ -3,6 +3,7 @@ import api from '../../api/client';
 import {
   approveMerchantProfileChange,
   fetchMerchantProfileChangeDetail,
+  fetchMerchantProfileChangeHistory,
   fetchModerationAssignees,
   fetchPublishedMerchantProfile,
   fetchMerchantProfileChanges,
@@ -52,6 +53,16 @@ describe('merchant profile moderation API', () => {
     );
     expect(api.get).toHaveBeenNthCalledWith(2, '/api/v1/admin/merchants');
     expect(api.get).toHaveBeenNthCalledWith(3, '/api/v1/admin/merchants/9');
+  });
+
+  it('loads the full request history', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({ data: { data: [{ id: 1 }] } });
+
+    await fetchMerchantProfileChangeHistory(71);
+
+    expect(api.get).toHaveBeenCalledWith(
+      '/api/v1/admin/merchant-change-requests/71/history',
+    );
   });
 
   it('loads eligible moderation assignees for the selector', async () => {
