@@ -96,10 +96,10 @@ npm run lint
 - Загрузка логотипа/обложки принимает JPEG, PNG, WebP и GIF до 20 МБ. Ограничение
   проверяется media-service по MIME и сигнатуре; SVG, подмена типа, пустые и
   слишком большие файлы отклоняются до обращения к MinIO.
-- Admin reassign сейчас вводится как числовой user ID; backend не проверяет роль и
-  активность нового исполнителя через identity-service. Невалидное назначение
-  можно исправить release/reassign, но перед production нужен staff selector и
-  серверная проверка.
+- Admin reassign сейчас вводится как числовой user ID. Backend через
+  identity-service проверяет существование, активность и staff-роль нового
+  исполнителя и не разрешает назначить заявку её автору. Удобный staff selector
+  остаётся отдельной UI-задачей.
 - Production bundles partner/admin превышают 500 kB gzip-warning threshold;
   сборка успешна, но route-level code splitting остаётся performance-задачей.
 

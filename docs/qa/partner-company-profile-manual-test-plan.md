@@ -222,8 +222,9 @@ frontend cache.
 - Admin detail не показывает preflight-счётчик активных кассиров или текущих
   предложений. Проверка кассиров выполняется backend на submit/approve; отдельного
   предупреждения о предложениях нет.
-- `reassign` принимает произвольный положительный user ID без server-side проверки
-  существования, активности и staff role; до исправления проверять ID вручную.
+- `reassign` пока использует ручной ввод user ID вместо staff selector; server-side
+  должны отклоняться отсутствующий, disabled/deleted, non-staff и автор заявки,
+  а при недоступности identity-service назначение не должно изменяться.
 - Production build предупреждает о крупных initial JS chunks partner/admin;
   функционально сборка проходит, route-level code splitting остаётся P2.
 - Автотесты не заменяют прогон с реальными PostgreSQL, RabbitMQ, SMTP и Telegram.

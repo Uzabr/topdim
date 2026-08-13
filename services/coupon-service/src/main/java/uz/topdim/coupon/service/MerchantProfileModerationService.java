@@ -2,6 +2,7 @@ package uz.topdim.coupon.service;
 
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.coupon.client.IdentityPartnerAccessClient;
+import uz.topdim.coupon.client.ModerationAssigneeContext;
 import uz.topdim.coupon.dto.merchantprofile.AdminMerchantProfileChangeFilter;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeResponse;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeSummary;
@@ -42,6 +44,7 @@ import static uz.topdim.coupon.util.PhoneUtils.normalize;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MerchantProfileModerationService {
 
     private static final Sort DEFAULT_QUEUE_SORT = Sort.by(
@@ -140,15 +143,14 @@ public class MerchantProfileModerationService {
             throw new IllegalArgumentException("ID исполнителя должен быть положительным");
         }
 
-        MerchantProfileChangeRequest request = findDetailedForUpdate(requestId);
-        if (request.getStatus() != MerchantProfileChangeStatus.IN_REVIEW) {
-            throw new IllegalStateException("Переназначить можно только заявку в работе");
-        }
-        Long previousAssigneeUserId = request.getAssigneeUserId();
-        if (assigneeUserId.equals(previousAssigneeUserId)) {
-            throw new IllegalStateException("Заявка уже назначена этому исполнителю");
-        }
+        MerchantProfileChangeRequest candidate = requestRepository.findDetailedById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Заявка не найдена"));
+        validateReassignment(candidate, assigneeUserId);
+        validateModerationAssignee(assigneeUserId);
 
+        MerchantProfileChangeRequest request = findDetailedForUpdate(requestId);
+        validateReassignment(request, assigneeUserId);
+        Long previousAssigneeUserId = request.getAssigneeUserId();
         request.setAssigneeUserId(assigneeUserId);
         request.setAssignedAt(LocalDateTime.now());
         request = requestRepository.save(request);
@@ -160,6 +162,49 @@ public class MerchantProfileModerationService {
                 actorRole,
                 "Исполнитель изменён с " + previousAssigneeUserId + " на " + assigneeUserId);
         return mapper.toResponse(request);
+    }
+
+    private void validateReassignment(
+            MerchantProfileChangeRequest request,
+            Long assigneeUserId
+    ) {
+        if (request.getStatus() != MerchantProfileChangeStatus.IN_REVIEW) {
+            throw new IllegalStateException("Переназначить можно только заявку в работе");
+        }
+        if (assigneeUserId.equals(request.getAssigneeUserId())) {
+            throw new IllegalStateException("Заявка уже назначена этому исполнителю");
+        }
+        if (assigneeUserId.equals(request.getAuthorUserId())) {
+            throw new IllegalArgumentException("Нельзя назначить заявку её автору");
+        }
+    }
+
+    private void validateModerationAssignee(Long assigneeUserId) {
+        try {
+            ApiResponse<ModerationAssigneeContext> response =
+                    identityClient.getModerationAssignee(assigneeUserId);
+            if (response == null || !response.isSuccess() || response.getData() == null) {
+                throw new PartnerAccessUnavailableException(
+                        "Проверка исполнителя временно недоступна");
+            }
+            ModerationAssigneeContext assignee = response.getData();
+            if (!assigneeUserId.equals(assignee.userId())
+                    || assignee.role() == null
+                    || !assignee.eligible()
+                    || !Set.of("MODERATOR", "ADMIN", "SUPER_ADMIN").contains(assignee.role())) {
+                throw new IllegalArgumentException(
+                        "Исполнитель должен быть активным сотрудником модерации");
+            }
+        } catch (IllegalArgumentException exception) {
+            throw exception;
+        } catch (PartnerAccessUnavailableException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            log.warn("Identity moderation assignee check unavailable for userId={}: {}",
+                    assigneeUserId, exception.getClass().getSimpleName());
+            throw new PartnerAccessUnavailableException(
+                    "Проверка исполнителя временно недоступна");
+        }
     }
 
     @Transactional

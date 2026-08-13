@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.coupon.dto.merchantprofile.AdminMerchantProfileChangeFilter;
 import uz.topdim.coupon.client.IdentityPartnerAccessClient;
+import uz.topdim.coupon.client.ModerationAssigneeContext;
+import uz.topdim.common.dto.ApiResponse;
+import uz.topdim.coupon.exception.PartnerAccessUnavailableException;
 import uz.topdim.coupon.entity.Merchant;
 import uz.topdim.coupon.entity.MerchantProfileChangeRequest;
 import uz.topdim.coupon.entity.MerchantProfileChangeStatus;
@@ -30,6 +33,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -240,6 +246,8 @@ class MerchantProfileModerationAssignmentTest extends AbstractIntegrationTest {
                 77L,
                 LocalDateTime.of(2026, 8, 13, 11, 0));
         LocalDateTime previousAssignedAt = inReview.getAssignedAt();
+        when(identityClient.getModerationAssignee(88L)).thenReturn(ApiResponse.success(
+                new ModerationAssigneeContext(88L, "MODERATOR", true)));
 
         var reassigned = service.reassign(inReview.getId(), 88L, 5L, "SUPER_ADMIN");
 
@@ -256,6 +264,65 @@ class MerchantProfileModerationAssignmentTest extends AbstractIntegrationTest {
                     assertThat(history.getComment()).contains("77", "88");
                     assertThat(history.getActorRole()).isEqualTo("SUPER_ADMIN");
                 });
+    }
+
+    @Test
+    void reassignRejectsMissingDisabledOrNonStaffTargetWithoutChangingRequest() {
+        MerchantProfileChangeRequest inReview = request(
+                merchant("Invalid Staff Market"),
+                MerchantProfileChangeStatus.IN_REVIEW,
+                1104L,
+                77L,
+                LocalDateTime.of(2026, 8, 13, 12, 10));
+        when(identityClient.getModerationAssignee(88L)).thenReturn(ApiResponse.success(
+                new ModerationAssigneeContext(88L, "PARTNER", false)));
+
+        assertThatThrownBy(() -> service.reassign(inReview.getId(), 88L, 5L, "ADMIN"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("активным сотрудником модерации");
+
+        MerchantProfileChangeRequest unchanged = requestRepository.findById(inReview.getId()).orElseThrow();
+        assertThat(unchanged.getAssigneeUserId()).isEqualTo(77L);
+        assertThat(historyRepository.findByRequestIdOrderByCreatedAtAsc(inReview.getId())).isEmpty();
+    }
+
+    @Test
+    void reassignFailsClosedWhenIdentityServiceResponseIsUnavailable() {
+        MerchantProfileChangeRequest inReview = request(
+                merchant("Identity Down Market"),
+                MerchantProfileChangeStatus.IN_REVIEW,
+                1105L,
+                77L,
+                LocalDateTime.of(2026, 8, 13, 12, 20));
+        when(identityClient.getModerationAssignee(88L)).thenThrow(new RuntimeException("timeout"));
+
+        assertThatThrownBy(() -> service.reassign(inReview.getId(), 88L, 5L, "ADMIN"))
+                .isInstanceOf(PartnerAccessUnavailableException.class)
+                .hasMessageContaining("исполнителя");
+
+        MerchantProfileChangeRequest unchanged = requestRepository.findById(inReview.getId()).orElseThrow();
+        assertThat(unchanged.getAssigneeUserId()).isEqualTo(77L);
+        assertThat(historyRepository.findByRequestIdOrderByCreatedAtAsc(inReview.getId())).isEmpty();
+    }
+
+    @Test
+    void reassignFailsClosedWhenIdentityReturnsUnsuccessfulResponse() {
+        MerchantProfileChangeRequest inReview = request(
+                merchant("Identity Error Market"),
+                MerchantProfileChangeStatus.IN_REVIEW,
+                1106L,
+                77L,
+                LocalDateTime.of(2026, 8, 13, 12, 25));
+        when(identityClient.getModerationAssignee(88L))
+                .thenReturn(ApiResponse.error("identity error"));
+
+        assertThatThrownBy(() -> service.reassign(inReview.getId(), 88L, 5L, "ADMIN"))
+                .isInstanceOf(PartnerAccessUnavailableException.class)
+                .hasMessageContaining("исполнителя");
+
+        assertThat(requestRepository.findById(inReview.getId()).orElseThrow().getAssigneeUserId())
+                .isEqualTo(77L);
+        assertThat(historyRepository.findByRequestIdOrderByCreatedAtAsc(inReview.getId())).isEmpty();
     }
 
     @Test
@@ -290,6 +357,25 @@ class MerchantProfileModerationAssignmentTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void reassignRejectsRequestAuthorEvenWhenAuthorIsEligibleStaff() {
+        MerchantProfileChangeRequest inReview = request(
+                merchant("Four Eyes Market"),
+                MerchantProfileChangeStatus.IN_REVIEW,
+                88L,
+                77L,
+                LocalDateTime.of(2026, 8, 13, 11, 40));
+
+        assertThatThrownBy(() -> service.reassign(inReview.getId(), 88L, 5L, "ADMIN"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("автору");
+
+        assertThat(requestRepository.findById(inReview.getId()).orElseThrow().getAssigneeUserId())
+                .isEqualTo(77L);
+        assertThat(historyRepository.findByRequestIdOrderByCreatedAtAsc(inReview.getId())).isEmpty();
+        verify(identityClient, never()).getModerationAssignee(88L);
+    }
+
+    @Test
     void reassignRejectsNonPositiveAssignee() {
         MerchantProfileChangeRequest inReview = request(
                 merchant("Invalid Assignee Market"),
@@ -304,6 +390,7 @@ class MerchantProfileModerationAssignmentTest extends AbstractIntegrationTest {
                 .hasMessageContaining("положительным");
         assertThat(historyRepository.findByRequestIdOrderByCreatedAtAsc(inReview.getId()))
                 .isEmpty();
+        verify(identityClient, never()).getModerationAssignee(0L);
     }
 
     private AdminMerchantProfileChangeFilter filterWithSearch(String search) {

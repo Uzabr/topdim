@@ -20,4 +20,7 @@ public interface IdentityPartnerAccessClient {
 
     @GetMapping("/internal/partner-access/merchants/{merchantId}/active-staff-location-ids")
     ApiResponse<Set<Long>> getActiveStaffLocationIds(@PathVariable("merchantId") Long merchantId);
+
+    @GetMapping("/internal/moderation-assignees/{userId}")
+    ApiResponse<ModerationAssigneeContext> getModerationAssignee(@PathVariable("userId") Long userId);
 }
