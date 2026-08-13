@@ -96,6 +96,13 @@ export interface PublishedMerchantProfile {
   locations: PublishedMerchantLocation[];
 }
 
+export interface ModerationAssigneeOption {
+  userId: number;
+  name: string;
+  email: string;
+  role: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
+}
+
 export type MerchantProfileChangePage = PageResponse<MerchantProfileChangeSummary>;
 
 export interface MerchantProfileChangeQueueFilters {

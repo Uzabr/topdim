@@ -6,6 +6,7 @@ import type {
   MerchantProfileChangePage,
   MerchantProfileChangeQueueFilters,
   PublishedMerchantProfile,
+  ModerationAssigneeOption,
 } from './types';
 
 const ENDPOINT = '/api/v1/admin/merchant-change-requests';
@@ -94,4 +95,11 @@ export async function reassignMerchantProfileChange(
   assigneeUserId: number,
 ): Promise<void> {
   await api.post(`${ENDPOINT}/${id}/reassign`, { assigneeUserId });
+}
+
+export async function fetchModerationAssignees(): Promise<ModerationAssigneeOption[]> {
+  const response = await api.get<ApiResponse<ModerationAssigneeOption[]>>(
+    `${ENDPOINT}/assignees`,
+  );
+  return response.data.data;
 }

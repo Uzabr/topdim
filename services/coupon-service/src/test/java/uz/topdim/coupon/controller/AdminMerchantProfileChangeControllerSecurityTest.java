@@ -78,14 +78,20 @@ class AdminMerchantProfileChangeControllerSecurityTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"assigneeUserId\":88}"), "MODERATOR"))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(withStaff(get(BASE_PATH + "/assignees"), "MODERATOR"))
+                .andExpect(status().isForbidden());
 
         verify(moderationService, never()).release(any(), any(), any());
         verify(moderationService, never()).reassign(any(), any(), any(), any());
+        verify(moderationService, never()).listModerationAssignees();
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"ADMIN", "SUPER_ADMIN"})
     void adminRolesCanReleaseAndReassign(String role) throws Exception {
+        when(moderationService.listModerationAssignees()).thenReturn(java.util.List.of());
+        mockMvc.perform(withStaff(get(BASE_PATH + "/assignees"), role))
+                .andExpect(status().isOk());
         mockMvc.perform(withStaff(post(BASE_PATH + "/10/release"), role))
                 .andExpect(status().isOk());
         mockMvc.perform(withStaff(post(BASE_PATH + "/10/reassign")
@@ -95,6 +101,7 @@ class AdminMerchantProfileChangeControllerSecurityTest {
 
         verify(moderationService).release(10L, 42L, role);
         verify(moderationService).reassign(10L, 88L, 42L, role);
+        verify(moderationService).listModerationAssignees();
     }
 
     @Test

@@ -7,6 +7,7 @@ import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.coupon.config.FeignInternalAuthConfig;
 
 import java.util.Set;
+import java.util.List;
 
 @FeignClient(
         name = "identity-service",
@@ -23,4 +24,7 @@ public interface IdentityPartnerAccessClient {
 
     @GetMapping("/internal/moderation-assignees/{userId}")
     ApiResponse<ModerationAssigneeContext> getModerationAssignee(@PathVariable("userId") Long userId);
+
+    @GetMapping("/internal/moderation-assignees")
+    ApiResponse<List<ModerationAssigneeOption>> getModerationAssignees();
 }

@@ -9,7 +9,9 @@ import uz.topdim.identity.entity.Role;
 import uz.topdim.identity.entity.User;
 import uz.topdim.identity.repository.UserRepository;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -67,6 +69,26 @@ class ModerationAssigneeServiceTest {
         assertThat(result.userId()).isEqualTo(999L);
         assertThat(result.role()).isNull();
         assertThat(result.eligible()).isFalse();
+    }
+
+    @Test
+    void listsOnlyActiveModerationStaffWithHumanReadableNames() {
+        User moderator = user(31L, Role.MODERATOR, true, false);
+        moderator.setFirstName("  Ali  ");
+        moderator.setLastName("Valiyev");
+        User admin = user(32L, Role.ADMIN, true, false);
+        admin.setFirstName(" ");
+        admin.setLastName(null);
+        when(userRepository.findAllByRoleInAndEnabledTrueAndDeletedFalseOrderByFirstNameAscLastNameAsc(
+                Set.of(Role.MODERATOR, Role.ADMIN, Role.SUPER_ADMIN)))
+                .thenReturn(List.of(moderator, admin));
+
+        var options = service.listEligible();
+
+        assertThat(options).hasSize(2);
+        assertThat(options.get(0).name()).isEqualTo("Ali Valiyev");
+        assertThat(options.get(0).email()).isEqualTo("staff31@topdim.uz");
+        assertThat(options.get(1).name()).isEqualTo("staff32@topdim.uz");
     }
 
     private User user(Long id, Role role, boolean enabled, boolean deleted) {

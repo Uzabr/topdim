@@ -12,6 +12,7 @@ import type { UserRole } from '../../types';
 vi.mock('./api', () => ({
   MERCHANT_PROFILE_CHANGES_QUERY_KEY: ['merchant-profile-changes'],
   fetchMerchantProfileChangeDetail: vi.fn(),
+  fetchModerationAssignees: vi.fn(),
   fetchPublishedMerchantProfile: vi.fn(),
   approveMerchantProfileChange: vi.fn(),
   requestMerchantProfileChangeRevision: vi.fn(),
@@ -118,6 +119,10 @@ describe('MerchantProfileChangeDetailPage', () => {
     loginAs(42, 'MODERATOR');
     vi.mocked(profileChangesApi.fetchMerchantProfileChangeDetail).mockResolvedValue(request);
     vi.mocked(profileChangesApi.fetchPublishedMerchantProfile).mockResolvedValue(published);
+    vi.mocked(profileChangesApi.fetchModerationAssignees).mockResolvedValue([
+      { userId: 88, name: 'Ali Valiyev', email: 'ali@topdim.uz', role: 'MODERATOR' },
+      { userId: 18, name: 'Request Author', email: 'author@topdim.uz', role: 'ADMIN' },
+    ]);
     vi.mocked(profileChangesApi.approveMerchantProfileChange).mockResolvedValue();
     vi.mocked(profileChangesApi.requestMerchantProfileChangeRevision).mockResolvedValue();
     vi.mocked(profileChangesApi.rejectMerchantProfileChange).mockResolvedValue();
@@ -180,19 +185,35 @@ describe('MerchantProfileChangeDetailPage', () => {
     expect(screen.getByRole('button', { name: 'Переназначить' })).toBeTruthy();
   });
 
-  it('lets ADMIN reassign an in-review request to a positive user id', async () => {
+  it('lets ADMIN choose an eligible non-author assignee by name', async () => {
     loginAs(42, 'ADMIN');
     const user = userEvent.setup();
     renderPage();
     await screen.findByText('Safia Cafe');
 
     await user.click(screen.getByRole('button', { name: 'Переназначить' }));
-    await user.type(screen.getByLabelText('Новый ID исполнителя'), '88');
+    expect(screen.queryByText('Request Author')).toBeNull();
+    await user.click(screen.getByLabelText('Новый исполнитель'));
+    await user.click(await screen.findByText('Ali Valiyev · MODERATOR'));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Переназначить' }));
 
     await waitFor(() => {
       expect(profileChangesApi.reassignMerchantProfileChange).toHaveBeenCalledWith(71, 88);
     });
+  });
+
+  it('shows retryable error when eligible assignees cannot be loaded', async () => {
+    loginAs(42, 'ADMIN');
+    vi.mocked(profileChangesApi.fetchModerationAssignees).mockRejectedValue(new Error('offline'));
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Safia Cafe');
+
+    await user.click(screen.getByRole('button', { name: 'Переназначить' }));
+
+    expect(await screen.findByText('Не удалось загрузить список исполнителей')).toBeTruthy();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Переназначить' }))
+      .toHaveProperty('disabled', true);
   });
 
   it('does not let the author decide their own assigned request', async () => {

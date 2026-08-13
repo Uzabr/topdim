@@ -3,6 +3,7 @@ import api from '../../api/client';
 import {
   approveMerchantProfileChange,
   fetchMerchantProfileChangeDetail,
+  fetchModerationAssignees,
   fetchPublishedMerchantProfile,
   fetchMerchantProfileChanges,
   fetchPendingMerchantProfileChangeCount,
@@ -51,6 +52,19 @@ describe('merchant profile moderation API', () => {
     );
     expect(api.get).toHaveBeenNthCalledWith(2, '/api/v1/admin/merchants');
     expect(api.get).toHaveBeenNthCalledWith(3, '/api/v1/admin/merchants/9');
+  });
+
+  it('loads eligible moderation assignees for the selector', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      data: { data: [{ userId: 88, name: 'Ali Valiyev', role: 'MODERATOR' }] },
+    });
+
+    await expect(fetchModerationAssignees()).resolves.toEqual([
+      { userId: 88, name: 'Ali Valiyev', role: 'MODERATOR' },
+    ]);
+    expect(api.get).toHaveBeenCalledWith(
+      '/api/v1/admin/merchant-change-requests/assignees',
+    );
   });
 
   it('sends exact moderation action methods and normalized payloads', async () => {

@@ -7,9 +7,9 @@ import {
   Descriptions,
   Form,
   Input,
-  InputNumber,
   Modal,
   Result,
+  Select,
   Space,
   Spin,
   Tag,
@@ -22,6 +22,7 @@ import {
   approveMerchantProfileChange,
   fetchMerchantProfileChangeDetail,
   fetchPublishedMerchantProfile,
+  fetchModerationAssignees,
   MERCHANT_PROFILE_CHANGES_QUERY_KEY,
   reassignMerchantProfileChange,
   rejectMerchantProfileChange,
@@ -78,6 +79,12 @@ export function MerchantProfileChangeDetailPage() {
     queryKey: [...MERCHANT_PROFILE_CHANGES_QUERY_KEY, 'published', request?.merchantId, user?.role],
     queryFn: () => fetchPublishedMerchantProfile(request!.merchantId, user!.role),
     enabled: !!request && !!user,
+  });
+
+  const assigneesQuery = useQuery({
+    queryKey: [...MERCHANT_PROFILE_CHANGES_QUERY_KEY, 'assignees'],
+    queryFn: fetchModerationAssignees,
+    enabled: reassignOpen,
   });
 
   const handleMutationError = (error: unknown, fallback: string) => {
@@ -297,12 +304,28 @@ export function MerchantProfileChangeDetailPage() {
         onOk={() => newAssigneeId && reassignMutation.mutate(newAssigneeId)}
         okButtonProps={{ disabled: !newAssigneeId }}
       >
-        <InputNumber
-          aria-label="Новый ID исполнителя"
-          min={1}
-          precision={0}
+        {assigneesQuery.isError && (
+          <Alert
+            type="error"
+            title="Не удалось загрузить список исполнителей"
+            action={<Button size="small" onClick={() => assigneesQuery.refetch()}>Повторить</Button>}
+            style={{ marginBottom: 12 }}
+          />
+        )}
+        <Select
+          aria-label="Новый исполнитель"
+          placeholder="Выберите сотрудника"
+          loading={assigneesQuery.isLoading}
+          disabled={assigneesQuery.isError}
           value={newAssigneeId}
           onChange={setNewAssigneeId}
+          options={(assigneesQuery.data ?? [])
+            .filter((assignee) => assignee.userId !== request.authorUserId
+              && assignee.userId !== request.assigneeUserId)
+            .map((assignee) => ({
+              value: assignee.userId,
+              label: `${assignee.name} · ${assignee.role}`,
+            }))}
           style={{ width: '100%' }}
         />
       </Modal>

@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.coupon.client.IdentityPartnerAccessClient;
 import uz.topdim.coupon.client.ModerationAssigneeContext;
+import uz.topdim.coupon.client.ModerationAssigneeOption;
 import uz.topdim.coupon.dto.merchantprofile.AdminMerchantProfileChangeFilter;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeResponse;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeSummary;
@@ -162,6 +163,26 @@ public class MerchantProfileModerationService {
                 actorRole,
                 "Исполнитель изменён с " + previousAssigneeUserId + " на " + assigneeUserId);
         return mapper.toResponse(request);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ModerationAssigneeOption> listModerationAssignees() {
+        try {
+            ApiResponse<List<ModerationAssigneeOption>> response =
+                    identityClient.getModerationAssignees();
+            if (response == null || !response.isSuccess() || response.getData() == null) {
+                throw new PartnerAccessUnavailableException(
+                        "Список исполнителей временно недоступен");
+            }
+            return response.getData();
+        } catch (PartnerAccessUnavailableException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            log.warn("Identity moderation assignee list unavailable: {}",
+                    exception.getClass().getSimpleName());
+            throw new PartnerAccessUnavailableException(
+                    "Список исполнителей временно недоступен");
+        }
     }
 
     private void validateReassignment(

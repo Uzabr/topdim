@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.coupon.dto.merchantprofile.AdminMerchantProfileChangeFilter;
 import uz.topdim.coupon.client.IdentityPartnerAccessClient;
 import uz.topdim.coupon.client.ModerationAssigneeContext;
+import uz.topdim.coupon.client.ModerationAssigneeOption;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.coupon.exception.PartnerAccessUnavailableException;
 import uz.topdim.coupon.entity.Merchant;
@@ -323,6 +324,25 @@ class MerchantProfileModerationAssignmentTest extends AbstractIntegrationTest {
         assertThat(requestRepository.findById(inReview.getId()).orElseThrow().getAssigneeUserId())
                 .isEqualTo(77L);
         assertThat(historyRepository.findByRequestIdOrderByCreatedAtAsc(inReview.getId())).isEmpty();
+    }
+
+    @Test
+    void listsEligibleModerationAssigneesFromIdentity() {
+        when(identityClient.getModerationAssignees()).thenReturn(ApiResponse.success(List.of(
+                new ModerationAssigneeOption(88L, "Ali Valiyev", "ali@topdim.uz", "MODERATOR"))));
+
+        assertThat(service.listModerationAssignees())
+                .singleElement()
+                .satisfies(option -> assertThat(option.userId()).isEqualTo(88L));
+    }
+
+    @Test
+    void assigneeListFailsClosedWhenIdentityIsUnavailable() {
+        when(identityClient.getModerationAssignees()).thenThrow(new RuntimeException("timeout"));
+
+        assertThatThrownBy(service::listModerationAssignees)
+                .isInstanceOf(PartnerAccessUnavailableException.class)
+                .hasMessageContaining("Список исполнителей");
     }
 
     @Test

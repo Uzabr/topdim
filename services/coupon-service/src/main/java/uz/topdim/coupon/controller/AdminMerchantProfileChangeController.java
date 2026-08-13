@@ -23,8 +23,10 @@ import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeSummary;
 import uz.topdim.coupon.dto.merchantprofile.ModerationCommentRequest;
 import uz.topdim.coupon.entity.MerchantProfileChangeStatus;
 import uz.topdim.coupon.service.MerchantProfileModerationService;
+import uz.topdim.coupon.client.ModerationAssigneeOption;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin/merchant-change-requests")
@@ -32,6 +34,13 @@ import java.time.LocalDateTime;
 public class AdminMerchantProfileChangeController {
 
     private final MerchantProfileModerationService moderationService;
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @GetMapping("/assignees")
+    public ResponseEntity<ApiResponse<List<ModerationAssigneeOption>>> listAssignees() {
+        return ResponseEntity.ok(ApiResponse.success(
+                moderationService.listModerationAssignees()));
+    }
 
     @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
     @GetMapping
