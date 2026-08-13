@@ -214,6 +214,19 @@ public class MerchantProfileMapper {
         );
     }
 
+    public void applySnapshotToMerchant(
+            MerchantProfileChangeRequest request,
+            Merchant merchant
+    ) {
+        merchant.setName(request.getName());
+        merchant.setDescription(request.getDescription());
+        merchant.setLogoUrl(request.getLogoUrl());
+        merchant.setCoverUrl(request.getCoverUrl());
+        merchant.setEmail(request.getEmail());
+        merchant.setWebsite(request.getWebsite());
+        merchant.setContactPerson(request.getContactPerson());
+    }
+
     private MerchantProfileLocationResponse toLocationResponse(
             MerchantProfileChangeLocation location
     ) {

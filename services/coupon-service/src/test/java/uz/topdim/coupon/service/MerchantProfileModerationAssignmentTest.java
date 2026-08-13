@@ -5,11 +5,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import uz.topdim.coupon.dto.merchantprofile.AdminMerchantProfileChangeFilter;
+import uz.topdim.coupon.client.IdentityPartnerAccessClient;
 import uz.topdim.coupon.entity.Merchant;
 import uz.topdim.coupon.entity.MerchantProfileChangeRequest;
 import uz.topdim.coupon.entity.MerchantProfileChangeStatus;
@@ -38,6 +40,7 @@ class MerchantProfileModerationAssignmentTest extends AbstractIntegrationTest {
     @Autowired private MerchantRepository merchantRepository;
     @Autowired private MerchantProfileChangeRequestRepository requestRepository;
     @Autowired private MerchantProfileChangeHistoryRepository historyRepository;
+    @MockBean private IdentityPartnerAccessClient identityClient;
 
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
 

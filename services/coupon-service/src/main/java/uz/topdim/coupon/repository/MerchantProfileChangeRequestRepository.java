@@ -15,6 +15,7 @@ import uz.topdim.coupon.entity.MerchantProfileChangeStatus;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface MerchantProfileChangeRequestRepository
@@ -84,5 +85,14 @@ public interface MerchantProfileChangeRequestRepository
             @Param("pendingReview") MerchantProfileChangeStatus pendingReview,
             @Param("inReview") MerchantProfileChangeStatus inReview,
             @Param("assignedAt") LocalDateTime assignedAt
+    );
+
+    @Query("SELECT request.merchant.id FROM MerchantProfileChangeRequest request WHERE request.id = :id")
+    Optional<Long> findMerchantIdById(@Param("id") Long id);
+
+    List<MerchantProfileChangeRequest> findByMerchantIdAndBaseProfileVersionAndStatusIn(
+            Long merchantId,
+            long baseProfileVersion,
+            Collection<MerchantProfileChangeStatus> statuses
     );
 }

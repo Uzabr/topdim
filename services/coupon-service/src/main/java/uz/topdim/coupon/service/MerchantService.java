@@ -12,12 +12,16 @@ import uz.topdim.coupon.entity.Category;
 import uz.topdim.coupon.entity.CouponStatus;
 import uz.topdim.coupon.entity.Merchant;
 import uz.topdim.coupon.entity.MerchantLocation;
+import uz.topdim.coupon.entity.MerchantProfileChangeRequest;
+import uz.topdim.coupon.entity.MerchantProfileChangeStatus;
 import uz.topdim.coupon.exception.ResourceNotFoundException;
 import uz.topdim.coupon.repository.CategoryRepository;
 import uz.topdim.coupon.repository.CouponOfferRepository;
 import uz.topdim.coupon.repository.MerchantLocationRepository;
+import uz.topdim.coupon.repository.MerchantProfileChangeRequestRepository;
 import uz.topdim.coupon.repository.MerchantRepository;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +45,7 @@ public class MerchantService {
     private final MerchantLocationRepository merchantLocationRepository;
     private final CategoryRepository categoryRepository;
     private final CouponOfferRepository couponOfferRepository;
+    private final MerchantProfileChangeRequestRepository profileChangeRequestRepository;
 
     // ==================== Internal Context ====================
 
@@ -253,8 +258,9 @@ public class MerchantService {
     @CacheEvict(value = "catalog", allEntries = true)
     @Transactional
     public MerchantResponse updateMerchant(Long id, CreateMerchantRequest request) {
-        Merchant merchant = merchantRepository.findById(id)
+        Merchant merchant = merchantRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Партнёр не найден"));
+        long previousProfileVersion = merchant.getProfileVersion();
         merchant.setName(request.getName());
         merchant.setDescription(request.getDescription());
         merchant.setLogoUrl(request.getLogoUrl());
@@ -267,8 +273,25 @@ public class MerchantService {
 
         // Update locations: safe path (null = preserve, empty = check dependents)
         saveLocationsForUpdate(merchant, request);
+        merchant.setProfileVersion(previousProfileVersion + 1);
+        merchantRepository.save(merchant);
+        markProfileRequestsOutdated(merchant.getId(), previousProfileVersion);
 
         return mapMerchant(merchantRepository.findById(id).orElseThrow());
+    }
+
+    private void markProfileRequestsOutdated(Long merchantId, long baseProfileVersion) {
+        List<MerchantProfileChangeRequest> activeRequests = profileChangeRequestRepository
+                .findByMerchantIdAndBaseProfileVersionAndStatusIn(
+                        merchantId,
+                        baseProfileVersion,
+                        MerchantProfileChangeStatus.activeStatuses());
+        LocalDateTime decidedAt = LocalDateTime.now();
+        activeRequests.forEach(request -> {
+            request.setStatus(MerchantProfileChangeStatus.OUTDATED);
+            request.setDecidedAt(decidedAt);
+        });
+        profileChangeRequestRepository.saveAll(activeRequests);
     }
 
     // ==================== Location Helpers ====================

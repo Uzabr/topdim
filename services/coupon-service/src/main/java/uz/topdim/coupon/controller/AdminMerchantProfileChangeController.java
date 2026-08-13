@@ -20,6 +20,7 @@ import uz.topdim.coupon.dto.merchantprofile.AdminMerchantProfileChangeFilter;
 import uz.topdim.coupon.dto.merchantprofile.AssignMerchantProfileChangeRequest;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeResponse;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeSummary;
+import uz.topdim.coupon.dto.merchantprofile.ModerationCommentRequest;
 import uz.topdim.coupon.entity.MerchantProfileChangeStatus;
 import uz.topdim.coupon.service.MerchantProfileModerationService;
 
@@ -75,6 +76,45 @@ public class AdminMerchantProfileChangeController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Заявка взята в работу",
                 moderationService.takeToWork(id, actorUserId, actorRole)));
+    }
+
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<ApiResponse<MerchantProfileChangeResponse>> approve(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long actorUserId,
+            @RequestHeader("X-User-Role") String actorRole
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Изменения одобрены и опубликованы",
+                moderationService.approve(id, actorUserId, actorRole)));
+    }
+
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PostMapping("/{id}/request-revision")
+    public ResponseEntity<ApiResponse<MerchantProfileChangeResponse>> requestRevision(
+            @PathVariable Long id,
+            @Valid @RequestBody ModerationCommentRequest request,
+            @RequestHeader("X-User-Id") Long actorUserId,
+            @RequestHeader("X-User-Role") String actorRole
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Заявка возвращена на доработку",
+                moderationService.requestRevision(
+                        id, actorUserId, actorRole, request.comment())));
+    }
+
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN', 'SUPER_ADMIN')")
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<ApiResponse<MerchantProfileChangeResponse>> reject(
+            @PathVariable Long id,
+            @Valid @RequestBody ModerationCommentRequest request,
+            @RequestHeader("X-User-Id") Long actorUserId,
+            @RequestHeader("X-User-Role") String actorRole
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Заявка отклонена",
+                moderationService.reject(id, actorUserId, actorRole, request.comment())));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")

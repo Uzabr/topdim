@@ -51,6 +51,16 @@ class AdminMerchantProfileChangeControllerSecurityTest {
         mockMvc.perform(withStaff(get(BASE_PATH + "/10"), role)).andExpect(status().isOk());
         mockMvc.perform(withStaff(post(BASE_PATH + "/10/take-to-work"), role))
                 .andExpect(status().isOk());
+        mockMvc.perform(withStaff(post(BASE_PATH + "/10/approve"), role))
+                .andExpect(status().isOk());
+        mockMvc.perform(withStaff(post(BASE_PATH + "/10/request-revision")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"comment\":\"Уточните адрес\"}"), role))
+                .andExpect(status().isOk());
+        mockMvc.perform(withStaff(post(BASE_PATH + "/10/reject")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"comment\":\"Нарушение правил\"}"), role))
+                .andExpect(status().isOk());
     }
 
     @ParameterizedTest
@@ -138,6 +148,19 @@ class AdminMerchantProfileChangeControllerSecurityTest {
                         .content(body), "ADMIN"))
                 .andExpect(status().isBadRequest());
         verify(moderationService, never()).reassign(any(), any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"comment\":\"   \"}"})
+    void revisionAndRejectRequireNonBlankComment(String body) throws Exception {
+        for (String action : new String[]{"request-revision", "reject"}) {
+            mockMvc.perform(withStaff(post(BASE_PATH + "/10/" + action)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body), "MODERATOR"))
+                    .andExpect(status().isBadRequest());
+        }
+        verify(moderationService, never()).requestRevision(any(), any(), any(), any());
+        verify(moderationService, never()).reject(any(), any(), any(), any());
     }
 
     @Test

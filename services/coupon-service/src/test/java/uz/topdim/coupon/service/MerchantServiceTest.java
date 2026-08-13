@@ -17,10 +17,13 @@ import uz.topdim.coupon.entity.Category;
 import uz.topdim.coupon.entity.CouponStatus;
 import uz.topdim.coupon.entity.Merchant;
 import uz.topdim.coupon.entity.MerchantLocation;
+import uz.topdim.coupon.entity.MerchantProfileChangeRequest;
+import uz.topdim.coupon.entity.MerchantProfileChangeStatus;
 import uz.topdim.coupon.exception.ResourceNotFoundException;
 import uz.topdim.coupon.repository.CategoryRepository;
 import uz.topdim.coupon.repository.CouponOfferRepository;
 import uz.topdim.coupon.repository.MerchantLocationRepository;
+import uz.topdim.coupon.repository.MerchantProfileChangeRequestRepository;
 import uz.topdim.coupon.repository.MerchantRepository;
 
 import java.util.List;
@@ -37,6 +40,7 @@ class MerchantServiceTest {
     @Mock private MerchantLocationRepository merchantLocationRepository;
     @Mock private CategoryRepository categoryRepository;
     @Mock private CouponOfferRepository couponOfferRepository;
+    @Mock private MerchantProfileChangeRequestRepository profileChangeRequestRepository;
 
     @InjectMocks
     private MerchantService merchantService;
@@ -178,8 +182,19 @@ class MerchantServiceTest {
         @DisplayName("Обновление: успешное — обновляет поля")
         void updateMerchant_success() {
             Merchant existing = createTestMerchant();
+            existing.setProfileVersion(4L);
+            MerchantProfileChangeRequest pending = MerchantProfileChangeRequest.builder()
+                    .merchant(existing)
+                    .baseProfileVersion(4L)
+                    .status(MerchantProfileChangeStatus.PENDING_REVIEW)
+                    .build();
+            when(merchantRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(profileChangeRequestRepository
+                    .findByMerchantIdAndBaseProfileVersionAndStatusIn(
+                            1L, 4L, MerchantProfileChangeStatus.activeStatuses()))
+                    .thenReturn(List.of(pending));
 
             CreateMerchantRequest.LocationRequest primary = new CreateMerchantRequest.LocationRequest();
             primary.setAddress("ул. Обновлённая");
@@ -194,6 +209,13 @@ class MerchantServiceTest {
             MerchantResponse result = merchantService.updateMerchant(1L, request);
 
             assertThat(result.getName()).isEqualTo("Updated SPA");
+            assertThat(existing.getProfileVersion()).isEqualTo(5L);
+            assertThat(pending.getStatus()).isEqualTo(MerchantProfileChangeStatus.OUTDATED);
+            assertThat(pending.getDecidedAt()).isNotNull();
+            verify(profileChangeRequestRepository)
+                    .findByMerchantIdAndBaseProfileVersionAndStatusIn(
+                            eq(1L), eq(4L), eq(uz.topdim.coupon.entity.MerchantProfileChangeStatus.activeStatuses()));
+            verify(profileChangeRequestRepository).saveAll(List.of(pending));
         }
 
         @Test
@@ -235,6 +257,7 @@ class MerchantServiceTest {
         @DisplayName("Обновление: телефон с пробелами нормализуется в normalized location")
         void updateMerchant_normalizesSpacedPhoneInNormalizedLocation() {
             Merchant existing = createTestMerchant();
+            when(merchantRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -270,6 +293,7 @@ class MerchantServiceTest {
                     .primary(true)
                     .active(true)
                     .build();
+            when(merchantRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(merchantLocationRepository.findByMerchantId(1L)).thenReturn(List.of(location));
@@ -312,6 +336,7 @@ class MerchantServiceTest {
                     .primary(true)
                     .active(true)
                     .build();
+            when(merchantRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(merchantLocationRepository.findByMerchantId(1L)).thenReturn(List.of(location));
@@ -332,7 +357,7 @@ class MerchantServiceTest {
         @DisplayName("Обновление: ID локации другого мерчанта отклоняется")
         void updateMerchant_foreignLocationId_rejected() {
             Merchant existing = createTestMerchant();
-            when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
+            when(merchantRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(existing));
             when(merchantLocationRepository.findByMerchantId(1L)).thenReturn(List.of());
 
             CreateMerchantRequest.LocationRequest locationRequest = new CreateMerchantRequest.LocationRequest();
@@ -356,7 +381,7 @@ class MerchantServiceTest {
         @DisplayName("Обновление: два primary location отклоняются до удаления существующих локаций")
         void updateMerchant_rejectsMultiplePrimaryLocationsBeforeDelete() {
             Merchant existing = createTestMerchant();
-            when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
+            when(merchantRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(existing));
 
             CreateMerchantRequest.LocationRequest first = new CreateMerchantRequest.LocationRequest();
             first.setTitle("Филиал 1");
@@ -418,6 +443,7 @@ class MerchantServiceTest {
         @DisplayName("updateMerchant: null locations preserves existing locations")
         void updateMerchant_nullLocations_preservesExistingLocations() {
             Merchant existing = createTestMerchant();
+            when(merchantRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(merchantLocationRepository.findByMerchantIdAndActiveTrue(1L)).thenReturn(List.of(
@@ -445,7 +471,7 @@ class MerchantServiceTest {
         @DisplayName("updateMerchant: empty locations with ACTIVE/WAITING coupons is rejected")
         void updateMerchant_emptyLocationsWithPublicationDependentCoupons_throws() {
             Merchant existing = createTestMerchant();
-            when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
+            when(merchantRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(existing));
             when(couponOfferRepository.existsByMerchantIdAndStatusIn(
                     eq(1L),
                     eq(List.of(CouponStatus.WAITING_FOR_MERCHANT, CouponStatus.ACTIVE))
@@ -466,6 +492,7 @@ class MerchantServiceTest {
         @DisplayName("updateMerchant: empty locations without dependent coupons avoids destructive delete")
         void updateMerchant_emptyLocationsWithoutDependentCoupons_avoidsDestructiveDelete() {
             Merchant existing = createTestMerchant();
+            when(merchantRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.findById(1L)).thenReturn(Optional.of(existing));
             when(merchantRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(couponOfferRepository.existsByMerchantIdAndStatusIn(
