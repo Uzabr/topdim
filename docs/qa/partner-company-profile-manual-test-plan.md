@@ -210,9 +210,9 @@ frontend cache.
   detail/queue;
 - MODERATOR не видит release/reassign, ADMIN видит;
 - комментарий обязателен для revision/reject/withdraw;
-- отсутствие media upload не блокирует профиль. До исправления открытого дефекта
-  отдельно зафиксировать, что `accept=image/*` действует только в браузере, а
-  media-service ещё не отклоняет файл по MIME/signature/размеру;
+- отсутствие media upload не блокирует профиль;
+- JPEG, PNG, WebP и GIF до 20 МБ загружаются, а пустой файл, SVG, неверная
+  сигнатура/MIME и файл больше 20 МБ отклоняются до сохранения;
 - после logout прямые защищённые маршруты ведут на login.
 
 ## Известные ограничения текущего acceptance
@@ -224,8 +224,6 @@ frontend cache.
   предупреждения о предложениях нет.
 - `reassign` принимает произвольный положительный user ID без server-side проверки
   существования, активности и staff role; до исправления проверять ID вручную.
-- media-service не имеет server-side allowlist MIME/signature и лимита размера;
-  клиентский `image/*` нельзя считать защитой. Это P1 до production sign-off.
 - Production build предупреждает о крупных initial JS chunks partner/admin;
   функционально сборка проходит, route-level code splitting остаётся P2.
 - Автотесты не заменяют прогон с реальными PostgreSQL, RabbitMQ, SMTP и Telegram.
