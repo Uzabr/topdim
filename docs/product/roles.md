@@ -134,6 +134,12 @@ JWT роли перечислены в `Role`: `GUEST`, `USER`, `PARTNER`, `MODE
 
 > Создаёт предложения, принимает или возвращает на доработку подготовленные купоны и видит свою статистику.
 
+Внутри merchant context используются роли сотрудников `OWNER`, `MANAGER` и `CASHIER`.
+Это не отдельные JWT-роли: все три входят как `PARTNER`, а фактические права
+coupon-service получает из identity-service. Владелец и менеджер могут управлять
+профилем компании через модерацию; кассир не видит этот раздел и не может вызвать
+его API.
+
 ### Погашение купонов
 | Функция | Endpoint | Статус |
 |---------|----------|--------|
@@ -166,6 +172,25 @@ JWT роли перечислены в `Role`: `GUEST`, `USER`, `PARTNER`, `MODE
 | Добавить сотрудника | `POST /api/v1/partner/staff` | ✅ |
 | Удалить сотрудника | `DELETE /api/v1/partner/staff/{id}` | ✅ |
 
+### Профиль компании
+| Функция | Endpoint | Доступ | Статус |
+|---------|----------|--------|--------|
+| Опубликованный профиль и филиалы | `GET /api/v1/partner/merchant` | OWNER, MANAGER | ✅ |
+| Список заявок на изменение | `GET /api/v1/partner/merchant/change-requests` | OWNER, MANAGER | ✅ |
+| Создать черновик из опубликованной версии | `POST /api/v1/partner/merchant/change-requests` | OWNER, MANAGER | ✅ |
+| Просмотреть / обновить заявку | `GET/PUT /api/v1/partner/merchant/change-requests/{id}` | OWNER, MANAGER своей компании | ✅ |
+| Удалить черновик | `DELETE /api/v1/partner/merchant/change-requests/{id}` | OWNER, MANAGER своей компании | ✅ |
+| Отправить на модерацию | `POST /api/v1/partner/merchant/change-requests/{id}/submit` | OWNER, MANAGER своей компании | ✅ |
+| Отозвать заявку с причиной | `POST /api/v1/partner/merchant/change-requests/{id}/withdraw` | OWNER, MANAGER своей компании | ✅ |
+| Скопировать терминальную заявку на актуальную версию | `POST /api/v1/partner/merchant/change-requests/{id}/copy` | OWNER, MANAGER своей компании | ✅ |
+
+До одобрения опубликованные данные не меняются. Разрешено не более десяти активных
+заявок компании суммарно в статусах `DRAFT`, `PENDING_REVIEW`, `IN_REVIEW` и
+`REVISION_REQUESTED`. Логотип и обложка необязательны. В снимке должен быть ровно
+один активный основной филиал; активному филиалу обязательны адрес и телефон.
+Филиал с активным кассиром нельзя отключить — проверка identity-service работает
+fail-closed.
+
 ---
 
 ## 4. MODERATOR (модератор)
@@ -184,8 +209,16 @@ JWT роли перечислены в `Role`: `GUEST`, `USER`, `PARTNER`, `MODE
 | Решение по жалобе | `PATCH /api/v1/mod/complaints/{id}/resolve` | ✅ |
 | Решение по отзыву | `PATCH /api/v1/mod/reviews/{id}/review` | ✅ |
 | Заявки на партнерство | `GET /api/v1/admin/partner-applications` | ✅ |
+| Очередь изменений компаний | `GET /api/v1/admin/merchant-change-requests` | ✅ |
+| Взять изменение компании в работу | `POST /api/v1/admin/merchant-change-requests/{id}/take-to-work` | ✅ |
+| Одобрить / вернуть на доработку / отклонить | `POST .../{id}/approve`, `.../request-revision`, `.../reject` | ✅; только назначенный исполнитель, не автор |
 
 Рабочее место `/coupons` содержит шесть вкладок: «Новые», «В работе», «Требуют изменений», «Ожидают партнёра», «Опубликованные» и «Архив». Таблица использует серверную пагинацию с размерами 20, 50 или 100; Kanban загружает по 20 записей на страницу в каждой рабочей колонке. Модератор не может принимать служебное решение за партнёра: у купона в `WAITING_FOR_MERCHANT` ему доступен только просмотр.
+
+Очередь изменений компаний находится отдельно на `/merchants/profile-changes`.
+Модератор может взять ожидающую заявку, сравнить снимок с опубликованным профилем
+и принять решение только по назначенной ему заявке. Самомодерация запрещена.
+Освобождение и переназначение чужой заявки доступны только `ADMIN/SUPER_ADMIN`.
 
 ---
 
@@ -216,6 +249,9 @@ ADMIN и SUPER_ADMIN имеют одинаковые права в рабоче�
 | Редактировать мерчанта | `PUT /api/v1/admin/merchants/{id}` | ✅ |
 | Активировать/деактивировать мерчанта | `PATCH /api/v1/admin/merchants/{id}/active` | ✅ |
 | Купоны мерчанта | `GET /api/v1/admin/merchants/{id}/coupons` | ✅ |
+| Очередь изменений компаний | `GET /api/v1/admin/merchant-change-requests` | ✅ |
+| Освободить заявку из работы | `POST /api/v1/admin/merchant-change-requests/{id}/release` | ✅ ADMIN/SUPER_ADMIN |
+| Переназначить заявку | `POST /api/v1/admin/merchant-change-requests/{id}/reassign` | ✅ ADMIN/SUPER_ADMIN |
 
 ### Базары и магазины
 | Функция | Endpoint | Статус |
@@ -288,8 +324,8 @@ ADMIN и SUPER_ADMIN имеют одинаковые права в рабоче�
 |------|-----------|
 | **GUEST** | Каталог, категории, public reviews, directory и партнёрская заявка доступны без JWT |
 | **USER** | Покупка, профиль, избранное, заказы, purchased coupons, reviews, refunds, complaints, notifications реализованы |
-| **PARTNER** | Partner app, предложения, approval/revision, staff, stats, PIN/QR redemption реализованы |
-| **MODERATOR** | Рабочее место купонов, модерация отзывов и жалоб реализованы; решение за партнёра недоступно |
+| **PARTNER** | Partner app, предложения, модерируемый профиль компании для OWNER/MANAGER, staff, stats, PIN/QR redemption реализованы |
+| **MODERATOR** | Рабочее место купонов, изменения компаний, модерация отзывов и жалоб реализованы; решение за партнёра по купону недоступно |
 | **ADMIN** | Merchant/catalog/order/support/user контуры реализованы; UI базаров/магазинов и промокодов остаётся отдельным roadmap-модулем |
 | **SUPER_ADMIN** | Staff, roles, blocking и audit реализованы; системные настройки/финансы ещё вне MVP |
 

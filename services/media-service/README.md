@@ -11,7 +11,7 @@ Spring Boot 3.4, MinIO SDK 8.5
 
 | Method | URL | Описание |
 |---|---|---|
-| POST | `/api/v1/media/upload` | Загрузить файл (multipart/form-data, param: `file`) |
+| POST | `/api/v1/media/upload` | Загрузить изображение (multipart/form-data, param: `file`) |
 | GET | `/api/v1/media/{fileName}` | Скачать/просмотреть файл |
 | DELETE | `/api/v1/media/{fileName}` | Удалить файл |
 
@@ -34,5 +34,13 @@ curl -X POST http://localhost:8087/api/v1/media/upload \
   -F "file=@photo.jpg"
 
 # Response:
-# { "data": { "fileName": "uuid_photo.jpg", "url": "/api/v1/media/uuid_photo.jpg" } }
+# { "data": { "fileName": "uuid.jpg", "url": "/api/v1/media/uuid.jpg" } }
 ```
+
+## Правила загрузки
+
+- допустимы JPEG, PNG, WebP и GIF;
+- максимальный размер — 20 МБ;
+- MIME должен соответствовать сигнатуре файла;
+- SVG, пустые и замаскированные файлы отклоняются;
+- имя объекта создаётся сервером из UUID и проверенного расширения.

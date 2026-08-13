@@ -7,6 +7,8 @@ import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.identity.dto.PartnerAccessContextResponse;
 import uz.topdim.identity.service.PartnerStaffService;
 
+import java.util.Set;
+
 /**
  * Internal endpoint для определения контекста доступа партнёра.
  * Используется другими сервисами (order-service) для выяснения
@@ -25,5 +27,13 @@ public class InternalPartnerAccessController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 partnerStaffService.resolveAccessContext(userId)));
+    }
+
+    @GetMapping("/merchants/{merchantId}/active-staff-location-ids")
+    public ResponseEntity<ApiResponse<Set<Long>>> getActiveStaffLocationIds(
+            @PathVariable Long merchantId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                partnerStaffService.getActiveStaffLocationIds(merchantId)));
     }
 }

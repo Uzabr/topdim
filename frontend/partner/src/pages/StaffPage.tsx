@@ -42,6 +42,7 @@ export default function StaffPage() {
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [form] = Form.useForm();
+  const selectedRole = Form.useWatch('role', form) ?? 'CASHIER';
 
   const { data: staff, isLoading, error } = useQuery({ queryKey: ['staff'], queryFn: fetchStaff });
   const { data: locations } = useQuery({ queryKey: ['locations'], queryFn: fetchLocations });
@@ -150,32 +151,44 @@ export default function StaffPage() {
           <Form.Item name="role" label="Роль" initialValue="CASHIER">
             <Select id="staff-role" style={{ width: '100%' }}>
               <Option value="CASHIER">Кассир</Option>
-              {/* MANAGER скрыт до полной поддержки (beta) */}
+              <Option value="MANAGER">Менеджер</Option>
             </Select>
           </Form.Item>
-          <Form.Item name="merchantLocationId" label="Филиал (обязательно)" rules={[{ required: true, message: 'Кассир должен быть привязан к филиалу' }]}>
-            <Select
-              placeholder="Выберите филиал"
-              id="staff-location"
-              style={{ width: '100%' }}
-              optionLabelProp="label"
-              options={locations?.map((loc) => ({
-                value: loc.id,
-                label: loc.title,
-                title: `${loc.title} — ${loc.address}`,
-              }))}
-              optionRender={(option) => (
-                <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
-                  {option.data.title}
-                </span>
-              )}
-            />
+          {selectedRole === 'CASHIER' && (
+            <Form.Item name="merchantLocationId" label="Филиал (обязательно)" preserve={false} rules={[{ required: true, message: 'Кассир должен быть привязан к филиалу' }]}>
+              <Select
+                placeholder="Выберите филиал"
+                id="staff-location"
+                style={{ width: '100%' }}
+                optionLabelProp="label"
+                options={locations?.map((loc) => ({
+                  value: loc.id,
+                  label: loc.title,
+                  title: `${loc.title} — ${loc.address}`,
+                }))}
+                optionRender={(option) => (
+                  <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                    {option.data.title}
+                  </span>
+                )}
+              />
+            </Form.Item>
+          )}
+          <Form.Item name="loginEmail" label="Email для входа (обязательно)" rules={[{ required: true, message: 'Email обязателен для сотрудника' }, { type: 'email', message: 'Некорректный email' }]}>
+            <Input placeholder="employee@example.com" id="staff-email" />
           </Form.Item>
-          <Form.Item name="loginEmail" label="Email для входа (обязательно)" rules={[{ required: true, message: 'Email обязателен для кассира' }, { type: 'email', message: 'Некорректный email' }]}>
-            <Input placeholder="cashier@example.com" id="staff-email" />
-          </Form.Item>
-          <Form.Item name="temporaryPassword" label="Временный пароль (обязательно)" rules={[{ required: true, message: 'Пароль обязателен' }, { min: 6, message: 'Минимум 6 символов' }]}>
-            <Input.Password placeholder="Мин. 6 символов" id="staff-password" />
+          <Form.Item
+            name="temporaryPassword"
+            label="Временный пароль (обязательно)"
+            rules={[
+              { required: true, message: 'Пароль обязателен' },
+              {
+                pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()\-_=+])[A-Za-z\d@$!%*?&#^()\-_=+]{8,128}$/,
+                message: 'Минимум 8 символов: заглавная, строчная буква, цифра и спецсимвол',
+              },
+            ]}
+          >
+            <Input.Password placeholder="Например: Strong123!" id="staff-password" />
           </Form.Item>
         </Form>
       </Modal>

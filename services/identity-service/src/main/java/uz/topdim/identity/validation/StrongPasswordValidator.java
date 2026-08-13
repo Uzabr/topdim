@@ -73,7 +73,7 @@ public class StrongPasswordValidator implements ConstraintValidator<StrongPasswo
         }
 
         // Проверка blocklist (case-insensitive)
-        if (BLOCKED_PASSWORDS.stream().anyMatch(blocked -> blocked.equalsIgnoreCase(password))) {
+        if (isBlocked(password)) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(
                     "Этот пароль слишком распространённый. Выберите более надёжный пароль"
@@ -87,5 +87,13 @@ public class StrongPasswordValidator implements ConstraintValidator<StrongPasswo
         }
 
         return true;
+    }
+
+    public static boolean isStrong(String password) {
+        return password != null && !isBlocked(password) && PASSWORD_PATTERN.matcher(password).matches();
+    }
+
+    private static boolean isBlocked(String password) {
+        return BLOCKED_PASSWORDS.stream().anyMatch(blocked -> blocked.equalsIgnoreCase(password));
     }
 }

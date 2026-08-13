@@ -191,6 +191,22 @@ class PartnerStaffServiceTest {
         }
 
         @Test
+        @DisplayName("Staff with unsupported persisted role — access is rejected")
+        void unsupportedStaffRole_rejected() {
+            Staff unsupported = createCashierStaff();
+            unsupported.setRole("OWNER");
+            unsupported.setMerchantLocationId(null);
+            when(staffRepository.findByLoginUserId(CASHIER_LOGIN_USER_ID))
+                    .thenReturn(Optional.of(unsupported));
+
+            assertThatThrownBy(() -> partnerStaffService.resolveAccessContext(CASHIER_LOGIN_USER_ID))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Допустимы роли CASHIER или MANAGER");
+
+            verify(couponMerchantClient, never()).getMerchantByUserId(anyLong());
+        }
+
+        @Test
         @DisplayName("Unknown user — no merchant found → ResourceNotFoundException")
         void unknownUser_noMerchant() {
             when(staffRepository.findByLoginUserId(999L)).thenReturn(Optional.empty());
@@ -218,11 +234,11 @@ class PartnerStaffServiceTest {
             request.setPhone("+998900000000");
             request.setRole("CASHIER");
             request.setLoginEmail("cashier@test.com");
-            request.setTemporaryPassword("temp123");
+            request.setTemporaryPassword("Strong123!");
             request.setMerchantLocationId(LOCATION_ID);
 
             when(userRepository.existsByEmailIgnoreCase("cashier@test.com")).thenReturn(false);
-            when(passwordEncoder.encode("temp123")).thenReturn("$2a$encoded");
+            when(passwordEncoder.encode("Strong123!")).thenReturn("$2a$encoded");
             when(userRepository.save(any(User.class))).thenAnswer(inv -> {
                 User u = inv.getArgument(0);
                 u.setId(30L);
@@ -253,7 +269,7 @@ class PartnerStaffServiceTest {
             request.setName("Кассир");
             request.setPhone("+998900000001");
             request.setLoginEmail("existing@test.com");
-            request.setTemporaryPassword("temp123");
+            request.setTemporaryPassword("Strong123!");
             request.setMerchantLocationId(LOCATION_ID);
 
             when(userRepository.existsByEmailIgnoreCase("existing@test.com")).thenReturn(true);
@@ -275,7 +291,7 @@ class PartnerStaffServiceTest {
             request.setPhone("+998900000010");
             request.setRole("CASHIER");
             request.setLoginEmail("foreign-location@test.com");
-            request.setTemporaryPassword("password123");
+            request.setTemporaryPassword("Strong123!");
             request.setMerchantLocationId(999L);
 
             assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
@@ -287,15 +303,24 @@ class PartnerStaffServiceTest {
         }
 
         @Test
-        @DisplayName("Add staff without login credentials — no user created")
-        void addStaffWithoutLogin() {
+        @DisplayName("Add manager with login credentials — creates company-wide account without location")
+        void addManagerWithLoginWithoutLocation() {
             mockOwnerMerchantResolution();
 
             CreateStaffRequest request = new CreateStaffRequest();
             request.setName("Менеджер");
             request.setPhone("+998900000002");
-            request.setRole("MANAGER");
+            request.setRole(" manager ");
+            request.setLoginEmail("manager@sizbiz.uz");
+            request.setTemporaryPassword("Strong123!");
 
+            when(userRepository.existsByEmailIgnoreCase("manager@sizbiz.uz")).thenReturn(false);
+            when(passwordEncoder.encode("Strong123!")).thenReturn("$2a$encoded");
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+                User user = inv.getArgument(0);
+                user.setId(31L);
+                return user;
+            });
             when(staffRepository.save(any(Staff.class))).thenAnswer(inv -> {
                 Staff s = inv.getArgument(0);
                 s.setId(6L);
@@ -305,7 +330,52 @@ class PartnerStaffServiceTest {
             PartnerStaffResponse result = partnerStaffService.addStaff(OWNER_USER_ID, request);
 
             assertThat(result.getRole()).isEqualTo("MANAGER");
-            verify(userRepository, never()).save(any(User.class));
+            assertThat(result.getMerchantLocationId()).isNull();
+            verify(couponMerchantClient, never()).getMerchantLocationsByUserId(anyLong());
+            verify(userRepository).save(argThat(user ->
+                    user.getEmail().equals("manager@sizbiz.uz") && user.getRole() == Role.PARTNER));
+            verify(staffRepository).save(argThat(staff ->
+                    staff.getLoginUserId().equals(31L)
+                            && staff.getRole().equals("MANAGER")
+                            && staff.getMerchantLocationId() == null));
+        }
+
+        @Test
+        @DisplayName("Add manager without login credentials — rejected")
+        void addManagerWithoutLogin_rejected() {
+            mockOwnerMerchantResolution();
+
+            CreateStaffRequest request = new CreateStaffRequest();
+            request.setName("Менеджер Без Логина");
+            request.setPhone("+998900000012");
+            request.setRole("MANAGER");
+
+            assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("email для входа");
+
+            verify(userRepository, never()).save(any());
+            verify(staffRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Add staff with unsupported role — rejected before user creation")
+        void addStaff_unknownRole_rejected() {
+            mockOwnerMerchantResolution();
+
+            CreateStaffRequest request = new CreateStaffRequest();
+            request.setName("Недопустимая роль");
+            request.setPhone("+998900000013");
+            request.setRole("OWNER");
+            request.setLoginEmail("owner-role@sizbiz.uz");
+            request.setTemporaryPassword("Strong123!");
+
+            assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Допустимы роли CASHIER или MANAGER");
+
+            verify(userRepository, never()).save(any());
+            verify(staffRepository, never()).save(any());
         }
 
         @Test
@@ -359,7 +429,7 @@ class PartnerStaffServiceTest {
 
             assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("не короче 6 символов");
+                    .hasMessageContaining("надёжный временный пароль");
         }
 
         @Test
@@ -377,7 +447,27 @@ class PartnerStaffServiceTest {
 
             assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("не короче 6 символов");
+                    .hasMessageContaining("надёжный временный пароль");
+        }
+
+        @Test
+        @DisplayName("Add staff with weak temporary password — rejected")
+        void addStaff_weakPassword_rejected() {
+            mockOwnerMerchantResolution();
+
+            CreateStaffRequest request = new CreateStaffRequest();
+            request.setName("Менеджер Со Слабым Паролем");
+            request.setPhone("+998900000014");
+            request.setRole("MANAGER");
+            request.setLoginEmail("weak-manager@sizbiz.uz");
+            request.setTemporaryPassword("password123");
+
+            assertThatThrownBy(() -> partnerStaffService.addStaff(OWNER_USER_ID, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("надёжный временный пароль");
+
+            verify(userRepository, never()).save(any());
+            verify(staffRepository, never()).save(any());
         }
     }
 

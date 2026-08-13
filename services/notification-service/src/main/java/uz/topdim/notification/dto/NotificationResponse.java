@@ -11,6 +11,7 @@ public class NotificationResponse {
     private String title;
     private String message;
     private String type;
+    private String deepLink;
     private boolean read;
     private LocalDateTime createdAt;
 }
