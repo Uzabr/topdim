@@ -5,6 +5,7 @@ import type {
   MerchantProfileChangeDetail,
   MerchantProfileChangePage,
   MerchantProfileChangeHistoryEvent,
+  MerchantProfileChangePreflight,
   MerchantProfileChangeQueueFilters,
   PublishedMerchantProfile,
   ModerationAssigneeOption,
@@ -59,6 +60,15 @@ export async function fetchMerchantProfileChangeHistory(
 ): Promise<MerchantProfileChangeHistoryEvent[]> {
   const response = await api.get<ApiResponse<MerchantProfileChangeHistoryEvent[]>>(
     `${ENDPOINT}/${id}/history`,
+  );
+  return response.data.data;
+}
+
+export async function fetchMerchantProfileChangePreflight(
+  id: number,
+): Promise<MerchantProfileChangePreflight> {
+  const response = await api.get<ApiResponse<MerchantProfileChangePreflight>>(
+    `${ENDPOINT}/${id}/preflight`,
   );
   return response.data.data;
 }

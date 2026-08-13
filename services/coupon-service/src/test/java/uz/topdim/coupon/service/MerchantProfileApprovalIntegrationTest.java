@@ -198,6 +198,74 @@ class MerchantProfileApprovalIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void preflightIdentifiesLocationsBlockedByActiveCashiersWithoutChangingRequest() {
+        Merchant merchant = merchant("Preflight profile", 1L);
+        MerchantLocation main = location(
+                merchant, "Main", "Main address", "+998901111111", true, true);
+        MerchantLocation staffed = location(
+                merchant, "Staffed", "Staffed address", "+998902222222", false, true);
+        MerchantProfileChangeRequest request = inReviewRequest(merchant, 54L, 88L);
+        request.getLocations().add(snapshotLocation(
+                request, main.getId(), "Main", "Main address", "+998901111111",
+                true, true, 0));
+        request.getLocations().add(snapshotLocation(
+                request, staffed.getId(), "Staffed", "Staffed address", "+998902222222",
+                false, false, 1));
+        request = requestRepository.saveAndFlush(request);
+        when(identityClient.getActiveStaffLocationIds(merchant.getId()))
+                .thenReturn(ApiResponse.success(Set.of(staffed.getId())));
+
+        var preflight = service.getPreflight(request.getId());
+
+        assertThat(preflight.ready()).isFalse();
+        assertThat(preflight.blockingLocations()).singleElement()
+                .satisfies(location -> {
+                    assertThat(location.locationId()).isEqualTo(staffed.getId());
+                    assertThat(location.title()).isEqualTo("Staffed");
+                });
+        assertThat(requestRepository.findById(request.getId()).orElseThrow().getStatus())
+                .isEqualTo(MerchantProfileChangeStatus.IN_REVIEW);
+    }
+
+    @Test
+    void preflightIsReadyWhenNoDisabledLocationHasActiveCashiers() {
+        Merchant merchant = merchant("Ready preflight", 1L);
+        MerchantLocation main = location(
+                merchant, "Main", "Main address", "+998901111111", true, true);
+        MerchantProfileChangeRequest request = inReviewRequest(merchant, 55L, 88L);
+        request.getLocations().add(snapshotLocation(
+                request, main.getId(), "Main", "Main address", "+998901111111",
+                true, true, 0));
+        request = requestRepository.saveAndFlush(request);
+        when(identityClient.getActiveStaffLocationIds(merchant.getId()))
+                .thenReturn(ApiResponse.success(Set.of(main.getId())));
+
+        var preflight = service.getPreflight(request.getId());
+
+        assertThat(preflight.ready()).isTrue();
+        assertThat(preflight.blockingLocations()).isEmpty();
+    }
+
+    @Test
+    void preflightFailsClosedWhenCashierAssignmentsCannotBeChecked() {
+        Merchant merchant = merchant("Unavailable preflight", 1L);
+        MerchantLocation main = location(
+                merchant, "Main", "Main address", "+998901111111", true, true);
+        MerchantProfileChangeRequest request = inReviewRequest(merchant, 56L, 88L);
+        request.getLocations().add(snapshotLocation(
+                request, main.getId(), "Main", "Main address", "+998901111111",
+                true, true, 0));
+        request = requestRepository.saveAndFlush(request);
+        when(identityClient.getActiveStaffLocationIds(merchant.getId()))
+                .thenThrow(new RuntimeException("timeout"));
+
+        Long requestId = request.getId();
+        assertThatThrownBy(() -> service.getPreflight(requestId))
+                .isInstanceOf(uz.topdim.coupon.exception.PartnerAccessUnavailableException.class)
+                .hasMessageContaining("активных сотрудников");
+    }
+
+    @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void failureDuringLocationPublicationRollsBackCompanyLocationsVersionAndStatus() {
         ApprovalFixture fixture = new TransactionTemplate(transactionManager).execute(status -> {

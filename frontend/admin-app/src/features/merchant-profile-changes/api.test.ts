@@ -4,6 +4,7 @@ import {
   approveMerchantProfileChange,
   fetchMerchantProfileChangeDetail,
   fetchMerchantProfileChangeHistory,
+  fetchMerchantProfileChangePreflight,
   fetchModerationAssignees,
   fetchPublishedMerchantProfile,
   fetchMerchantProfileChanges,
@@ -62,6 +63,18 @@ describe('merchant profile moderation API', () => {
 
     expect(api.get).toHaveBeenCalledWith(
       '/api/v1/admin/merchant-change-requests/71/history',
+    );
+  });
+
+  it('loads the read-only approval preflight', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      data: { data: { ready: false, blockingLocations: [{ locationId: 11 }] } },
+    });
+
+    await fetchMerchantProfileChangePreflight(71);
+
+    expect(api.get).toHaveBeenCalledWith(
+      '/api/v1/admin/merchant-change-requests/71/preflight',
     );
   });
 

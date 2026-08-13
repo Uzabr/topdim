@@ -24,6 +24,7 @@ import {
   approveMerchantProfileChange,
   fetchMerchantProfileChangeDetail,
   fetchMerchantProfileChangeHistory,
+  fetchMerchantProfileChangePreflight,
   fetchPublishedMerchantProfile,
   fetchModerationAssignees,
   MERCHANT_PROFILE_CHANGES_QUERY_KEY,
@@ -81,6 +82,12 @@ export function MerchantProfileChangeDetailPage() {
     queryKey: [...MERCHANT_PROFILE_CHANGES_QUERY_KEY, 'detail', requestId, 'history'],
     queryFn: () => fetchMerchantProfileChangeHistory(requestId),
     enabled: Number.isInteger(requestId) && requestId > 0,
+  });
+
+  const preflightQuery = useQuery({
+    queryKey: [...MERCHANT_PROFILE_CHANGES_QUERY_KEY, 'detail', requestId, 'preflight'],
+    queryFn: () => fetchMerchantProfileChangePreflight(requestId),
+    enabled: detailQuery.data?.status === 'IN_REVIEW',
   });
 
   const request = detailQuery.data;
@@ -187,6 +194,8 @@ export function MerchantProfileChangeDetailPage() {
     && request.assigneeUserId === user?.id;
   const isAuthor = request.authorUserId === user?.id;
   const canDecide = isAssignedReviewer && !isAuthor;
+  const blockingLocations = preflightQuery.data?.blockingLocations ?? [];
+  const approvalBlocked = preflightQuery.isError || blockingLocations.length > 0;
   const statusInfo = STATUS_LABELS[request.status] ?? { label: request.status, color: 'default' };
 
   return (
@@ -213,6 +222,25 @@ export function MerchantProfileChangeDetailPage() {
         <Alert
           type="warning"
           title="Автор не может принять решение по собственной заявке"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      {blockingLocations.length > 0 && (
+        <Alert
+          type="error"
+          title={`Нельзя одобрить: ${blockingLocations
+            .map((location) => `в филиале «${location.title ?? `#${location.locationId}`}» есть активные кассиры`)
+            .join('; ')}`}
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      {preflightQuery.isError && (
+        <Alert
+          type="warning"
+          title="Не удалось проверить активных кассиров — одобрение временно недоступно"
+          action={<Button size="small" onClick={() => preflightQuery.refetch()}>Повторить</Button>}
           showIcon
           style={{ marginBottom: 16 }}
         />
@@ -291,7 +319,13 @@ export function MerchantProfileChangeDetailPage() {
       <Space wrap>
         {canDecide && (
           <>
-            <Button type="primary" onClick={() => setDecision('approve')}>Одобрить</Button>
+            <Button
+              type="primary"
+              disabled={approvalBlocked || preflightQuery.isLoading}
+              onClick={() => setDecision('approve')}
+            >
+              Одобрить
+            </Button>
             <Button onClick={() => setDecision('revision')}>Вернуть на доработку</Button>
             <Button danger onClick={() => setDecision('reject')}>Отклонить</Button>
           </>

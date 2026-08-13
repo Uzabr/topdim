@@ -13,6 +13,7 @@ vi.mock('./api', () => ({
   MERCHANT_PROFILE_CHANGES_QUERY_KEY: ['merchant-profile-changes'],
   fetchMerchantProfileChangeDetail: vi.fn(),
   fetchMerchantProfileChangeHistory: vi.fn(),
+  fetchMerchantProfileChangePreflight: vi.fn(),
   fetchModerationAssignees: vi.fn(),
   fetchPublishedMerchantProfile: vi.fn(),
   approveMerchantProfileChange: vi.fn(),
@@ -131,6 +132,10 @@ describe('MerchantProfileChangeDetailPage', () => {
         createdAt: '2026-08-12T10:00:00',
       },
     ]);
+    vi.mocked(profileChangesApi.fetchMerchantProfileChangePreflight).mockResolvedValue({
+      ready: true,
+      blockingLocations: [],
+    });
     vi.mocked(profileChangesApi.fetchModerationAssignees).mockResolvedValue([
       { userId: 88, name: 'Ali Valiyev', email: 'ali@topdim.uz', role: 'MODERATOR' },
       { userId: 18, name: 'Request Author', email: 'author@topdim.uz', role: 'ADMIN' },
@@ -244,6 +249,31 @@ describe('MerchantProfileChangeDetailPage', () => {
     expect(screen.queryByRole('button', { name: 'Одобрить' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Вернуть на доработку' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Отклонить' })).toBeNull();
+  });
+
+  it('warns and blocks approval when an active cashier belongs to a disabled branch', async () => {
+    vi.mocked(profileChangesApi.fetchMerchantProfileChangePreflight).mockResolvedValue({
+      ready: false,
+      blockingLocations: [{ locationId: 11, title: 'Чиланзар' }],
+    });
+    renderPage();
+
+    expect(await screen.findByText('Нельзя одобрить: в филиале «Чиланзар» есть активные кассиры'))
+      .toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Одобрить' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Вернуть на доработку' })).toBeTruthy();
+  });
+
+  it('fails closed and offers retry when cashier preflight is unavailable', async () => {
+    vi.mocked(profileChangesApi.fetchMerchantProfileChangePreflight)
+      .mockRejectedValue(new Error('identity unavailable'));
+    renderPage();
+
+    expect(await screen.findByText(
+      'Не удалось проверить активных кассиров — одобрение временно недоступно',
+    )).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Одобрить' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Повторить' })).toBeTruthy();
   });
 
   it('refreshes stale detail after a 409 decision conflict', async () => {

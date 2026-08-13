@@ -80,6 +80,14 @@ export interface MerchantProfileChangeHistoryEvent {
   createdAt: string;
 }
 
+export interface MerchantProfileChangePreflight {
+  ready: boolean;
+  blockingLocations: Array<{
+    locationId: number;
+    title: string | null;
+  }>;
+}
+
 export interface PublishedMerchantLocation {
   id: number;
   title: string | null;

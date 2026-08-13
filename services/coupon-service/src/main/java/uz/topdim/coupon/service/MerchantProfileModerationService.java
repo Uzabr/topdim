@@ -20,6 +20,7 @@ import uz.topdim.coupon.dto.merchantprofile.AdminMerchantProfileChangeFilter;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeResponse;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeSummary;
 import uz.topdim.coupon.dto.merchantprofile.MerchantProfileChangeHistoryResponse;
+import uz.topdim.coupon.dto.merchantprofile.MerchantProfilePreflightResponse;
 import uz.topdim.coupon.entity.Merchant;
 import uz.topdim.coupon.entity.MerchantLocation;
 import uz.topdim.coupon.entity.MerchantProfileChangeHistory;
@@ -328,6 +329,24 @@ public class MerchantProfileModerationService {
                         history.getComment(),
                         history.getCreatedAt()))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public MerchantProfilePreflightResponse getPreflight(Long requestId) {
+        MerchantProfileChangeRequest request = requestRepository.findDetailedById(requestId)
+                .filter(candidate -> candidate.getStatus() != MerchantProfileChangeStatus.DRAFT)
+                .orElseThrow(() -> new ResourceNotFoundException("Заявка не найдена"));
+        Set<Long> activeStaffLocationIds = loadActiveStaffLocationIds(request.getMerchant().getId());
+        List<MerchantProfilePreflightResponse.BlockingLocation> blockingLocations =
+                request.getLocations().stream()
+                        .filter(location -> location.getSourceLocationId() != null)
+                        .filter(location -> !location.isActive())
+                        .filter(location -> activeStaffLocationIds.contains(location.getSourceLocationId()))
+                        .map(location -> new MerchantProfilePreflightResponse.BlockingLocation(
+                                location.getSourceLocationId(), location.getTitle()))
+                        .toList();
+        return new MerchantProfilePreflightResponse(
+                blockingLocations.isEmpty(), blockingLocations);
     }
 
     private MerchantProfileChangeRequest findDetailedForUpdate(Long requestId) {
