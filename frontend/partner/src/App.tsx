@@ -1,7 +1,14 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Navigate,
+  Route,
+  RouterProvider,
+} from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConfigProvider, App as AntApp } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
+import { useMemo } from 'react';
 import PartnerLayout from './layouts/PartnerLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -14,6 +21,7 @@ import StaffPage from './pages/StaffPage';
 import { readPartnerContext } from './authSession';
 import { canManageCompany } from './features/company/permissions';
 import CompanyProfilePage from './features/company/CompanyProfilePage';
+import CompanyRequestEditorPage from './features/company/CompanyRequestEditorPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,14 +65,6 @@ function CompanyManagerOnly({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function CompanyRequestRouteEntry() {
-  return (
-    <section aria-label="Раздел компании">
-      Раздел профиля компании
-    </section>
-  );
-}
-
 function RedeemAccessOnly({ children }: { children: React.ReactNode }) {
   const ctx = readPartnerContext();
   if (!ctx) return <Navigate to="/login" replace />;
@@ -73,6 +73,32 @@ function RedeemAccessOnly({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const router = useMemo(() => createBrowserRouter(createRoutesFromElements(
+    <>
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/"
+        element={
+          <PrivateRoute>
+            <PartnerLayout />
+          </PrivateRoute>
+        }
+      >
+        <Route index element={<SmartHome />} />
+        <Route path="coupons" element={<DashboardAccessOnly><CouponsPage /></DashboardAccessOnly>} />
+        <Route path="coupons/new" element={<DashboardAccessOnly><CouponRequestFormPage /></DashboardAccessOnly>} />
+        <Route path="coupons/:id/edit" element={<DashboardAccessOnly><CouponRequestFormPage /></DashboardAccessOnly>} />
+        <Route path="coupons/:id/review" element={<DashboardAccessOnly><CouponApprovalPage /></DashboardAccessOnly>} />
+        <Route path="redeem" element={<RedeemAccessOnly><RedeemPage /></RedeemAccessOnly>} />
+        <Route path="redemptions" element={<RedemptionHistoryPage />} />
+        <Route path="staff" element={<OwnerOnly><StaffPage /></OwnerOnly>} />
+        <Route path="company" element={<CompanyManagerOnly><CompanyProfilePage /></CompanyManagerOnly>} />
+        <Route path="company/requests/:id" element={<CompanyManagerOnly><CompanyRequestEditorPage /></CompanyManagerOnly>} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </>,
+  )), []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ConfigProvider
@@ -86,31 +112,7 @@ export default function App() {
         }}
       >
         <AntApp>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route
-                path="/"
-                element={
-                  <PrivateRoute>
-                    <PartnerLayout />
-                  </PrivateRoute>
-                }
-              >
-                <Route index element={<SmartHome />} />
-                <Route path="coupons" element={<DashboardAccessOnly><CouponsPage /></DashboardAccessOnly>} />
-                <Route path="coupons/new" element={<DashboardAccessOnly><CouponRequestFormPage /></DashboardAccessOnly>} />
-                <Route path="coupons/:id/edit" element={<DashboardAccessOnly><CouponRequestFormPage /></DashboardAccessOnly>} />
-                <Route path="coupons/:id/review" element={<DashboardAccessOnly><CouponApprovalPage /></DashboardAccessOnly>} />
-                <Route path="redeem" element={<RedeemAccessOnly><RedeemPage /></RedeemAccessOnly>} />
-                <Route path="redemptions" element={<RedemptionHistoryPage />} />
-                <Route path="staff" element={<OwnerOnly><StaffPage /></OwnerOnly>} />
-                <Route path="company" element={<CompanyManagerOnly><CompanyProfilePage /></CompanyManagerOnly>} />
-                <Route path="company/requests/:id" element={<CompanyManagerOnly><CompanyRequestRouteEntry /></CompanyManagerOnly>} />
-              </Route>
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </BrowserRouter>
+          <RouterProvider router={router} />
         </AntApp>
       </ConfigProvider>
     </QueryClientProvider>

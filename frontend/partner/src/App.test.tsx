@@ -17,6 +17,9 @@ vi.mock('./pages/RedemptionHistoryPage', () => ({
 vi.mock('./features/company/CompanyProfilePage', () => ({
   default: () => <section aria-label="Раздел компании">Профиль компании открыт</section>,
 }));
+vi.mock('./features/company/CompanyRequestEditorPage', () => ({
+  default: () => <section aria-label="Редактор компании">Редактор заявки открыт</section>,
+}));
 
 describe('partner route authorization', () => {
   beforeEach(() => {
@@ -138,8 +141,8 @@ describe('partner route authorization', () => {
 
       render(<App />);
 
-      expect(await screen.findByRole('region', { name: 'Раздел компании' })).toBeTruthy();
-      expect(screen.getByText('Раздел профиля компании')).toBeTruthy();
+      expect(await screen.findByRole('region', { name: 'Редактор компании' })).toBeTruthy();
+      expect(screen.getByText('Редактор заявки открыт')).toBeTruthy();
       expect(window.location.pathname).toBe('/company/requests/17');
     },
   );
