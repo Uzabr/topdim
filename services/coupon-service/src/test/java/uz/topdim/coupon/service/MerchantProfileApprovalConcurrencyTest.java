@@ -65,6 +65,7 @@ class MerchantProfileApprovalConcurrencyTest {
     @Autowired private MerchantProfileChangeRequestRepository requestRepository;
     @Autowired private MerchantProfileChangeHistoryRepository historyRepository;
     @MockBean private IdentityPartnerAccessClient identityClient;
+    @MockBean private MerchantProfileOutboxService outboxService;
 
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
 

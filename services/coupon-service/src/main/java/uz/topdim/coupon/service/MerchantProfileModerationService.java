@@ -55,6 +55,7 @@ public class MerchantProfileModerationService {
     private final MerchantLocationRepository locationRepository;
     private final MerchantProfileMapper mapper;
     private final IdentityPartnerAccessClient identityClient;
+    private final MerchantProfileOutboxService outboxService;
 
     @Transactional(readOnly = true)
     public Page<MerchantProfileChangeSummary> list(
@@ -91,13 +92,15 @@ public class MerchantProfileModerationService {
 
         MerchantProfileChangeRequest request = requestRepository.findDetailedById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Заявка не найдена"));
-        historyRepository.save(MerchantProfileChangeHistory.builder()
-                .request(request)
-                .previousStatus(MerchantProfileChangeStatus.PENDING_REVIEW)
-                .newStatus(MerchantProfileChangeStatus.IN_REVIEW)
-                .actorUserId(actorUserId)
-                .actorRole(actorRole)
-                .build());
+        MerchantProfileChangeHistory history = historyRepository.save(
+                MerchantProfileChangeHistory.builder()
+                        .request(request)
+                        .previousStatus(MerchantProfileChangeStatus.PENDING_REVIEW)
+                        .newStatus(MerchantProfileChangeStatus.IN_REVIEW)
+                        .actorUserId(actorUserId)
+                        .actorRole(actorRole)
+                        .build());
+        outboxService.enqueue(request, history);
         return mapper.toResponse(request);
     }
 
@@ -440,14 +443,16 @@ public class MerchantProfileModerationService {
             String actorRole,
             String comment
     ) {
-        historyRepository.save(MerchantProfileChangeHistory.builder()
-                .request(request)
-                .previousStatus(previousStatus)
-                .newStatus(newStatus)
-                .actorUserId(actorUserId)
-                .actorRole(actorRole)
-                .comment(comment)
-                .build());
+        MerchantProfileChangeHistory history = historyRepository.save(
+                MerchantProfileChangeHistory.builder()
+                        .request(request)
+                        .previousStatus(previousStatus)
+                        .newStatus(newStatus)
+                        .actorUserId(actorUserId)
+                        .actorRole(actorRole)
+                        .comment(comment)
+                        .build());
+        outboxService.enqueue(request, history);
     }
 
     private Specification<MerchantProfileChangeRequest> buildSpecification(

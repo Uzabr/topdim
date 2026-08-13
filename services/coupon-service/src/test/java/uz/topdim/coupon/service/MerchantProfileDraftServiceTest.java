@@ -40,6 +40,7 @@ class MerchantProfileDraftServiceTest {
     @Mock private MerchantProfileChangeRequestRepository requestRepository;
     @Mock private MerchantProfileChangeHistoryRepository historyRepository;
     @Mock private IdentityPartnerAccessClient identityClient;
+    @Mock private MerchantProfileOutboxService outboxService;
 
     private MerchantProfileDraftService service;
 
@@ -54,7 +55,8 @@ class MerchantProfileDraftServiceTest {
                 requestRepository,
                 historyRepository,
                 new MerchantProfileMapper(),
-                identityClient
+                identityClient,
+                outboxService
         );
     }
 

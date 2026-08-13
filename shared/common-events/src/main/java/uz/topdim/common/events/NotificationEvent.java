@@ -15,9 +15,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class NotificationEvent {
+    private String eventKey;
     private Long userId;
     private String title;
     private String message;
     private String type; // e.g., "INFO", "ALERT", "SUCCESS", "WARNING"
+    private String deepLink;
     private LocalDateTime timestamp;
 }

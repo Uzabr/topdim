@@ -31,6 +31,7 @@ class MerchantProfileModerationDecisionTest extends AbstractIntegrationTest {
     @Autowired private MerchantProfileChangeRequestRepository requestRepository;
     @Autowired private MerchantProfileChangeHistoryRepository historyRepository;
     @MockBean private IdentityPartnerAccessClient identityClient;
+    @MockBean private MerchantProfileOutboxService outboxService;
 
     @Test
     void requestRevisionRequiresNonBlankTrimmedComment() {

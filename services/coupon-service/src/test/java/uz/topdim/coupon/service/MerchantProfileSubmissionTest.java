@@ -41,6 +41,7 @@ class MerchantProfileSubmissionTest {
     @Mock private MerchantProfileChangeRequestRepository requestRepository;
     @Mock private MerchantProfileChangeHistoryRepository historyRepository;
     @Mock private IdentityPartnerAccessClient identityClient;
+    @Mock private MerchantProfileOutboxService outboxService;
     @Spy private MerchantProfileMapper mapper = new MerchantProfileMapper();
     @InjectMocks private MerchantProfileDraftService service;
 

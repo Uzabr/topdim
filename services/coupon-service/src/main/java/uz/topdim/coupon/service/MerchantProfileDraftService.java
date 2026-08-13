@@ -41,6 +41,7 @@ public class MerchantProfileDraftService {
     private final MerchantProfileChangeHistoryRepository historyRepository;
     private final MerchantProfileMapper mapper;
     private final IdentityPartnerAccessClient identityClient;
+    private final MerchantProfileOutboxService outboxService;
 
     @Transactional
     public MerchantProfileChangeResponse createDraft(
@@ -348,14 +349,18 @@ public class MerchantProfileDraftService {
             String actorRole,
             String comment
     ) {
-        historyRepository.save(MerchantProfileChangeHistory.builder()
-                .request(request)
-                .previousStatus(previousStatus)
-                .newStatus(newStatus)
-                .actorUserId(actorUserId)
-                .actorRole(actorRole)
-                .comment(comment)
-                .build());
+        MerchantProfileChangeHistory history = historyRepository.save(
+                MerchantProfileChangeHistory.builder()
+                        .request(request)
+                        .previousStatus(previousStatus)
+                        .newStatus(newStatus)
+                        .actorUserId(actorUserId)
+                        .actorRole(actorRole)
+                        .comment(comment)
+                        .build());
+        if (newStatus != MerchantProfileChangeStatus.DRAFT) {
+            outboxService.enqueue(request, history);
+        }
     }
 
     private boolean isBlank(String value) {
