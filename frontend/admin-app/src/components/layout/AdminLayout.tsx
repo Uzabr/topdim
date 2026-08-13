@@ -12,6 +12,7 @@ import {
   filterMenuByRole,
   type MenuItem,
 } from './adminMenu';
+import { MerchantProfileChangesMenuLabel } from '../../features/merchant-profile-changes/MerchantProfileChangesMenuLabel';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -20,7 +21,7 @@ function toAntMenuItems(items: MenuItem[]): MenuProps['items'] {
   return items.map(({ key, icon, label, children }) => ({
     key,
     icon,
-    label,
+    label: key === '/merchants/profile-changes' ? <MerchantProfileChangesMenuLabel /> : label,
     children: children ? toAntMenuItems(children) : undefined,
   }));
 }

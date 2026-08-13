@@ -20,6 +20,7 @@ vi.mock('../features/merchants/MerchantDetailPage', () => ({ MerchantDetailPage:
 vi.mock('../features/orders/OrdersPage', () => ({ OrdersPage: () => <h1>ORDERS_PAGE</h1> }));
 vi.mock('../features/orders/PurchasedCouponLookupPage', () => ({ PurchasedCouponLookupPage: () => <h1>COUPON_LOOKUP_PAGE</h1> }));
 vi.mock('../features/partners/PartnerApplicationsPage', () => ({ PartnerApplicationsPage: () => <h1>PARTNER_APPLICATIONS_PAGE</h1> }));
+vi.mock('../features/merchant-profile-changes/MerchantProfileChangeQueuePage', () => ({ MerchantProfileChangeQueuePage: () => <h1>PROFILE_CHANGES_PAGE</h1> }));
 vi.mock('../features/users/UsersListPage', () => ({ UsersListPage: () => <h1>USERS_PAGE</h1> }));
 vi.mock('../features/support/ReviewsPage', () => ({ ReviewsPage: () => <h1>REVIEWS_PAGE</h1> }));
 vi.mock('../features/support/RefundsPage', () => ({ RefundsPage: () => <h1>REFUNDS_PAGE</h1> }));
@@ -70,6 +71,7 @@ describe('admin application role access', () => {
   it.each([
     ['/dashboard', 'DASHBOARD_PAGE'],
     ['/coupons', 'COUPONS_PAGE'],
+    ['/merchants/profile-changes', 'PROFILE_CHANGES_PAGE'],
     ['/support/reviews', 'REVIEWS_PAGE'],
     ['/support/complaints', 'COMPLAINTS_PAGE'],
   ])('allows MODERATOR to open %s', async (path, pageMarker) => {
