@@ -38,6 +38,13 @@ notification:
   email:
     enabled: true
     from: ${MAIL_FROM:${MAIL_USERNAME:noreply@sizbiz.uz}}
+  telegram:
+    bot-token: ${TELEGRAM_BOT_TOKEN:}
+    partner-base-url: ${PARTNER_APP_URL:https://partner.sizbiz.uz}
+    connect-timeout-ms: ${TELEGRAM_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${TELEGRAM_READ_TIMEOUT_MS:10000}
+  delivery:
+    retry-delay-ms: ${NOTIFICATION_RETRY_DELAY_MS:60000}
 
 eureka:
   client:

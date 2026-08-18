@@ -1,14 +1,17 @@
 package uz.topdim.media.controller;
 
 import io.minio.*;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import uz.topdim.common.dto.ApiResponse;
+import uz.topdim.media.service.ImageUploadPolicy;
+import uz.topdim.media.service.ImageUploadTooLargeException;
+import uz.topdim.media.service.InvalidImageUploadException;
 
 import java.util.Map;
 import java.util.UUID;
@@ -25,19 +28,26 @@ public class MediaController {
 
     private final MinioClient minioClient;
     private final String bucketName;
+    private final ImageUploadPolicy imageUploadPolicy;
 
     public MediaController(
             @Value("${minio.url}") String minioUrl,
             @Value("${minio.access-key}") String accessKey,
             @Value("${minio.secret-key}") String secretKey,
-            @Value("${minio.bucket}") String bucket
+            @Value("${minio.bucket}") String bucket,
+            ImageUploadPolicy imageUploadPolicy
     ) {
-        this.bucketName = bucket;
-        this.minioClient = MinioClient.builder()
+        this(MinioClient.builder()
                 .endpoint(minioUrl)
                 .credentials(accessKey, secretKey)
-                .build();
+                .build(), bucket, imageUploadPolicy);
         initBucket();
+    }
+
+    MediaController(MinioClient minioClient, String bucketName, ImageUploadPolicy imageUploadPolicy) {
+        this.minioClient = minioClient;
+        this.bucketName = bucketName;
+        this.imageUploadPolicy = imageUploadPolicy;
     }
 
     private void initBucket() {
@@ -60,13 +70,23 @@ public class MediaController {
      */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Map<String, String>>> upload(@RequestParam("file") MultipartFile file) {
+        ImageUploadPolicy.ValidatedImage image;
         try {
-            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+            image = imageUploadPolicy.validate(file);
+        } catch (ImageUploadTooLargeException e) {
+            return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (InvalidImageUploadException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+
+        try {
+            String fileName = UUID.randomUUID() + "." + image.extension();
             minioClient.putObject(PutObjectArgs.builder()
                     .bucket(bucketName)
                     .object(fileName)
                     .stream(file.getInputStream(), file.getSize(), -1)
-                    .contentType(file.getContentType())
+                    .contentType(image.contentType())
                     .build());
 
             String url = "/api/v1/media/" + fileName;
@@ -75,8 +95,9 @@ public class MediaController {
                     "url", url
             )));
         } catch (Exception e) {
+            log.error("Could not upload media file", e);
             return ResponseEntity.internalServerError()
-                    .body(ApiResponse.error("Ошибка загрузки: " + e.getMessage()));
+                    .body(ApiResponse.error("Ошибка загрузки файла"));
         }
     }
 

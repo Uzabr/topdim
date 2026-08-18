@@ -14,6 +14,12 @@ vi.mock('./pages/RedeemPage', () => ({
 vi.mock('./pages/RedemptionHistoryPage', () => ({
   default: () => <div>History content</div>,
 }));
+vi.mock('./features/company/CompanyProfilePage', () => ({
+  default: () => <section aria-label="Раздел компании">Профиль компании открыт</section>,
+}));
+vi.mock('./features/company/CompanyRequestEditorPage', () => ({
+  default: () => <section aria-label="Редактор компании">Редактор заявки открыт</section>,
+}));
 
 describe('partner route authorization', () => {
   beforeEach(() => {
@@ -97,5 +103,67 @@ describe('partner route authorization', () => {
 
     expect(await screen.findByText('History content')).toBeTruthy();
     expect(screen.getByText('История погашений')).toBeTruthy();
+  });
+
+  it.each(['OWNER', 'MANAGER'] as const)(
+    'opens the company profile and menu for %s',
+    async (role) => {
+      window.history.replaceState({}, '', '/company');
+      localStorage.setItem('token', `${role}-token`);
+      localStorage.setItem('partnerContext', JSON.stringify({
+        role,
+        merchantId: 8,
+        canViewDashboard: true,
+        canRedeem: true,
+      }));
+
+      render(<App />);
+
+      expect(await screen.findByRole('region', { name: 'Раздел компании' })).toBeTruthy();
+      expect(screen.getByText('Профиль компании открыт')).toBeTruthy();
+      expect(screen.getByRole('menuitem', { name: /Моя компания/ })
+        .classList.contains('ant-menu-item-selected')).toBe(true);
+      expect(window.location.pathname).toBe('/company');
+    },
+  );
+
+  it.each(['OWNER', 'MANAGER'] as const)(
+    'keeps the company request editor route protected for %s',
+    async (role) => {
+      window.history.replaceState({}, '', '/company/requests/17');
+      localStorage.setItem('token', `${role}-token`);
+      localStorage.setItem('partnerContext', JSON.stringify({
+        role,
+        merchantId: 8,
+        canViewDashboard: true,
+        canRedeem: true,
+      }));
+
+      render(<App />);
+
+      expect(await screen.findByRole('region', { name: 'Редактор компании' })).toBeTruthy();
+      expect(screen.getByText('Редактор заявки открыт')).toBeTruthy();
+      expect(window.location.pathname).toBe('/company/requests/17');
+    },
+  );
+
+  it('redirects CASHIER away from a direct company URL and hides the menu item', async () => {
+    window.history.replaceState({}, '', '/company');
+    localStorage.setItem('token', 'cashier-token');
+    localStorage.setItem('partnerContext', JSON.stringify({
+      role: 'CASHIER',
+      merchantId: 8,
+      merchantLocationId: 21,
+      staffId: 15,
+      canViewDashboard: false,
+      canRedeem: true,
+    }));
+
+    render(<App />);
+
+    expect(await screen.findByText('Redeem content')).toBeTruthy();
+    expect(screen.queryByText('Моя компания')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Раздел компании' })).toBeNull();
+    expect(window.location.pathname).toBe('/redeem');
   });
 });

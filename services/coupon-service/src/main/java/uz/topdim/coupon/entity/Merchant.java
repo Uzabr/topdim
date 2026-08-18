@@ -57,6 +57,10 @@ public class Merchant {
     @Column(name = "telegram_chat_id")
     private String telegramChatId;
 
+    @Builder.Default
+    @Column(name = "profile_version", nullable = false)
+    private long profileVersion = 1L;
+
     @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<MerchantLocation> locations = new ArrayList<>();

@@ -11,6 +11,8 @@ import uz.topdim.identity.entity.Role;
 import uz.topdim.identity.entity.User;
 
 import java.util.Optional;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Репозиторий пользователей (объединённый из auth + user).
@@ -26,6 +28,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmailIgnoreCase(String email);
     boolean existsByPhone(String phone);
     Page<User> findByRole(Role role, Pageable pageable);
+    List<User> findAllByRoleInAndEnabledTrueAndDeletedFalseOrderByFirstNameAscLastNameAsc(
+            Set<Role> roles);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT u FROM User u WHERE u.id = :id")

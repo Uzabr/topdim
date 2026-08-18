@@ -17,14 +17,18 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final boolean enabled;
     private final String fromAddress;
+    private final String partnerBaseUrl;
 
     public EmailService(
             @Value("${notification.email.enabled:false}") boolean enabled,
             @Value("${notification.email.from:noreply@sizbiz.uz}") String fromAddress,
+            @Value("${notification.telegram.partner-base-url:https://partner.sizbiz.uz}")
+            String partnerBaseUrl,
             JavaMailSender mailSender
     ) {
         this.enabled = enabled;
         this.fromAddress = fromAddress;
+        this.partnerBaseUrl = stripTrailingSlash(partnerBaseUrl);
         this.mailSender = mailSender;
     }
 
@@ -73,6 +77,34 @@ public class EmailService {
                 """, orderNumber);
 
         sendEmail(to, subject, body);
+    }
+
+    public void sendProfileUpdateEmail(
+            String to,
+            String title,
+            String message,
+            String deepLink
+    ) {
+        if (!enabled) {
+            throw new IllegalStateException("Email delivery is disabled");
+        }
+        String link = deepLink == null || deepLink.isBlank() ? "" : "\n\nОткрыть заявку: "
+                + (deepLink.startsWith("http://") || deepLink.startsWith("https://")
+                ? deepLink
+                : partnerBaseUrl + (deepLink.startsWith("/") ? deepLink : "/" + deepLink));
+        SimpleMailMessage mail = new SimpleMailMessage();
+        mail.setFrom(fromAddress);
+        mail.setTo(to);
+        mail.setSubject("sizbiz — " + title);
+        mail.setText(message + link);
+        mailSender.send(mail);
+    }
+
+    private static String stripTrailingSlash(String value) {
+        if (value == null || value.isBlank()) {
+            return "https://partner.sizbiz.uz";
+        }
+        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 
     private void sendEmail(String to, String subject, String body) {

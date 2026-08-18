@@ -8,7 +8,12 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notifications")
+@Table(
+        name = "notifications",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_notifications_event_user",
+                columnNames = {"event_key", "user_id"})
+)
 @Getter
 @Setter
 @Builder
@@ -19,6 +24,9 @@ public class Notification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "event_key", length = 255)
+    private String eventKey;
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
@@ -31,6 +39,9 @@ public class Notification {
 
     @Column(nullable = false)
     private String type;
+
+    @Column(name = "deep_link", length = 500)
+    private String deepLink;
 
     @Column(name = "is_read", nullable = false)
     private boolean read;

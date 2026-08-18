@@ -28,6 +28,7 @@ public class MerchantResponse {
 
     private Long userId;
     private boolean active;
+    private long profileVersion;
 
     /** Publication readiness computed from merchant + primary location. */
     private boolean publicationReady;
