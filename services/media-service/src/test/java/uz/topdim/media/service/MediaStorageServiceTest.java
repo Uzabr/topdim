@@ -12,6 +12,7 @@ import org.mockito.ArgumentCaptor;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -60,6 +61,26 @@ class MediaStorageServiceTest {
 
         assertThrows(ImageProcessingException.class,
                 () -> svc.storeVariants("abc", Map.of(ImageVariant.THUMB, new byte[]{1})));
+    }
+
+    @Test
+    void compensatesAlreadyWrittenVariantsWhenAPutObjectFailsMidLoop() throws Exception {
+        MinioClient minio = mock(MinioClient.class);
+        when(minio.putObject(any()))
+                .thenReturn(null) // 1st putObject (THUMB) succeeds
+                .thenThrow(new IOException("minio down")); // 2nd putObject (CARD) fails
+        MediaStorageService svc = new MediaStorageService(minio, "topdim-media");
+
+        Map<ImageVariant, byte[]> variants = new LinkedHashMap<>();
+        variants.put(ImageVariant.THUMB, new byte[]{1});
+        variants.put(ImageVariant.CARD, new byte[]{2});
+
+        assertThrows(ImageProcessingException.class, () -> svc.storeVariants("abc", variants));
+
+        ArgumentCaptor<RemoveObjectArgs> cap = ArgumentCaptor.forClass(RemoveObjectArgs.class);
+        verify(minio, times(1)).removeObject(cap.capture());
+        assertEquals("topdim-media", cap.getValue().bucket());
+        assertEquals("abc_thumb.webp", cap.getValue().object());
     }
 
     @Test
