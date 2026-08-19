@@ -21,7 +21,7 @@ RUN chmod +x ./gradlew \
 
 FROM eclipse-temurin:21-jre-alpine
 
-RUN apk add --no-cache curl \
+RUN apk add --no-cache curl vips-tools \
     && addgroup -S topdim \
     && adduser -S topdim -G topdim
 
