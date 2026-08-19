@@ -2,6 +2,7 @@ package uz.topdim.media.controller;
 
 import io.minio.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -30,6 +31,7 @@ public class MediaController {
     private final String bucketName;
     private final ImageUploadPolicy imageUploadPolicy;
 
+    @Autowired
     public MediaController(
             @Value("${minio.url}") String minioUrl,
             @Value("${minio.access-key}") String accessKey,

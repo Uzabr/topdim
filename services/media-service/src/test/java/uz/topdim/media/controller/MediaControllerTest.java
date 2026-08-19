@@ -11,9 +11,11 @@ import org.springframework.mock.web.MockMultipartFile;
 import uz.topdim.common.dto.ApiResponse;
 import uz.topdim.media.service.ImageUploadPolicy;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -29,6 +31,15 @@ class MediaControllerTest {
     void setUp() {
         minioClient = mock(MinioClient.class);
         controller = new MediaController(minioClient, "media", new ImageUploadPolicy());
+    }
+
+    @Test
+    void primaryConstructorIsAutowirable() {
+        // Spring выбирает конструктор только при одном @Autowired среди нескольких.
+        long autowired = Arrays.stream(MediaController.class.getDeclaredConstructors())
+                .filter(c -> c.isAnnotationPresent(org.springframework.beans.factory.annotation.Autowired.class))
+                .count();
+        assertEquals(1, autowired, "ровно один конструктор должен быть @Autowired");
     }
 
     @Test
