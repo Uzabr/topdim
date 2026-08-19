@@ -15,6 +15,14 @@ minio:
   secret-key: ${MINIO_SECRET_KEY:topdim_secret}
   bucket: ${MINIO_BUCKET:topdim-media}
 
+media:
+  webp-quality: 82
+  max-input-pixels: 8000
+  sizes:
+    thumb: 200
+    card: 600
+    full: 1600
+
 eureka:
   client:
     service-url:
