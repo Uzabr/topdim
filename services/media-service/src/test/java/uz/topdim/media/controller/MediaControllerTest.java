@@ -1,22 +1,27 @@
 package uz.topdim.media.controller;
 
 import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import uz.topdim.common.dto.ApiResponse;
+import uz.topdim.media.dto.MediaUploadResponse;
+import uz.topdim.media.service.ImageProcessor;
 import uz.topdim.media.service.ImageUploadPolicy;
+import uz.topdim.media.service.ImageVariant;
+import uz.topdim.media.service.MediaStorageService;
 
 import java.util.Arrays;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -25,12 +30,18 @@ import static org.mockito.Mockito.when;
 class MediaControllerTest {
 
     private MinioClient minioClient;
+    private ImageUploadPolicy imageUploadPolicy;
+    private ImageProcessor imageProcessor;
+    private MediaStorageService storage;
     private MediaController controller;
 
     @BeforeEach
     void setUp() {
         minioClient = mock(MinioClient.class);
-        controller = new MediaController(minioClient, "media", new ImageUploadPolicy());
+        imageUploadPolicy = new ImageUploadPolicy();
+        imageProcessor = mock(ImageProcessor.class);
+        storage = mock(MediaStorageService.class);
+        controller = new MediaController(minioClient, "media", imageUploadPolicy, imageProcessor, storage);
     }
 
     @Test
@@ -43,47 +54,45 @@ class MediaControllerTest {
     }
 
     @Test
-    void uploadsValidatedImageWithServerGeneratedSafeNameAndCanonicalType() throws Exception {
-        when(minioClient.putObject(any(PutObjectArgs.class))).thenReturn(null);
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "../../logo dangerous.svg.png",
-                "image/png",
-                bytes(0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
-        );
+    void uploadReturnsIdUrlAndVariants() throws Exception {
+        ImageUploadPolicy policy = mock(ImageUploadPolicy.class);
+        when(policy.validate(any())).thenReturn(new ImageUploadPolicy.ValidatedImage("jpg", "image/jpeg"));
+        ImageProcessor proc = mock(ImageProcessor.class);
+        when(proc.process(any())).thenReturn(Map.of(
+                ImageVariant.THUMB, new byte[]{1}, ImageVariant.CARD, new byte[]{2}, ImageVariant.FULL, new byte[]{3}));
+        MediaStorageService store = mock(MediaStorageService.class);
+        when(store.storeVariants(anyString(), any())).thenAnswer(i -> i.getArgument(0));
 
-        ResponseEntity<ApiResponse<Map<String, String>>> response = controller.upload(file);
+        MediaController c = new MediaController(policy, proc, store);
+        var file = new MockMultipartFile("file", "logo.jpg", "image/jpeg", new byte[]{1, 2, 3});
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        String fileName = response.getBody().getData().get("fileName");
-        assertThat(fileName).matches("[0-9a-f-]{36}\\.png");
-        assertThat(fileName).doesNotContain("logo", "..", "/");
-        assertThat(response.getBody().getData().get("url")).isEqualTo("/api/v1/media/" + fileName);
+        var resp = c.upload(file);
 
-        ArgumentCaptor<PutObjectArgs> captor = ArgumentCaptor.forClass(PutObjectArgs.class);
-        verify(minioClient).putObject(captor.capture());
-        assertThat(captor.getValue().object()).isEqualTo(fileName);
-        assertThat(captor.getValue().contentType()).isEqualTo("image/png");
+        var body = resp.getBody().getData();
+        assertNotNull(body.id());
+        assertEquals("/api/v1/media/" + body.id(), body.url());
+        assertEquals("/api/v1/media/" + body.id() + "/card", body.variants().get("card"));
+        verify(store).storeVariants(eq(body.id()), any());
     }
 
     @Test
-    void returnsBadRequestWithoutStorageCallForInvalidImage() throws Exception {
+    void returnsBadRequestWithoutProcessingOrStorageForInvalidImage() throws Exception {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "fake.jpg", "image/jpeg", "not an image".getBytes()
         );
 
-        ResponseEntity<ApiResponse<Map<String, String>>> response = controller.upload(file);
+        ResponseEntity<ApiResponse<MediaUploadResponse>> response = controller.upload(file);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().isSuccess()).isFalse();
         assertThat(response.getBody().getMessage()).isEqualTo("Поддерживаются только JPEG, PNG, WebP и GIF");
-        verify(minioClient, never()).putObject(any(PutObjectArgs.class));
+        verify(imageProcessor, never()).process(any());
+        verify(storage, never()).storeVariants(anyString(), any());
     }
 
     @Test
-    void returnsPayloadTooLargeWithoutStorageCallForOversizedImage() throws Exception {
+    void returnsPayloadTooLargeWithoutProcessingOrStorageForOversizedImage() throws Exception {
         byte[] content = new byte[(20 * 1024 * 1024) + 1];
         content[0] = (byte) 0x89;
         content[1] = 0x50;
@@ -94,21 +103,14 @@ class MediaControllerTest {
         content[6] = 0x1A;
         content[7] = 0x0A;
 
-        ResponseEntity<ApiResponse<Map<String, String>>> response = controller.upload(
+        ResponseEntity<ApiResponse<MediaUploadResponse>> response = controller.upload(
                 new MockMultipartFile("file", "large.png", "image/png", content)
         );
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getMessage()).isEqualTo("Размер файла не должен превышать 20 МБ");
-        verify(minioClient, never()).putObject(any(PutObjectArgs.class));
-    }
-
-    private static byte[] bytes(int... values) {
-        byte[] result = new byte[values.length];
-        for (int index = 0; index < values.length; index++) {
-            result[index] = (byte) values[index];
-        }
-        return result;
+        verify(imageProcessor, never()).process(any());
+        verify(storage, never()).storeVariants(anyString(), any());
     }
 }
