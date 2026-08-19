@@ -41,6 +41,9 @@ public class ImageProcessor {
         );
         try {
             return runner.run(source, cmd);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ImageProcessingException("vips interrupted for " + variant, e);
         } catch (Exception e) {
             throw new ImageProcessingException("vips failed for " + variant, e);
         }
