@@ -50,6 +50,7 @@ public class MediaStorageService {
             }
             return id;
         } catch (Exception ex) {
+            log.warn("Could not store media variants (id={})", id, ex);
             compensate(id, written);
             throw new ImageProcessingException("store failed for " + id, ex);
         }

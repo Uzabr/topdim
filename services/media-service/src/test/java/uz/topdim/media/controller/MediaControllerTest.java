@@ -3,9 +3,11 @@ package uz.topdim.media.controller;
 import io.minio.GetObjectArgs;
 import io.minio.GetObjectResponse;
 import io.minio.MinioClient;
+import io.minio.RemoveObjectArgs;
 import okhttp3.Headers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -177,5 +179,30 @@ class MediaControllerTest {
         when(minioClient.getObject(any(GetObjectArgs.class))).thenThrow(new RuntimeException("not found"));
 
         assertEquals(404, controller.getDefault("missing.png").getStatusCode().value());
+    }
+
+    @Test
+    void deleteFileDelegatesToStorageForBareUuid() throws Exception {
+        ResponseEntity<ApiResponse<Void>> resp = controller.deleteFile("some-uuid");
+
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        assertThat(resp.getBody()).isNotNull();
+        assertThat(resp.getBody().isSuccess()).isTrue();
+        verify(storage).delete("some-uuid");
+        verify(minioClient, never()).removeObject(any(RemoveObjectArgs.class));
+    }
+
+    @Test
+    void deleteFileRemovesLegacyObjectDirectlyWhenFileNameHasExtension() throws Exception {
+        ResponseEntity<ApiResponse<Void>> resp = controller.deleteFile("legacy.jpg");
+
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        assertThat(resp.getBody()).isNotNull();
+        assertThat(resp.getBody().isSuccess()).isTrue();
+        ArgumentCaptor<RemoveObjectArgs> captor = ArgumentCaptor.forClass(RemoveObjectArgs.class);
+        verify(minioClient).removeObject(captor.capture());
+        assertEquals("media", captor.getValue().bucket());
+        assertEquals("legacy.jpg", captor.getValue().object());
+        verify(storage, never()).delete(anyString());
     }
 }

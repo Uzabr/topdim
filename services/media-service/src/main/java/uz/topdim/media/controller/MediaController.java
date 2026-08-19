@@ -175,6 +175,7 @@ public class MediaController {
                     .header(HttpHeaders.CACHE_CONTROL, IMMUTABLE_CACHE_CONTROL)
                     .body(body);
         } catch (Exception e) {
+            log.warn("Could not fetch media variant (id={}, variant={})", id, variant, e);
             return ResponseEntity.notFound().build();
         }
     }
@@ -203,18 +204,28 @@ public class MediaController {
                     .header(HttpHeaders.CACHE_CONTROL, IMMUTABLE_CACHE_CONTROL)
                     .body(content);
         } catch (Exception e) {
+            log.warn("Could not fetch legacy media object (fileName={})", fileName, e);
             return ResponseEntity.notFound().build();
         }
     }
 
     /**
      * DELETE /api/v1/media/{fileName} — Удаление файла.
+     * Диспатч зеркалит {@link #getDefault}: если {@code fileName} содержит "." — это
+     * legacy-объект, удаляем как есть напрямую из MinIO. Иначе (голый UUID, заведённый
+     * через {@link #upload}) удаляем все WebP-варианты через {@link MediaStorageService#delete}
+     * — иначе объекты {@code {id}_thumb.webp}/{@code _card.webp}/{@code _full.webp}
+     * остаются осиротевшими в хранилище навсегда.
      *
-     * @param fileName имя файла для удаления
+     * @param fileName идентификатор файла (UUID) либо legacy имя файла с расширением
      * @return 200 OK при успешном удалении
      */
     @DeleteMapping("/{fileName}")
     public ResponseEntity<ApiResponse<Void>> deleteFile(@PathVariable String fileName) {
+        if (!fileName.contains(".")) {
+            storage.delete(fileName);
+            return ResponseEntity.ok(ApiResponse.success("Файл удалён", null));
+        }
         try {
             minioClient.removeObject(RemoveObjectArgs.builder()
                     .bucket(bucketName)
