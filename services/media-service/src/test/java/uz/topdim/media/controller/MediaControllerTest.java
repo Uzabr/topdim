@@ -1,9 +1,13 @@
 package uz.topdim.media.controller;
 
+import io.minio.GetObjectArgs;
+import io.minio.GetObjectResponse;
 import io.minio.MinioClient;
+import okhttp3.Headers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import uz.topdim.common.dto.ApiResponse;
@@ -13,6 +17,7 @@ import uz.topdim.media.service.ImageUploadPolicy;
 import uz.topdim.media.service.ImageVariant;
 import uz.topdim.media.service.MediaStorageService;
 
+import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -112,5 +117,65 @@ class MediaControllerTest {
         assertThat(response.getBody().getMessage()).isEqualTo("Размер файла не должен превышать 20 МБ");
         verify(imageProcessor, never()).process(any());
         verify(storage, never()).storeVariants(anyString(), any());
+    }
+
+    @Test
+    void getVariantReturnsWebpWithImmutableCache() throws Exception {
+        MediaStorageService store = mock(MediaStorageService.class);
+        when(store.fetch("abc", ImageVariant.CARD))
+                .thenReturn(new ByteArrayInputStream(new byte[]{'W', 'E', 'B', 'P'}));
+        MediaController c = new MediaController(mock(ImageUploadPolicy.class), mock(ImageProcessor.class), store);
+
+        ResponseEntity<?> resp = c.getVariant("abc", "card");
+
+        assertEquals(MediaType.parseMediaType("image/webp"), resp.getHeaders().getContentType());
+        assertEquals("public, max-age=31536000, immutable", resp.getHeaders().getCacheControl());
+    }
+
+    @Test
+    void getUnknownVariantIs404() {
+        MediaController c = new MediaController(mock(ImageUploadPolicy.class), mock(ImageProcessor.class), mock(MediaStorageService.class));
+        assertEquals(404, c.getVariant("abc", "huge").getStatusCode().value());
+    }
+
+    @Test
+    void getVariantIs404WhenStorageThrows() throws Exception {
+        MediaStorageService store = mock(MediaStorageService.class);
+        when(store.fetch("missing", ImageVariant.THUMB)).thenThrow(new RuntimeException("not found"));
+        MediaController c = new MediaController(mock(ImageUploadPolicy.class), mock(ImageProcessor.class), store);
+
+        assertEquals(404, c.getVariant("missing", "thumb").getStatusCode().value());
+    }
+
+    @Test
+    void getDefaultDelegatesToFullVariantWhenIdHasNoExtension() throws Exception {
+        when(storage.fetch("abc", ImageVariant.FULL))
+                .thenReturn(new ByteArrayInputStream(new byte[]{'W', 'E', 'B', 'P'}));
+
+        ResponseEntity<?> resp = controller.getDefault("abc");
+
+        assertEquals(MediaType.parseMediaType("image/webp"), resp.getHeaders().getContentType());
+        assertEquals("public, max-age=31536000, immutable", resp.getHeaders().getCacheControl());
+    }
+
+    @Test
+    void getDefaultServesLegacyRawFileWithMetadataContentTypeAndImmutableCache() throws Exception {
+        GetObjectResponse legacyResponse = new GetObjectResponse(
+                new Headers.Builder().add("Content-Type", "image/png").build(),
+                "media", "us-east-1", "logo.png",
+                new ByteArrayInputStream(new byte[]{1, 2, 3}));
+        when(minioClient.getObject(any(GetObjectArgs.class))).thenReturn(legacyResponse);
+
+        ResponseEntity<?> resp = controller.getDefault("logo.png");
+
+        assertEquals(MediaType.IMAGE_PNG, resp.getHeaders().getContentType());
+        assertEquals("public, max-age=31536000, immutable", resp.getHeaders().getCacheControl());
+    }
+
+    @Test
+    void getDefaultLegacyRawIs404WhenObjectMissing() throws Exception {
+        when(minioClient.getObject(any(GetObjectArgs.class))).thenThrow(new RuntimeException("not found"));
+
+        assertEquals(404, controller.getDefault("missing.png").getStatusCode().value());
     }
 }
