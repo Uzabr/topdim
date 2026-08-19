@@ -2,7 +2,9 @@ package uz.topdim.media.service;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
+import uz.topdim.media.config.MediaProperties;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,7 +29,14 @@ class ImageProcessorVipsIT {
     @Test
     void producesRealWebpVariantsWithoutUpscale() throws Exception {
         byte[] png = getClass().getResourceAsStream("/fixtures/sample-300.png").readAllBytes();
-        ImageProcessor proc = new ImageProcessor(new DefaultProcessRunner(20), 82);
+        MediaProperties props = new MediaProperties();
+        props.setWebpQuality(82);
+        Map<String, Integer> sizes = new LinkedHashMap<>();
+        sizes.put("thumb", 200);
+        sizes.put("card", 600);
+        sizes.put("full", 1600);
+        props.setSizes(sizes);
+        ImageProcessor proc = new ImageProcessor(new DefaultProcessRunner(20), props);
 
         Map<ImageVariant, byte[]> out = proc.process(png);
 

@@ -1,7 +1,7 @@
 package uz.topdim.media.service;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import uz.topdim.media.config.MediaProperties;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -12,16 +12,20 @@ import java.util.Map;
  * vipsthumbnail читает из stdin ([descriptor]), пишет webp в stdout:
  *   vipsthumbnail stdin --size {max}> -o .webp[Q={q},strip] --vips-concurrency=1
  * "{max}>" — не увеличивать, если изображение меньше цели (без апскейла).
+ *
+ * <p>Качество и целевые размеры вариантов берутся из {@link MediaProperties} (application.yml,
+ * {@code media.webp-quality} / {@code media.sizes.<suffix>}). Если для варианта нет записи
+ * в {@code media.sizes}, используется дефолт {@link ImageVariant#maxPx()}.
  */
 @Component
 public class ImageProcessor {
 
     private final ProcessRunner runner;
-    private final int quality;
+    private final MediaProperties properties;
 
-    public ImageProcessor(ProcessRunner runner, @Value("${media.webp-quality:82}") int quality) {
+    public ImageProcessor(ProcessRunner runner, MediaProperties properties) {
         this.runner = runner;
-        this.quality = quality;
+        this.properties = properties;
     }
 
     public Map<ImageVariant, byte[]> process(byte[] source) {
@@ -33,10 +37,11 @@ public class ImageProcessor {
     }
 
     private byte[] encode(byte[] source, ImageVariant variant) {
+        int maxPx = properties.getSizes().getOrDefault(variant.suffix(), variant.maxPx());
         List<String> cmd = List.of(
                 "vipsthumbnail", "stdin",
-                "--size", variant.maxPx() + ">",              // ">" = не апскейлить
-                "-o", ".webp[Q=" + quality + ",strip]",
+                "--size", maxPx + ">",              // ">" = не апскейлить
+                "-o", ".webp[Q=" + properties.getWebpQuality() + ",strip]",
                 "--vips-concurrency=1"
         );
         try {
