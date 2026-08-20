@@ -3,15 +3,15 @@ plugins {
 }
 
 dependencies {
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.18.3'
-    implementation 'jakarta.validation:jakarta.validation-api:3.1.0'
-    compileOnly 'org.projectlombok:lombok:1.18.36'
-    annotationProcessor 'org.projectlombok:lombok:1.18.36'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.22'
+    implementation 'jakarta.validation:jakarta.validation-api:3.1.1'
+    compileOnly 'org.projectlombok:lombok:1.18.46'
+    annotationProcessor 'org.projectlombok:lombok:1.18.46'
 
     // For ReadReplicaConfig (optional — only used by services with DB)
-    compileOnly 'org.springframework:spring-jdbc:6.2.3'
-    compileOnly 'org.springframework:spring-context:6.2.3'
-    compileOnly 'org.springframework:spring-tx:6.2.3'
-    compileOnly 'org.springframework.boot:spring-boot:3.4.3'
-    compileOnly 'org.springframework.boot:spring-boot-autoconfigure:3.4.3'
+    compileOnly 'org.springframework:spring-jdbc:6.2.19'
+    compileOnly 'org.springframework:spring-context:6.2.19'
+    compileOnly 'org.springframework:spring-tx:6.2.19'
+    compileOnly 'org.springframework.boot:spring-boot:3.5.16'
+    compileOnly 'org.springframework.boot:spring-boot-autoconfigure:3.5.16'
 }
