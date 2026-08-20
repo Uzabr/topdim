@@ -1,5 +1,12 @@
 version: 2
 
+# Политика обновлений:
+#  * Dependabot присылает только minor + patch, ОДНИМ сгруппированным PR на экосистему.
+#  * Все semver-major игнорируются везде (dependency-name: "*") — мажорный апгрейд это
+#    осознанный проект миграции (Spring Boot, Java/Temurin, Node, TypeScript, ESLint, GH-actions…),
+#    а не автоматический PR. Поднимаем мажор вручную, когда сами решим.
+#  * Security-обновления приходят отдельно (GitHub Settings → Security) и это не отключает.
+
 updates:
   - package-ecosystem: gradle
     directory: /
@@ -10,14 +17,9 @@ updates:
     labels:
       - dependencies
       - java
-    # Мажоры фреймворка НЕ автобампим — пиним Spring Boot 3.4 / Java 21;
-    # апгрейд мажора это отдельный проект миграции, а не рутинный PR.
     ignore:
-      - dependency-name: "org.springframework.boot:*"
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
-      - dependency-name: "org.springframework:*"
-        update-types: ["version-update:semver-major"]
-    # Минор+патч приходят одним сгруппированным PR — меньше шума.
     groups:
       minor-and-patch:
         update-types:
@@ -33,6 +35,9 @@ updates:
     labels:
       - dependencies
       - frontend
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       minor-and-patch:
         update-types:
@@ -48,6 +53,9 @@ updates:
     labels:
       - dependencies
       - frontend
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       minor-and-patch:
         update-types:
@@ -63,6 +71,9 @@ updates:
     labels:
       - dependencies
       - frontend
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       minor-and-patch:
         update-types:
@@ -76,9 +87,8 @@ updates:
     labels:
       - dependencies
       - docker
-    # Рантайм-мажор JRE не автобампим — пиним Temurin 21 (Java 21).
     ignore:
-      - dependency-name: "eclipse-temurin"
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
     groups:
       minor-and-patch:
@@ -93,9 +103,8 @@ updates:
     labels:
       - dependencies
       - docker
-    # Node-мажор для build-стейджа фронта не автобампим (закреплённая мажорная линия).
     ignore:
-      - dependency-name: "node"
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
     groups:
       minor-and-patch:
@@ -110,6 +119,9 @@ updates:
     labels:
       - dependencies
       - ci
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       minor-and-patch:
         update-types:
