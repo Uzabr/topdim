@@ -11,7 +11,7 @@ dependencies {
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 
-    implementation 'io.minio:minio:8.5.14'
+    implementation 'io.minio:minio:9.0.3'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
