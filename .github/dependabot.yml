@@ -17,6 +17,12 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "org.springframework:*"
         update-types: ["version-update:semver-major"]
+    # Минор+патч приходят одним сгруппированным PR — меньше шума.
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: npm
     directory: /frontend/web-app
@@ -27,6 +33,11 @@ updates:
     labels:
       - dependencies
       - frontend
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: npm
     directory: /frontend/admin-app
@@ -37,6 +48,11 @@ updates:
     labels:
       - dependencies
       - frontend
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: npm
     directory: /frontend/partner
@@ -47,6 +63,11 @@ updates:
     labels:
       - dependencies
       - frontend
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: docker
     directory: /docker/backend
@@ -59,6 +80,11 @@ updates:
     ignore:
       - dependency-name: "eclipse-temurin"
         update-types: ["version-update:semver-major"]
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: docker
     directory: /docker/frontend
@@ -71,6 +97,11 @@ updates:
     ignore:
       - dependency-name: "node"
         update-types: ["version-update:semver-major"]
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: github-actions
     directory: /
@@ -79,3 +110,8 @@ updates:
     labels:
       - dependencies
       - ci
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
