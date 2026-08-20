@@ -23,6 +23,12 @@ subprojects {
     }
 
     dependencies {
+        // Caffeine на classpath → Spring Cloud LoadBalancer использует его для кэша
+        // инстансов вместо дефолтного (убирает WARN LoadBalancerCacheAutoConfiguration
+        // «default cache … recommended to use Caffeine in production»). Версия задана
+        // явно: на этом уровне нет Spring Boot BOM (он подключается в каждом сервисе).
+        implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
         testImplementation 'org.testcontainers:junit-jupiter'
         testImplementation 'org.testcontainers:postgresql'
