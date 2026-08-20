@@ -10,6 +10,13 @@ updates:
     labels:
       - dependencies
       - java
+    # Мажоры фреймворка НЕ автобампим — пиним Spring Boot 3.4 / Java 21;
+    # апгрейд мажора это отдельный проект миграции, а не рутинный PR.
+    ignore:
+      - dependency-name: "org.springframework.boot:*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.springframework:*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /frontend/web-app
@@ -48,6 +55,10 @@ updates:
     labels:
       - dependencies
       - docker
+    # Рантайм-мажор JRE не автобампим — пиним Temurin 21 (Java 21).
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker
     directory: /docker/frontend
@@ -56,6 +67,10 @@ updates:
     labels:
       - dependencies
       - docker
+    # Node-мажор для build-стейджа фронта не автобампим (закреплённая мажорная линия).
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
