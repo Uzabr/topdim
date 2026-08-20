@@ -10,6 +10,19 @@ updates:
     labels:
       - dependencies
       - java
+    # Мажоры фреймворка НЕ автобампим — пиним Spring Boot 3.4 / Java 21;
+    # апгрейд мажора это отдельный проект миграции, а не рутинный PR.
+    ignore:
+      - dependency-name: "org.springframework.boot:*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.springframework:*"
+        update-types: ["version-update:semver-major"]
+    # Минор+патч приходят одним сгруппированным PR — меньше шума.
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: npm
     directory: /frontend/web-app
@@ -20,6 +33,11 @@ updates:
     labels:
       - dependencies
       - frontend
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: npm
     directory: /frontend/admin-app
@@ -30,6 +48,11 @@ updates:
     labels:
       - dependencies
       - frontend
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: npm
     directory: /frontend/partner
@@ -40,6 +63,11 @@ updates:
     labels:
       - dependencies
       - frontend
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: docker
     directory: /docker/backend
@@ -48,6 +76,15 @@ updates:
     labels:
       - dependencies
       - docker
+    # Рантайм-мажор JRE не автобампим — пиним Temurin 21 (Java 21).
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: docker
     directory: /docker/frontend
@@ -56,6 +93,15 @@ updates:
     labels:
       - dependencies
       - docker
+    # Node-мажор для build-стейджа фронта не автобампим (закреплённая мажорная линия).
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: github-actions
     directory: /
@@ -64,3 +110,8 @@ updates:
     labels:
       - dependencies
       - ci
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
