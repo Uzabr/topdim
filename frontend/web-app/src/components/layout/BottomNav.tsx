@@ -24,7 +24,7 @@ const ITEMS = [
 type Phase = 'idle' | 'ball' | 'fly' | 'pour';
 
 /** Какой вкладке соответствует текущий маршрут. */
-function indexOfRoute(pathname: string): number {
+export function indexOfRoute(pathname: string): number {
   const path = pathname.replace(/^\/(ru|uz)/, '') || '/';
   const i = ITEMS.findIndex((item) => item.path !== '/' && path.startsWith(item.path));
   return i === -1 ? 0 : i;
@@ -34,6 +34,9 @@ function indexOfRoute(pathname: string): number {
  * Мобильная навигация: чёрная таблетка, жёлтая капля перетекает между иконками
  * в три фазы (сжатие → полёт с растяжением → разлив с пружиной) и «плюпает».
  * Гость спокойно попадает на корзину / избранное / профиль — вход предлагается на странице.
+ *
+ * Капля следует за URL. Раньше анимация заканчивалась до navigate(), и сверка
+ * с ещё старым pathname возвращала каплю на предыдущую вкладку, затем снова вперёд.
  */
 export default function BottomNav() {
   const { t } = useTranslation();
@@ -47,45 +50,43 @@ export default function BottomNav() {
   const [active, setActive] = useState(routeIndex);
   const [phase, setPhase] = useState<Phase>('idle');
   const timers = useRef<number[]>([]);
-
-  // Маршрут сменился не через навигацию (ссылка, кнопка «назад») — капля садится на место.
-  const [prevRoute, setPrevRoute] = useState(routeIndex);
-  if (prevRoute !== routeIndex && phase === 'idle') {
-    setPrevRoute(routeIndex);
-    setPos(routeIndex);
-    setActive(routeIndex);
-  }
+  const prevRoute = useRef(routeIndex);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
-  const go = (index: number) => {
-    if (phase !== 'idle' || index === active) return;
+  useEffect(() => {
+    if (prevRoute.current === routeIndex) return;
+    prevRoute.current = routeIndex;
+
+    timers.current.forEach(clearTimeout);
 
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      setPos(index);
-      setActive(index);
-      setPrevRoute(index);
-      navigate(lp(ITEMS[index].path));
+      setPos(routeIndex);
+      setActive(routeIndex);
+      setPhase('idle');
       return;
     }
 
     setPhase('ball');
     timers.current = [
       window.setTimeout(() => {
-        setPos(index);
+        setPos(routeIndex);
         setPhase('fly');
       }, BALL),
       window.setTimeout(() => {
-        setActive(index);
+        setActive(routeIndex);
         setPhase('pour');
         playDrop();
       }, BALL + FLY),
       window.setTimeout(() => {
         setPhase('idle');
-        setPrevRoute(index);
-        navigate(lp(ITEMS[index].path));
       }, BALL + FLY + POUR),
     ];
+  }, [routeIndex]);
+
+  const go = (index: number) => {
+    if (index === routeIndex) return;
+    navigate(lp(ITEMS[index].path));
   };
 
   return (

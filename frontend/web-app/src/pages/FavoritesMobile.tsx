@@ -36,7 +36,7 @@ export default function FavoritesMobile() {
           onClick={() => (window.history.length > 1 ? navigate(-1) : navigate(lp('/')))}
           aria-label={t('common.back')}
         >
-          <ChevronLeft size={18} strokeWidth={2} />
+          <ChevronLeft size={20} strokeWidth={2} />
         </button>
 
         <span className="mbar__title">{t('favorites.title')}</span>

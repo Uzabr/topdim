@@ -58,7 +58,7 @@ export default function HeaderMobile() {
             onClick={() => setCatalogOpen(true)}
             aria-label={t('header.catalog')}
           >
-            <LayoutGrid size={16} strokeWidth={1.9} />
+            <LayoutGrid size={20} strokeWidth={1.9} />
           </button>
 
           <button
@@ -70,7 +70,7 @@ export default function HeaderMobile() {
             {isAuthenticated ? (
               <UserAvatar avatarUrl={user?.avatarUrl} firstName={user?.firstName} />
             ) : (
-              <User size={16} strokeWidth={1.9} />
+              <User size={20} strokeWidth={1.9} />
             )}
           </button>
 

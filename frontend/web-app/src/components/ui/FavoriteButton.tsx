@@ -39,7 +39,7 @@ export default function FavoriteButton({ couponId }: FavoriteButtonProps) {
       aria-label={t('couponDetail.favorite')}
       aria-pressed={fav}
     >
-      <Heart size={16} fill={fav ? 'currentColor' : 'none'} />
+      <Heart size={20} fill={fav ? 'currentColor' : 'none'} />
     </button>
   );
 }

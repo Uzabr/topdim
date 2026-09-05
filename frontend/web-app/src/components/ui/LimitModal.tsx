@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useAuthStore } from '../../store/authStore';
 import { useLocalePath } from '../../hooks/useLocalePath';
+import { useScrollLock } from '../../hooks/useScrollLock';
 import './LimitModal.css';
 
 export default function LimitModal() {
@@ -11,6 +12,7 @@ export default function LimitModal() {
   const { showLimitModal, limitMessage, closeLimitModal } = useFavoritesStore();
   const { isAuthenticated } = useAuthStore();
   const lp = useLocalePath();
+  useScrollLock(showLimitModal);
 
   if (!showLimitModal) return null;
 

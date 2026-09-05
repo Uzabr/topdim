@@ -198,7 +198,7 @@ export default function ProfileMobile() {
           }
           aria-label={t('common.back')}
         >
-          <ChevronLeft size={18} strokeWidth={2} />
+          <ChevronLeft size={20} strokeWidth={2} />
         </button>
 
         <span className="mbar__title">
@@ -438,11 +438,11 @@ export default function ProfileMobile() {
           <div className="pmob__more">
             <button type="button" className="pmob__link" onClick={() => setTab('orders')}>
               {t('profile.tabs.orders')}
-              <ChevronRight size={15} />
+              <ChevronRight size={20} />
             </button>
             <button type="button" className="pmob__link" onClick={() => setTab('settings')}>
               {t('profile.tabs.settings')}
-              <ChevronRight size={15} />
+              <ChevronRight size={20} />
             </button>
             <button type="button" className="pmob__link pmob__link--muted" onClick={logout}>
               {t('profile.logout')}

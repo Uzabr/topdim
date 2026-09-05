@@ -43,6 +43,10 @@ html {
   -moz-osx-font-smoothing: grayscale;
   /* Убирает системную синюю вспышку при тапе (iOS/Android/WebKit) */
   -webkit-tap-highlight-color: transparent;
+  /* Контент сайта не копируют выделением; поля ввода — исключение ниже. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 body {
@@ -65,6 +69,15 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+input,
+textarea,
+select,
+[contenteditable='true'] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 button {

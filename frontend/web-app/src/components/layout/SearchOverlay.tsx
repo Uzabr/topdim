@@ -3,6 +3,7 @@ import { Search, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocalePath } from '../../hooks/useLocalePath';
+import { useScrollLock } from '../../hooks/useScrollLock';
 import './SearchOverlay.css';
 
 interface SearchOverlayProps {
@@ -19,6 +20,7 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  useScrollLock();
 
   const suggestions = t('header.searchSuggestions', { returnObjects: true }) as unknown as string[];
 
@@ -29,14 +31,7 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKeyDown);
-
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = prevOverflow;
-    };
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, [onClose]);
 
   const submit = (term: string) => {

@@ -1,7 +1,83 @@
 /* Лендинг партнёров — тот же язык, что у главной (Оса). */
 
+.partners-page {
+  position: relative;
+  isolation: isolate;
+}
+
 .partners {
+  position: relative;
+  z-index: 1;
   padding-bottom: var(--space-3xl);
+}
+
+/* Тихий фон: буквы sizbiz + купон. Не перехватывает клики. */
+.partners-sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.partners-sky__item {
+  position: absolute;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  line-height: 1;
+  text-transform: lowercase;
+  user-select: none;
+}
+
+.partners-sky__item--ink {
+  color: var(--ink);
+  opacity: 0.08;
+}
+
+.partners-sky__item--wasp {
+  color: var(--wasp);
+  opacity: 0.22;
+}
+
+.partners-sky__item--logo {
+  opacity: 0.2;
+}
+
+.partners-sky__float {
+  display: block;
+  transform: rotate(var(--rot, 0deg));
+  animation: partners-drift var(--dur, 20s) ease-in-out var(--delay, 0s) infinite;
+}
+
+@keyframes partners-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(var(--rot, 0deg));
+  }
+  50% {
+    transform: translate(6px, -10px) rotate(var(--rot, 0deg));
+  }
+}
+
+@media (max-width: 767px) {
+  .partners-sky__item--ink {
+    opacity: 0.04;
+  }
+
+  .partners-sky__item--wasp,
+  .partners-sky__item--logo {
+    opacity: 0.1;
+  }
+
+  .partners-sky__item--logo + .partners-sky__item--logo {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .partners-sky__float {
+    animation: none;
+  }
 }
 
 /* ── Hero ── */

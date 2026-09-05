@@ -48,11 +48,11 @@ export default function SearchMobile() {
           onClick={() => (window.history.length > 1 ? navigate(-1) : navigate(lp('/')))}
           aria-label={t('common.back')}
         >
-          <ChevronLeft size={18} strokeWidth={2} />
+          <ChevronLeft size={20} strokeWidth={2} />
         </button>
 
         <div className="smob__field">
-          <Search size={18} strokeWidth={1.8} className="smob__field-icon" />
+          <Search size={20} strokeWidth={1.8} className="smob__field-icon" />
           <input
             type="search"
             value={query}
@@ -68,7 +68,7 @@ export default function SearchMobile() {
               onClick={() => setQuery('')}
               aria-label={t('common.clear')}
             >
-              <X size={12} />
+              <X size={20} />
             </button>
           )}
         </div>

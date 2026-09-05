@@ -6,6 +6,7 @@ import { useFavoritesStore } from '../../store/favoritesStore';
 import ShareButton from '../ui/ShareButton';
 import { formatPrice } from '../../utils/format';
 import { useLocalePath } from '../../hooks/useLocalePath';
+import { useScrollLock } from '../../hooks/useScrollLock';
 import './CartDrawer.css';
 
 export default function CartDrawer() {
@@ -14,6 +15,7 @@ export default function CartDrawer() {
   const { toggleFavorite, isFavorite } = useFavoritesStore();
   const navigate = useNavigate();
   const lp = useLocalePath();
+  useScrollLock(isOpen);
 
   if (!isOpen) return null;
 

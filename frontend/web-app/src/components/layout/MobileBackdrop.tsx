@@ -3,7 +3,7 @@ import { useIsDesktop } from '../../hooks/useIsDesktop';
 import './MobileBackdrop.css';
 
 /** Раскладка пятен меняется от экрана к экрану (хендофф, «Мобильные токены»). */
-type Scene = 'home' | 'coupon' | 'cart' | 'profile' | 'search' | 'plain';
+type Scene = 'home' | 'coupon' | 'cart' | 'profile' | 'search' | 'partners' | 'plain';
 
 function sceneOf(pathname: string): Scene {
   const path = pathname.replace(/^\/(ru|uz)/, '') || '/';
@@ -13,6 +13,7 @@ function sceneOf(pathname: string): Scene {
     return 'cart';
   if (path.startsWith('/profile') || path.startsWith('/favorites')) return 'profile';
   if (path.startsWith('/search')) return 'search';
+  if (path.startsWith('/partners')) return 'partners';
   return 'plain';
 }
 

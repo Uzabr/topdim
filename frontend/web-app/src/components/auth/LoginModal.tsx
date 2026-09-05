@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useScrollLock } from '../../hooks/useScrollLock';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LoginCard from './LoginCard';
@@ -13,6 +14,7 @@ interface LoginModalProps {
 /** Вход открывается модалкой поверх страницы — пользователь не теряет контекст. */
 export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
   const { t } = useTranslation();
+  useScrollLock();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -26,7 +28,7 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
     <div className="lmodal" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="lmodal__body" onClick={(e) => e.stopPropagation()}>
         <button type="button" className="lmodal__close" onClick={onClose} aria-label={t('common.close')}>
-          <X size={16} />
+          <X size={20} />
         </button>
         <LoginCard onSuccess={onSuccess ?? onClose} />
       </div>

@@ -145,13 +145,13 @@ export default function CouponMobile() {
           onClick={() => (window.history.length > 1 ? navigate(-1) : navigate(lp('/')))}
           aria-label={t('common.back')}
         >
-          <ArrowLeft size={17} strokeWidth={2} />
+          <ArrowLeft size={20} strokeWidth={2} />
         </button>
 
         <span className="mbar__title">{t('mobile.coupon.title')}</span>
 
         <Link to={lp('/cart')} className="mround" aria-label={t('bottomNav.cart')}>
-          <ShoppingBag size={16} strokeWidth={1.9} />
+          <ShoppingBag size={20} strokeWidth={1.9} />
         </Link>
       </div>
 
@@ -192,7 +192,7 @@ export default function CouponMobile() {
           aria-label={t('couponDetail.favorite')}
           aria-pressed={fav}
         >
-          <Heart size={16} fill={fav ? 'currentColor' : 'none'} />
+          <Heart size={20} fill={fav ? 'currentColor' : 'none'} />
         </button>
       </div>
 
@@ -267,7 +267,7 @@ export default function CouponMobile() {
           <span className="glass__title">
             {t('couponDetail.reviews')} <span className="glass__count">{reviewCount}</span>
           </span>
-          <ChevronDown size={15} className={`glass__arrow${revOpen ? ' glass__arrow--up' : ''}`} />
+          <ChevronDown size={20} className={`glass__arrow${revOpen ? ' glass__arrow--up' : ''}`} />
         </button>
 
         {revOpen && (
@@ -297,7 +297,7 @@ export default function CouponMobile() {
           <button type="button" className="glass__toggle" onClick={() => setWhereOpen((v) => !v)}>
             <span className="glass__title">{t('couponDetail.where')}</span>
             <ChevronDown
-              size={15}
+              size={20}
               className={`glass__arrow${whereOpen ? ' glass__arrow--up' : ''}`}
             />
           </button>
@@ -341,7 +341,7 @@ export default function CouponMobile() {
             aria-label={t('couponDetail.addToCart')}
             disabled={!selected}
           >
-            <ShoppingBag size={17} strokeWidth={1.9} />
+            <ShoppingBag size={20} strokeWidth={1.9} />
           </button>
 
           <button

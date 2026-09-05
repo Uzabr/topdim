@@ -9,6 +9,7 @@
   background: rgba(20, 20, 20, 0.45);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  overscroll-behavior: none;
 }
 
 .review-modal {

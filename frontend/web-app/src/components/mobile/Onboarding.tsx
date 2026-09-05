@@ -1,8 +1,21 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { CouponOffer } from '../../api/coupons';
+import { useScrollLock } from '../../hooks/useScrollLock';
 import './Onboarding.css';
+
+/** Минимальный сдвиг по X, чтобы не путать свайп с тапом. */
+const SWIPE_MIN_PX = 48;
+
+/**
+ * Горизонтальный жест: 1 — следующий слайд, -1 — предыдущий, 0 — не свайп
+ * (короткий жест или вертикальное движение).
+ */
+export function swipeAxis(dx: number, dy: number, minPx = SWIPE_MIN_PX): -1 | 0 | 1 {
+  if (Math.abs(dx) < minPx || Math.abs(dx) <= Math.abs(dy)) return 0;
+  return dx < 0 ? 1 : -1;
+}
 
 interface OnboardingProps {
   /** Карточки для «конвейера» на первом слайде — настоящие купоны, не картинки. */
@@ -32,6 +45,9 @@ export default function Onboarding({ deals, onDone }: OnboardingProps) {
   const { t } = useTranslation();
   const [slide, setSlide] = useState(0);
   const [leaving, setLeaving] = useState(false);
+  const swipeOrigin = useRef<{ x: number; y: number; id: number } | null>(null);
+  const didSwipe = useRef(false);
+  useScrollLock();
 
   const finish = () => {
     if (leaving) return;
@@ -41,10 +57,47 @@ export default function Onboarding({ deals, onDone }: OnboardingProps) {
 
   const next = () => (slide < SLIDES - 1 ? setSlide(slide + 1) : finish());
 
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if ((e.target as Element).closest('button, a')) return;
+    didSwipe.current = false;
+    swipeOrigin.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const origin = swipeOrigin.current;
+    swipeOrigin.current = null;
+    if (!origin || origin.id !== e.pointerId) return;
+    const axis = swipeAxis(e.clientX - origin.x, e.clientY - origin.y);
+    if (axis === 0) return;
+    didSwipe.current = true;
+    if (axis === 1) next();
+    else if (slide > 0) setSlide(slide - 1);
+  };
+
+  const onPointerCancel = () => {
+    swipeOrigin.current = null;
+  };
+
+  /** После свайпа не даём синтетическому click нажать «Далее» ещё раз. */
+  const onClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!didSwipe.current) return;
+    didSwipe.current = false;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   const cards = deals.slice(0, 3);
 
   return createPortal(
-    <div className={`onb${leaving ? ' onb--out' : ''}`}>
+    <div
+      className={`onb${leaving ? ' onb--out' : ''}`}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onClickCapture={onClickCapture}
+    >
       <span className="onb__blob onb__blob--1" />
       <span className="onb__blob onb__blob--2" />
       <span className="onb__blob onb__blob--3" />

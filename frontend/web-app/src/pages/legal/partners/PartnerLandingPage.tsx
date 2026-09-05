@@ -18,6 +18,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { submitPartnerApplication } from '../../../api/partners';
 import type { PartnerApplicationData } from '../../../api/partners';
+import PartnersSky from './PartnersSky';
 import './PartnerLandingPage.css';
 
 type FormValues = {
@@ -35,13 +36,16 @@ type FormValues = {
  */
 export default function PartnerLandingPage() {
   return (
-    <div className="partners container">
-      <HeroSection />
-      <AudienceSection />
-      <StepsSection />
-      <BenefitsSection />
-      <FormSection />
-      <FaqSection />
+    <div className="partners-page">
+      <PartnersSky />
+      <div className="partners container">
+        <HeroSection />
+        <AudienceSection />
+        <StepsSection />
+        <BenefitsSection />
+        <FormSection />
+        <FaqSection />
+      </div>
     </div>
   );
 }
