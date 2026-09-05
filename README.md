@@ -53,7 +53,7 @@ Promotions happen every day in Uzbekistan — scattered across Instagram, Telegr
 
 | For buyers | For small businesses |
 |---|---|
-| Offers are scattered across Instagram, Telegram and banners. No single place to find an offer, verify its terms, buy it and prove the purchase. Conditions stay unclear until payment. | The standard alternative is an SMM / ads agency: **$700–2,500 / month + $500–2,000 media budget, paid upfront** — whether or not a single customer walks in. The business pays for impressions, not customers. |
+| Offers are scattered across Instagram, Telegram and banners. No single place to find an offer, verify its terms, buy it and prove the purchase. Conditions stay unclear until payment. | The standard alternative is an SMM / ads agency: **$700–2,500 / month + $500–2,000 media budget, paid upfront** — whether or not a single customer walks in. The business pays for only activated coupons not impressions or customers. |
 
 ## The solution — one controlled loop
 
