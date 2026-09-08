@@ -1,72 +1,133 @@
-const LETTERS = [
-  { ch: 's', x: '3%', y: '5%', size: 110, dur: 19, delay: 0, rot: -10, tone: 'ink' },
-  { ch: 'i', x: '90%', y: '9%', size: 72, dur: 22, delay: 1.4, rot: 8, tone: 'wasp' },
-  { ch: 'z', x: '86%', y: '28%', size: 96, dur: 17, delay: 0.6, rot: 12, tone: 'ink' },
-  { ch: 'b', x: '4%', y: '48%', size: 88, dur: 24, delay: 2.1, rot: -6, tone: 'wasp' },
-  { ch: 'i', x: '88%', y: '58%', size: 64, dur: 20, delay: 3.2, rot: 7, tone: 'ink' },
-  { ch: 'z', x: '8%', y: '82%', size: 104, dur: 21, delay: 1.1, rot: -8, tone: 'ink' },
-] as const;
+import { useMemo, useRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+import { generateSkyMarks, PRODUCT_LETTERS, LETTER_COLORS } from './partnersSkyMarks';
+const SKY_MARKS = generateSkyMarks();
 
-const LOGOS = [
-  { x: '7%', y: '24%', size: 52, dur: 18, delay: 0.8, rot: -14 },
-  { x: '89%', y: '78%', size: 44, dur: 23, delay: 2.6, rot: 11 },
-] as const;
+function letterTexture(ch: string, color: string): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return new THREE.CanvasTexture(canvas);
+  }
+  ctx.clearRect(0, 0, 128, 128);
+  ctx.font = '800 92px Helvetica, Arial, sans-serif';
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(ch, 64, 70);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
 
-/** Жёлто-чёрный купон из favicon — декоративный, без ссылки. */
-function TicketMark() {
+function logoTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return new THREE.CanvasTexture(canvas);
+  }
+  ctx.clearRect(0, 0, 256, 256);
+
+  const round = (x: number, y: number, w: number, h: number, r: number) => {
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(x, y, w, h, r);
+    } else {
+      ctx.rect(x, y, w, h);
+    }
+  };
+
+  ctx.fillStyle = '#ffd23c';
+  round(24, 64, 100, 128, 28);
+  ctx.fill();
+  ctx.fillStyle = '#141414';
+  round(132, 64, 100, 128, 28);
+  ctx.fill();
+  ctx.fillStyle = '#ffd23c';
+  ctx.beginPath();
+  ctx.arc(128, 128, 24, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  round(24, 64, 208, 128, 28);
+  ctx.stroke();
+
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(24, 128, 12, 0, Math.PI * 2);
+  ctx.arc(232, 128, 12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+function BrandGalaxy() {
+  const group = useRef<THREE.Group>(null);
+  const reduceMotion = useMemo(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    [],
+  );
+
+  const textures = useMemo(() => {
+    const map = new Map<string, THREE.CanvasTexture>();
+    for (const ch of PRODUCT_LETTERS) {
+      for (const color of LETTER_COLORS) {
+        map.set(`${ch}:${color}`, letterTexture(ch, color));
+      }
+    }
+    map.set('logo', logoTexture());
+    return map;
+  }, []);
+
+  useFrame((_, delta) => {
+    if (!group.current || reduceMotion) return;
+    group.current.rotation.x -= delta / 10;
+    group.current.rotation.y -= delta / 15;
+    group.current.position.z = (window.scrollY * 0.005) % 10;
+  });
+
   return (
-    <svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden>
-      <rect x="5" y="16" width="26" height="32" rx="7" fill="#ffd23c" />
-      <rect x="34" y="16" width="25" height="32" rx="7" fill="#141414" />
-      <circle cx="33" cy="32" r="6" fill="#ffd23c" />
-      <circle cx="5" cy="32" r="3" fill="#ffffff" />
-      <circle cx="59" cy="32" r="3" fill="#ffffff" />
-    </svg>
+    <group ref={group} rotation={[0, 0, Math.PI / 4]}>
+      {SKY_MARKS.map((mark, i) => {
+        const map =
+          mark.kind === 'logo'
+            ? textures.get('logo')
+            : textures.get(`${mark.ch}:${mark.color}`);
+        return (
+          <sprite key={`${mark.kind}-${i}`} position={[mark.x, mark.y, mark.z]} scale={[mark.size, mark.size, 1]}>
+            <spriteMaterial map={map} transparent depthWrite={false} toneMapped={false} />
+          </sprite>
+        );
+      })}
+    </group>
   );
 }
 
 /**
- * Тихий фон лендинга: буквы sizbiz и логотип-купон вместо пятен «пыли».
+ * Космос лендинга: вместо звёзд летают буквы sizbiz и логотип-купон.
  * Не перехватывает клики, скрыт от скринридеров.
  */
 export default function PartnersSky() {
   return (
-    <div className="partners-sky" data-testid="partners-sky" aria-hidden="true">
-      {LETTERS.map((mark, i) => (
-        <span
-          key={`l-${mark.ch}-${i}`}
-          className={`partners-sky__item partners-sky__item--${mark.tone}`}
-          style={{
-            left: mark.x,
-            top: mark.y,
-            fontSize: mark.size,
-            ['--dur' as string]: `${mark.dur}s`,
-            ['--delay' as string]: `${mark.delay}s`,
-            ['--rot' as string]: `${mark.rot}deg`,
-          }}
-        >
-          <span className="partners-sky__float">{mark.ch}</span>
-        </span>
-      ))}
-      {LOGOS.map((mark, i) => (
-        <span
-          key={`logo-${i}`}
-          className="partners-sky__item partners-sky__item--logo"
-          style={{
-            left: mark.x,
-            top: mark.y,
-            width: mark.size,
-            height: mark.size,
-            ['--dur' as string]: `${mark.dur}s`,
-            ['--delay' as string]: `${mark.delay}s`,
-            ['--rot' as string]: `${mark.rot}deg`,
-          }}
-        >
-          <span className="partners-sky__float">
-            <TicketMark />
-          </span>
-        </span>
-      ))}
+    <div className="canvas-container" data-testid="partners-sky" aria-hidden="true">
+      <Canvas camera={{ position: [0, 0, 5], fov: 60 }} dpr={[1, 1.75]}>
+        <BrandGalaxy />
+      </Canvas>
     </div>
   );
 }

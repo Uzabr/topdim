@@ -51,6 +51,7 @@ function RootRedirect() {
 function AppShell() {
   const location = useLocation();
   const isLoginPage = /^\/(ru|uz)\/login\/?$/.test(location.pathname);
+  const isPartnersPage = /^\/(ru|uz)\/partners\/?$/.test(location.pathname);
   // Купон/корзина/оплата/поиск: снизу своя кнопка — таблетка навигации налезала бы.
   const noBottomNav = hidesBottomNav(location.pathname);
 
@@ -64,11 +65,21 @@ function AppShell() {
     }
   }, [isLoginPage]);
 
+  useEffect(() => {
+    if (isPartnersPage) {
+      document.body.classList.add('td-partners-body');
+      document.documentElement.classList.add('td-partners-body');
+    } else {
+      document.body.classList.remove('td-partners-body');
+      document.documentElement.classList.remove('td-partners-body');
+    }
+  }, [isPartnersPage]);
+
   return (
     <div className="app-shell">
-      <MobileBackdrop />
-      <Header />
-      <main className={`app-main${isLoginPage ? ' app-main--login' : ''}`}>
+      {!isPartnersPage && <MobileBackdrop />}
+      {!isPartnersPage && <Header />}
+      <main className={`app-main${isLoginPage ? ' app-main--login' : ''}${isPartnersPage ? ' app-main--partners' : ''}`}>
       <Suspense fallback={<div className="route-fallback" style={{ minHeight: '60vh' }} />}>
       <Routes>
         {/* Bare root → redirect to /ru or /uz */}
@@ -103,8 +114,8 @@ function AppShell() {
       </Routes>
       </Suspense>
       </main>
-      {!isLoginPage && <Footer />}
-      {!isLoginPage && !noBottomNav && <BottomNav />}
+      {!isLoginPage && !isPartnersPage && <Footer />}
+      {!isLoginPage && !isPartnersPage && !noBottomNav && <BottomNav />}
       <CartDrawer />
       <LimitModal />
       <CookieConsent />
