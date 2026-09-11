@@ -83,7 +83,7 @@ export default function HomeMobile() {
       <div className="mhome__top">
         <h1 className="mhome__title">{t('mobile.home.title')}</h1>
 
-        <Link to={lp('/search')} className="mhome__search" aria-label={t('common.search')}>
+        <Link to={lp('/search')} className="mround mround--glass mhome__search" aria-label={t('common.search')}>
           <Search size={23} strokeWidth={1.8} />
         </Link>
       </div>

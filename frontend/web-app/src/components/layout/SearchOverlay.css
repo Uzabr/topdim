@@ -9,6 +9,7 @@
   background: rgba(20, 20, 20, 0.45);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  overscroll-behavior: none;
 }
 
 .search-overlay__panel {

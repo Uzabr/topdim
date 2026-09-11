@@ -16,6 +16,7 @@ import { couponsApi } from '../../api/coupons';
 import type { Category } from '../../api/coupons';
 import { useLocalePath } from '../../hooks/useLocalePath';
 import { localizedName } from '../../utils/localizedText';
+import { useScrollLock } from '../../hooks/useScrollLock';
 import './CatalogSheet.css';
 
 interface CatalogSheetProps {
@@ -43,6 +44,7 @@ export default function CatalogSheet({ onClose }: CatalogSheetProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const lp = useLocalePath();
+  useScrollLock();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -86,7 +88,7 @@ export default function CatalogSheet({ onClose }: CatalogSheetProps) {
               }}
             >
               <span className="catalog__icon" style={{ background: TINTS[i % TINTS.length] }}>
-                <Icon size={17} strokeWidth={1.9} />
+                <Icon size={20} strokeWidth={1.9} />
               </span>
               <span className="catalog__text">
                 <span className="catalog__name">{localizedName(category, i18n.language)}</span>

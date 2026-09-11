@@ -9,6 +9,7 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   animation: limitModalFadeIn 0.2s ease-out;
+  overscroll-behavior: none;
 }
 
 @keyframes limitModalFadeIn {

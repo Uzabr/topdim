@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Cookie, X } from 'lucide-react';
@@ -29,7 +30,7 @@ export default function CookieConsent() {
 
   if (!visible) return null;
 
-  return (
+  return createPortal(
     <div className={`cookie-consent ${animatingOut ? 'cookie-consent--out' : ''}`}>
       <div className="cookie-consent__inner">
         <div className="cookie-consent__icon">
@@ -61,9 +62,10 @@ export default function CookieConsent() {
           onClick={() => dismiss(false)}
           aria-label={t('common.close')}
         >
-          <X size={18} />
+          <X size={20} />
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

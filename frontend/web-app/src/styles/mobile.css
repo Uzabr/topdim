@@ -27,6 +27,17 @@
     /* Округлый, дружелюбный шрифт */
     --font-sans: ui-rounded, 'SF Pro Rounded', 'Nunito', 'Quicksand', Helvetica, Arial,
       sans-serif;
+
+    /* Lucide на мобилке часто size={12–16}: на iPhone это ~2–3 мм.
+       Пол 20px — читаемый глиф; empty-state 32+ не сжимаются. */
+    --icon-ui: 20px;
+  }
+
+  /* Атрибут width/height у Lucide — презентационный, CSS min его перекрывает. */
+  svg.lucide {
+    min-width: var(--icon-ui);
+    min-height: var(--icon-ui);
+    flex-shrink: 0;
   }
 
   body {
