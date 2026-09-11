@@ -299,7 +299,7 @@ export default function PaymentMobile() {
         {isDemo ? (
           <>
             <span className="cmdone__badge">
-              <ShieldCheck size={13} /> {t('payment.demoBadge')}
+              <ShieldCheck size={20} /> {t('payment.demoBadge')}
             </span>
             <h1 className="cmdone__title">{t('payment.confirmTitle')}</h1>
             <p className="cmdone__text">{t('payment.orderLine', { orderId: id, amount })}</p>
@@ -326,7 +326,7 @@ export default function PaymentMobile() {
             {payment.paymentUrl ? (
               <div className="cmdone__actions">
                 <a className="cmdone__btn" href={payment.paymentUrl}>
-                  <ExternalLink size={15} /> {t('payment.goToPay')}
+                  <ExternalLink size={20} /> {t('payment.goToPay')}
                 </a>
               </div>
             ) : (

@@ -5,9 +5,6 @@ import { z } from 'zod';
 import { motion, AnimatePresence, useScroll, useTransform, useMotionValueEvent } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { ReactLenis } from 'lenis/react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Points, PointMaterial } from '@react-three/drei';
-import * as THREE from 'three';
 import {
   ArrowRight, CheckCircle2,
   MapPin, Play, Users, BarChart3, 
@@ -16,83 +13,9 @@ import {
 import { useTranslation } from 'react-i18next';
 import { submitPartnerApplication } from '../../../api/partners';
 import type { PartnerApplicationData } from '../../../api/partners';
+import Logo from '../../../components/layout/Logo';
+import PartnersSky from './PartnersSky';
 import './PartnerLandingPage.css';
-
-/* ── PARTICLE DATA (generated once at module load, not during render) ── */
-function generateParticleData() {
-  const count = 3000;
-  const pos = new Float32Array(count * 3);
-  const cols = new Float32Array(count * 3);
-
-  // Корпоративные цвета
-  const colorPrimary = new THREE.Color("#2563eb");   // синий
-  const colorSecondary = new THREE.Color("#10b981"); // зелёный
-  const colorAccent = new THREE.Color("#f59e0b");    // акцент
-
-  for (let i = 0; i < count; i++) {
-    const r = 10 * Math.cbrt(Math.random());
-    const theta = Math.random() * 2 * Math.PI;
-    const phi = Math.acos(2 * Math.random() - 1);
-
-    pos[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
-    pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-    pos[i * 3 + 2] = r * Math.cos(phi);
-
-    // Градиент между цветами с вариативностью
-    const rand = Math.random();
-    let mixedColor;
-    if (rand < 0.6) {
-      // 60% — основной синий с вариациями
-      mixedColor = colorPrimary.clone().lerp(colorSecondary, Math.random() * 0.3);
-    } else if (rand < 0.9) {
-      // 30% — вторичный зелёный
-      mixedColor = colorSecondary.clone().lerp(colorPrimary, Math.random() * 0.2);
-    } else {
-      // 10% — акцентный янтарный для глубины
-      mixedColor = colorAccent.clone();
-    }
-
-    cols[i * 3]     = mixedColor.r;
-    cols[i * 3 + 1] = mixedColor.g;
-    cols[i * 3 + 2] = mixedColor.b;
-  }
-  return [pos, cols] as const;
-}
-
-const PARTICLE_DATA = generateParticleData();
-
-/* ── 3D PARTICLE GALAXY ── */
-
-function ParticleGalaxy() {
-  const ref = useRef<THREE.Points>(null);
-  
-  const [positions, colors] = useMemo(() => PARTICLE_DATA, []);
-
-  useFrame((_, delta) => {
-    if (ref.current) {
-      ref.current.rotation.x -= delta / 10;
-      ref.current.rotation.y -= delta / 15;
-      
-      const scrollY = window.scrollY;
-      ref.current.position.z = (scrollY * 0.005) % 10;
-    }
-  });
-
-  return (
-    <group rotation={[0, 0, Math.PI / 4]}>
-      <Points ref={ref} positions={positions} colors={colors} stride={3} frustumCulled={false}>
-        <PointMaterial 
-          transparent 
-          vertexColors 
-          size={0.05} 
-          sizeAttenuation={true} 
-          depthWrite={false} 
-          blending={THREE.AdditiveBlending}
-        />
-      </Points>
-    </group>
-  );
-}
 
 /* ── NAVBAR ── */
 function NavBar() {
@@ -110,9 +33,7 @@ function NavBar() {
   return (
     <nav className={`nav-premium ${scrolled ? 'scrolled' : ''}`}>
       <div className="mx nav-inner">
-        <a href="/" className="nav-logo">
-          sizbiz
-        </a>
+        <Logo size="sm" />
         <div className="hidden md:flex gap-8" style={{ display: 'flex', gap: '8px'}}>
           <a href="#steps" className="btn-outline" style={{ textDecoration: 'none' }}>
             {t('partners.navAlgorithm')}
@@ -217,7 +138,7 @@ function BentoCard({ children, className = "" }: { children: React.ReactNode, cl
         className="b-card-spotlight" 
         style={{ 
           opacity,
-          background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(255, 0, 60, 0.12), transparent 40%)`
+          background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(255, 210, 60, 0.16), transparent 40%)`
         }} 
       />
       <div className="b-card-content">
@@ -230,7 +151,7 @@ function BentoCard({ children, className = "" }: { children: React.ReactNode, cl
 /* ── MAIN COMPONENT ── */
 export default function PartnerLandingPage() {
   useEffect(() => {
-    // TopDim's global index.css sets overflow-x: hidden on body, which breaks position: sticky.
+    // Глобальный overflow-x: hidden на body ломает position: sticky.
     // We temporarily remove it for this page so the Algorithm section works correctly.
     const originalOverflow = document.body.style.overflowX;
     document.body.style.overflowX = 'visible';
@@ -242,11 +163,7 @@ export default function PartnerLandingPage() {
   return (
     <ReactLenis root options={{ lerp: 0.05, duration: 2, smoothWheel: true }}>
       <div className="partner-page-root">
-        <div className="canvas-container">
-          <Canvas camera={{ position: [0, 0, 5], fov: 60 }} dpr={[1, 2]}>
-            <ParticleGalaxy />
-          </Canvas>
-        </div>
+        <PartnersSky />
 
         <NavBar />
 
@@ -600,7 +517,7 @@ function FaqSection() {
         <div className="faq-list">
           {faqs.map((f, i) => (
             <div key={i} className="faq-row">
-              <button className="faq-head" onClick={() => setOpen(open === i ? null : i)}>
+              <button type="button" className="faq-head" onClick={() => setOpen(open === i ? null : i)}>
                 {f.q}
                 <div className={`faq-icon ${open === i ? 'open' : ''}`}><Plus size={24}/></div>
               </button>

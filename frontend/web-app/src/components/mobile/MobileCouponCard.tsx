@@ -58,7 +58,7 @@ export default function MobileCouponCard({ coupon, variant }: MobileCouponCardPr
         aria-label={t('couponDetail.favorite')}
         aria-pressed={fav}
       >
-        <Heart size={variant === 'grid' ? 12 : 14} fill={fav ? 'currentColor' : 'none'} />
+        <Heart size={20} fill={fav ? 'currentColor' : 'none'} />
       </button>
 
       <span className="mcard__foot">

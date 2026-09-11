@@ -61,17 +61,21 @@
 .mbd--coupon .mbd__blob--3 { right: -110px; bottom: 60px; }
 .mbd--coupon .mbd__blob--4 { left: -80px; bottom: -70px; }
 
-/* ── Корзина / оплата ── */
-.mbd--cart .mbd__blob--1 { left: -90px; top: -70px; }
-.mbd--cart .mbd__blob--2 { right: -100px; top: 180px; }
-.mbd--cart .mbd__blob--3 { left: -110px; bottom: -40px; }
-.mbd--cart .mbd__blob--4 { right: -90px; bottom: 140px; }
+/* ── Корзина / оплата: без пятен — фон не конкурирует с позициями и CTA ── */
+.mbd--cart .mbd__blob {
+  opacity: 0;
+}
 
 /* ── Профиль / избранное ── */
 .mbd--profile .mbd__blob--1 { right: -80px; top: -70px; }
 .mbd--profile .mbd__blob--2 { left: -90px; top: 60px; }
 .mbd--profile .mbd__blob--3 { left: -100px; bottom: -60px; }
 .mbd--profile .mbd__blob--4 { right: -100px; bottom: 80px; }
+
+/* ── Партнёры: пятна выключены — на лендинге свой фон из букв sizbiz ── */
+.mbd--partners {
+  display: none;
+}
 
 /* ── Поиск ── */
 .mbd--search .mbd__blob--1 { left: -70px; top: 40px; }

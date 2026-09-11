@@ -1,6 +1,6 @@
 .cookie-consent {
   position: fixed;
-  bottom: calc(var(--bottom-nav-height) + 12px);
+  bottom: calc(var(--bottom-nav-height) - 50px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
@@ -142,24 +142,38 @@
   }
 }
 
-@media (max-width: 540px) {
+/* Мобилка (<768): онбординг перекрывает нижнюю таблетку, поэтому отступ
+   --bottom-nav-height поднимает плашку над кнопкой «Далее». Кладём её
+   на дно — поверх «Далее»; после закрытия кук кнопка снова доступна. */
+@media (max-width: 767px) {
+  .cookie-consent {
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    width: calc(100% - 24px);
+  }
+
   .cookie-consent__inner {
     flex-direction: column;
     align-items: stretch;
-    padding: 16px;
-    gap: 12px;
+    padding: 14px 40px 14px 16px;
+    gap: 10px;
   }
 
   .cookie-consent__icon {
-    width: 40px;
-    height: 40px;
+    display: none;
+  }
+
+  .cookie-consent__text {
+    min-width: 0;
   }
 
   .cookie-consent__actions {
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .cookie-consent__btn {
+    flex: 1;
     text-align: center;
+    padding: 10px 12px;
+    white-space: normal;
   }
 }

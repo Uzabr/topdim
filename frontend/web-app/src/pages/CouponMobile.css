@@ -115,7 +115,7 @@
 .cmob__meta {
   margin: 4px 0 0;
   color: var(--ink-2);
-  font-size: 12px;
+  font-size: 16px;
 }
 
 /* ── Варианты ── */
@@ -128,12 +128,12 @@
 
 .cmob__section-title {
   color: #999793;
-  font-size: 12.5px;
+  font-size: 14px;
 }
 
 .cmob__section-count {
   color: var(--ink-3);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -175,8 +175,8 @@
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  min-height: 32px;
-  font-size: 12px;
+  min-height: 36px;
+  font-size: 14px;
   font-weight: 800;
   line-height: 1.3;
 }
@@ -184,7 +184,7 @@
 .cvar__price {
   display: block;
   margin-top: 8px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
 }
 
@@ -196,7 +196,7 @@
 }
 
 .cvar__old {
-  font-size: 10px;
+  font-size: 12px;
   opacity: 0.55;
   text-decoration: line-through;
 }
@@ -206,14 +206,14 @@
   border-radius: var(--radius-pill);
   background: var(--wasp);
   color: var(--on-wasp);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .cvar__left {
   display: block;
   margin-top: 5px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   opacity: 0.6;
 }
@@ -247,7 +247,7 @@
 
 .glass__title {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
 }
 
@@ -274,14 +274,14 @@
 .glass__text {
   margin: 8px 0 0;
   color: var(--ink-2);
-  font-size: 12.5px;
+  font-size: 15px;
   line-height: 1.6;
 }
 
 .glass__note {
   margin: 8px 0 0;
   color: var(--ink-3);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -289,7 +289,7 @@
   display: inline-block;
   margin-top: 10px;
   color: var(--ink);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 700;
   text-decoration: underline;
 }
@@ -307,19 +307,19 @@
 }
 
 .crev__name {
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 800;
 }
 
 .crev__stars {
   color: var(--wasp-deep);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .crev__text {
   margin: 5px 0 0;
   color: var(--ink-2);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.55;
 }
 
@@ -332,7 +332,7 @@
   border-radius: var(--radius-pill);
   background: var(--used-bg);
   color: var(--used-fg);
-  font-size: 9.5px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -362,13 +362,13 @@
 .cmob__old {
   display: block;
   color: #999793;
-  font-size: 11px;
+  font-size: 18px;
   text-decoration: line-through;
 }
 
 .cmob__price {
   display: block;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
 }
 
@@ -396,7 +396,7 @@
   border-radius: var(--radius-pill);
   background: var(--btn);
   color: #ffffff;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
 }
 

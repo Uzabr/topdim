@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -16,6 +17,7 @@ function getFocusableElements(dialog: HTMLElement): HTMLElement[] {
 export function useDialogFocus(onClose: () => void) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
+  useScrollLock();
 
   useEffect(() => {
     onCloseRef.current = onClose;

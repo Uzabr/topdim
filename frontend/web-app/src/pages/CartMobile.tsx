@@ -54,7 +54,7 @@ export default function CartMobile() {
           onClick={() => (window.history.length > 1 ? navigate(-1) : navigate(lp('/')))}
           aria-label={t('common.back')}
         >
-          <ChevronLeft size={18} strokeWidth={2} />
+          <ChevronLeft size={20} strokeWidth={2} />
         </button>
 
         <span className="mbar__title">{t('cart.title')}</span>
@@ -94,7 +94,7 @@ export default function CartMobile() {
                       onClick={() => remove(item.key)}
                       aria-label={t('common.delete')}
                     >
-                      <X size={13} />
+                      <X size={20} />
                     </button>
                   </div>
 
@@ -114,7 +114,7 @@ export default function CartMobile() {
                         }
                         aria-label={t('common.decrease')}
                       >
-                        <Minus size={13} />
+                        <Minus size={20} />
                       </button>
                       <span className="crow__num">{item.quantity}</span>
                       <button
@@ -123,7 +123,7 @@ export default function CartMobile() {
                         onClick={() => updateQuantity(item.key, item.quantity + 1)}
                         aria-label={t('common.increase')}
                       >
-                        <Plus size={13} />
+                        <Plus size={20} />
                       </button>
                     </span>
                   </div>

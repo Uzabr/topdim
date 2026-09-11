@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import type { CouponOffer } from '../../api/coupons';
 import { useCountdown } from '../../hooks/useCountdown';
 import { useLocalePath } from '../../hooks/useLocalePath';
+import { useScrollLock } from '../../hooks/useScrollLock';
 import { couponStock } from '../../utils/couponStock';
 import { calcDiscount, formatShortDate } from '../../utils/format';
 import { srcAt } from '../../utils/imageUrl';
@@ -46,6 +47,7 @@ export default function DealDeck({ deals }: DealDeckProps) {
   const currency = t('common.currency.sum');
 
   const [open, setOpen] = useState(false);
+  useScrollLock(open);
 
   if (deals.length === 0) return null;
 
@@ -89,7 +91,7 @@ export default function DealDeck({ deals }: DealDeckProps) {
               onClick={() => setOpen(false)}
               aria-label={t('common.close')}
             >
-              <X size={15} />
+              <X size={20} />
             </button>
           </div>
 

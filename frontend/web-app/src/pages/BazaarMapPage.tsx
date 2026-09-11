@@ -236,7 +236,7 @@ export default function BazaarMapPage() {
           {/* Sidebar — bazaar + shop list */}
           <aside className="dir-sidebar">
             <h2 className="dir-sidebar__title">
-              <MapPin size={18} />
+              <MapPin size={20} />
               {t('directory.bazaarsTitle', { count: filteredBazaars.length })}
             </h2>
             <div className="dir-sidebar__list">
@@ -252,7 +252,7 @@ export default function BazaarMapPage() {
             {showStandaloneSection && filteredShops.length > 0 && (
               <>
                 <h2 className="dir-sidebar__title dir-sidebar__title--shops">
-                  <Store size={18} />
+                  <Store size={20} />
                   {t('directory.shopsSidebarTitle', { count: filteredShops.length })}
                 </h2>
                 <div className="dir-sidebar__list">
@@ -271,7 +271,7 @@ export default function BazaarMapPage() {
                 className={`dir-draw-btn ${isAreaSelecting ? 'dir-draw-btn--active' : ''}`}
                 onClick={toggleAreaSelecting}
               >
-                <Crosshair size={18} />
+                <Crosshair size={20} />
                 {isAreaSelecting ? t('directory.cancelArea') : t('directory.selectArea')}
               </button>
               {isAreaSelecting && (

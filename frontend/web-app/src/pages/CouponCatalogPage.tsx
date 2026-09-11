@@ -1,14 +1,19 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { SearchX, SlidersHorizontal, LayoutGrid, List, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby } from 'lucide-react';
+import { SearchX, SlidersHorizontal, LayoutGrid, List, Sparkles, Coffee, Scissors, Dumbbell, Gamepad2, Plane, Baby, Loader2 } from 'lucide-react';
 import { couponsApi } from '../api/coupons';
 import CouponCard from '../components/coupon/CouponCard';
 import Select from '../components/ui/Select';
+import { useIsDesktop } from '../hooks/useIsDesktop';
+import { useLoadMoreOnScroll } from '../hooks/useLoadMoreOnScroll';
 import { mapCouponOfferToCardData } from '../utils/couponCardMapper';
 import { localizedName } from '../utils/localizedText';
+import { withMinDelay } from '../utils/withMinDelay';
 import './CouponCatalogPage.css';
+
+const PAGE_SIZE = 20;
 
 const CategoryIcon = ({ slug }: { slug?: string }) => {
   switch (slug) {
@@ -24,6 +29,7 @@ const CategoryIcon = ({ slug }: { slug?: string }) => {
 
 export default function CouponCatalogPage() {
   const { t, i18n } = useTranslation();
+  const isDesktop = useIsDesktop();
 
   const sortOptions = useMemo(
     () => [
@@ -68,26 +74,64 @@ export default function CouponCatalogPage() {
     select: (res) => res.data.data,
   });
 
+  const catalogParams = {
+    categoryId: activeCategory ?? undefined,
+    situation: situation ?? undefined,
+    sortBy,
+    size: PAGE_SIZE,
+  };
+
   const {
     data: couponsData,
-    isLoading,
-    isError,
+    isLoading: isPagedLoading,
+    isError: isPagedError,
   } = useQuery({
     queryKey: ['coupons-catalog', activeCategory, situation, sortBy, page],
-    queryFn: () => couponsApi.getCatalog({
-      categoryId: activeCategory ?? undefined,
-      situation: situation ?? undefined,
-      sortBy,
-      page,
-      size: 20,
-    }),
+    queryFn: () => couponsApi.getCatalog({ ...catalogParams, page }),
     select: (res) => res.data.data,
+    enabled: isDesktop,
   });
 
+  const {
+    data: infiniteData,
+    isLoading: isInfiniteLoading,
+    isError: isInfiniteError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useInfiniteQuery({
+    queryKey: ['coupons-catalog-infinite', activeCategory, situation, sortBy],
+    queryFn: async ({ pageParam }) => {
+      const request = couponsApi.getCatalog({ ...catalogParams, page: pageParam });
+      // Первую страницу показываем сразу (скелетон уже на экране);
+      // следующие — не короче 500 мс, чтобы лоадер при скролле был заметен.
+      if (pageParam === 0) return request;
+      return withMinDelay(request);
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.data.data.last ? undefined : lastPage.data.data.number + 1,
+    enabled: !isDesktop,
+  });
+
+  const loadMoreRef = useLoadMoreOnScroll(
+    !isDesktop && Boolean(hasNextPage) && !isFetchingNextPage && !isFetchNextPageError,
+    () => {
+      void fetchNextPage();
+    },
+  );
+
   const categories = categoriesData ?? [];
-  const coupons = couponsData?.content ?? [];
+  const coupons = isDesktop
+    ? (couponsData?.content ?? [])
+    : (infiniteData?.pages.flatMap((p) => p.data.data.content) ?? []);
   const totalPages = couponsData?.totalPages ?? 1;
-  const totalElements = couponsData?.totalElements ?? 0;
+  const totalElements = isDesktop
+    ? (couponsData?.totalElements ?? 0)
+    : (infiniteData?.pages[0]?.data.data.totalElements ?? 0);
+  const isLoading = isDesktop ? isPagedLoading : isInfiniteLoading;
+  const isError = isDesktop ? isPagedError : isInfiniteError;
 
   return (
     <div className="catalog-page">
@@ -112,7 +156,10 @@ export default function CouponCatalogPage() {
             <Select
               options={sortOptions}
               value={sortBy}
-              onChange={(val) => setSortBy(val as string)}
+              onChange={(val) => {
+                setSortBy(val as string);
+                setPage(0);
+              }}
               triggerIcon={<SlidersHorizontal size={15} />}
               minWidth="190px"
               align="right"
@@ -191,8 +238,40 @@ export default function CouponCatalogPage() {
           </div>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
+        {!isDesktop && coupons.length > 0 && (
+          <div className="catalog-infinite">
+            {isFetchingNextPage && (
+              <div className="catalog-infinite__loader" role="status">
+                <Loader2 className="catalog-infinite__spin" size={20} aria-hidden />
+                <span>{t('catalog.loadingMore')}</span>
+              </div>
+            )}
+            {isFetchNextPageError && (
+              <div className="catalog-infinite__error">
+                <p>{t('catalog.loadMoreError')}</p>
+                <button
+                  type="button"
+                  className="pagination-btn"
+                  disabled={isFetchingNextPage}
+                  onClick={() => void fetchNextPage()}
+                >
+                  {t('catalog.retry')}
+                </button>
+              </div>
+            )}
+            {hasNextPage && !isFetchingNextPage && !isFetchNextPageError && (
+              <div
+                ref={loadMoreRef}
+                className="catalog-infinite__sentinel"
+                data-testid="catalog-scroll-sentinel"
+                aria-hidden
+              />
+            )}
+          </div>
+        )}
+
+        {/* Десктоп: страницы. На телефоне — infinite scroll выше. */}
+        {isDesktop && totalPages > 1 && (
           <div className="catalog-pagination">
             <button
               disabled={page === 0}

@@ -62,7 +62,7 @@ export default function CheckoutMobile() {
         onClick={() => (window.history.length > 1 ? navigate(-1) : navigate(lp('/cart')))}
         aria-label={t('common.back')}
       >
-        <ChevronLeft size={18} strokeWidth={2} />
+        <ChevronLeft size={20} strokeWidth={2} />
       </button>
       <span className="mbar__title">{t('checkout.payTitle')}</span>
       <span className="cmpay__spacer" />
@@ -280,7 +280,7 @@ export default function CheckoutMobile() {
             {[user?.emailPlaceholder ? '' : email, phone].filter(Boolean).join(' · ')}
           </span>
         </span>
-        <Pencil size={13} className="cmpay__card-edit" />
+        <Pencil size={20} className="cmpay__card-edit" />
       </button>
 
       <p className="cmpay__hint">{t('mobile.checkout.deliveryNote')}</p>
@@ -291,7 +291,7 @@ export default function CheckoutMobile() {
           показываем ровно то, что реально произойдёт. */}
       <div className="cmpay__method">
         <span className="cmpay__method-icon">
-          <ShieldCheck size={15} />
+          <ShieldCheck size={20} />
         </span>
         <span className="cmpay__method-text">
           <span className="cmpay__card-title">{t('payment.demoBadge')}</span>

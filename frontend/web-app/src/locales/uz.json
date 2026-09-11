@@ -1036,7 +1036,10 @@
     "loadErrorTitle": "Kuponlar yuklanmadi",
     "loadErrorDesc": "Birozdan keyin sahifani yangilashga harakat qiling",
     "emptyTitle": "Hech qanday kupon topilmadi",
-    "emptyDesc": "Filtrlarni o'zgartirib ko'ring"
+    "emptyDesc": "Filtrlarni o'zgartirib ko'ring",
+    "loadingMore": "Yana yuklanmoqda…",
+    "loadMoreError": "Yana kuponlar yuklanmadi",
+    "retry": "Qayta urinish"
   },
   "footer": {
     "desc": "Onlayn bozor va O'zbekistondagi eng yaxshi chegirmalar agregatori. So'nggi daqiqali bitimlarni toping va har kuni foydali xarid qiling.",
